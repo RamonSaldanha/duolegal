@@ -6,7 +6,7 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, Sid
 import { type NavItem } from '@/types';
 import { computed } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
-import { BookOpen, Folder, LayoutGrid, Lock } from 'lucide-vue-next';
+import { BookOpen, Folder, LayoutGrid, Lock, Play } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
 
 
@@ -22,7 +22,7 @@ const mainNavItems: NavItem[] = [
     {
         title: 'Jogar',
         href: '/play',
-        icon: LayoutGrid,
+        icon: Play,
     },
     ...(isAdmin.value
         ? [
