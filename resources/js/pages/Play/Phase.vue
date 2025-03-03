@@ -2,6 +2,10 @@
     <Head :title="`Fase ${phase.phase_number}: ${phase.reference_name}`" />
 
     <AppLayout>
+        <!-- Elementos para os efeitos de recompensa -->
+        <span id="confetti-canvas" class="fixed top-1/2 left-1/2 z-[100] pointer-events-none"></span>
+        <span id="emoji-canvas" class="fixed top-1/2 left-1/2 z-[100] pointer-events-none"></span>
+        
         <div class="container py-4 md:py-8 px-3 md:px-4">
             <div class="max-w-4xl mx-auto">
                 <!-- Cabeçalho da fase - versão responsiva -->
@@ -96,21 +100,19 @@
                             v-html="processedText"
                         ></div>
                         
-                        <!-- Palavras selecionadas que podem ser removidas -->
+                        <!-- Palavras selecionadas que podem ser removidas (estilo Duolingo) -->
                         <div v-if="Object.keys(userAnswers[currentArticleIndex] || {}).length > 0 && !answered" class="mb-6">
                             <h3 class="text-sm font-medium mb-2 text-muted-foreground">Palavras selecionadas:</h3>
                             <div class="flex flex-wrap gap-2">
-                                <Button
+                                <button
                                     v-for="(word, lacunaIndex) in userAnswers[currentArticleIndex]"
                                     :key="`selected-${lacunaIndex}`"
-                                    variant="outline"
-                                    size="sm"
-                                    class="bg-primary/10 border-primary/20 flex items-center gap-1"
                                     @click="removeWordFromLacuna(Number(lacunaIndex))"
+                                    class="inline-flex items-center justify-center px-3.5 py-2 rounded-xl text-base font-medium bg-primary/10 dark:bg-primary-dark/20 text-primary dark:text-primary-dark/90 border-2 border-primary/30 dark:border-primary-dark/40 hover:bg-primary/20 hover:border-primary/40 transition-all duration-200 shadow-duolingo-selected"
                                 >
                                     <span>{{ word }}</span>
-                                    <X class="h-3 w-3 ml-1" />
-                                </Button>
+                                    <X class="h-3.5 w-3.5 ml-1.5" />
+                                </button>
                             </div>
                         </div>
                         
@@ -189,16 +191,14 @@
                         <div v-if="!answered" class="w-full">
                             <div v-if="availableOptions.length > 0">
                                 <div class="flex flex-wrap gap-2 mb-4">
-                                    <Button
+                                    <button
                                         v-for="(word, index) in availableOptions"
                                         :key="`word-${index}`"
-                                        variant="outline"
-                                        size="sm"
                                         @click="selectWord(word)"
-                                        class="text-base md:text-sm"
+                                        class="inline-flex items-center justify-center px-3.5 py-2 rounded-xl text-base font-medium bg-background dark:bg-slate-800 text-foreground dark:text-slate-200 border-2 border-muted hover:bg-primary/5 hover:border-primary/30 transition-all duration-200 shadow-duolingo"
                                     >
                                         {{ word }}
-                                    </Button>
+                                    </button>
                                 </div>
                             </div>
                             
@@ -244,6 +244,7 @@ import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, Check, X, RefreshCw } from 'lucide-vue-next';
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useReward } from 'vue-rewards';
 
 interface Article {
     article_reference: string;
@@ -403,6 +404,23 @@ const completedArticles = ref<number[]>([]);
         };
     });
 
+// Configure as recompensas
+const { reward: confettiReward } = useReward('confetti-canvas', 'confetti', {
+    startVelocity: 30, 
+    spread: 360,
+    elementCount: 100,
+    decay: 0.94,
+    colors: ['#26ccff', '#a25afd', '#ff5e7e', '#88ff5a', '#fcff42', '#ffa62d'],
+    zIndex: 100 // Garantindo que o z-index também está definido na configuração
+});
+
+const { reward: emojiReward } = useReward('emoji-canvas', 'emoji', {
+    emoji: ['🎓', '📚', '✨', '👏', '🏆'],
+    elementCount: 20,
+    spread: 50,
+    zIndex: 100 // Garantindo que o z-index também está definido na configuração
+});
+
 // Determina a próxima lacuna vazia para preenchimento
 const nextEmptyLacunaIndex = computed(() => {
     const answers = userAnswers.value[currentArticleIndex.value] || {};
@@ -445,6 +463,18 @@ const checkAnswers = () => {
     if (articleScore.value && articleScore.value.percentage >= 70) {
         if (!completedArticles.value.includes(currentArticleIndex.value)) {
             completedArticles.value.push(currentArticleIndex.value);
+        }
+        
+        // Dispara o confetti para acertos acima de 70%
+        setTimeout(() => {
+            confettiReward();
+        }, 300);
+        
+        // Para 100% de acerto, mostre emojis também
+        if (articleScore.value.percentage === 100) {
+            setTimeout(() => {
+                emojiReward();
+            }, 600);
         }
     }
 };
@@ -561,17 +591,26 @@ onUnmounted(() => {
 }
 
 .lacuna.empty {
-    background: rgba(255, 250, 119, 0.812);
-    font-weight: bold;
-    padding: 4px 8px;
-    border-radius: 4px;
+    background: rgb(254, 252, 232);
+    border: 1px dashed rgb(202, 191, 137);
+    font-weight: normal;
+    padding: 4px 12px;
+    border-radius: 6px;
+    color: rgb(161, 151, 95);
 }
 
 .lacuna.filled {
-    background-color: rgba(0, 0, 0, 0.1);
-    border-bottom: 2px solid rgb(59, 130, 246);
-    padding: 2px 4px;
-    border-radius: 2px;
+    background-color: rgb(240, 249, 255);
+    border-bottom: 2px solid rgb(56, 189, 248);
+    padding: 2px 6px;
+    border-radius: 4px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.lacuna.filled:hover {
+    background-color: rgb(224, 242, 254);
 }
 
 .lacuna.correct {
@@ -619,5 +658,81 @@ button {
     align-items: center;
     background-color: rgba(59, 130, 246, 0.1);
     border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+
+/* Botões estilo Duolingo */
+.duolingo-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 0.875rem;
+    border-radius: 1rem;
+    font-size: 1rem;
+    font-weight: 500;
+    line-height: 1.5;
+    color: rgb(75, 85, 99);
+    background-color: white;
+    border: 2px solid rgb(226, 232, 240);
+    box-shadow: 0 2px 3px rgba(0, 0, 0, 0.05);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.duolingo-button:hover {
+    background-color: rgb(240, 249, 255);
+    border-color: rgb(186, 230, 253);
+    transform: translateY(-1px);
+    box-shadow: 0 3px 5px rgba(0, 0, 0, 0.08);
+}
+
+.duolingo-button:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Versão para palavras já selecionadas */
+.duolingo-button-selected {
+    background-color: rgb(240, 249, 255);
+    border-color: rgb(125, 211, 252);
+    color: rgb(14, 116, 144);
+}
+
+.duolingo-button-selected:hover {
+    background-color: rgb(224, 242, 254);
+    border-color: rgb(56, 189, 248);
+}
+
+/* Adaptação para tema escuro */
+@media (prefers-color-scheme: dark) {
+    .duolingo-button {
+        background-color: rgb(30, 41, 59);
+        border-color: rgb(51, 65, 85);
+        color: rgb(226, 232, 240);
+    }
+    
+    .duolingo-button:hover {
+        background-color: rgb(44, 55, 74);
+        border-color: rgb(71, 85, 105);
+    }
+    
+    .duolingo-button-selected {
+        background-color: rgb(6, 95, 129);
+        border-color: rgb(8, 145, 178);
+        color: rgb(224, 242, 254);
+    }
+    
+    .duolingo-button-selected:hover {
+        background-color: rgb(14, 116, 144);
+        border-color: rgb(2, 132, 199);
+    }
+}
+
+/* Responsividade para dispositivos móveis */
+@media (max-width: 640px) {
+    .duolingo-button {
+        padding: 0.625rem 1rem;
+        font-size: 1.125rem;
+    }
 }
 </style>
