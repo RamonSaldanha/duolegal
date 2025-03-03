@@ -1,12 +1,12 @@
 <!-- filepath: /c:/Users/ramon/Desktop/study/resources/js/Pages/Play/Phase.vue -->
 <script lang="ts" setup>
 import { Head, Link } from '@inertiajs/vue3';
-import AppLayout from '@/Layouts/AppLayout.vue';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/Components/ui/card';
-import { Button } from '@/Components/ui/button';
+import AppLayout from '@/layouts/AppLayout.vue';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, Check, X, RefreshCw } from 'lucide-vue-next';
 import { ref, computed } from 'vue';
-import { Alert, AlertTitle, AlertDescription } from '@/Components/ui/alert';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 interface Article {
     article_reference: string;
@@ -26,12 +26,22 @@ const props = defineProps<{
         title: string;
         difficulty: number;
     };
-    articles: Article[];
+    articles: Record<string, Article>;
 }>();
 
 // Controle do artigo atual
 const currentArticleIndex = ref(0);
-const currentArticle = computed(() => props.articles[currentArticleIndex.value]);
+const articlesArray = computed(() => {
+    const articles = Object.values(props.articles);
+    console.log('Converted articles array:', articles);
+    return articles;
+});
+console.log('Received articles:', props.articles);
+const currentArticle = computed(() => {
+    console.log('Current article index:', currentArticleIndex.value);
+    console.log('Current article:', articlesArray.value[currentArticleIndex.value]);
+    return articlesArray.value[currentArticleIndex.value];
+});
 
 interface UserAnswers {
     [articleIndex: number]: {
@@ -42,6 +52,7 @@ interface UserAnswers {
 // Estado para armazenar as respostas do usuário para cada artigo
 const userAnswers = ref<UserAnswers>({});
 const answered = ref(false);
+const completedArticles = ref<number[]>([]);
 
 // Extrai todas as opções para o artigo atual e monta as respostas corretas
     const articleOptions = computed(() => {
@@ -148,7 +159,6 @@ const answered = ref(false);
             }
         });
 
-
         return {
             correct: correctCount,
             total: totalLacunas.value,
@@ -195,6 +205,11 @@ function removeWordFromLacuna(index: number) {
 // Verifica as respostas preenchidas
 const checkAnswers = () => {
     answered.value = true;
+    if (articleScore.value && articleScore.value.percentage >= 70) {
+        if (!completedArticles.value.includes(currentArticleIndex.value)) {
+            completedArticles.value.push(currentArticleIndex.value);
+        }
+    }
 };
 
 // Reinicia as respostas para o artigo atual
@@ -207,7 +222,7 @@ const resetAnswers = () => {
 
 // Navega para o próximo artigo
 const nextArticle = () => {
-    if (currentArticleIndex.value < props.articles.length - 1) {
+    if (currentArticleIndex.value < articlesArray.value.length - 1) {
         currentArticleIndex.value++;
         answered.value = false;
     }
@@ -274,10 +289,14 @@ const getDifficultyColor = (level: number): string => {
 
                         <div class="flex">
                             <div
-                                v-for="i in 5"
-                                :key="`diff-${i}`"
+                                v-for="(_, index) in articlesArray"
+                                :key="`progress-${index}`"
                                 class="w-3 h-12 mx-0.5 rounded-t-md"
-                                :class="i <= phase.difficulty ? getDifficultyColor(phase.difficulty) : 'bg-muted'"
+                                :class="[
+                                    completedArticles.includes(index) ? 'bg-green-500' : 
+                                    currentArticleIndex === index ? 'bg-yellow-500' :
+                                    'bg-muted'
+                                ]"
                             ></div>
                         </div>
                     </div>
@@ -295,12 +314,12 @@ const getDifficultyColor = (level: number): string => {
                     </Button>
 
                     <span class="text-sm font-medium">
-                        Artigo {{ currentArticleIndex + 1 }} de {{ articles.length }}
+                        Artigo {{ currentArticleIndex + 1 }} de {{ articlesArray.length }}
                     </span>
 
                     <Button
                         variant="outline"
-                        :disabled="currentArticleIndex === articles.length - 1"
+                        :disabled="currentArticleIndex === articlesArray.length - 1"
                         @click="nextArticle"
                     >
                         Próximo
@@ -411,7 +430,7 @@ const getDifficultyColor = (level: number): string => {
                                 Tentar novamente
                             </Button>
 
-                            <Button variant="default" :disabled="currentArticleIndex === articles.length - 1" @click="nextArticle">
+                            <Button variant="default" :disabled="currentArticleIndex === articlesArray.length - 1" @click="nextArticle">
                                 Próximo
                                 <ChevronRight class="ml-2 h-4 w-4" />
                             </Button>

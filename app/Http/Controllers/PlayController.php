@@ -6,6 +6,7 @@ use App\Models\LawArticle;
 use App\Models\LegalReference;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Log;
 
 class PlayController extends Controller
 {
@@ -67,6 +68,7 @@ class PlayController extends Controller
             ->get();
         // Obter grupo específico de artigos para esta fase
         $phaseArticles = $articles->chunk(self::ARTICLES_PER_PHASE)[$phaseNumber - 1] ?? collect([]);
+        \Log::info('Phase Articles:', ['phaseNumber' => $phaseNumber, 'articles' => $phaseArticles]);
         
         if ($phaseArticles->isEmpty()) {
             abort(404);
