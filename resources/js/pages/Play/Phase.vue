@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, Check, X, RefreshCw } from 'lucide-vue-next';
 import { ref, computed } from 'vue';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface Article {
     article_reference: string;
@@ -287,17 +287,23 @@ const getDifficultyColor = (level: number): string => {
                             </p>
                         </div>
 
-                        <div class="flex">
-                            <div
-                                v-for="(_, index) in articlesArray"
-                                :key="`progress-${index}`"
-                                class="w-3 h-12 mx-0.5 rounded-t-md"
-                                :class="[
-                                    completedArticles.includes(index) ? 'bg-green-500' : 
-                                    currentArticleIndex === index ? 'bg-yellow-500' :
-                                    'bg-muted'
-                                ]"
-                            ></div>
+                        <div class="w-full max-w-md mx-auto mt-4">
+                            <div class="relative h-2 bg-muted rounded-full overflow-hidden">
+                                <div
+                                    class="absolute left-0 top-0 h-full bg-green-500 transition-all duration-300"
+                                    :style="`width: ${(completedArticles.length / articlesArray.length) * 100}%`"
+                                ></div>
+                                <div
+                                    class="absolute h-full bg-yellow-500 transition-all duration-300"
+                                    :style="`
+                                        left: ${(currentArticleIndex / articlesArray.length) * 100}%;
+                                        width: ${(1 / articlesArray.length) * 100}%;
+                                    `"
+                                ></div>
+                            </div>
+                            <div class="mt-2 text-sm text-center text-muted-foreground">
+                                {{ completedArticles.length }} de {{ articlesArray.length }} artigos completados
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -339,35 +345,65 @@ const getDifficultyColor = (level: number): string => {
                     <CardContent>
                         <!-- Texto com lacunas -->
                         <div
-                            class="p-4 bg-primary/5 border border-primary/20 rounded-md mb-6"
+                            class="p-6 bg-primary/5 border border-primary/20 rounded-md mb-6 text-lg leading-relaxed whitespace-pre-line"
                             v-html="processedText"
                         ></div>
 
-                        <!-- Feedback após responder -->
-                        <Alert
-                            v-if="answered && articleScore"
-                            :class="articleScore.percentage >= 70 ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'"
-                            class="mb-6"
-                        >
-                            <div class="flex items-center gap-2">
-                                <Check v-if="articleScore.percentage >= 70" class="h-5 w-5 text-green-500" />
-                                <X v-else class="h-5 w-5 text-red-500" />
-                                <AlertTitle>
-                                    {{ articleScore.percentage >= 70 ? 'Bom trabalho!' : 'Continue tentando!' }}
-                                </AlertTitle>
+                        <!-- Modal de resultado -->
+                        <Dialog :open="answered" @update:open="answered = $event">
+                            <DialogContent class="sm:max-w-[600px]">
+                    <DialogHeader>
+                        <DialogTitle class="flex items-center gap-3 text-xl">
+                            <div 
+                                :class="[
+                                    'flex items-center justify-center w-12 h-12 rounded-full',
+                                    (articleScore && articleScore.percentage >= 70) ? 'bg-green-100' : 'bg-red-100'
+                                ]"
+                            >
+                                <Check 
+                                    v-if="articleScore && articleScore.percentage >= 70" 
+                                    class="w-6 h-6 text-green-600"
+                                />
+                                <X 
+                                    v-else 
+                                    class="w-6 h-6 text-red-600"
+                                />
                             </div>
-                            <AlertDescription>
-                                Você acertou {{ articleScore.correct }} de {{ articleScore.total }} lacunas ({{ articleScore.percentage }}%)
-                            </AlertDescription>
-                        </Alert>
+                            <span>
+                                {{ articleScore && articleScore.percentage >= 70 ? 'Parabéns!' : 'Continue tentando!' }}
+                            </span>
+                        </DialogTitle>
+                    </DialogHeader>
 
-                        <!-- Texto original (mostrado após responder) -->
-                        <div v-if="answered">
-                            <h3 class="font-medium mb-2">Texto original:</h3>
-                            <div class="p-4 bg-muted rounded-md">
-                                <p class="whitespace-pre-wrap">{{ currentArticle.original_content }}</p>
-                            </div>
+                    <div class="mt-4" v-if="articleScore">
+                        <div class="text-lg font-medium mb-2">
+                            Você acertou {{ articleScore.correct }} de {{ articleScore.total }} lacunas ({{ articleScore.percentage }}%)
                         </div>
+
+                                    <div class="mt-6">
+                                        <h3 class="font-medium mb-2">Texto original:</h3>
+                                        <div class="p-4 bg-muted rounded-md max-h-[300px] overflow-y-auto">
+                                            <p class="whitespace-pre-line text-lg">{{ currentArticle?.original_content }}</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-6 flex justify-between gap-4">
+                                        <Button variant="outline" class="w-full" @click="resetAnswers">
+                                            <RefreshCw class="mr-2 h-4 w-4" />
+                                            Tentar novamente
+                                        </Button>
+                                        <Button 
+                                            v-if="currentArticleIndex < articlesArray.length - 1"
+                                            class="w-full" 
+                                            @click="nextArticle"
+                                        >
+                                            Próximo
+                                            <ChevronRight class="ml-2 h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                </div>
+                            </DialogContent>
+                        </Dialog>
 
                         <!-- Palavras já selecionadas (apenas para visualização em desenvolvimento) -->
                         <div v-if="!answered && userAnswers[currentArticleIndex] && Object.keys(userAnswers[currentArticleIndex]).length > 0" class="mb-4 border-t pt-4">
@@ -450,22 +486,29 @@ const getDifficultyColor = (level: number): string => {
 .lacuna.empty {
     background: rgba(255, 250, 119, 0.812);
     font-weight: bold;
-    padding: 2px;
+    padding: 4px 8px;
+    border-radius: 4px;
 }
 
 .lacuna.filled {
     background-color: rgba(0, 0, 0, 0.1);
     border-bottom: 2px solid rgb(59, 130, 246);
+    padding: 2px 4px;
+    border-radius: 2px;
 }
 
 .lacuna.correct {
     background-color: rgba(34, 197, 94, 0.2);
     border-bottom: 2px solid rgb(34, 197, 94);
+    padding: 2px 4px;
+    border-radius: 2px;
 }
 
 .lacuna.incorrect {
     background-color: rgba(239, 68, 68, 0.2);
     border-bottom: 2px solid rgb(239, 68, 68);
+    padding: 2px 4px;
+    border-radius: 2px;
 }
 
 button {
