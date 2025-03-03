@@ -415,7 +415,7 @@ const { reward: confettiReward } = useReward('confetti-canvas', 'confetti', {
 });
 
 const { reward: emojiReward } = useReward('emoji-canvas', 'emoji', {
-    emoji: ['🎓', '📚', '✨', '👏', '🏆'],
+    emoji: ['🎓', '✨', '👏', '🏆'],
     elementCount: 20,
     spread: 50,
     zIndex: 100 // Garantindo que o z-index também está definido na configuração
