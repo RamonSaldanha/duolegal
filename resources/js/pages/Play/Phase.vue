@@ -348,41 +348,50 @@ const getDifficultyColor = (level: number): string => {
                             class="p-6 bg-primary/5 border border-primary/20 rounded-md mb-6 text-lg leading-relaxed whitespace-pre-line"
                             v-html="processedText"
                         ></div>
+                        
+                        <div 
+                        v-if="answered" 
+                        class="offcanvas-container"
+                        :class="{ 'offcanvas-open': answered }"
+                        >
+                            <div class="offcanvas-content bg-background border-t border-border">
+                                <!-- Cabeçalho -->
+                                <div class="flex items-center justify-between border-b border-border pb-4 mb-4">
+                                    <div class="flex items-center gap-3 text-xl">
+                                        <div 
+                                            :class="[
+                                                'flex items-center justify-center w-12 h-12 rounded-full',
+                                                (articleScore && articleScore.percentage >= 70) ? 'bg-green-100 dark:bg-green-950' : 'bg-red-100 dark:bg-red-950'
+                                            ]"
+                                        >
+                                            <Check 
+                                                v-if="articleScore && articleScore.percentage >= 70" 
+                                                class="w-6 h-6 text-green-600"
+                                            />
+                                            <X 
+                                                v-else 
+                                                class="w-6 h-6 text-red-600"
+                                            />
+                                        </div>
+                                        <span class="font-semibold">
+                                            {{ articleScore && articleScore.percentage >= 70 ? 'Parabéns!' : 'Continue tentando!' }}
+                                        </span>
+                                    </div>
+                                    
+                                    <Button variant="ghost" size="sm" @click="answered = false">
+                                        <X class="h-4 w-4" />
+                                    </Button>
+                                </div>
 
-                        <!-- Modal de resultado -->
-                        <Dialog :open="answered" @update:open="answered = $event">
-                            <DialogContent class="sm:max-w-[600px]">
-                    <DialogHeader>
-                        <DialogTitle class="flex items-center gap-3 text-xl">
-                            <div 
-                                :class="[
-                                    'flex items-center justify-center w-12 h-12 rounded-full',
-                                    (articleScore && articleScore.percentage >= 70) ? 'bg-green-100' : 'bg-red-100'
-                                ]"
-                            >
-                                <Check 
-                                    v-if="articleScore && articleScore.percentage >= 70" 
-                                    class="w-6 h-6 text-green-600"
-                                />
-                                <X 
-                                    v-else 
-                                    class="w-6 h-6 text-red-600"
-                                />
-                            </div>
-                            <span>
-                                {{ articleScore && articleScore.percentage >= 70 ? 'Parabéns!' : 'Continue tentando!' }}
-                            </span>
-                        </DialogTitle>
-                    </DialogHeader>
-
-                    <div class="mt-4" v-if="articleScore">
-                        <div class="text-lg font-medium mb-2">
-                            Você acertou {{ articleScore.correct }} de {{ articleScore.total }} lacunas ({{ articleScore.percentage }}%)
-                        </div>
+                                <!-- Conteúdo -->
+                                <div v-if="articleScore">
+                                    <div class="text-lg font-medium mb-2">
+                                        Você acertou {{ articleScore.correct }} de {{ articleScore.total }} lacunas ({{ articleScore.percentage }}%)
+                                    </div>
 
                                     <div class="mt-6">
                                         <h3 class="font-medium mb-2">Texto original:</h3>
-                                        <div class="p-4 bg-muted rounded-md max-h-[300px] overflow-y-auto">
+                                        <div class="p-4 bg-muted/30 dark:bg-muted/10 border border-muted/30 rounded-md max-h-[150px] overflow-y-auto">
                                             <p class="whitespace-pre-line text-lg">{{ currentArticle?.original_content }}</p>
                                         </div>
                                     </div>
@@ -402,8 +411,8 @@ const getDifficultyColor = (level: number): string => {
                                         </Button>
                                     </div>
                                 </div>
-                            </DialogContent>
-                        </Dialog>
+                            </div>
+                        </div>
 
                         <!-- Palavras já selecionadas (apenas para visualização em desenvolvimento) -->
                         <div v-if="!answered && userAnswers[currentArticleIndex] && Object.keys(userAnswers[currentArticleIndex]).length > 0" class="mb-4 border-t pt-4">
@@ -477,7 +486,34 @@ const getDifficultyColor = (level: number): string => {
         </div>
     </AppLayout>
 </template>
-
+<style scoped>
+.offcanvas-container {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 50;
+    transform: translateY(100%);
+    transition: transform 0.3s ease-in-out;
+    width: 100%; /* Limitar ao tamanho da viewport */
+    overflow-x: hidden; /* Impedir rolagem horizontal */
+}
+  
+.offcanvas-open {
+    transform: translateY(0);
+}
+  
+.offcanvas-content {
+    border-top-left-radius: 1rem;
+    border-top-right-radius: 1rem;
+    box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.1), 0 -2px 4px -1px rgba(0, 0, 0, 0.06);
+    padding: 1.5rem;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-sizing: border-box; /* Garantir que padding não aumente largura */
+    width: 100%;
+}
+</style>
 <style>
 .lacuna {
 
@@ -511,9 +547,30 @@ const getDifficultyColor = (level: number): string => {
     border-radius: 2px;
 }
 
+/* Remove overlay and adjust dialog positioning */
+:global(.dialog-overlay) {
+    display: none !important;
+}
+
 button {
     opacity: 1 !important;
     visibility: visible !important;
+}
+
+/* Dialog animation */
+:global(.dialog-content-enter-active),
+:global(.dialog-content-leave-active) {
+    transition: transform 0.3s ease-in-out;
+}
+
+:global(.dialog-content-enter-from),
+:global(.dialog-content-leave-to) {
+    transform: translateY(100%);
+}
+
+:global(.dialog-content-enter-to),
+:global(.dialog-content-leave-from) {
+    transform: translateY(0);
 }
 
 .selected-word {
