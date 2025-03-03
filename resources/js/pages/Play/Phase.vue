@@ -1,11 +1,248 @@
-<!-- filepath: /c:/Users/ramon/Desktop/study/resources/js/Pages/Play/Phase.vue -->
+<template>
+    <Head :title="`Fase ${phase.phase_number}: ${phase.reference_name}`" />
+
+    <AppLayout>
+        <div class="container py-4 md:py-8 px-3 md:px-4">
+            <div class="max-w-4xl mx-auto">
+                <!-- Cabeçalho da fase - versão responsiva -->
+                <div class="mb-4 md:mb-8">
+                    <!-- Mostrar apenas no desktop -->
+                    <Link :href="route('play.map')" class="hidden md:flex items-center text-primary hover:underline mb-4">
+                        <ChevronLeft class="h-5 w-5 mr-1" />
+                        Voltar ao mapa
+                    </Link>
+
+                    <div class="flex flex-row justify-between items-center gap-4">
+                        <!-- Botão X para mobile -->
+                        <Link :href="route('play.map')" class="md:hidden flex items-center justify-center h-8 w-8 rounded-full bg-muted/30 hover:bg-muted/50">
+                            <X class="h-4 w-4" />
+                        </Link>
+                        
+                        <!-- Título e nível apenas no desktop -->
+                        <div class="hidden md:block">
+                            <h1 class="text-3xl font-bold">{{ phase.title }}</h1>
+                            <p class="text-muted-foreground mt-1">
+                                Nível:
+                                <span
+                                    :class="`inline-flex items-center px-2 py-1 rounded-full text-xs text-white ${getDifficultyColor(phase.difficulty)}`"
+                                >
+                                    {{ getDifficultyText(phase.difficulty) }}
+                                </span>
+                            </p>
+                        </div>
+
+                        <!-- Barra de progresso - sempre visível -->
+                        <div class="w-full max-w-md">
+                            <div class="relative h-2 bg-muted rounded-full overflow-hidden">
+                                <div
+                                    class="absolute left-0 top-0 h-full bg-green-500 transition-all duration-300"
+                                    :style="`width: ${(completedArticles.length / articlesArray.length) * 100}%`"
+                                ></div>
+                                <div
+                                    class="absolute h-full bg-yellow-500 transition-all duration-300"
+                                    :style="`
+                                        left: ${(currentArticleIndex / articlesArray.length) * 100}%;
+                                        width: ${(1 / articlesArray.length) * 100}%;
+                                    `"
+                                ></div>
+                            </div>
+                            <!-- Texto de progresso apenas no desktop -->
+                            <div class="mt-2 text-sm text-center text-muted-foreground hidden md:block">
+                                {{ completedArticles.length }} de {{ articlesArray.length }} artigos completados
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Navegação entre artigos - apenas desktop -->
+                <div class="hidden md:flex justify-between items-center mb-4">
+                    <Button
+                        variant="outline"
+                        :disabled="currentArticleIndex === 0"
+                        @click="previousArticle"
+                    >
+                        <ChevronLeft class="mr-2 h-4 w-4" />
+                        Anterior
+                    </Button>
+
+                    <span class="text-sm font-medium">
+                        Artigo {{ currentArticleIndex + 1 }} de {{ articlesArray.length }}
+                    </span>
+
+                    <Button
+                        variant="outline"
+                        :disabled="currentArticleIndex === articlesArray.length - 1"
+                        @click="nextArticle"
+                    >
+                        Próximo
+                        <ChevronRight class="ml-2 h-4 w-4" />
+                    </Button>
+                </div>
+
+                <!-- Artigo atual -->
+                <Card v-if="currentArticle" class="mb-6">
+                    <CardHeader>
+                        <CardTitle>Art. {{ currentArticle.article_reference }}</CardTitle>
+                        <CardDescription>
+                            Complete as lacunas com as opções corretas
+                        </CardDescription>
+                    </CardHeader>
+
+                    <CardContent>
+                        <!-- Texto com lacunas - aumentado no mobile -->
+                        <div
+                            ref="textContainerRef"
+                            class="p-4 md:p-6 bg-primary/5 border border-primary/20 rounded-md mb-6 text-xl md:text-lg leading-relaxed whitespace-pre-line"
+                            v-html="processedText"
+                        ></div>
+                        
+                        <!-- Palavras selecionadas que podem ser removidas -->
+                        <div v-if="Object.keys(userAnswers[currentArticleIndex] || {}).length > 0 && !answered" class="mb-6">
+                            <h3 class="text-sm font-medium mb-2 text-muted-foreground">Palavras selecionadas:</h3>
+                            <div class="flex flex-wrap gap-2">
+                                <Button
+                                    v-for="(word, lacunaIndex) in userAnswers[currentArticleIndex]"
+                                    :key="`selected-${lacunaIndex}`"
+                                    variant="outline"
+                                    size="sm"
+                                    class="bg-primary/10 border-primary/20 flex items-center gap-1"
+                                    @click="removeWordFromLacuna(Number(lacunaIndex))"
+                                >
+                                    <span>{{ word }}</span>
+                                    <X class="h-3 w-3 ml-1" />
+                                </Button>
+                            </div>
+                        </div>
+                        
+                        <!-- Offcanvas - mantém igual -->
+                        <div 
+                        v-if="answered" 
+                        class="offcanvas-container"
+                        :class="{ 'offcanvas-open': answered }"
+                        >
+                            <div class="offcanvas-content bg-background border-t border-border">
+                                <!-- Conteúdo do offcanvas -->
+                                <div class="flex items-center justify-between border-b border-border pb-4 mb-4">
+                                    <div class="flex items-center gap-3 text-xl">
+                                        <div 
+                                            :class="[
+                                                'flex items-center justify-center w-12 h-12 rounded-full',
+                                                (articleScore && articleScore.percentage >= 70) ? 'bg-green-100 dark:bg-green-950' : 'bg-red-100 dark:bg-red-950'
+                                            ]"
+                                        >
+                                            <Check 
+                                                v-if="articleScore && articleScore.percentage >= 70" 
+                                                class="w-6 h-6 text-green-600"
+                                            />
+                                            <X 
+                                                v-else 
+                                                class="w-6 h-6 text-red-600"
+                                            />
+                                        </div>
+                                        <span class="font-semibold">
+                                            {{ articleScore && articleScore.percentage >= 70 ? 'Parabéns!' : 'Continue tentando!' }}
+                                        </span>
+                                    </div>
+                                    
+                                    <Button variant="ghost" size="sm" @click="answered = false">
+                                        <X class="h-4 w-4" />
+                                    </Button>
+                                </div>
+
+                                <div v-if="articleScore">
+                                    <div class="text-lg font-medium mb-2">
+                                        Você acertou {{ articleScore.correct }} de {{ articleScore.total }} lacunas ({{ articleScore.percentage }}%)
+                                    </div>
+
+                                    <div class="mt-6">
+                                        <h3 class="font-medium mb-2">Texto original:</h3>
+                                        <div class="p-4 bg-muted/30 dark:bg-muted/10 border border-muted/30 rounded-md max-h-[150px] overflow-y-auto">
+                                            <p class="whitespace-pre-line text-lg">{{ currentArticle?.original_content }}</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-6 flex justify-between gap-4">
+                                        <Button variant="outline" class="w-full" @click="resetAnswers">
+                                            <RefreshCw class="mr-2 h-4 w-4" />
+                                            <!-- Texto diferente para mobile e desktop -->
+                                            <span class="hidden md:inline">Tentar novamente</span>
+                                            <span class="md:hidden">Novamente</span>
+                                        </Button>
+                                        <Button 
+                                            v-if="currentArticleIndex < articlesArray.length - 1"
+                                            class="w-full" 
+                                            @click="nextArticle"
+                                        >
+                                            Próximo
+                                            <ChevronRight class="ml-2 h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Resto do conteúdo sem alteração -->
+                    </CardContent>
+
+                    <CardFooter>
+                        <!-- Botões na parte inferior do card -->
+                        <div v-if="!answered" class="w-full">
+                            <div v-if="availableOptions.length > 0">
+                                <div class="flex flex-wrap gap-2 mb-4">
+                                    <Button
+                                        v-for="(word, index) in availableOptions"
+                                        :key="`word-${index}`"
+                                        variant="outline"
+                                        size="sm"
+                                        @click="selectWord(word)"
+                                        class="text-base md:text-sm"
+                                    >
+                                        {{ word }}
+                                    </Button>
+                                </div>
+                            </div>
+                            
+                            <!-- Botões de ações -->
+                            <div class="flex justify-between mt-6 pt-4 border-t">
+                                <Button variant="outline" @click="resetAnswers">
+                                    <RefreshCw class="mr-2 h-4 w-4" />
+                                    <span class="hidden md:inline">Limpar</span>
+                                    <span class="md:hidden">Limpar</span>
+                                </Button>
+
+                                <Button variant="default" :disabled="!allLacunasFilled" @click="checkAnswers">
+                                    Responder
+                                </Button>
+                            </div>
+                        </div>
+
+                        <!-- Botões após verificação -->
+                        <div v-else class="w-full flex justify-between">
+                            <Button variant="outline" @click="resetAnswers">
+                                <RefreshCw class="mr-2 h-4 w-4" />
+                                <span class="hidden md:inline">Tentar novamente</span>
+                                <span class="md:hidden">Novamente</span>
+                            </Button>
+
+                            <Button variant="default" :disabled="currentArticleIndex === articlesArray.length - 1" @click="nextArticle">
+                                Próximo
+                                <ChevronRight class="ml-2 h-4 w-4" />
+                            </Button>
+                        </div>
+                    </CardFooter>
+                </Card>
+            </div>
+        </div>
+    </AppLayout>
+</template>
+
 <script lang="ts" setup>
 import { Head, Link } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, Check, X, RefreshCw } from 'lucide-vue-next';
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface Article {
@@ -128,7 +365,7 @@ const completedArticles = ref<number[]>([]);
                     ? `<span class="lacuna ${selectedWord === correctAnswer ? 'correct' : 'incorrect'}">${selectedWord}</span>`
                     : '<span class="lacuna empty">(...)</span>')
                 : (selectedWord
-                    ? `<span class="lacuna filled">${selectedWord}</span>`
+                    ? `<span class="lacuna filled" data-lacuna-index="${index}" role="button" tabindex="0">${selectedWord}</span>`
                     : '<span class="lacuna empty">(...)</span>');
                     
             text = text.replace(lacuna, replacement);
@@ -259,233 +496,37 @@ const getDifficultyColor = (level: number): string => {
         default: return 'bg-blue-500';
     }
 };
+
+// Adicione esta função em setup
+const handleLacunaClick = (event) => {
+    if (answered.value) return;
+    
+    // Verificar se o clique foi em uma lacuna preenchida
+    const target = event.target;
+    if (target.classList.contains('filled') && target.hasAttribute('data-lacuna-index')) {
+        const lacunaIndex = Number(target.getAttribute('data-lacuna-index'));
+        removeWordFromLacuna(lacunaIndex);
+    }
+};
+
+// Adicione isto após as declarações de variáveis
+const textContainerRef = ref(null);
+
+// Adicione isto usando onMounted
+onMounted(() => {
+    if (textContainerRef.value) {
+        textContainerRef.value.addEventListener('click', handleLacunaClick);
+    }
+});
+
+// Adicione isto usando onUnmounted
+onUnmounted(() => {
+    if (textContainerRef.value) {
+        textContainerRef.value.removeEventListener('click', handleLacunaClick);
+    }
+});
 </script>
 
-<template>
-    <Head :title="`Fase ${phase.phase_number}: ${phase.reference_name}`" />
-
-    <AppLayout>
-        <div class="container py-8 px-4">
-            <div class="max-w-4xl mx-auto">
-                <!-- Cabeçalho da fase -->
-                <div class="mb-8">
-                    <Link :href="route('play.map')" class="flex items-center text-primary hover:underline mb-4">
-                        <ChevronLeft class="h-5 w-5 mr-1" />
-                        Voltar ao mapa
-                    </Link>
-
-                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                        <div>
-                            <h1 class="text-3xl font-bold">{{ phase.title }}</h1>
-                            <p class="text-muted-foreground mt-1">
-                                Nível:
-                                <span
-                                    :class="`inline-flex items-center px-2 py-1 rounded-full text-xs text-white ${getDifficultyColor(phase.difficulty)}`"
-                                >
-                                    {{ getDifficultyText(phase.difficulty) }}
-                                </span>
-                            </p>
-                        </div>
-
-                        <div class="w-full max-w-md mx-auto mt-4">
-                            <div class="relative h-2 bg-muted rounded-full overflow-hidden">
-                                <div
-                                    class="absolute left-0 top-0 h-full bg-green-500 transition-all duration-300"
-                                    :style="`width: ${(completedArticles.length / articlesArray.length) * 100}%`"
-                                ></div>
-                                <div
-                                    class="absolute h-full bg-yellow-500 transition-all duration-300"
-                                    :style="`
-                                        left: ${(currentArticleIndex / articlesArray.length) * 100}%;
-                                        width: ${(1 / articlesArray.length) * 100}%;
-                                    `"
-                                ></div>
-                            </div>
-                            <div class="mt-2 text-sm text-center text-muted-foreground">
-                                {{ completedArticles.length }} de {{ articlesArray.length }} artigos completados
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Navegação entre artigos -->
-                <div class="flex justify-between items-center mb-4">
-                    <Button
-                        variant="outline"
-                        :disabled="currentArticleIndex === 0"
-                        @click="previousArticle"
-                    >
-                        <ChevronLeft class="mr-2 h-4 w-4" />
-                        Anterior
-                    </Button>
-
-                    <span class="text-sm font-medium">
-                        Artigo {{ currentArticleIndex + 1 }} de {{ articlesArray.length }}
-                    </span>
-
-                    <Button
-                        variant="outline"
-                        :disabled="currentArticleIndex === articlesArray.length - 1"
-                        @click="nextArticle"
-                    >
-                        Próximo
-                        <ChevronRight class="ml-2 h-4 w-4" />
-                    </Button>
-                </div>
-
-                <!-- Artigo atual -->
-                <Card v-if="currentArticle" class="mb-6">
-                    <CardHeader>
-                        <CardTitle>Art. {{ currentArticle.article_reference }}</CardTitle>
-                        <CardDescription>
-                            Complete as lacunas com as opções corretas
-                        </CardDescription>
-                    </CardHeader>
-
-                    <CardContent>
-                        <!-- Texto com lacunas -->
-                        <div
-                            class="p-6 bg-primary/5 border border-primary/20 rounded-md mb-6 text-lg leading-relaxed whitespace-pre-line"
-                            v-html="processedText"
-                        ></div>
-                        
-                        <div 
-                        v-if="answered" 
-                        class="offcanvas-container"
-                        :class="{ 'offcanvas-open': answered }"
-                        >
-                            <div class="offcanvas-content bg-background border-t border-border">
-                                <!-- Cabeçalho -->
-                                <div class="flex items-center justify-between border-b border-border pb-4 mb-4">
-                                    <div class="flex items-center gap-3 text-xl">
-                                        <div 
-                                            :class="[
-                                                'flex items-center justify-center w-12 h-12 rounded-full',
-                                                (articleScore && articleScore.percentage >= 70) ? 'bg-green-100 dark:bg-green-950' : 'bg-red-100 dark:bg-red-950'
-                                            ]"
-                                        >
-                                            <Check 
-                                                v-if="articleScore && articleScore.percentage >= 70" 
-                                                class="w-6 h-6 text-green-600"
-                                            />
-                                            <X 
-                                                v-else 
-                                                class="w-6 h-6 text-red-600"
-                                            />
-                                        </div>
-                                        <span class="font-semibold">
-                                            {{ articleScore && articleScore.percentage >= 70 ? 'Parabéns!' : 'Continue tentando!' }}
-                                        </span>
-                                    </div>
-                                    
-                                    <Button variant="ghost" size="sm" @click="answered = false">
-                                        <X class="h-4 w-4" />
-                                    </Button>
-                                </div>
-
-                                <!-- Conteúdo -->
-                                <div v-if="articleScore">
-                                    <div class="text-lg font-medium mb-2">
-                                        Você acertou {{ articleScore.correct }} de {{ articleScore.total }} lacunas ({{ articleScore.percentage }}%)
-                                    </div>
-
-                                    <div class="mt-6">
-                                        <h3 class="font-medium mb-2">Texto original:</h3>
-                                        <div class="p-4 bg-muted/30 dark:bg-muted/10 border border-muted/30 rounded-md max-h-[150px] overflow-y-auto">
-                                            <p class="whitespace-pre-line text-lg">{{ currentArticle?.original_content }}</p>
-                                        </div>
-                                    </div>
-
-                                    <div class="mt-6 flex justify-between gap-4">
-                                        <Button variant="outline" class="w-full" @click="resetAnswers">
-                                            <RefreshCw class="mr-2 h-4 w-4" />
-                                            Tentar novamente
-                                        </Button>
-                                        <Button 
-                                            v-if="currentArticleIndex < articlesArray.length - 1"
-                                            class="w-full" 
-                                            @click="nextArticle"
-                                        >
-                                            Próximo
-                                            <ChevronRight class="ml-2 h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Palavras já selecionadas (apenas para visualização em desenvolvimento) -->
-                        <div v-if="!answered && userAnswers[currentArticleIndex] && Object.keys(userAnswers[currentArticleIndex]).length > 0" class="mb-4 border-t pt-4">
-                            <p class="text-sm text-muted-foreground mb-2">Palavras selecionadas (clique para remover):</p>
-                            <div class="flex flex-wrap gap-2">
-                                <Button
-                                    v-for="(word, index) in userAnswers[currentArticleIndex]"
-                                    :key="`selected-${index}`"
-                                    variant="secondary"
-                                    size="sm"
-                                    @click="removeWordFromLacuna(Number(index))"
-                                    class="selected-word"
-                                >
-                                    {{ word }}
-                                    <X class="ml-1 h-3 w-3" />
-                                </Button>
-                            </div>
-                        </div>
-                    </CardContent>
-
-                    <CardFooter>
-                        <!-- Opções para preencher lacunas -->
-                        <div v-if="!answered" class="w-full">
-                            <div v-if="availableOptions.length > 0">
-                                <div class="flex flex-wrap gap-2 mb-4">
-                                    <Button
-                                        v-for="(word, index) in availableOptions"
-                                        :key="`word-${index}`"
-                                        variant="outline"
-                                        size="sm"
-                                        @click="selectWord(word)"
-                                    >
-                                        {{ word }}
-                                    </Button>
-                                </div>
-                            </div>
-                            <div v-else-if="allLacunasFilled" class="text-center text-muted-foreground p-4">
-                                Todas as lacunas foram preenchidas! Você pode verificar suas respostas ou limpar para tentar novamente.
-                            </div>
-                            <div v-else class="text-center text-muted-foreground p-4">
-                                Não foram encontradas lacunas para preencher neste artigo.
-                            </div>
-
-                            <div class="flex justify-between mt-6 pt-4 border-t">
-                                <Button variant="outline" @click="resetAnswers">
-                                    <RefreshCw class="mr-2 h-4 w-4" />
-                                    Limpar
-                                </Button>
-
-                                <Button variant="default" :disabled="!allLacunasFilled" @click="checkAnswers">
-                                    Responder
-                                </Button>
-                            </div>
-                        </div>
-
-                        <!-- Botões exibidos após a verificação das respostas -->
-                        <div v-else class="w-full flex justify-between">
-                            <Button variant="outline" @click="resetAnswers">
-                                <RefreshCw class="mr-2 h-4 w-4" />
-                                Tentar novamente
-                            </Button>
-
-                            <Button variant="default" :disabled="currentArticleIndex === articlesArray.length - 1" @click="nextArticle">
-                                Próximo
-                                <ChevronRight class="ml-2 h-4 w-4" />
-                            </Button>
-                        </div>
-                    </CardFooter>
-                </Card>
-            </div>
-        </div>
-    </AppLayout>
-</template>
 <style scoped>
 .offcanvas-container {
     position: fixed;
