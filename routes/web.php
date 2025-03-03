@@ -1,0 +1,31 @@
+<?php
+
+use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
+use App\Http\Controllers\Admin\LawArticleOptionController;
+use App\Http\Controllers\PlayController;
+use App\Http\Controllers\GameController;
+
+Route::get('/', function () {
+    return Inertia::render('Welcome');
+})->name('home');
+
+Route::get('dashboard', function () {
+    return Inertia::render('Dashboard');
+})->middleware(['auth', 'verified'])->name('dashboard');
+
+// Rotas para law-article-options
+Route::get('/admin/law-article-options', [LawArticleOptionController::class, 'index'])
+    ->name('admin.law-article-options.index');
+
+// Adicionar esta linha para a nova rota de store
+Route::post('/admin/law-article-options', [LawArticleOptionController::class, 'store'])
+    ->name('admin.law-article-options.store');
+
+// Rotas de jogo (Play)
+Route::get('/play', [PlayController::class, 'map'])->name('play.map');
+Route::get('/play/{reference}/{phase}', [PlayController::class, 'phase'])->name('play.phase');
+
+require __DIR__.'/settings.php';
+require __DIR__.'/auth.php';
+require __DIR__.'/admin.php';
