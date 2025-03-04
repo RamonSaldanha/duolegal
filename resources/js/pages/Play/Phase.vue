@@ -356,39 +356,78 @@ const completedArticles = ref<number[]>([]);
     });
 
     // Processa o texto do artigo substituindo cada lacuna pela palavra selecionada
-    const processedText = computed(() => {
-        if (!currentArticle.value || !currentArticle.value.practice_content) return '';
+const processedText = computed(() => {
+    if (!currentArticle.value || !currentArticle.value.practice_content) return '';
 
-        let text = currentArticle.value.practice_content;
-        const lacunas = text.match(/_{5,}/g) || [];
+    let text = currentArticle.value.practice_content;
+    const lacunas = text.match(/_{5,}/g) || [];
+    
+    lacunas.forEach((lacuna, index) => {
+        const selectedWord = userAnswers.value[currentArticleIndex.value]?.[index];
         
-        lacunas.forEach((lacuna, index) => {
-            const selectedWord = userAnswers.value[currentArticleIndex.value]?.[index];
-            
-            // Mapeia todas as respostas corretas por gap_order
-            const correctAnswersMap: Map<number, string> = new Map();
-            currentArticle.value.options.forEach(option => {
-                if (option.is_correct) {
-                    correctAnswersMap.set(option.gap_order, option.word);
-                }
-            });
-            
-            // Obtém a resposta correta para esta lacuna
-            const correctAnswer = correctAnswersMap.get(index + 1); // gap_order é 1-based
-            
-            const replacement = answered.value 
-                ? (selectedWord
-                    ? `<span class="lacuna ${selectedWord === correctAnswer ? 'correct' : 'incorrect'}">${selectedWord}</span>`
-                    : '<span class="lacuna empty">(...)</span>')
-                : (selectedWord
-                    ? `<span class="lacuna filled" data-lacuna-index="${index}" role="button" tabindex="0">${selectedWord}</span>`
-                    : '<span class="lacuna empty">(...)</span>');
-                    
-            text = text.replace(lacuna, replacement);
+        // Mapeia todas as respostas corretas por gap_order
+        const correctAnswersMap: Map<number, string> = new Map();
+        currentArticle.value.options.forEach(option => {
+            if (option.is_correct) {
+                correctAnswersMap.set(option.gap_order, option.word);
+            }
         });
-
-        return text;
+        
+        // Obtém a resposta correta para esta lacuna
+        const correctAnswer = correctAnswersMap.get(index + 1); // gap_order é 1-based
+        
+        const replacement = answered.value 
+            ? (selectedWord
+                ? `<span class="lacuna ${selectedWord === correctAnswer ? 'correct' : 'incorrect'}">${selectedWord}</span>`
+                : '<span class="lacuna empty">(...)</span>')
+            : (selectedWord
+                ? `<span class="lacuna filled" data-lacuna-index="${index}" role="button" tabindex="0">${selectedWord}</span>`
+                : '<span class="lacuna empty">(...)</span>');
+                
+        text = text.replace(lacuna, replacement);
     });
+
+    // Limita o texto até a quebra de linha que contém a primeira lacuna não preenchida para dispositivos móveis
+    if (isMobile.value && !isTextExpanded.value) {
+        const firstEmptyIndex = text.indexOf('<span class="lacuna empty">');
+        if (firstEmptyIndex !== -1) {
+            // Encontra o fim do inciso ou do parágrafo (busca o próximo número romano)
+            const romanNumeralPattern = /\n\s*(I{1,3}V?|VI{0,3}|I?[VX])\s+[-–]/;
+            const nextIncisoMatch = text.substring(firstEmptyIndex).match(romanNumeralPattern);
+            let cutoffIndex;
+            
+            if (nextIncisoMatch && nextIncisoMatch.index) {
+                // Corta antes do próximo inciso
+                cutoffIndex = firstEmptyIndex + nextIncisoMatch.index;
+            } else {
+                // Se não encontrar outro inciso, mostra mais contexto (aproximadamente 3 linhas)
+                const thirdLineBreak = findNthOccurrence(text, '\n', 3, firstEmptyIndex);
+                cutoffIndex = thirdLineBreak !== -1 ? thirdLineBreak : text.length;
+            }
+            
+            text = text.substring(0, cutoffIndex);
+        }
+    }
+
+    return text;
+});
+
+// Função auxiliar para encontrar a n-ésima ocorrência de uma substring
+function findNthOccurrence(string, substring, n, startPosition = 0) {
+    let position = startPosition;
+    let count = 0;
+    
+    while (position !== -1) {
+        position = string.indexOf(substring, position + 1);
+        count++;
+        
+        if (count === n && position !== -1) {
+            return position;
+        }
+    }
+    
+    return -1; // Não encontrou
+}
 
     // Verifica se todas as lacunas foram preenchidas
     const allLacunasFilled = computed(() => {
@@ -500,6 +539,26 @@ const checkAnswers = () => {
             }, 600);
         }
     }
+
+    // Expande o texto para mostrar o próximo trecho após verificar as respostas
+    if (isMobile.value) {
+        isTextExpanded.value = false;
+        scrollToNextEmptyLacuna();
+    }
+};
+
+// Função auxiliar para reiniciar o estado de exibição do texto
+const resetTextState = () => {
+    isTextExpanded.value = false;
+    textContainerHeight.value = 200; // Altura inicial em pixels
+    hasHiddenLacunas.value = false;
+    
+    // Importante dar tempo para o DOM atualizar
+    setTimeout(() => {
+        if (isMobile.value && textContainerRef.value) {
+            scrollToNextEmptyLacuna();
+        }
+    }, 100);
 };
 
 // Reinicia as respostas para o artigo atual
@@ -508,6 +567,7 @@ const resetAnswers = () => {
         userAnswers.value[currentArticleIndex.value] = {};
     }
     answered.value = false;
+    resetTextState(); // Aqui está a correção
 };
 
 // Navega para o próximo artigo
@@ -515,6 +575,7 @@ const nextArticle = () => {
     if (currentArticleIndex.value < articlesArray.value.length - 1) {
         currentArticleIndex.value++;
         answered.value = false;
+        resetTextState(); // Aqui está a correção
     }
 };
 
@@ -523,6 +584,7 @@ const previousArticle = () => {
     if (currentArticleIndex.value > 0) {
         currentArticleIndex.value--;
         answered.value = false;
+        resetTextState(); // Aqui está a correção
     }
 };
 
@@ -605,30 +667,60 @@ function toggleTextContainer() {
 // Função para encontrar e rolar para a próxima lacuna vazia
 function scrollToNextEmptyLacuna() {
     if (!textContainerRef.value) return;
-    
+
     // Usar setTimeout para garantir que o DOM está atualizado
     setTimeout(() => {
         const emptyLacunas = textContainerRef.value.querySelectorAll('.lacuna.empty');
+        const allLacunas = currentArticle.value?.practice_content.match(/_{5,}/g) || [];
+        const filledLacunasCount = Object.keys(userAnswers.value[currentArticleIndex.value] || {}).length;
+        
+        // Verifica se estamos na última lacuna (apenas uma lacuna vazia restante)
+        const isLastLacuna = emptyLacunas.length === 1 && filledLacunasCount === allLacunas.length - 1;
+        
         if (emptyLacunas.length > 0) {
-            // Calcula a posição da próxima lacuna vazia em relação ao container
-            const containerRect = textContainerRef.value.getBoundingClientRect();
-            const firstEmptyRect = emptyLacunas[0].getBoundingClientRect();
-            
-            // Adiciona padding para que a lacuna não fique grudada no topo
-            const scrollPadding = 50;
-            
-            // Ajusta a altura do container para mostrar a primeira lacuna vazia + algum contexto
-            const newHeight = firstEmptyRect.bottom - containerRect.top + scrollPadding;
-            textContainerHeight.value = Math.max(200, Math.min(newHeight, 400));
-            
-            // Marca se há lacunas ocultas
-            hasHiddenLacunas.value = emptyLacunas.length > 1 || newHeight > textContainerHeight.value;
+            // Força a exibição completa se for a última lacuna
+            if (isLastLacuna) {
+                isTextExpanded.value = true;
+                textContainerHeight.value = 3000; // Altura suficientemente grande para qualquer texto
+                hasHiddenLacunas.value = false;
+                
+                // Forçar atualização do DOM
+                setTimeout(() => {
+                    if (emptyLacunas[0]) {
+                        emptyLacunas[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                }, 50);
+            } else {
+                // Para lacunas intermediárias, mostrar contexto suficiente
+                const containerRect = textContainerRef.value.getBoundingClientRect();
+                const firstEmptyRect = emptyLacunas[0].getBoundingClientRect();
+
+                // Adiciona muito mais padding para garantir contexto suficiente
+                const scrollPadding = 250;
+                
+                // Garantir que vemos pelo menos uma lacuna completa
+                const newHeight = Math.max(
+                    firstEmptyRect.bottom - containerRect.top + scrollPadding,
+                    // No mínimo 300px
+                    300
+                );
+                
+                textContainerHeight.value = Math.max(300, Math.min(newHeight, 800)); // Expandido para 800px máximo
+                hasHiddenLacunas.value = true;
+            }
         } else {
-            // Se não houver lacunas vazias, expande o container
-            isTextExpanded.value = true;
-            textContainerHeight.value = 1000;
+            // Se não houver lacunas vazias visíveis, expanda mais o texto
+            if (filledLacunasCount < allLacunas.length) {
+                textContainerHeight.value += 500; // Expande significativamente
+                hasHiddenLacunas.value = true;
+            } else {
+                // Todas as lacunas foram preenchidas
+                isTextExpanded.value = true;
+                textContainerHeight.value = 3000; // Mostrar tudo
+                hasHiddenLacunas.value = false;
+            }
         }
-    }, 100);
+    }, 150); // Aumentei o timeout para dar mais tempo ao DOM para atualizar
 }
 </script>
 
