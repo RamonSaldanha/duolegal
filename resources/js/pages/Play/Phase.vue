@@ -96,9 +96,23 @@
                         <!-- Texto com lacunas - aumentado no mobile -->
                         <div
                             ref="textContainerRef"
-                            class="p-4 md:p-6 bg-primary/5 border border-primary/20 rounded-md mb-6 text-xl md:text-lg leading-relaxed whitespace-pre-line"
+                            class="p-4 md:p-6 bg-primary/5 border border-primary/20 rounded-md mb-6 text-xl md:text-lg leading-relaxed whitespace-pre-line overflow-hidden transition-all duration-300"
+                            :class="{ 'mobile-collapsed': isMobile && !allLacunasFilled }"
+                            :style="isMobile ? { maxHeight: textContainerHeight + 'px' } : {}"
                             v-html="processedText"
                         ></div>
+                        
+                        <!-- Botão para expandir/colapsar visível apenas em dispositivos móveis -->
+                        <button 
+                            v-if="isMobile && hasHiddenLacunas" 
+                            @click="toggleTextContainer"
+                            class="md:hidden w-full py-2 text-sm text-primary flex items-center justify-center border-t border-primary/10 -mt-4 mb-4"
+                        >
+                            <span v-if="isTextExpanded">Ver menos</span>
+                            <span v-else>Expandir texto</span>
+                            <ChevronDown v-if="!isTextExpanded" class="ml-1 h-4 w-4" />
+                            <ChevronUp v-else class="ml-1 h-4 w-4" />
+                        </button>
                         
                         <!-- Palavras selecionadas que podem ser removidas (estilo Duolingo) -->
                         <div v-if="Object.keys(userAnswers[currentArticleIndex] || {}).length > 0 && !answered" class="mb-6">
@@ -241,10 +255,11 @@ import { Head, Link } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, Check, X, RefreshCw } from 'lucide-vue-next';
+import { ChevronLeft, ChevronRight, Check, X, RefreshCw, ChevronDown, ChevronUp } from 'lucide-vue-next';
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useReward } from 'vue-rewards';
+import { useWindowSize } from '@vueuse/core'; // Se não estiver usando vueuse, precise instalar ou criar uma solução equivalente
 
 interface Article {
     article_reference: string;
@@ -444,6 +459,14 @@ function selectWord(word: string) {
     }
     userAnswers.value[currentArticleIndex.value][nextEmptyIndex] = word;
     userAnswers.value = { ...userAnswers.value }; // Força a atualização reativa
+    
+    // Se estiver no mobile, ajusta a altura do container após preenchimento
+    if (isMobile.value) {
+        // Dá tempo para o DOM atualizar
+        setTimeout(() => {
+            scrollToNextEmptyLacuna();
+        }, 200);
+    }
 }
 
 // Permite remover uma palavra de uma lacuna específica
@@ -546,6 +569,11 @@ const textContainerRef = ref(null);
 onMounted(() => {
     if (textContainerRef.value) {
         textContainerRef.value.addEventListener('click', handleLacunaClick);
+        
+        // Inicializa o ajuste de altura para dispositivos móveis
+        if (isMobile.value) {
+            scrollToNextEmptyLacuna();
+        }
     }
 });
 
@@ -555,6 +583,53 @@ onUnmounted(() => {
         textContainerRef.value.removeEventListener('click', handleLacunaClick);
     }
 });
+
+// Adicione estas variáveis ao componente
+const isTextExpanded = ref(false);
+const textContainerHeight = ref(200); // Altura inicial em pixels
+const hasHiddenLacunas = ref(false);
+const { width } = useWindowSize();
+const isMobile = computed(() => width.value < 768); // Considerar dispositivos com menos de 768px como móveis
+
+// Função para controlar manualmente a expansão/colapso do texto
+function toggleTextContainer() {
+    isTextExpanded.value = !isTextExpanded.value;
+    if (isTextExpanded.value) {
+        textContainerHeight.value = 1000; // Altura expandida
+    } else {
+        textContainerHeight.value = 200; // Altura colapsada
+        scrollToNextEmptyLacuna();
+    }
+}
+
+// Função para encontrar e rolar para a próxima lacuna vazia
+function scrollToNextEmptyLacuna() {
+    if (!textContainerRef.value) return;
+    
+    // Usar setTimeout para garantir que o DOM está atualizado
+    setTimeout(() => {
+        const emptyLacunas = textContainerRef.value.querySelectorAll('.lacuna.empty');
+        if (emptyLacunas.length > 0) {
+            // Calcula a posição da próxima lacuna vazia em relação ao container
+            const containerRect = textContainerRef.value.getBoundingClientRect();
+            const firstEmptyRect = emptyLacunas[0].getBoundingClientRect();
+            
+            // Adiciona padding para que a lacuna não fique grudada no topo
+            const scrollPadding = 50;
+            
+            // Ajusta a altura do container para mostrar a primeira lacuna vazia + algum contexto
+            const newHeight = firstEmptyRect.bottom - containerRect.top + scrollPadding;
+            textContainerHeight.value = Math.max(200, Math.min(newHeight, 400));
+            
+            // Marca se há lacunas ocultas
+            hasHiddenLacunas.value = emptyLacunas.length > 1 || newHeight > textContainerHeight.value;
+        } else {
+            // Se não houver lacunas vazias, expande o container
+            isTextExpanded.value = true;
+            textContainerHeight.value = 1000;
+        }
+    }, 100);
+}
 </script>
 
 <style scoped>
@@ -736,3 +811,4 @@ button {
     }
 }
 </style>
+
