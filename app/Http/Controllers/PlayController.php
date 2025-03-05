@@ -13,7 +13,7 @@ class PlayController extends Controller
     /**
      * Número de artigos por fase
      */
-    const ARTICLES_PER_PHASE = 3;
+    const ARTICLES_PER_PHASE = 5;
 
     /**
      * Exibir o mapa de fases do jogo

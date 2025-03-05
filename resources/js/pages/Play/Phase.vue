@@ -257,7 +257,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, Check, X, RefreshCw, ChevronDown, ChevronUp } from 'lucide-vue-next';
 import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+  // @ts-expect-error: vue-rewards package does not provide proper type definitions
 import { useReward } from 'vue-rewards';
 import { useWindowSize } from '@vueuse/core'; // Se não estiver usando vueuse, precise instalar ou criar uma solução equivalente
 
@@ -286,13 +286,9 @@ const props = defineProps<{
 const currentArticleIndex = ref(0);
 const articlesArray = computed(() => {
     const articles = Object.values(props.articles);
-    console.log('Converted articles array:', articles);
     return articles;
 });
-console.log('Received articles:', props.articles);
 const currentArticle = computed(() => {
-    console.log('Current article index:', currentArticleIndex.value);
-    console.log('Current article:', articlesArray.value[currentArticleIndex.value]);
     return articlesArray.value[currentArticleIndex.value];
 });
 
@@ -356,79 +352,72 @@ const completedArticles = ref<number[]>([]);
     });
 
     // Processa o texto do artigo substituindo cada lacuna pela palavra selecionada
-const processedText = computed(() => {
-    if (!currentArticle.value || !currentArticle.value.practice_content) return '';
-
-    let text = currentArticle.value.practice_content;
-    const lacunas = text.match(/_{5,}/g) || [];
-    
-    lacunas.forEach((lacuna, index) => {
-        const selectedWord = userAnswers.value[currentArticleIndex.value]?.[index];
+    const processedText = computed(() => {
+        if (!currentArticle.value || !currentArticle.value.practice_content) return '';
         
-        // Mapeia todas as respostas corretas por gap_order
-        const correctAnswersMap: Map<number, string> = new Map();
-        currentArticle.value.options.forEach(option => {
-            if (option.is_correct) {
-                correctAnswersMap.set(option.gap_order, option.word);
-            }
+        let text = currentArticle.value.practice_content;
+        const lacunas = text.match(/_{5,}/g) || [];
+        
+        lacunas.forEach((lacuna, index) => {
+            const selectedWord = userAnswers.value[currentArticleIndex.value]?.[index];
+            
+            // Mapeia todas as respostas corretas por gap_order
+            const correctAnswersMap: Map<number, string> = new Map();
+            currentArticle.value.options.forEach(option => {
+                if (option.is_correct) {
+                    correctAnswersMap.set(option.gap_order, option.word);
+                }
+            });
+            
+            // Obtém a resposta correta para esta lacuna
+            const correctAnswer = correctAnswersMap.get(index + 1); // gap_order é 1-based
+            
+            // No computed property processedText, modifique a parte que cria o replacement:
+            const replacement = answered.value 
+                ? (selectedWord
+                    ? `<span class="lacuna ${selectedWord === correctAnswer ? 'correct' : 'incorrect'}">${selectedWord}</span>`
+                    : '<span class="lacuna empty">(...)</span>')
+                : (selectedWord
+                    ? `<span class="lacuna filled" data-lacuna-index="${index}">${selectedWord}<span class="lacuna-remove-indicator">×</span></span>`
+                    : '<span class="lacuna empty">(...)</span>');
+                    
+            text = text.replace(lacuna, replacement);
         });
-        
-        // Obtém a resposta correta para esta lacuna
-        const correctAnswer = correctAnswersMap.get(index + 1); // gap_order é 1-based
-        
-        // No computed property processedText, modifique a parte que cria o replacement:
-        const replacement = answered.value 
-            ? (selectedWord
-                ? `<span class="lacuna ${selectedWord === correctAnswer ? 'correct' : 'incorrect'}">${selectedWord}</span>`
-                : '<span class="lacuna empty">(...)</span>')
-            : (selectedWord
-                ? `<span class="lacuna filled" data-lacuna-index="${index}">${selectedWord}<span class="lacuna-remove-indicator">×</span></span>`
-                : '<span class="lacuna empty">(...)</span>');
+
+        // Limita o texto até a quebra de linha que contém a primeira lacuna não preenchida para dispositivos móveis
+        if (isMobile.value && !isTextExpanded.value && !allLacunasFilled.value) {
+            // Procura a ocorrência de lacuna, se não existir retorna -1
+            const firstEmptyIndex = text.indexOf('<span class="lacuna empty">');
+            if(firstEmptyIndex !== -1) {
+                // Encontra a primeira quebra de linha após a primeira lacuna vazia
+                const nextLineBreak = text.indexOf('\n', firstEmptyIndex);
                 
-        text = text.replace(lacuna, replacement);
+                // Se encontrou uma quebra de linha
+                if(nextLineBreak !== -1) {
+                    // Corta o texto até essa quebra de linha
+                    text = text.substring(0, nextLineBreak);
+                }
+            }
+        }
+        return text;
     });
 
-    // Limita o texto até a quebra de linha que contém a primeira lacuna não preenchida para dispositivos móveis
-    if (isMobile.value && !isTextExpanded.value) {
-        const firstEmptyIndex = text.indexOf('<span class="lacuna empty">');
-        if (firstEmptyIndex !== -1) {
-            // Encontra o fim do inciso ou do parágrafo (busca o próximo número romano)
-            const romanNumeralPattern = /\n\s*(I{1,3}V?|VI{0,3}|I?[VX])\s+[-–]/;
-            const nextIncisoMatch = text.substring(firstEmptyIndex).match(romanNumeralPattern);
-            let cutoffIndex;
-            
-            if (nextIncisoMatch && nextIncisoMatch.index) {
-                // Corta antes do próximo inciso
-                cutoffIndex = firstEmptyIndex + nextIncisoMatch.index;
-            } else {
-                // Se não encontrar outro inciso, mostra mais contexto (aproximadamente 3 linhas)
-                const thirdLineBreak = findNthOccurrence(text, '\n', 3, firstEmptyIndex);
-                cutoffIndex = thirdLineBreak !== -1 ? thirdLineBreak : text.length;
-            }
-            
-            text = text.substring(0, cutoffIndex);
-        }
-    }
-
-    return text;
-});
-
-// Função auxiliar para encontrar a n-ésima ocorrência de uma substring
-function findNthOccurrence(string, substring, n, startPosition = 0) {
-    let position = startPosition;
-    let count = 0;
-    
-    while (position !== -1) {
-        position = string.indexOf(substring, position + 1);
-        count++;
+    // Função auxiliar para encontrar a n-ésima ocorrência de uma substring
+    function findNthOccurrence(string: string, substring: string, n: number, startPosition: number = 0): number {
+        let position = startPosition;
+        let count = 0;
         
-        if (count === n && position !== -1) {
-            return position;
+        while (position !== -1) {
+            position = string.indexOf(substring, position + 1);
+            count++;
+            
+            if (count === n && position !== -1) {
+                return position;
+            }
         }
+        
+        return -1; // Não encontrou
     }
-    
-    return -1; // Não encontrou
-}
 
     // Verifica se todas as lacunas foram preenchidas
     const allLacunasFilled = computed(() => {
@@ -459,270 +448,257 @@ function findNthOccurrence(string, substring, n, startPosition = 0) {
         };
     });
 
-// Configure as recompensas
-const { reward: confettiReward } = useReward('confetti-canvas', 'confetti', {
-    startVelocity: 30, 
-    spread: 360,
-    elementCount: 100,
-    decay: 0.94,
-    colors: ['#26ccff', '#a25afd', '#ff5e7e', '#88ff5a', '#fcff42', '#ffa62d'],
-    zIndex: 100 // Garantindo que o z-index também está definido na configuração
-});
+    // Configure as recompensas
+    const { reward: confettiReward } = useReward('confetti-canvas', 'confetti', {
+        startVelocity: 30, 
+        spread: 360,
+        elementCount: 100,
+        decay: 0.94,
+        colors: ['#26ccff', '#a25afd', '#ff5e7e', '#88ff5a', '#fcff42', '#ffa62d'],
+        zIndex: 100 // Garantindo que o z-index também está definido na configuração
+    });
 
-const { reward: emojiReward } = useReward('emoji-canvas', 'emoji', {
-    emoji: ['🎓', '✨', '👏', '🏆'],
-    elementCount: 20,
-    spread: 50,
-    zIndex: 100 // Garantindo que o z-index também está definido na configuração
-});
+    const { reward: emojiReward } = useReward('emoji-canvas', 'emoji', {
+        emoji: ['🎓', '✨', '👏', '🏆'],
+        elementCount: 20,
+        spread: 50,
+        zIndex: 100 // Garantindo que o z-index também está definido na configuração
+    });
 
-// Determina a próxima lacuna vazia para preenchimento
-const nextEmptyLacunaIndex = computed(() => {
-    const answers = userAnswers.value[currentArticleIndex.value] || {};
-    for (let i = 0; i < totalLacunas.value; i++) {
-        if (!answers.hasOwnProperty(i)) {
-            return i;
+    // Determina a próxima lacuna vazia para preenchimento
+    const nextEmptyLacunaIndex = computed(() => {
+        const answers = userAnswers.value[currentArticleIndex.value] || {};
+        for (let i = 0; i < totalLacunas.value; i++) {
+            if (!answers.hasOwnProperty(i)) {
+                return i;
+            }
         }
-    }
-    return null; // Todas as lacunas estão preenchidas
-});
+        return null; // Todas as lacunas estão preenchidas
+    });
 
-// Ao clicar em uma palavra, ela é selecionada para preencher a próxima lacuna disponível
-function selectWord(word: string) {
-    if (answered.value) return;
+    // Ao clicar em uma palavra, ela é selecionada para preencher a próxima lacuna disponível
+    function selectWord(word: string) {
+        if (answered.value) return;
 
-    const nextEmptyIndex = nextEmptyLacunaIndex.value;
-    if (nextEmptyIndex === null) return;
-    
-    if (!userAnswers.value[currentArticleIndex.value]) {
-        userAnswers.value[currentArticleIndex.value] = {};
-    }
-    userAnswers.value[currentArticleIndex.value][nextEmptyIndex] = word;
-    userAnswers.value = { ...userAnswers.value }; // Força a atualização reativa
-    
-    // Se estiver no mobile, ajusta a altura do container após preenchimento
-    if (isMobile.value) {
-        // Dá tempo para o DOM atualizar
-        setTimeout(() => {
-            scrollToNextEmptyLacuna();
-        }, 200);
-    }
-}
-
-// Permite remover uma palavra de uma lacuna específica
-function removeWordFromLacuna(index: number) {
-    if (answered.value) return;
-    
-    if (userAnswers.value[currentArticleIndex.value] && 
-        userAnswers.value[currentArticleIndex.value].hasOwnProperty(index)) {
-        delete userAnswers.value[currentArticleIndex.value][index];
-        userAnswers.value = { ...userAnswers.value }; // Força atualização reativa
-    }
-}
-
-// Verifica as respostas preenchidas
-const checkAnswers = () => {
-    answered.value = true;
-    if (articleScore.value && articleScore.value.percentage >= 70) {
-        if (!completedArticles.value.includes(currentArticleIndex.value)) {
-            completedArticles.value.push(currentArticleIndex.value);
-        }
+        const nextEmptyIndex = nextEmptyLacunaIndex.value;
         
-        // Dispara o confetti para acertos acima de 70%
-        setTimeout(() => {
-            confettiReward();
-        }, 300);
+        if (nextEmptyIndex === null) return;
         
-        // Para 100% de acerto, mostre emojis também
-        if (articleScore.value.percentage === 100) {
-            setTimeout(() => {
-                emojiReward();
-            }, 600);
+        if (!userAnswers.value[currentArticleIndex.value]) {
+            userAnswers.value[currentArticleIndex.value] = {};
         }
-    }
-
-    // Expande o texto para mostrar o próximo trecho após verificar as respostas
-    if (isMobile.value) {
-        isTextExpanded.value = false;
-        scrollToNextEmptyLacuna();
-    }
-};
-
-// Função auxiliar para reiniciar o estado de exibição do texto
-const resetTextState = () => {
-    isTextExpanded.value = false;
-    textContainerHeight.value = 200; // Altura inicial em pixels
-    hasHiddenLacunas.value = false;
-    
-    // Importante dar tempo para o DOM atualizar
-    setTimeout(() => {
-        if (isMobile.value && textContainerRef.value) {
-            scrollToNextEmptyLacuna();
-        }
-    }, 100);
-};
-
-// Reinicia as respostas para o artigo atual
-const resetAnswers = () => {
-    if (userAnswers.value[currentArticleIndex.value]) {
-        userAnswers.value[currentArticleIndex.value] = {};
-    }
-    answered.value = false;
-    resetTextState(); // Aqui está a correção
-};
-
-// Navega para o próximo artigo
-const nextArticle = () => {
-    if (currentArticleIndex.value < articlesArray.value.length - 1) {
-        currentArticleIndex.value++;
-        answered.value = false;
-        resetTextState(); // Aqui está a correção
-    }
-};
-
-// Navega para o artigo anterior
-const previousArticle = () => {
-    if (currentArticleIndex.value > 0) {
-        currentArticleIndex.value--;
-        answered.value = false;
-        resetTextState(); // Aqui está a correção
-    }
-};
-
-// Retorna o texto referente ao nível de dificuldade
-const getDifficultyText = (level: number): string => {
-    switch (level) {
-        case 1: return 'Iniciante';
-        case 2: return 'Básico';
-        case 3: return 'Intermediário';
-        case 4: return 'Avançado';
-        case 5: return 'Especialista';
-        default: return 'Intermediário';
-    }
-};
-
-// Retorna a classe CSS correspondente à dificuldade
-const getDifficultyColor = (level: number): string => {
-    switch (level) {
-        case 1: return 'bg-green-500';
-        case 2: return 'bg-emerald-500';
-        case 3: return 'bg-yellow-500';
-        case 4: return 'bg-orange-500';
-        case 5: return 'bg-red-500';
-        default: return 'bg-blue-500';
-    }
-};
-
-// Adicione esta função em setup
-const handleLacunaClick = (event) => {
-    if (answered.value) return;
-    
-    // Verificar se o clique foi em uma lacuna preenchida
-    const target = event.target;
-    if (target.classList.contains('filled') && target.hasAttribute('data-lacuna-index')) {
-        const lacunaIndex = Number(target.getAttribute('data-lacuna-index'));
-        removeWordFromLacuna(lacunaIndex);
-    }
-};
-
-// Adicione isto após as declarações de variáveis
-const textContainerRef = ref(null);
-
-// Adicione isto usando onMounted
-onMounted(() => {
-    if (textContainerRef.value) {
-        textContainerRef.value.addEventListener('click', handleLacunaClick);
+        userAnswers.value[currentArticleIndex.value][nextEmptyIndex] = word;
+        userAnswers.value = { ...userAnswers.value }; // Força a atualização reativa
         
-        // Inicializa o ajuste de altura para dispositivos móveis
+        // Se estiver no mobile, ajusta a altura do container após preenchimento
         if (isMobile.value) {
+            // Dá tempo para o DOM atualizar
+            setTimeout(() => {
+                scrollToNextEmptyLacuna();
+            }, 200);
+        }
+    }
+
+    // Permite remover uma palavra de uma lacuna específica
+    function removeWordFromLacuna(index: number) {
+        if (answered.value) return;
+        
+        if (userAnswers.value[currentArticleIndex.value] && 
+            userAnswers.value[currentArticleIndex.value].hasOwnProperty(index)) {
+            delete userAnswers.value[currentArticleIndex.value][index];
+            userAnswers.value = { ...userAnswers.value }; // Força atualização reativa
+        }
+    }
+
+    // Verifica as respostas preenchidas
+    const checkAnswers = () => {
+        answered.value = true;
+        if (articleScore.value && articleScore.value.percentage >= 70) {
+            if (!completedArticles.value.includes(currentArticleIndex.value)) {
+                completedArticles.value.push(currentArticleIndex.value);
+            }
+            
+            // Dispara o confetti para acertos acima de 70%
+            setTimeout(() => {
+                confettiReward();
+            }, 300);
+            
+            // Para 100% de acerto, mostre emojis também
+            if (articleScore.value.percentage === 100) {
+                setTimeout(() => {
+                    emojiReward();
+                }, 600);
+            }
+        }
+
+        // Expande o texto para mostrar o próximo trecho após verificar as respostas
+        if (isMobile.value) {
+            isTextExpanded.value = false;
+            scrollToNextEmptyLacuna();
+        }
+    };
+
+    // Função auxiliar para reiniciar o estado de exibição do texto
+    const resetTextState = () => {
+        isTextExpanded.value = false;
+        textContainerHeight.value = 200; // Altura inicial em pixels
+        hasHiddenLacunas.value = false;
+        
+        // Importante dar tempo para o DOM atualizar
+        setTimeout(() => {
+            if (isMobile.value && textContainerRef.value) {
+                scrollToNextEmptyLacuna();
+            }
+        }, 100);
+    };
+
+    // Reinicia as respostas para o artigo atual
+    const resetAnswers = () => {
+        if (userAnswers.value[currentArticleIndex.value]) {
+            userAnswers.value[currentArticleIndex.value] = {};
+        }
+        answered.value = false;
+        resetTextState(); // Aqui está a correção
+    };
+
+    // Navega para o próximo artigo
+    const nextArticle = () => {
+        if (currentArticleIndex.value < articlesArray.value.length - 1) {
+            currentArticleIndex.value++;
+            answered.value = false;
+            resetTextState(); // Aqui está a correção
+        }
+    };
+
+    // Navega para o artigo anterior
+    const previousArticle = () => {
+        if (currentArticleIndex.value > 0) {
+            currentArticleIndex.value--;
+            answered.value = false;
+            resetTextState(); // Aqui está a correção
+        }
+    };
+
+    // Retorna o texto referente ao nível de dificuldade
+    const getDifficultyText = (level: number): string => {
+        switch (level) {
+            case 1: return 'Iniciante';
+            case 2: return 'Básico';
+            case 3: return 'Intermediário';
+            case 4: return 'Avançado';
+            case 5: return 'Especialista';
+            default: return 'Intermediário';
+        }
+    };
+
+    // Retorna a classe CSS correspondente à dificuldade
+    const getDifficultyColor = (level: number): string => {
+        switch (level) {
+            case 1: return 'bg-green-500';
+            case 2: return 'bg-emerald-500';
+            case 3: return 'bg-yellow-500';
+            case 4: return 'bg-orange-500';
+            case 5: return 'bg-red-500';
+            default: return 'bg-blue-500';
+        }
+    };
+
+    // Adicione esta função em setup
+    const handleLacunaClick = (event: MouseEvent) => {
+        if (answered.value) return;
+        
+        const target = event.target as HTMLElement | null;
+        if (target && target.classList.contains('filled') && target.hasAttribute('data-lacuna-index')) {
+            const lacunaIndex = Number(target.getAttribute('data-lacuna-index'));
+            removeWordFromLacuna(lacunaIndex);
+        }
+    };
+
+    // Adicione isto após as declarações de variáveis
+    const textContainerRef = ref<HTMLElement | null>(null);
+
+    // Adicione isto usando onMounted
+    onMounted(() => {
+        if (textContainerRef.value) {
+            textContainerRef.value.addEventListener('click', handleLacunaClick);
+            
+            // Inicializa o ajuste de altura para dispositivos móveis
+            if (isMobile.value) {
+                scrollToNextEmptyLacuna();
+            }
+        }
+    });
+
+    // Adicione isto usando onUnmounted
+    onUnmounted(() => {
+        if (textContainerRef.value) {
+            textContainerRef.value.removeEventListener('click', handleLacunaClick);
+        }
+    });
+
+    // Adicione estas variáveis ao componente
+    const isTextExpanded = ref(false);
+    const textContainerHeight = ref(200); // Altura inicial em pixels
+    const hasHiddenLacunas = ref(false);
+    const { width } = useWindowSize();
+    const isMobile = computed(() => width.value < 768); // Considerar dispositivos com menos de 768px como móveis
+
+    // Função para controlar manualmente a expansão/colapso do texto
+    function toggleTextContainer() {
+        isTextExpanded.value = !isTextExpanded.value;
+        if (isTextExpanded.value) {
+            textContainerHeight.value = 1000; // Altura expandida
+        } else {
+            textContainerHeight.value = 200; // Altura colapsada
             scrollToNextEmptyLacuna();
         }
     }
-});
 
-// Adicione isto usando onUnmounted
-onUnmounted(() => {
-    if (textContainerRef.value) {
-        textContainerRef.value.removeEventListener('click', handleLacunaClick);
-    }
-});
+    // Função para encontrar e rolar para a próxima lacuna vazia
+    function scrollToNextEmptyLacuna() {
+        if (!textContainerRef.value) return;
 
-// Adicione estas variáveis ao componente
-const isTextExpanded = ref(false);
-const textContainerHeight = ref(200); // Altura inicial em pixels
-const hasHiddenLacunas = ref(false);
-const { width } = useWindowSize();
-const isMobile = computed(() => width.value < 768); // Considerar dispositivos com menos de 768px como móveis
-
-// Função para controlar manualmente a expansão/colapso do texto
-function toggleTextContainer() {
-    isTextExpanded.value = !isTextExpanded.value;
-    if (isTextExpanded.value) {
-        textContainerHeight.value = 1000; // Altura expandida
-    } else {
-        textContainerHeight.value = 200; // Altura colapsada
-        scrollToNextEmptyLacuna();
-    }
-}
-
-// Função para encontrar e rolar para a próxima lacuna vazia
-function scrollToNextEmptyLacuna() {
-    if (!textContainerRef.value) return;
-
-    // Usar setTimeout para garantir que o DOM está atualizado
-    setTimeout(() => {
-        const emptyLacunas = textContainerRef.value.querySelectorAll('.lacuna.empty');
-        const allLacunas = currentArticle.value?.practice_content.match(/_{5,}/g) || [];
-        const filledLacunasCount = Object.keys(userAnswers.value[currentArticleIndex.value] || {}).length;
-        
-        // Verifica se estamos na última lacuna (apenas uma lacuna vazia restante)
-        const isLastLacuna = emptyLacunas.length === 1 && filledLacunasCount === allLacunas.length - 1;
-        
-        if (emptyLacunas.length > 0) {
-            // Força a exibição completa se for a última lacuna
-            if (isLastLacuna) {
-                isTextExpanded.value = true;
-                textContainerHeight.value = 3000; // Altura suficientemente grande para qualquer texto
-                hasHiddenLacunas.value = false;
-                
-                // Forçar atualização do DOM
-                setTimeout(() => {
-                    if (emptyLacunas[0]) {
-                        emptyLacunas[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }
-                }, 50);
+        // Usar setTimeout para garantir que o DOM está atualizado
+        setTimeout(() => {
+            const emptyLacunas = textContainerRef.value!.querySelectorAll('.lacuna.empty');
+            const allLacunas = currentArticle.value?.practice_content.match(/_{5,}/g) || [];
+            const filledLacunasCount = Object.keys(userAnswers.value[currentArticleIndex.value] || {}).length;
+            
+            // Verifica se estamos na última lacuna (apenas uma lacuna vazia restante)
+            const isLastLacuna = emptyLacunas.length === 1 && filledLacunasCount === allLacunas.length - 1;
+            
+            if (emptyLacunas.length > 0) {
+                // Força a exibição completa se for a última lacuna
+                if (isLastLacuna) {
+                    isTextExpanded.value = true;
+                    textContainerHeight.value = 3000; // Altura suficientemente grande para qualquer texto
+                    hasHiddenLacunas.value = false;
+                    
+                    // Forçar atualização do DOM
+                    setTimeout(() => {
+                        if (emptyLacunas[0]) {
+                            emptyLacunas[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                    }, 50);
+                } else {
+                    
+                    textContainerHeight.value = textContainerRef.value?.scrollHeight || 5000;
+                    hasHiddenLacunas.value = true;
+                }
             } else {
-                // Para lacunas intermediárias, mostrar contexto suficiente
-                const containerRect = textContainerRef.value.getBoundingClientRect();
-                const firstEmptyRect = emptyLacunas[0].getBoundingClientRect();
-
-                // Adiciona muito mais padding para garantir contexto suficiente
-                const scrollPadding = 250;
-                
-                // Garantir que vemos pelo menos uma lacuna completa
-                const newHeight = Math.max(
-                    firstEmptyRect.bottom - containerRect.top + scrollPadding,
-                    // No mínimo 300px
-                    300
-                );
-                
-                textContainerHeight.value = Math.max(300, Math.min(newHeight, 800)); // Expandido para 800px máximo
-                hasHiddenLacunas.value = true;
+                // Se não houver lacunas vazias visíveis, expanda mais o texto
+                if (filledLacunasCount < allLacunas.length) {
+                    textContainerHeight.value += 500; // Expande significativamente
+                    hasHiddenLacunas.value = true;
+                } else {
+                    // Todas as lacunas foram preenchidas
+                    isTextExpanded.value = true;
+                    textContainerHeight.value = 3000; // Mostrar tudo
+                    hasHiddenLacunas.value = false;
+                }
             }
-        } else {
-            // Se não houver lacunas vazias visíveis, expanda mais o texto
-            if (filledLacunasCount < allLacunas.length) {
-                textContainerHeight.value += 500; // Expande significativamente
-                hasHiddenLacunas.value = true;
-            } else {
-                // Todas as lacunas foram preenchidas
-                isTextExpanded.value = true;
-                textContainerHeight.value = 3000; // Mostrar tudo
-                hasHiddenLacunas.value = false;
-            }
-        }
-    }, 150); // Aumentei o timeout para dar mais tempo ao DOM para atualizar
-}
+        }, 150); // Aumentei o timeout para dar mais tempo ao DOM para atualizar
+    }
 </script>
 
 <style scoped>
@@ -925,4 +901,3 @@ button {
     }
 }
 </style>
-

@@ -15,11 +15,6 @@ const isAdmin = computed(() => page.props.auth.user?.is_admin);
 
 const mainNavItems: NavItem[] = [
     {
-        title: 'Dashboard',
-        href: '/dashboard',
-        icon: LayoutGrid,
-    },
-    {
         title: 'Jogar',
         href: '/play',
         icon: Play,
