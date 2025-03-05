@@ -115,7 +115,7 @@
                         </button>
                         
                         <!-- Palavras selecionadas que podem ser removidas (estilo Duolingo) -->
-                        <div v-if="Object.keys(userAnswers[currentArticleIndex] || {}).length > 0 && !answered" class="mb-6">
+                        <div v-if="Object.keys(userAnswers[currentArticleIndex] || {}).length > 0 && !answered" class="mb-6 hidden md:block">
                             <h3 class="text-sm font-medium mb-2 text-muted-foreground">Palavras selecionadas:</h3>
                             <div class="flex flex-wrap gap-2">
                                 <button
@@ -376,12 +376,13 @@ const processedText = computed(() => {
         // Obtém a resposta correta para esta lacuna
         const correctAnswer = correctAnswersMap.get(index + 1); // gap_order é 1-based
         
+        // No computed property processedText, modifique a parte que cria o replacement:
         const replacement = answered.value 
             ? (selectedWord
                 ? `<span class="lacuna ${selectedWord === correctAnswer ? 'correct' : 'incorrect'}">${selectedWord}</span>`
                 : '<span class="lacuna empty">(...)</span>')
             : (selectedWord
-                ? `<span class="lacuna filled" data-lacuna-index="${index}" role="button" tabindex="0">${selectedWord}</span>`
+                ? `<span class="lacuna filled" data-lacuna-index="${index}">${selectedWord}<span class="lacuna-remove-indicator">×</span></span>`
                 : '<span class="lacuna empty">(...)</span>');
                 
         text = text.replace(lacuna, replacement);
@@ -766,6 +767,7 @@ function scrollToNextEmptyLacuna() {
     color: rgb(161, 151, 95);
 }
 
+/* Atualizações para o estilo do X nas lacunas */
 .lacuna.filled {
     background-color: rgb(240, 249, 255);
     border-bottom: 2px solid rgb(56, 189, 248);
@@ -774,24 +776,44 @@ function scrollToNextEmptyLacuna() {
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
     cursor: pointer;
     transition: background-color 0.2s;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    line-height: 1.2; /* Reduzido para ajustar melhor o texto */
+    vertical-align: baseline;
+    font-size: inherit; /* Garante que o texto tenha o mesmo tamanho do texto ao redor */
+    height: auto; /* Remove altura fixa */
 }
 
-.lacuna.filled:hover {
-    background-color: rgb(224, 242, 254);
+.lacuna-remove-indicator {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 3px;
+    font-size: 12px;
+    font-weight: bold;
+    color: rgba(107, 114, 128, 0.7);
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    line-height: 1;
 }
 
-.lacuna.correct {
-    background-color: rgba(34, 197, 94, 0.2);
-    border-bottom: 2px solid rgb(34, 197, 94);
-    padding: 2px 4px;
-    border-radius: 2px;
-}
-
-.lacuna.incorrect {
-    background-color: rgba(239, 68, 68, 0.2);
-    border-bottom: 2px solid rgb(239, 68, 68);
-    padding: 2px 4px;
-    border-radius: 2px;
+/* Mostra um fundo mais evidente no hover */
+@media (max-width: 767px) {
+    .lacuna.filled {
+        padding-right: 6px;
+    }
+    
+    .lacuna-remove-indicator {
+        background-color: rgba(107, 114, 128, 0.1);
+    }
+    
+    .lacuna.filled:hover .lacuna-remove-indicator,
+    .lacuna.filled:active .lacuna-remove-indicator {
+        background-color: rgba(239, 68, 68, 0.15);
+        color: rgb(239, 68, 68);
+    }
 }
 
 /* Remove overlay and adjust dialog positioning */
