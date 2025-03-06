@@ -143,7 +143,6 @@ import { Book, Award, Brain, GraduationCap, Scale, Target, Users, PlayCircle, Ga
                 </div>
             </div>
         </section>
-        <!-- How It Works Section com esquema de cores verde -->
         <section class="w-full bg-gradient-to-b from-[#f0f8f0] to-[#f9f9f8] py-12 sm:py-16 dark:from-[#0a1e0a] dark:to-[#121211] relative overflow-hidden">
             <!-- Formas decorativas de fundo -->
             <div class="absolute -top-20 -left-20 w-60 h-60 rounded-full bg-[#528b8f] opacity-10 blur-3xl"></div>
