@@ -125,7 +125,7 @@ import { Book, Award, Brain, GraduationCap, Scale, Target, Users, PlayCircle, Ga
                             <div class="absolute -bottom-3 -right-3 w-full h-full rounded-xl"></div>
                             <div class="relative rounded-xl overflow-hidden">
                                 <img 
-                                    src="/img/selecionados/happy-monster.png" 
+                                    src="/img/selecionados/happy-monster-removebg-preview.png" 
                                     alt="Estudante usando o Jus-it" 
                                     class="w-full h-auto object-cover"
                                 />
@@ -149,6 +149,7 @@ import { Book, Award, Brain, GraduationCap, Scale, Target, Users, PlayCircle, Ga
             <div class="absolute -top-20 -left-20 w-60 h-60 rounded-full bg-[#528b8f] opacity-10 blur-3xl"></div>
             <div class="absolute bottom-20 right-20 w-80 h-80 rounded-full bg-[#528b8f] opacity-5 blur-[100px]"></div>
             <div class="absolute top-40 right-10 w-40 h-40 rounded-full bg-[#254450] opacity-5 blur-[80px]"></div>
+            
                         
             <div class="mx-auto max-w-7xl px-4 relative z-10">
                 <h2 class="mb-8 sm:mb-12 text-center text-2xl sm:text-3xl font-bold md:text-4xl">Como funciona</h2>
