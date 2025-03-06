@@ -50,7 +50,7 @@ import { Book, Award, Brain, GraduationCap, Scale, Target, Users, PlayCircle, Ga
         <!-- Hero Section -->
         <section class="w-full py-8 sm:py-16 relative overflow-hidden">
             
-            <div class="mx-auto max-w-7xl px-4 relative z-10">
+            <div class="mx-auto max-w-7xl px-4 sm:py-16 relative z-10">
                 <div class="flex flex-col gap-8 lg:flex-row">
                     <div class="flex flex-1 flex-col justify-center">
                         <h1 class="mb-4 text-3xl sm:text-4xl font-bold leading-tight md:text-5xl lg:text-6xl">
