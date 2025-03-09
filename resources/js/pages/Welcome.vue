@@ -21,7 +21,7 @@ import { Book, Award, Brain, GraduationCap, Scale, Target, Users, PlayCircle, Ga
                 <nav class="flex items-center gap-2 sm:gap-4">
                     <Link
                         v-if="$page.props.auth.user"
-                        :href="route('dashboard')"
+                        :href="route('play.map')"
                         class="rounded-full bg-[#498304] px-3 py-2 sm:px-5 text-sm sm:text-base font-medium text-white transition hover:bg-[#3a6903] shadow-[inset_0_-4px_0_rgba(0,0,0,0.2),0_4px_6px_rgba(0,0,0,0.1)]"
                     >
                         Dashboard
