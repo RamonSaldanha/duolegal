@@ -84,29 +84,25 @@
                 </div>
 
                 <!-- Artigo atual -->
-                <Card v-if="currentArticle" class="mb-6">
+                <Card v-if="currentArticle" class="mb-6 border-0">
                     <CardHeader>
-                        <CardTitle>Art. {{ currentArticle.article_reference }}</CardTitle>
-                        <CardDescription>
-                            Complete as lacunas com as opções corretas
-                        </CardDescription>
+                        <CardTitle>Art. {{ currentArticle.article_reference }} - Leia e responda:</CardTitle>
                     </CardHeader>
 
-                    <CardContent>
+                    <CardContent class="pb-0">
                         <!-- Texto com lacunas - aumentado no mobile -->
                         <div
                             ref="textContainerRef"
-                            class="p-4 md:p-6 bg-primary/5 border border-primary/20 rounded-md mb-6 text-xl md:text-lg leading-relaxed whitespace-pre-line overflow-hidden transition-all duration-300"
+                            class="md:p-6 rounded-md mb-7 text-xl md:text-lg leading-relaxed whitespace-pre-line overflow-hidden transition-all duration-300 font-medium"
                             :class="{ 'mobile-collapsed': isMobile && !allLacunasFilled }"
                             :style="isMobile ? { maxHeight: textContainerHeight + 'px' } : {}"
                             v-html="processedText"
                         ></div>
                         
-                        <!-- Botão para expandir/colapsar visível apenas em dispositivos móveis -->
                         <button 
                             v-if="isMobile && hasHiddenLacunas" 
                             @click="toggleTextContainer"
-                            class="md:hidden w-full py-2 text-sm text-primary flex items-center justify-center border-t border-primary/10 -mt-4 mb-4"
+                            class="md:hidden w-full py-2 text-sm text-primary flex items-center justify-center border-t border-primary/10 -mt-2 mb-4"
                         >
                             <span v-if="isTextExpanded">Ver menos</span>
                             <span v-else>Expandir texto</span>
@@ -129,17 +125,18 @@
                                 </button>
                             </div>
                         </div>
-                        
-                        <!-- Offcanvas - mantém igual -->
+                        <!-- Offcanvas - alterado para garantir visibilidade e minimize correto -->
                         <div 
-                        v-if="answered" 
                         class="offcanvas-container"
-                        :class="{ 'offcanvas-open': answered }"
+                        :class="{ 
+                            'offcanvas-open': !offcanvasMinimize,
+                            'offcanvas-closed': !offcanvasMinimize && !answered
+                        }"
                         >
-                            <div class="offcanvas-content bg-background border-t border-border">
-                                <!-- Conteúdo do offcanvas -->
-                                <div class="flex items-center justify-between border-b border-border pb-4 mb-4">
-                                    <div class="flex items-center gap-3 text-xl">
+                        <div class="offcanvas-content bg-background border-t border-border">
+                            <!-- Conteúdo do offcanvas -->
+                            <div class="flex items-center justify-between border-b border-border pb-4 mb-4">
+                                <div class="flex items-center gap-3 text-xl">
                                         <div 
                                             :class="[
                                                 'flex items-center justify-center w-12 h-12 rounded-full',
@@ -160,7 +157,7 @@
                                         </span>
                                     </div>
                                     
-                                    <Button variant="ghost" size="sm" @click="answered = false">
+                                    <Button variant="ghost" size="sm" @click="closeOffcanvas">
                                         <X class="h-4 w-4" />
                                     </Button>
                                 </div>
@@ -236,9 +233,7 @@
                                 </Button>
 
                                 <Button variant="default" :disabled="!allLacunasFilled" @click="checkAnswers">
-                                    Responder
-       
-       
+                                    Verificar
                                 </Button>
                             </div>
                         </div>
@@ -269,7 +264,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, Check, X, RefreshCw, ChevronDown, ChevronUp } from 'lucide-vue-next';
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
   // @ts-expect-error: vue-rewards package does not provide proper type definitions
 import { useReward } from 'vue-rewards';
 import { useWindowSize } from '@vueuse/core'; // Se não estiver usando vueuse, precise instalar ou criar uma solução equivalente
@@ -314,6 +309,7 @@ interface UserAnswers {
 // Estado para armazenar as respostas do usuário para cada artigo
 const userAnswers = ref<UserAnswers>({});
 const answered = ref(false);
+const offcanvasMinimize = ref(false)
 const completedArticles = ref<number[]>([]);
 
 // Extrai todas as opções para o artigo atual e monta as respostas corretas
@@ -526,8 +522,8 @@ const completedArticles = ref<number[]>([]);
     // Verifica as respostas preenchidas
     const checkAnswers = () => {
         answered.value = true;
-
-        
+        offcanvasMinimize.value = false; // Garante que o offcanvas está visível ao verificar respostas
+    
         if (articleScore.value && articleScore.value.percentage >= 70) {
             if (!completedArticles.value.includes(currentArticleIndex.value)) {
                 completedArticles.value.push(currentArticleIndex.value);
@@ -552,6 +548,12 @@ const completedArticles = ref<number[]>([]);
             scrollToNextEmptyLacuna();
         }
     };
+
+    watch(answered, (newVal) => {
+        if (newVal === true) {
+            offcanvasMinimize.value = false;
+        }
+    })
 
     // Função auxiliar para reiniciar o estado de exibição do texto
     const resetTextState = () => {
@@ -766,6 +768,11 @@ const completedArticles = ref<number[]>([]);
         
         return correctOption ? correctOption.word : '';
     };
+
+    const closeOffcanvas = () => {
+        // Mantenha answered como true, apenas minimize o offcanvas
+        offcanvasMinimize.value = true;
+    };
 </script>
 
 <style scoped>
@@ -775,14 +782,20 @@ const completedArticles = ref<number[]>([]);
     left: 0;
     right: 0;
     z-index: 50;
-    transform: translateY(100%);
+    transform: translateY(100%); /* Inicialmente escondido */
     transition: transform 0.3s ease-in-out;
-    width: 100%; /* Limitar ao tamanho da viewport */
-    overflow-x: hidden; /* Impedir rolagem horizontal */
+    width: 100%;
+    overflow-x: hidden;
+    /* Tornamos visível por padrão, controlando apenas com transform */
+    display: block; 
 }
   
 .offcanvas-open {
-    transform: translateY(0);
+    transform: translateY(0); /* Mostra o offcanvas */
+}
+
+.offcanvas-closed {
+    display: none; /* Esconde completamente quando minimizado e não respondido */
 }
   
 .offcanvas-content {
