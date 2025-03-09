@@ -26,6 +26,11 @@ Route::post('/admin/law-article-options', [LawArticleOptionController::class, 's
 Route::get('/play', [PlayController::class, 'map'])->name('play.map');
 Route::get('/play/{reference}/{phase}', [PlayController::class, 'phase'])->name('play.phase');
 
+// Adicione esta rota ao seu arquivo de rotas
+Route::middleware(['auth'])->group(function () {
+    Route::post('/play/progress', [PlayController::class, 'saveProgress'])->name('play.progress');
+});
+
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';
 require __DIR__.'/admin.php';

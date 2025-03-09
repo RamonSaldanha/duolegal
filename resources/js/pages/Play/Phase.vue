@@ -256,46 +256,93 @@
             </div>
         </div>
     </AppLayout>
+
+    <!-- Adicione isto ao final do template, antes do fechamento da tag AppLayout -->
+    <transition 
+        enter-active-class="transition duration-300 ease-out"
+        enter-from-class="opacity-0 scale-95"
+        enter-to-class="opacity-100 scale-100"
+        leave-active-class="transition duration-200 ease-in"
+        leave-from-class="opacity-100 scale-100"
+        leave-to-class="opacity-0 scale-95"
+    >
+        <div v-if="showCompletionModal" class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50">
+            <!-- Aumentei o z-index para 60, acima do 50 usado pelo offcanvas -->
+            <div class="max-w-md w-full bg-background rounded-lg shadow-lg p-6 border border-border">
+                <div class="text-center">
+                    <div class="mb-4 inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-300">
+                        <Check class="h-8 w-8" />
+                    </div>
+                    <h2 class="text-2xl font-bold mb-4">Fase Concluída!</h2>
+                    <p class="mb-6">Parabéns! Você completou todos os artigos desta fase.</p>
+                    
+                    <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                        <Button variant="outline" @click="showCompletionModal = false">
+                            Continuar praticando
+                        </Button>
+                        <Button 
+                            @click="advanceToNextPhase" 
+                            :disabled="!props.phase.has_next_phase"
+                        >
+                            {{ props.phase.has_next_phase ? 'Avançar para próxima fase' : 'Voltar ao mapa' }}
+                            <ChevronRight class="ml-2 h-4 w-4" />
+                        </Button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </transition>
 </template>
 
 <script lang="ts" setup>
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, Check, X, RefreshCw, ChevronDown, ChevronUp } from 'lucide-vue-next';
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
-  // @ts-expect-error: vue-rewards package does not provide proper type definitions
+// @ts-expect-error: vue-rewards package does not provide proper type definitions
 import { useReward } from 'vue-rewards';
-import { useWindowSize } from '@vueuse/core'; // Se não estiver usando vueuse, precise instalar ou criar uma solução equivalente
+import { useWindowSize } from '@vueuse/core';
+import axios from 'axios';
 
+// Atualizar a interface Article para incluir progresso
 interface Article {
+    uuid: string;
     article_reference: string;
     practice_content: string;
     original_content: string;
     options: {
         word: string;
         is_correct: boolean;
-        gap_order: number; // gap_order agora é obrigatório
+        gap_order: number;
     }[];
+    progress?: {
+        percentage: number;
+        is_completed: boolean;
+        best_score: number;
+        attempts: number;
+    } | null;
 }
 
+// PRIMEIRO: Definir props antes de usá-la
 const props = defineProps<{
     phase: {
         phase_number: number;
         reference_name: string;
         title: string;
         difficulty: number;
+        has_next_phase: boolean;
+        reference_uuid: string; // Adicione esta linha
     };
     articles: Record<string, Article>;
 }>();
 
+// DEPOIS: Usar props para inicializar articlesArray
+const articlesArray = ref(Object.values(props.articles));
+
 // Controle do artigo atual
 const currentArticleIndex = ref(0);
-const articlesArray = computed(() => {
-    const articles = Object.values(props.articles);
-    return articles;
-});
 const currentArticle = computed(() => {
     return articlesArray.value[currentArticleIndex.value];
 });
@@ -519,12 +566,58 @@ const completedArticles = ref<number[]>([]);
         }
     }
 
-    // Verifica as respostas preenchidas
-    const checkAnswers = () => {
-        answered.value = true;
-        offcanvasMinimize.value = false; // Garante que o offcanvas está visível ao verificar respostas
+    // Substitua a função checkAnswers
+
+const checkAnswers = () => {
+    answered.value = true;
+    offcanvasMinimize.value = false; // Garante que o offcanvas está visível ao verificar respostas
+
+    // Calcular resultados
+    const score = articleScore.value;
     
-        if (articleScore.value && articleScore.value.percentage >= 70) {
+    if (score) {
+        // Salvar progresso no servidor
+        axios.post(route('play.progress'), {
+            article_uuid: currentArticle.value.uuid,
+            correct_answers: score.correct,
+            total_answers: score.total,
+        })
+        .then(response => {
+            // Atualizar o progresso local com os dados do servidor
+            if (response.data.success) {
+                console.log('Progresso atualizado:', response.data.progress);
+                
+                // Atualiza o objeto do artigo atual com o progresso atualizado
+                const currentIdx = currentArticleIndex.value;
+                const articlesCopy = [...articlesArray.value];
+                articlesCopy[currentIdx] = {
+                    ...articlesCopy[currentIdx],
+                    progress: response.data.progress
+                };
+                
+                // Atualizar o array reativo
+                articlesArray.value = articlesCopy;
+                
+                // Verificar se todos os artigos foram respondidos e este é o último
+                if (currentArticleIndex.value === articlesArray.value.length - 1) {
+                    // Verifica se todos os artigos têm progresso
+                    const allDone = articlesCopy.every(article => article.progress !== null);
+                    
+                    if (allDone) {
+                        // Exibir modal de conclusão após um tempo maior
+                        setTimeout(() => {
+                            showCompletionModal.value = true;
+                        }, 3000); // Aumentado para 3 segundos para dar tempo ao usuário ver o resultado
+                    }
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Erro ao salvar progresso:', error);
+        });
+    
+        // Código para exibir recompensas visuais
+        if (score.percentage >= 70) {
             if (!completedArticles.value.includes(currentArticleIndex.value)) {
                 completedArticles.value.push(currentArticleIndex.value);
             }
@@ -535,19 +628,20 @@ const completedArticles = ref<number[]>([]);
             }, 300);
             
             // Para 100% de acerto, mostre emojis também
-            if (articleScore.value.percentage === 100) {
+            if (score.percentage === 100) {
                 setTimeout(() => {
                     emojiReward();
                 }, 600);
             }
         }
+    }
 
-        // Expande o texto para mostrar o próximo trecho após verificar as respostas
-        if (isMobile.value) {
-            isTextExpanded.value = false;
-            scrollToNextEmptyLacuna();
-        }
-    };
+    // Expande o texto para mostrar o próximo trecho após verificar as respostas
+    if (isMobile.value) {
+        isTextExpanded.value = false;
+        scrollToNextEmptyLacuna();
+    }
+};
 
     watch(answered, (newVal) => {
         if (newVal === true) {
@@ -773,6 +867,47 @@ const completedArticles = ref<number[]>([]);
         // Mantenha answered como true, apenas minimize o offcanvas
         offcanvasMinimize.value = true;
     };
+
+// Adicione este computed para verificar se todos os artigos foram respondidos
+const allArticlesAttempted = computed(() => {
+    // Verifica se todos os artigos têm progresso registrado
+    return articlesArray.value.every(article => article.progress !== null);
+});
+
+// Substituir a função advanceToNextPhase existente por esta:
+const advanceToNextPhase = () => {
+    if (props.phase.has_next_phase) {
+        const nextPhaseNumber = props.phase.phase_number + 1;
+        
+        // Usar o reference_uuid que foi passado do controller
+        router.visit(route('play.phase', {
+            reference: props.phase.reference_uuid,
+            phase: nextPhaseNumber
+        }));
+    } else {
+        router.visit(route('play.map'));
+    }
+};
+
+// Remova ou comente este watch
+/*
+watch(allArticlesAttempted, (allAttempted) => {
+    if (allAttempted && currentArticleIndex.value === articlesArray.value.length - 1) {
+        // Exibir modal de parabéns e oferecer botão para avançar
+        showCompletionModal.value = true;
+    }
+});
+*/
+
+// Estado para controlar a exibição do modal de conclusão
+const showCompletionModal = ref(false);
+
+// Adicionar este watch para fechar o offcanvas quando o modal aparecer
+watch(showCompletionModal, (isShowing) => {
+    if (isShowing) {
+        offcanvasMinimize.value = true; // Minimiza o offcanvas quando o modal de conclusão aparecer
+    }
+});
 </script>
 
 <style scoped>
