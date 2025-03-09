@@ -75,7 +75,7 @@ import { Book, Award, Brain, GraduationCap, Scale, Target, Users, PlayCircle, Ga
                         </div>
                     </div>
                     <div class="flex flex-1 items-center justify-center mt-8 lg:mt-0">
-                        <div class="relative h-64 w-full sm:h-80 sm:w-80 overflow-hidden rounded-lg shadow-xl">
+                        <div class="relative h-70 w-full sm:h-80 sm:w-80 overflow-hidden rounded-lg shadow-xl">
                             <div class="absolute inset-0 flex flex-col items-center justify-center bg-[#fff] dark:bg-[#2a2a2a]">
                                 <div class="absolute top-0 left-0 w-full h-6 bg-[#333333] flex items-center px-3">
                                     <div class="w-3 h-3 bg-[#ff605c] rounded-full mr-1.5 border border-[#e1483f] "></div>
@@ -86,7 +86,6 @@ import { Book, Award, Brain, GraduationCap, Scale, Target, Users, PlayCircle, Ga
                                     </div>
                                 </div>
                                 <div class="text-[#333333] dark:text-white flex flex-col items-center mt-10">
-                                    <Gavel class="h-12 w-12 mb-4 text-[#1379a9]" />
                                     <div class="text-2xl font-bold">Jus-it</div>
                                     <div class="text-sm opacity-80 mt-1">Aprendizado jurídico gamificado</div>
 
@@ -143,78 +142,64 @@ import { Book, Award, Brain, GraduationCap, Scale, Target, Users, PlayCircle, Ga
                 </div>
             </div>
         </section>
-        <section class="w-full bg-gradient-to-b from-[#f0f8f0] to-[#f9f9f8] py-12 sm:py-16 dark:from-[#111517] dark:to-[#0c1517] relative overflow-hidden">
-            <!-- Formas decorativas de fundo -->
-            <div class="absolute -top-20 -left-20 w-60 h-60 rounded-full bg-[#528b8f] opacity-10 blur-3xl"></div>
-            <div class="absolute bottom-20 right-20 w-80 h-80 rounded-full bg-[#528b8f] opacity-5 blur-[100px]"></div>
-            <div class="absolute top-40 right-10 w-40 h-40 rounded-full bg-[#254450] opacity-5 blur-[80px]"></div>    
+ 
+        <section class="w-full py-12 sm:py-16 relative overflow-hidden">
+            <!-- Formas decorativas de fundo sutis -->
+            <div class="absolute top-20 right-10 w-40 h-40 rounded-full bg-[#528b8f] opacity-5 blur-3xl"></div>
+            <div class="absolute bottom-10 left-10 w-60 h-60 rounded-full bg-[#528b8f] opacity-5 blur-3xl"></div>
             
-                        
             <div class="mx-auto max-w-7xl px-4 relative z-10">
-                <h2 class="mb-8 sm:mb-12 text-center text-2xl sm:text-3xl font-bold md:text-4xl">Como funciona</h2>
-                <div class="flex flex-col gap-8">
-                    <div class="flex flex-col md:flex-row gap-6 items-start md:items-center">
-                        <div class="flex-none">
-                            <div class="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-[#528b8f] to-[#254450] text-2xl font-bold text-white shadow-[inset_0_-5px_0_rgba(0,0,0,0.2),0_5px_0_rgba(0,0,0,0.1)]">1</div>
-                        </div>
-                        <div class="flex-1 rounded-xl bg-white p-5 sm:p-6 shadow-[0_5px_0_rgba(0,0,0,0.05)] dark:bg-[#161615] w-full relative overflow-hidden border border-[#528b8f10] dark:border-[#528b8f20]">
-                            <div class="absolute top-0 right-0 h-full w-1/3 bg-gradient-to-l from-[#528b8f08] to-transparent"></div>
-                            <div class="flex flex-col md:flex-row gap-4 items-start md:items-center">
-                                <div class="flex-1">
-                                    <h3 class="mb-2 text-lg sm:text-xl font-medium text-[#254450] dark:text-[#528b8f]">Escolha sua fase</h3>
-                                    <p class="text-sm sm:text-base text-[#706f6c] dark:text-[#A1A09A]">
-                                        Navegue pelo mapa interativo e escolha uma fase para estudar artigos específicos da legislação.
-                                    </p>
-                                </div>
-                                <div class="flex justify-center md:justify-end">
-                                    <div class="bg-gradient-to-br from-[#528b8f] to-[#254450] rounded-lg p-3 text-white shadow-[inset_0_-4px_0_rgba(0,0,0,0.2),0_4px_0_rgba(0,0,0,0.1)]">
-                                        <BookOpen class="h-12 w-12" />
+                <div class="flex flex-col lg:flex-row items-center gap-8 lg:gap-16">
+                    <!-- Lado do texto (agora à esquerda) -->
+                    <div class="w-full lg:w-1/2">
+                        <h2 class="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">Domine a <span class="text-[#528b8f]">legislação</span> enquanto se diverte</h2>
+                        <p class="text-base sm:text-lg text-[#706f6c] dark:text-[#A1A09A] mb-6">
+                            Transforme horas de estudo cansativo em uma experiência divertida e eficiente. O Jus-it utiliza técnicas comprovadas de memorização para ajudá-lo a reter conhecimento jurídico por mais tempo.
+                        </p>
+                        <div class="space-y-4">
+                            <div class="flex items-center gap-3">
+                                <div class="flex-none">
+                                    <div class="flex h-10 w-10 items-center justify-center rounded-full bg-[#528b8f20] text-[#528b8f]">
+                                        <CheckCircle2 class="h-5 w-5" />
                                     </div>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="font-medium">Aprenda no seu ritmo, sem pressão</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <div class="flex-none">
+                                    <div class="flex h-10 w-10 items-center justify-center rounded-full bg-[#528b8f20] text-[#528b8f]">
+                                        <CheckCircle2 class="h-5 w-5" />
+                                    </div>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="font-medium">Acompanhe seu progresso e celebre conquistas</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <div class="flex-none">
+                                    <div class="flex h-10 w-10 items-center justify-center rounded-full bg-[#528b8f20] text-[#528b8f]">
+                                        <CheckCircle2 class="h-5 w-5" />
+                                    </div>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="font-medium">Ganhe confiança para provas e concursos</p>
                                 </div>
                             </div>
                         </div>
                     </div>
                     
-                    <div class="flex flex-col md:flex-row gap-6 items-start md:items-center">
-                        <div class="flex-none">
-                            <div class="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-[#528b8f] to-[#254450] text-2xl font-bold text-white shadow-[inset_0_-5px_0_rgba(0,0,0,0.2),0_5px_0_rgba(0,0,0,0.1)]">2</div>
-                        </div>
-                        <div class="flex-1 rounded-xl bg-white p-5 sm:p-6 shadow-[0_5px_0_rgba(0,0,0,0.05)] dark:bg-[#161615] w-full relative overflow-hidden border border-[#528b8f10] dark:border-[#528b8f20]">
-                            <div class="absolute top-0 right-0 h-full w-1/3 bg-gradient-to-l from-[#528b8f08] to-transparent"></div>
-                            <div class="flex flex-col md:flex-row gap-4 items-start md:items-center">
-                                <div class="flex-1">
-                                    <h3 class="mb-2 text-lg sm:text-xl font-medium text-[#254450] dark:text-[#528b8f]">Complete os desafios</h3>
-                                    <p class="text-sm sm:text-base text-[#706f6c] dark:text-[#A1A09A]">
-                                        Preencha as lacunas nos textos jurídicos, colocando as palavras corretas nos lugares certos para completar os artigos.
-                                    </p>
-                                </div>
-                                <div class="flex justify-center md:justify-end">
-                                    <div class="bg-gradient-to-br from-[#528b8f] to-[#254450] rounded-lg p-3 text-white shadow-[inset_0_-4px_0_rgba(0,0,0,0.2),0_4px_0_rgba(0,0,0,0.1)]">
-                                        <Gavel class="h-12 w-12" />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="flex flex-col md:flex-row gap-6 items-start md:items-center">
-                        <div class="flex-none">
-                            <div class="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-[#528b8f] to-[#254450] text-2xl font-bold text-white shadow-[inset_0_-5px_0_rgba(0,0,0,0.2),0_5px_0_rgba(0,0,0,0.1)]">3</div>
-                        </div>
-                        <div class="flex-1 rounded-xl bg-white p-5 sm:p-6 shadow-[0_5px_0_rgba(0,0,0,0.05)] dark:bg-[#161615] w-full relative overflow-hidden border border-[#528b8f10] dark:border-[#528b8f20]">
-                            <div class="absolute top-0 right-0 h-full w-1/3 bg-gradient-to-l from-[#528b8f08] to-transparent"></div>
-                            <div class="flex flex-col md:flex-row gap-4 items-start md:items-center">
-                                <div class="flex-1">
-                                    <h3 class="mb-2 text-lg sm:text-xl font-medium text-[#254450] dark:text-[#528b8f]">Receba recompensas</h3>
-                                    <p class="text-sm sm:text-base text-[#706f6c] dark:text-[#A1A09A]">
-                                        Ganhe pontos, suba de nível e desbloqueie novas fases à medida que avança em seu aprendizado jurídico.
-                                    </p>
-                                </div>
-                                <div class="flex justify-center md:justify-end">
-                                    <div class="bg-gradient-to-br from-[#528b8f] to-[#254450] rounded-lg p-3 text-white shadow-[inset_0_-4px_0_rgba(0,0,0,0.2),0_4px_0_rgba(0,0,0,0.1)]">
-                                        <Award class="h-12 w-12" />
-                                    </div>
-                                </div>
+                    <!-- Lado da imagem (agora à direita) -->
+                    <div class="w-full lg:w-1/2 order-first lg:order-last">
+                        <div class="relative">
+                            <div class="absolute -bottom-3 -left-3 w-full h-full rounded-xl"></div>
+                            <div class="relative rounded-xl overflow-hidden">
+                                <img 
+                                    src="/img/selecionados/lawyer-monster.png" 
+                                    alt="Estudante usando o Jus-it" 
+                                    class="w-full h-auto object-cover"
+                                />
                             </div>
                         </div>
                     </div>

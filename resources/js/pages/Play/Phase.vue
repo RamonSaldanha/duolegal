@@ -172,9 +172,20 @@
 
                                     <div class="mt-6">
                                         <h3 class="font-medium mb-2">Texto original:</h3>
-                                        <div class="p-4 bg-muted/30 dark:bg-muted/10 border border-muted/30 rounded-md max-h-[150px] overflow-y-auto">
-                                            <p class="whitespace-pre-line text-lg">{{ currentArticle?.original_content }}</p>
+                                        <div class="p-1 bg-muted/70 dark:bg-muted/10 border border-muted/80 rounded-md max-h-[150px] overflow-y-auto">
+                                            <p class="whitespace-pre-line text-md">
+                                                {{ currentArticle?.original_content }}
+                                            </p>
                                         </div>
+                                    </div>
+                                    
+                                    <!-- Nova seção para mostrar as respostas do usuário -->
+                                    <div class="mt-4">
+                                        <h3 class="font-medium mb-2">Suas respostas:</h3>
+                                        <div class="p-2 bg-muted/70 dark:bg-muted/10 border border-muted/80 rounded-md max-h-[150px] overflow-y-auto">
+                                            <p class="whitespace-pre-line text-md" v-html="highlightedUserAnswers"></p>
+                                        </div>
+                                        
                                     </div>
 
                                     <div class="mt-6 flex justify-between gap-4">
@@ -226,6 +237,8 @@
 
                                 <Button variant="default" :disabled="!allLacunasFilled" @click="checkAnswers">
                                     Responder
+       
+       
                                 </Button>
                             </div>
                         </div>
@@ -513,6 +526,8 @@ const completedArticles = ref<number[]>([]);
     // Verifica as respostas preenchidas
     const checkAnswers = () => {
         answered.value = true;
+
+        
         if (articleScore.value && articleScore.value.percentage >= 70) {
             if (!completedArticles.value.includes(currentArticleIndex.value)) {
                 completedArticles.value.push(currentArticleIndex.value);
@@ -552,30 +567,32 @@ const completedArticles = ref<number[]>([]);
         }, 100);
     };
 
-    // Reinicia as respostas para o artigo atual
+    // Modifique a função resetAnswers
     const resetAnswers = () => {
         if (userAnswers.value[currentArticleIndex.value]) {
             userAnswers.value[currentArticleIndex.value] = {};
         }
         answered.value = false;
-        resetTextState(); // Aqui está a correção
+        // isShowingCorrections.value = false; // Reset o estado de correções
+        resetTextState();
     };
 
-    // Navega para o próximo artigo
+    // Modifique as funções nextArticle e previousArticle
     const nextArticle = () => {
         if (currentArticleIndex.value < articlesArray.value.length - 1) {
             currentArticleIndex.value++;
             answered.value = false;
-            resetTextState(); // Aqui está a correção
+            // isShowingCorrections.value = false; // Reset o estado de correções
+            resetTextState();
         }
     };
 
-    // Navega para o artigo anterior
     const previousArticle = () => {
         if (currentArticleIndex.value > 0) {
             currentArticleIndex.value--;
             answered.value = false;
-            resetTextState(); // Aqui está a correção
+            // isShowingCorrections.value = false; // Reset o estado de correções
+            resetTextState();
         }
     };
 
@@ -699,6 +716,56 @@ const completedArticles = ref<number[]>([]);
             }
         }, 150); // Aumentei o timeout para dar mais tempo ao DOM para atualizar
     }
+
+    // Adicione este computed property ao seu script
+    const highlightedUserAnswers = computed(() => {
+        if (!currentArticle.value || !answered.value) return '';
+
+        let text = currentArticle.value.practice_content;
+        const lacunas = text.match(/_{5,}/g) || [];
+        const answers = userAnswers.value[currentArticleIndex.value] || {};
+        
+        // Para cada lacuna, substitua pelo texto do usuário com destaque adequado
+        lacunas.forEach((lacuna, index) => {
+            // Obtém a resposta do usuário para esta lacuna
+            const userAnswer = answers[index];
+            
+            // Obtém a resposta correta para esta lacuna
+            const correctAnswer = getCorrectAnswerForGap(index + 1); // gap_order é 1-based
+            
+            let replacement;
+            if (userAnswer) {
+                // Usuário respondeu, verificar se está correto
+                const isCorrect = userAnswer === correctAnswer;
+                
+                if (isCorrect) {
+                    // Resposta correta - verde
+                    replacement = `<span class="px-1 py-0.5 rounded font-medium bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300">${userAnswer}</span>`;
+                } else {
+                    // Resposta incorreta - vermelho, mostrando a resposta correta
+                    replacement = `<span class="px-1 py-0.5 rounded font-medium bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300">${userAnswer}</span>`;
+                }
+            } else {
+                // Usuário não respondeu - usar cinza
+                replacement = `<span class="px-1 py-0.5 rounded font-medium bg-gray-100 text-gray-500 dark:bg-gray-800/40 dark:text-gray-400">(...)</span>`;
+            }
+            
+            text = text.replace(lacuna, replacement);
+        });
+        
+        return text;
+    });
+
+    // Adicione esta função de ajuda para obter a resposta correta para uma lacuna específica
+    const getCorrectAnswerForGap = (gapOrder: number): string => {
+        if (!currentArticle.value || !currentArticle.value.options) return '';
+        
+        const correctOption = currentArticle.value.options.find(
+            option => option.is_correct && option.gap_order === gapOrder
+        );
+        
+        return correctOption ? correctOption.word : '';
+    };
 </script>
 
 <style scoped>
@@ -884,7 +951,7 @@ button {
     .duolingo-button-selected {
         background-color: rgb(6, 95, 129);
         border-color: rgb(8, 145, 178);
-        color: rgb(224, 242, 254);
+        color: rgb(198, 198, 198);
     }
     
     .duolingo-button-selected:hover {
@@ -899,5 +966,48 @@ button {
         padding: 0.625rem 1rem;
         font-size: 1.125rem;
     }
+}
+
+/* Estilos para quando o modal é fechado mas ainda mostrando correções */
+.lacuna.correct {
+    background-color: rgb(220, 252, 231);
+    border-bottom: 2px solid rgb(34, 197, 94);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: rgb(22, 101, 52);
+}
+
+.lacuna.incorrect {
+    background-color: rgb(254, 226, 226);
+    border-bottom: 2px solid rgb(239, 68, 68);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: rgb(185, 28, 28);
+}
+
+.lacuna.empty {
+    background: rgb(254, 252, 232);
+    border: 1px dashed rgb(202, 191, 137);
+    font-weight: normal;
+    padding: 4px;
+    border-radius: 6px;
+    color: rgb(161, 151, 95);
+}
+
+/* Modo escuro para as lacunas */
+@media (prefers-color-scheme: dark) {
+    .lacuna.correct {
+        background-color: rgba(34, 197, 94, 0.2);
+        border-bottom-color: rgb(22, 163, 74);
+        color: rgb(134, 239, 172);
+    }
+    
+    .lacuna.incorrect {
+        background-color: rgba(239, 68, 68, 0.2);
+        border-bottom-color: rgb(220, 38, 38);
+        color: rgb(252, 165, 165);
+    }
+    
+    
 }
 </style>
