@@ -1,35 +1,62 @@
-<!-- filepath: /c:/Users/ramon/Desktop/study/resources/js/Pages/Play/Map.vue -->
-<script setup>
+<script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { computed } from 'vue';
 import { Badge } from '@/components/ui/badge';
 import { Book, FileText, Bookmark, CheckCircle, Star } from 'lucide-vue-next';
 
-const props = defineProps({
-    phases: Array
-});
+interface Progress {
+    completed: number;
+    total: number;
+    percentage: number;
+}
+
+interface Phase {
+    id: number;
+    title: string;
+    reference_name: string;
+    reference_uuid: string;
+    article_count: number;
+    difficulty: number;
+    first_article: string | null;
+    phase_number: number;
+    progress: Progress;
+}
+
+interface ReferenceGroup {
+    name: string;
+    phases: Phase[];
+}
+
+interface GroupedPhases {
+    [key: string]: ReferenceGroup;
+}
+
+const props = defineProps<{
+    phases: Phase[];
+}>();
 
 // Agrupar fases por referência legal
-const phasesByReference = computed(() => {
-    const grouped = {};
+const phasesByReference = computed<GroupedPhases>(() => {
+    const grouped: GroupedPhases = {};
     
-    props.phases.forEach(phase => {
-        if (!grouped[phase.reference_uuid]) {
-            grouped[phase.reference_uuid] = {
-                name: phase.reference_name,
-                phases: []
-            };
-        }
-        
-        grouped[phase.reference_uuid].phases.push(phase);
-    });
+    if (props.phases) {
+        props.phases.forEach(phase => {
+            if (!grouped[phase.reference_uuid]) {
+                grouped[phase.reference_uuid] = {
+                    name: phase.reference_name,
+                    phases: []
+                };
+            }
+            
+            grouped[phase.reference_uuid].phases.push(phase);
+        });
+    }
     
     return grouped;
 });
 
-// Função para definir cores baseadas no nível de dificuldade
-const getDifficultyColor = (level) => {
+const getDifficultyColor = (level: number): string => {
     switch (level) {
         case 1: return 'bg-green-500';
         case 2: return 'bg-emerald-500';
@@ -40,11 +67,14 @@ const getDifficultyColor = (level) => {
     }
 };
 
-// Função para obter ícone baseado no número da fase
-const getPhaseIcon = (phaseNumber) => {
-    // Alternamos entre alguns ícones para variação
+const getPhaseIcon = (phaseNumber: number) => {
     const icons = [Book, FileText, Bookmark, Star, CheckCircle];
     return icons[(phaseNumber - 1) % icons.length];
+};
+
+// Verifica se a fase está completa (todos os artigos foram completados)
+const isPhaseComplete = (phase: Phase): boolean => {
+    return phase.progress && phase.progress.completed === phase.article_count;
 };
 </script>
 
@@ -101,11 +131,11 @@ const getPhaseIcon = (phaseNumber) => {
                         <div 
                           :class="[
                             'w-16 h-16 rounded-full flex items-center justify-center phase-circle',
-                            getDifficultyColor(phase.difficulty)
+                            isPhaseComplete(phase) ? 'bg-green-500' : getDifficultyColor(phase.difficulty)
                           ]"
                         >
                           <component 
-                            :is="getPhaseIcon(phase.phase_number)" 
+                            :is="isPhaseComplete(phase) ? CheckCircle : getPhaseIcon(phase.phase_number)" 
                             class="w-6 h-6 text-white" 
                           />
                         </div>
@@ -115,15 +145,16 @@ const getPhaseIcon = (phaseNumber) => {
                           {{ phase.phase_number }}
                         </Badge>
                         
-                        <!-- Indicador de dificuldade -->
-                        <div class="mt-1 flex justify-center">
+                        <!-- Indicador de progresso -->
+                        <div class="mt-1 flex justify-center gap-1">
                           <span 
-                            v-for="i in 5" 
+                            v-for="i in phase.article_count" 
                             :key="i" 
-                            class="w-1 h-1 mx-0.5 rounded-full"
-                            :class="i <= phase.difficulty ? getDifficultyColor(phase.difficulty) : 'bg-muted'"
+                            class="w-2 h-2 rounded-full transition-colors duration-300"
+                            :class="phase.progress && i <= phase.progress.completed ? 'bg-green-500' : 'bg-muted'"
                           ></span>
                         </div>
+
                       </Link>
                     </div>
                   </div>

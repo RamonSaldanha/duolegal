@@ -15,13 +15,15 @@ class PlayController extends Controller
     /**
      * Número de artigos por fase
      */
-    const ARTICLES_PER_PHASE = 3;
+    const ARTICLES_PER_PHASE = 5;
 
     /**
      * Exibir o mapa de fases do jogo
      */
     public function map()
     {
+        $userId = Auth::id();
+        
         // Buscar referências legais com seus artigos
         $legalReferences = LegalReference::with(['articles' => function($query) {
             $query->orderBy('position', 'asc')->where('is_active', true);
@@ -36,7 +38,12 @@ class PlayController extends Controller
             $chunks = $reference->articles->chunk(self::ARTICLES_PER_PHASE);
             
             foreach ($chunks as $index => $articleChunk) {
+                $progress = $this->getPhaseProgress($userId, $articleChunk);
                 $phaseCount++;
+                
+                // Marcar a fase como bloqueada se os artigos estiverem completos
+                $isPhaseComplete = $progress['completed'] === $progress['total'];
+                
                 $phases[] = [
                     'id' => $phaseCount,
                     'title' => 'Fase ' . $phaseCount,
@@ -46,7 +53,8 @@ class PlayController extends Controller
                     'difficulty' => $this->calculateAverageDifficulty($articleChunk),
                     'first_article' => $articleChunk->first()->uuid ?? null,
                     'phase_number' => $index + 1,
-                    'progress' => $this->getPhaseProgress(Auth::id(), $articleChunk),
+                    'is_complete' => $isPhaseComplete,
+                    'progress' => $progress,
                 ];
             }
         }
@@ -192,7 +200,6 @@ class PlayController extends Controller
         
         $completedCount = UserProgress::where('user_id', $userId)
             ->whereIn('law_article_id', $articleIds)
-            ->where('is_completed', true)
             ->count();
             
         $totalArticles = $articleIds->count();

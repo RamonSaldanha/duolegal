@@ -15,14 +15,14 @@ import { Book, Award, Brain, GraduationCap, Scale, Target, Users, PlayCircle, Ga
             <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
                 <div class="flex items-center">
                     <div class="flex items-center gap-x-2">
-                        <img src="/img/vadeco-logo.PNG" alt="Vadeco" class="h-8 w-auto" />
+                        <img src="/img/vadeco-brain.PNG" alt="Vadeco" class="h-8 w-auto" />
                     </div>
                 </div>
                 <nav class="flex items-center gap-2 sm:gap-4">
                     <Link
                         v-if="$page.props.auth.user"
                         :href="route('dashboard')"
-                        class="rounded-full bg-[#66491f] px-3 py-2 sm:px-5 text-sm sm:text-base font-medium text-white transition hover:bg-[#523a19] shadow-[inset_0_-4px_0_rgba(0,0,0,0.2),0_4px_6px_rgba(0,0,0,0.1)]"
+                        class="rounded-full bg-[#498304] px-3 py-2 sm:px-5 text-sm sm:text-base font-medium text-white transition hover:bg-[#3a6903] shadow-[inset_0_-4px_0_rgba(0,0,0,0.2),0_4px_6px_rgba(0,0,0,0.1)]"
                     >
                         Dashboard
                     </Link>
@@ -35,7 +35,7 @@ import { Book, Award, Brain, GraduationCap, Scale, Target, Users, PlayCircle, Ga
                         </Link>
                         <Link
                             :href="route('register')"
-                            class="rounded-full bg-[#66491f] px-3 py-2 sm:px-5 text-sm sm:text-base font-medium text-white transition hover:bg-[#523a19] shadow-[inset_0_-4px_0_rgba(0,0,0,0.2),0_4px_6px_rgba(0,0,0,0.1)]"
+                            class="rounded-full bg-[#498304] px-3 py-2 sm:px-5 text-sm sm:text-base font-medium text-white transition hover:bg-[#3a6903] shadow-[inset_0_-4px_0_rgba(0,0,0,0.2),0_4px_6px_rgba(0,0,0,0.1)]"
                         >
                             Começar
                         </Link>
@@ -51,7 +51,7 @@ import { Book, Award, Brain, GraduationCap, Scale, Target, Users, PlayCircle, Ga
                 <div class="flex flex-col gap-8 lg:flex-row">
                     <div class="flex flex-1 flex-col justify-center">
                         <h1 class="mb-4 text-3xl sm:text-4xl font-bold leading-tight md:text-5xl lg:text-6xl">
-                            Aprenda legislação de forma <span class="text-[#66491f]">divertida</span>
+                            Aprenda legislação de forma <span class="text-[#498304]">divertida</span>
                         </h1>
                         <p class="mb-6 sm:mb-8 text-base sm:text-lg text-[#706f6c] dark:text-[#A1A09A] md:text-xl">
                             O Vadeco transforma o estudo do direito em um jogo envolvente, com desafios progressivos e recompensas.
@@ -59,7 +59,7 @@ import { Book, Award, Brain, GraduationCap, Scale, Target, Users, PlayCircle, Ga
                         <div class="flex flex-col sm:flex-row gap-3 sm:gap-4">
                             <Link
                                 :href="route('register')"
-                                class="rounded-xl bg-[#66491f] px-6 sm:px-8 py-3 text-base sm:text-lg font-medium text-white transition hover:bg-[#523a19] text-center flex items-center justify-center gap-2 shadow-[inset_0_-5px_0_rgba(0,0,0,0.2),0_5px_6px_rgba(0,0,0,0.1)] active:translate-y-1 active:shadow-[inset_0_-2px_0_rgba(0,0,0,0.2),0_2px_3px_rgba(0,0,0,0.1)]"
+                                class="rounded-xl bg-[#498304] px-6 sm:px-8 py-3 text-base sm:text-lg font-medium text-white transition hover:bg-[#3a6903] text-center flex items-center justify-center gap-2 shadow-[inset_0_-5px_0_rgba(0,0,0,0.2),0_5px_6px_rgba(0,0,0,0.1)] active:translate-y-1 active:shadow-[inset_0_-2px_0_rgba(0,0,0,0.2),0_2px_3px_rgba(0,0,0,0.1)]"
                             >
                                 <PlayCircle class="h-5 w-5" /> Começar gratuitamente
                             </Link>
@@ -90,7 +90,7 @@ import { Book, Award, Brain, GraduationCap, Scale, Target, Users, PlayCircle, Ga
                                     <div class="text-xl sm:text-2xl font-bold">Vadeco</div>
                                     <div class="text-xs sm:text-sm opacity-80 mt-1">Aprendizado jurídico gamificado</div>
 
-                                    <div class="bg-[#66491f] text-white rounded-lg px-4 py-2 mt-4 sm:mt-6 font-medium text-sm sm:text-base shadow-[inset_0_-5px_0_rgba(0,0,0,0.2),0_5px_6px_rgba(0,0,0,0.1)] w-full sm:w-auto text-center">
+                                    <div class="bg-[#498304] text-white rounded-lg px-4 py-2 mt-4 sm:mt-6 font-medium text-sm sm:text-base shadow-[inset_0_-5px_0_rgba(0,0,0,0.2),0_5px_6px_rgba(0,0,0,0.1)] w-full sm:w-auto text-center">
                                         Complete o artigo:
                                     </div>
 
@@ -114,8 +114,8 @@ import { Book, Award, Brain, GraduationCap, Scale, Target, Users, PlayCircle, Ga
         <!-- Feature Showcase Section -->
         <section class="w-full py-12 sm:py-16 relative overflow-hidden">
             <!-- Formas decorativas de fundo sutis -->
-            <div class="absolute top-20 left-10 w-40 h-40 rounded-full bg-[#66491f] opacity-5 blur-3xl"></div>
-            <div class="absolute bottom-10 right-10 w-60 h-60 rounded-full bg-[#66491f] opacity-5 blur-3xl"></div>
+            <div class="absolute top-20 left-10 w-40 h-40 rounded-full bg-[#498304] opacity-5 blur-3xl"></div>
+            <div class="absolute bottom-10 right-10 w-60 h-60 rounded-full bg-[#498304] opacity-5 blur-3xl"></div>
             
             <div class="mx-auto max-w-7xl px-4 relative z-10">
                 <div class="flex flex-col lg:flex-row items-center gap-8 lg:gap-16">
@@ -135,7 +135,7 @@ import { Book, Award, Brain, GraduationCap, Scale, Target, Users, PlayCircle, Ga
                     
                     <!-- Lado do texto -->
                     <div class="w-full lg:w-1/2">
-                        <h2 class="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">Estude com <span class="text-[#66491f]">qualquer dispositivo</span></h2>
+                        <h2 class="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">Estude com <span class="text-[#498304]">qualquer dispositivo</span></h2>
                         <p class="text-base sm:text-lg text-[#706f6c] dark:text-[#A1A09A]">
                             Acesse o Vadeco no celular, tablet ou computador e continue seus estudos jurídicos de onde parou.
                         </p>
@@ -146,21 +146,21 @@ import { Book, Award, Brain, GraduationCap, Scale, Target, Users, PlayCircle, Ga
  
         <section class="w-full py-12 sm:py-16 relative overflow-hidden">
             <!-- Formas decorativas de fundo sutis -->
-            <div class="absolute top-20 right-10 w-40 h-40 rounded-full bg-[#66491f] opacity-5 blur-3xl"></div>
-            <div class="absolute bottom-10 left-10 w-60 h-60 rounded-full bg-[#66491f] opacity-5 blur-3xl"></div>
+            <div class="absolute top-20 right-10 w-40 h-40 rounded-full bg-[#498304] opacity-5 blur-3xl"></div>
+            <div class="absolute bottom-10 left-10 w-60 h-60 rounded-full bg-[#498304] opacity-5 blur-3xl"></div>
             
             <div class="mx-auto max-w-7xl px-4 relative z-10">
                 <div class="flex flex-col lg:flex-row items-center gap-8 lg:gap-16">
                     <!-- Lado do texto (agora à esquerda) -->
                     <div class="w-full lg:w-1/2">
-                        <h2 class="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">Domine a <span class="text-[#66491f]">legislação</span> enquanto se diverte</h2>
+                        <h2 class="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">Domine a <span class="text-[#498304]">legislação</span> enquanto se diverte</h2>
                         <p class="text-base sm:text-lg text-[#706f6c] dark:text-[#A1A09A] mb-6">
                             Transforme horas de estudo cansativo em uma experiência divertida e eficiente. O Vadeco utiliza técnicas comprovadas de memorização para ajudá-lo a reter conhecimento jurídico por mais tempo.
                         </p>
                         <div class="space-y-4">
                             <div class="flex items-center gap-3">
                                 <div class="flex-none">
-                                    <div class="flex h-10 w-10 items-center justify-center rounded-full bg-[#66491f20] text-[#66491f]">
+                                    <div class="flex h-10 w-10 items-center justify-center rounded-full bg-[#49830420] text-[#498304]">
                                         <CheckCircle2 class="h-5 w-5" />
                                     </div>
                                 </div>
@@ -170,7 +170,7 @@ import { Book, Award, Brain, GraduationCap, Scale, Target, Users, PlayCircle, Ga
                             </div>
                             <div class="flex items-center gap-3">
                                 <div class="flex-none">
-                                    <div class="flex h-10 w-10 items-center justify-center rounded-full bg-[#66491f20] text-[#66491f]">
+                                    <div class="flex h-10 w-10 items-center justify-center rounded-full bg-[#49830420] text-[#498304]">
                                         <CheckCircle2 class="h-5 w-5" />
                                     </div>
                                 </div>
@@ -180,7 +180,7 @@ import { Book, Award, Brain, GraduationCap, Scale, Target, Users, PlayCircle, Ga
                             </div>
                             <div class="flex items-center gap-3">
                                 <div class="flex-none">
-                                    <div class="flex h-10 w-10 items-center justify-center rounded-full bg-[#66491f20] text-[#66491f]">
+                                    <div class="flex h-10 w-10 items-center justify-center rounded-full bg-[#49830420] text-[#498304]">
                                         <CheckCircle2 class="h-5 w-5" />
                                     </div>
                                 </div>
@@ -211,7 +211,7 @@ import { Book, Award, Brain, GraduationCap, Scale, Target, Users, PlayCircle, Ga
         <!-- CTA Section -->
         <section class="w-full py-12 sm:py-16 relative overflow-hidden">
             <div class="absolute inset-0 opacity-5">
-                <div class="absolute top-0 left-1/4 w-32 h-32 rounded-full bg-[#66491f] blur-3xl"></div>
+                <div class="absolute top-0 left-1/4 w-32 h-32 rounded-full bg-[#498304] blur-3xl"></div>
                 <div class="absolute bottom-0 right-1/3 w-40 h-40 rounded-full bg-[#1cb0f6] blur-3xl"></div>
                 <div class="absolute top-1/2 right-1/4 w-24 h-24 rounded-full bg-[#ff9600] blur-3xl"></div>
                 <div class="absolute bottom-1/3 left-1/5 w-20 h-20 rounded-full bg-[#ce82ff] blur-3xl"></div>
@@ -219,7 +219,7 @@ import { Book, Award, Brain, GraduationCap, Scale, Target, Users, PlayCircle, Ga
             
             <div class="mx-auto max-w-3xl px-4 text-center relative z-10">
                 <div class="mb-8 flex justify-center">
-                    <div class="bg-[#66491f] rounded-full p-4 text-white shadow-[inset_0_-4px_0_rgba(0,0,0,0.2),0_4px_6px_rgba(0,0,0,0.1)]">
+                    <div class="bg-[#498304] rounded-full p-4 text-white shadow-[inset_0_-4px_0_rgba(0,0,0,0.2),0_4px_6px_rgba(0,0,0,0.1)]">
                         <CheckCircle2 class="h-10 w-10" />
                     </div>
                 </div>
@@ -229,7 +229,7 @@ import { Book, Award, Brain, GraduationCap, Scale, Target, Users, PlayCircle, Ga
                 </p>
                 <Link
                     :href="route('register')"
-                    class="inline-block rounded-xl bg-[#66491f] px-6 sm:px-8 py-3 text-base sm:text-lg font-medium text-white transition hover:bg-[#523a19] shadow-[inset_0_-5px_0_rgba(0,0,0,0.2),0_5px_6px_rgba(0,0,0,0.1)] active:translate-y-1 active:shadow-[inset_0_-2px_0_rgba(0,0,0,0.2),0_2px_3px_rgba(0,0,0,0.1)]"
+                    class="inline-block rounded-xl bg-[#498304] px-6 sm:px-8 py-3 text-base sm:text-lg font-medium text-white transition hover:bg-[#3a6903] shadow-[inset_0_-5px_0_rgba(0,0,0,0.2),0_5px_6px_rgba(0,0,0,0.1)] active:translate-y-1 active:shadow-[inset_0_-2px_0_rgba(0,0,0,0.2),0_2px_3px_rgba(0,0,0,0.1)]"
                 >
                     Começar gratuitamente
                 </Link>
@@ -242,7 +242,7 @@ import { Book, Award, Brain, GraduationCap, Scale, Target, Users, PlayCircle, Ga
                 <div class="flex flex-col items-center justify-between gap-4 md:flex-row">
                     <div class="flex items-center gap-x-2">
                         <div class="flex h-8 items-center justify-center">
-                            <img src="/img/vadeco-logo.PNG" alt="Vadeco" class="h-8 w-auto" />
+                            <img src="/img/vadeco-brain.PNG" alt="Vadeco" class="h-8 w-auto" />
                         </div>
                         <span class="text-sm font-medium">© 2025</span>
                     </div>
