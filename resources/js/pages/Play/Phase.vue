@@ -192,12 +192,24 @@
                                             <span class="hidden md:inline">Tentar novamente</span>
                                             <span class="md:hidden">Novamente</span>
                                         </Button>
+                                        
+                                        <!-- Botão condicional baseado em se é o último artigo e se a fase está completa -->
                                         <Button 
                                             v-if="currentArticleIndex < articlesArray.length - 1"
                                             class="w-full" 
                                             @click="nextArticle"
                                         >
                                             Próximo
+                                            <ChevronRight class="ml-2 h-4 w-4" />
+                                        </Button>
+                                        
+                                        <!-- Botão especial para o último artigo quando a fase estiver completa -->
+                                        <Button 
+                                            v-else-if="isPhaseComplete"
+                                            class="w-full" 
+                                            @click="showPhaseCompletionModal"
+                                        >
+                                            {{ props.phase.has_next_phase ? 'Próxima Fase' : 'Concluir' }}
                                             <ChevronRight class="ml-2 h-4 w-4" />
                                         </Button>
                                     </div>
@@ -245,9 +257,24 @@
                                 <span class="hidden md:inline">Tentar novamente</span>
                                 <span class="md:hidden">Novamente</span>
                             </Button>
-
-                            <Button variant="default" :disabled="currentArticleIndex === articlesArray.length - 1" @click="nextArticle">
+                        
+                            <!-- Botão condicional baseado em se é o último artigo e se a fase está completa -->
+                            <Button 
+                                v-if="currentArticleIndex < articlesArray.length - 1" 
+                                variant="default" 
+                                @click="nextArticle"
+                            >
                                 Próximo
+                                <ChevronRight class="ml-2 h-4 w-4" />
+                            </Button>
+                            
+                            <!-- Botão especial para o último artigo quando a fase estiver completa -->
+                            <Button 
+                                v-else-if="isPhaseComplete"
+                                variant="default"
+                                @click="showPhaseCompletionModal"
+                            >
+                                {{ props.phase.has_next_phase ? 'Próxima Fase' : 'Concluir' }}
                                 <ChevronRight class="ml-2 h-4 w-4" />
                             </Button>
                         </div>
@@ -282,7 +309,6 @@
                         </Button>
                         <Button 
                             @click="advanceToNextPhase" 
-                            :disabled="!props.phase.has_next_phase"
                         >
                             {{ props.phase.has_next_phase ? 'Avançar para próxima fase' : 'Voltar ao mapa' }}
                             <ChevronRight class="ml-2 h-4 w-4" />
@@ -358,6 +384,9 @@ const userAnswers = ref<UserAnswers>({});
 const answered = ref(false);
 const offcanvasMinimize = ref(false)
 const completedArticles = ref<number[]>([]);
+
+// Adicione esta variável perto das outras variáveis de estado
+const isPhaseComplete = ref(false);
 
 // Extrai todas as opções para o artigo atual e monta as respostas corretas
     const articleOptions = computed(() => {
@@ -567,81 +596,82 @@ const completedArticles = ref<number[]>([]);
     }
 
     // Substitua a função checkAnswers
+    const checkAnswers = () => {
+        answered.value = true;
+        offcanvasMinimize.value = false; // Garante que o offcanvas está visível ao verificar respostas
 
-const checkAnswers = () => {
-    answered.value = true;
-    offcanvasMinimize.value = false; // Garante que o offcanvas está visível ao verificar respostas
-
-    // Calcular resultados
-    const score = articleScore.value;
-    
-    if (score) {
-        // Salvar progresso no servidor
-        axios.post(route('play.progress'), {
-            article_uuid: currentArticle.value.uuid,
-            correct_answers: score.correct,
-            total_answers: score.total,
-        })
-        .then(response => {
-            // Atualizar o progresso local com os dados do servidor
-            if (response.data.success) {
-                console.log('Progresso atualizado:', response.data.progress);
-                
-                // Atualiza o objeto do artigo atual com o progresso atualizado
-                const currentIdx = currentArticleIndex.value;
-                const articlesCopy = [...articlesArray.value];
-                articlesCopy[currentIdx] = {
-                    ...articlesCopy[currentIdx],
-                    progress: response.data.progress
-                };
-                
-                // Atualizar o array reativo
-                articlesArray.value = articlesCopy;
-                
-                // Verificar se todos os artigos foram respondidos e este é o último
-                if (currentArticleIndex.value === articlesArray.value.length - 1) {
-                    // Verifica se todos os artigos têm progresso
-                    const allDone = articlesCopy.every(article => article.progress !== null);
+        // Calcular resultados
+        const score = articleScore.value;
+        
+        if (score) {
+            // Salvar progresso no servidor
+            axios.post(route('play.progress'), {
+                article_uuid: currentArticle.value.uuid,
+                correct_answers: score.correct,
+                total_answers: score.total,
+            })
+            .then(response => {
+                // Atualizar o progresso local com os dados do servidor
+                if (response.data.success) {
+                    console.log('Progresso atualizado:', response.data.progress);
                     
-                    if (allDone) {
-                        // Exibir modal de conclusão após um tempo maior
-                        setTimeout(() => {
-                            showCompletionModal.value = true;
-                        }, 3000); // Aumentado para 3 segundos para dar tempo ao usuário ver o resultado
+                    // Atualiza o objeto do artigo atual com o progresso atualizado
+                    const currentIdx = currentArticleIndex.value;
+                    const articlesCopy = [...articlesArray.value];
+                    articlesCopy[currentIdx] = {
+                        ...articlesCopy[currentIdx],
+                        progress: response.data.progress
+                    };
+                    
+                    // Atualizar o array reativo
+                    articlesArray.value = articlesCopy;
+                    
+                    // Verificar se todos os artigos foram respondidos, mas NÃO exibe o modal
+                    // Se for o último artigo, só marca como pronto para exibir o botão especial
+                    if (currentArticleIndex.value === articlesArray.value.length - 1) {
+                        const allDone = articlesCopy.every(article => article.progress !== null);
+                        if (allDone) {
+                            // Ao invés de mostrar o modal, marcamos que a fase está completa
+                            isPhaseComplete.value = true;
+                        }
                     }
                 }
-            }
-        })
-        .catch(error => {
-            console.error('Erro ao salvar progresso:', error);
-        });
-    
-        // Código para exibir recompensas visuais
-        if (score.percentage >= 70) {
-            if (!completedArticles.value.includes(currentArticleIndex.value)) {
-                completedArticles.value.push(currentArticleIndex.value);
-            }
-            
-            // Dispara o confetti para acertos acima de 70%
-            setTimeout(() => {
-                confettiReward();
-            }, 300);
-            
-            // Para 100% de acerto, mostre emojis também
-            if (score.percentage === 100) {
+            })
+            .catch(error => {
+                console.error('Erro ao salvar progresso:', error);
+            });
+        
+            // Código para exibir recompensas visuais
+            if (score.percentage >= 70) {
+                if (!completedArticles.value.includes(currentArticleIndex.value)) {
+                    completedArticles.value.push(currentArticleIndex.value);
+                }
+                
+                // Dispara o confetti para acertos acima de 70%
                 setTimeout(() => {
-                    emojiReward();
-                }, 600);
+                    confettiReward();
+                }, 300);
+                
+                // Para 100% de acerto, mostre emojis também
+                if (score.percentage === 100) {
+                    setTimeout(() => {
+                        emojiReward();
+                    }, 600);
+                }
             }
         }
-    }
 
-    // Expande o texto para mostrar o próximo trecho após verificar as respostas
-    if (isMobile.value) {
-        isTextExpanded.value = false;
-        scrollToNextEmptyLacuna();
-    }
-};
+        // Expande o texto para mostrar o próximo trecho após verificar as respostas
+        if (isMobile.value) {
+            isTextExpanded.value = false;
+            scrollToNextEmptyLacuna();
+        }
+    };
+    
+    const showPhaseCompletionModal = () => {
+        showCompletionModal.value = true;
+        offcanvasMinimize.value = true; // Minimiza o offcanvas quando o modal aparecer
+    };
 
     watch(answered, (newVal) => {
         if (newVal === true) {
@@ -868,26 +898,26 @@ const checkAnswers = () => {
         offcanvasMinimize.value = true;
     };
 
-// Adicione este computed para verificar se todos os artigos foram respondidos
-const allArticlesAttempted = computed(() => {
-    // Verifica se todos os artigos têm progresso registrado
-    return articlesArray.value.every(article => article.progress !== null);
-});
+    // Adicione este computed para verificar se todos os artigos foram respondidos
+    const allArticlesAttempted = computed(() => {
+        // Verifica se todos os artigos têm progresso registrado
+        return articlesArray.value.every(article => article.progress !== null);
+    });
 
-// Substituir a função advanceToNextPhase existente por esta:
-const advanceToNextPhase = () => {
-    if (props.phase.has_next_phase) {
-        const nextPhaseNumber = props.phase.phase_number + 1;
-        
-        // Usar o reference_uuid que foi passado do controller
-        router.visit(route('play.phase', {
-            reference: props.phase.reference_uuid,
-            phase: nextPhaseNumber
-        }));
-    } else {
-        router.visit(route('play.map'));
-    }
-};
+    // Substituir a função advanceToNextPhase existente por esta:
+    const advanceToNextPhase = () => {
+        if (props.phase.has_next_phase) {
+            const nextPhaseNumber = props.phase.phase_number + 1;
+            
+            // Usar o reference_uuid que foi passado do controller
+            router.visit(route('play.phase', {
+                reference: props.phase.reference_uuid,
+                phase: nextPhaseNumber
+            }));
+        } else {
+            router.visit(route('play.map'));
+        }
+    };
 
 // Remova ou comente este watch
 /*
