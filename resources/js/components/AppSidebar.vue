@@ -59,7 +59,7 @@ const footerNavItems: NavItem[] = [
             <SidebarMenu>
                 <SidebarMenuItem>
                     <SidebarMenuButton size="lg" as-child>
-                        <Link :href="route('dashboard')">
+                        <Link :href="route('play.map')">
                             <AppLogo />
                         </Link>
                     </SidebarMenuButton>

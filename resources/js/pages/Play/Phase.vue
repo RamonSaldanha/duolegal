@@ -163,6 +163,13 @@
                                 </div>
 
                                 <div v-if="articleScore">
+                                    <!-- Notificação de vida perdida -->
+                                    <div v-if="articleScore.percentage < 70" class="bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-200 p-2 rounded-lg text-center text-sm mb-4">
+                                        <span class="flex items-center justify-center gap-1">
+                                            <Heart class="w-4 h-4" fill="currentColor" />
+                                            Você perdeu 1 vida!
+                                        </span>
+                                    </div>
                                     <div class="text-lg font-medium mb-2">
                                         Você acertou {{ articleScore.correct }} de {{ articleScore.total }} lacunas ({{ articleScore.percentage }}%)
                                     </div>
@@ -321,9 +328,10 @@
 </template>
 
 <script lang="ts" setup>
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Heart } from 'lucide-vue-next';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, Check, X, RefreshCw, ChevronDown, ChevronUp } from 'lucide-vue-next';
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
@@ -359,12 +367,21 @@ const props = defineProps<{
         title: string;
         difficulty: number;
         has_next_phase: boolean;
-        reference_uuid: string; // Adicione esta linha
+        reference_uuid: string;
     };
     articles: Record<string, Article>;
 }>();
 
-// DEPOIS: Usar props para inicializar articlesArray
+// Obtém página e tipos
+const page = usePage<{
+    auth: {
+        user: {
+            lives: number;
+        }
+    }
+}>();
+
+// Usar props para inicializar articlesArray
 const articlesArray = ref(Object.values(props.articles));
 
 // Controle do artigo atual
@@ -487,22 +504,6 @@ const isPhaseComplete = ref(false);
         return text;
     });
 
-    // Função auxiliar para encontrar a n-ésima ocorrência de uma substring
-    function findNthOccurrence(string: string, substring: string, n: number, startPosition: number = 0): number {
-        let position = startPosition;
-        let count = 0;
-        
-        while (position !== -1) {
-            position = string.indexOf(substring, position + 1);
-            count++;
-            
-            if (count === n && position !== -1) {
-                return position;
-            }
-        }
-        
-        return -1; // Não encontrou
-    }
 
     // Verifica se todas as lacunas foram preenchidas
     const allLacunasFilled = computed(() => {
@@ -534,7 +535,8 @@ const isPhaseComplete = ref(false);
     });
 
     // Configure as recompensas
-    const { reward: confettiReward } = useReward('confetti-canvas', 'confetti', {
+    // Recompensas
+const { reward: confettiReward } = useReward('confetti-canvas', 'confetti', {
         startVelocity: 30, 
         spread: 360,
         elementCount: 100,
@@ -615,6 +617,12 @@ const isPhaseComplete = ref(false);
                 if (response.data.success) {
                     console.log('Progresso atualizado:', response.data.progress);
                     
+                    // Se houver redirecionamento (sem vidas), redireciona
+                    if (response.data.redirect) {
+                        router.visit(response.data.redirect);
+                        return;
+                    }
+
                     // Atualiza o objeto do artigo atual com o progresso atualizado
                     const currentIdx = currentArticleIndex.value;
                     const articlesCopy = [...articlesArray.value];
@@ -625,6 +633,11 @@ const isPhaseComplete = ref(false);
                     
                     // Atualizar o array reativo
                     articlesArray.value = articlesCopy;
+
+                    // Atualizar as vidas do usuário no estado da página
+                    if (response.data.user?.lives !== undefined) {
+                        page.props.auth.user.lives = response.data.user.lives;
+                    }
                     
                     // Verificar se todos os artigos foram respondidos, mas NÃO exibe o modal
                     // Se for o último artigo, só marca como pronto para exibir o botão especial
@@ -898,11 +911,6 @@ const isPhaseComplete = ref(false);
         offcanvasMinimize.value = true;
     };
 
-    // Adicione este computed para verificar se todos os artigos foram respondidos
-    const allArticlesAttempted = computed(() => {
-        // Verifica se todos os artigos têm progresso registrado
-        return articlesArray.value.every(article => article.progress !== null);
-    });
 
     // Substituir a função advanceToNextPhase existente por esta:
     const advanceToNextPhase = () => {

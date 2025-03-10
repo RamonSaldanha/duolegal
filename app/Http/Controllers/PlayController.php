@@ -22,7 +22,12 @@ class PlayController extends Controller
      */
     public function map()
     {
-        $userId = Auth::id();
+        $user = Auth::user();
+        $userId = $user->id;
+        
+        if (!$user->hasLives()) {
+            return redirect()->route('play.nolives');
+        }
         
         // Buscar referências legais com seus artigos
         $legalReferences = LegalReference::with(['articles' => function($query) {
@@ -60,7 +65,10 @@ class PlayController extends Controller
         }
         
         return Inertia::render('Play/Map', [
-            'phases' => $phases
+            'phases' => $phases,
+            'user' => [
+                'lives' => $user->lives
+            ]
         ]);
     }
     
@@ -69,6 +77,13 @@ class PlayController extends Controller
      */
     public function phase($referenceUuid, $phaseNumber)
     {
+        $user = Auth::user();
+        
+        // Verifica se o usuário tem vidas disponíveis
+        if (!$user->hasLives()) {
+            return redirect()->route('play.nolives');
+        }
+        
         $reference = LegalReference::where('uuid', $referenceUuid)->firstOrFail();
         
         // Obter artigos da fase específica COM suas opções
@@ -129,7 +144,7 @@ class PlayController extends Controller
                 'difficulty' => $this->calculateAverageDifficulty($phaseArticles),
                 'progress' => $this->getPhaseProgress(Auth::id(), $phaseArticles),
                 'has_next_phase' => $hasNextPhase,
-                'reference_uuid' => $referenceUuid, // Adicione esta linha
+                'reference_uuid' => $referenceUuid
             ],
             'articles' => $articlesWithProgress
         ]);
@@ -148,6 +163,16 @@ class PlayController extends Controller
         
         // Obtém o ID do artigo a partir do UUID
         $article = LawArticle::where('uuid', $validated['article_uuid'])->firstOrFail();
+        
+        $user = Auth::user();
+        
+        // Calcula a porcentagem de acerto
+        $percentage = ($validated['correct_answers'] / $validated['total_answers']) * 100;
+        
+        // Se o usuário acertou menos de 70%, perde uma vida
+        if ($percentage < 70) {
+            $user->decrementLife();
+        }
         
         // Verifica e corrige possíveis valores inconsistentes
         $correctAnswers = min($validated['correct_answers'], $validated['total_answers']);
@@ -179,7 +204,11 @@ class PlayController extends Controller
                 'is_completed' => $progress->is_completed,
                 'best_score' => $progress->best_score,
                 'attempts' => $progress->attempts,
-            ]
+            ],
+            'user' => [
+                'lives' => $user->lives
+            ],
+            'redirect' => $user->lives <= 0 ? route('play.nolives') : null
         ]);
     }
     

@@ -5,6 +5,10 @@ import { computed } from 'vue';
 import { Badge } from '@/components/ui/badge';
 import { Book, FileText, Bookmark, CheckCircle, Star } from 'lucide-vue-next';
 
+interface User {
+    lives: number;
+}
+
 interface Progress {
     completed: number;
     total: number;
@@ -34,6 +38,7 @@ interface GroupedPhases {
 
 const props = defineProps<{
     phases: Phase[];
+    user: User;
 }>();
 
 // Agrupar fases por referência legal
@@ -87,7 +92,8 @@ const isPhaseComplete = (phase: Phase): boolean => {
         <!-- Cabeçalho -->
         <div class="mb-8 text-center">
           <h1 class="text-3xl font-bold mb-2">Aprenda Legislação Brincando</h1>
-          <p class="text-muted-foreground">Escolha uma fase e comece a aprender os artigos de lei de forma divertida.</p>
+          <p class="text-muted-foreground mb-4">Escolha uma fase e comece a aprender os artigos de lei de forma divertida.</p>
+
         </div>
 
         <!-- Mapa de fases -->
@@ -123,8 +129,9 @@ const isPhaseComplete = (phase: Phase): boolean => {
                       style="width: 55%;"
                     >
                       <Link 
-                        :href="route('play.phase', [phase.reference_uuid, phase.phase_number])"
-                        class="relative group transition-transform duration-300 hover:scale-110"
+                        :href="props.user.lives > 0 ? route('play.phase', [phase.reference_uuid, phase.phase_number]) : '#'"
+                        class="relative group transition-transform duration-300"
+                        :class="props.user.lives > 0 ? 'hover:scale-110' : 'opacity-50 cursor-not-allowed'"
                         :style="`margin-${index % 2 === 0 ? 'right' : 'left'}: -5px;`"
                       >
                         <!-- Bolinha da fase -->

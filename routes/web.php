@@ -24,6 +24,7 @@ Route::post('/admin/law-article-options', [LawArticleOptionController::class, 's
 
 // Rotas de jogo (Play)
 Route::get('/play', [PlayController::class, 'map'])->name('play.map');
+Route::get('/play/no-lives', fn() => Inertia::render('Play/NoLives'))->name('play.nolives');
 Route::get('/play/{reference}/{phase}', [PlayController::class, 'phase'])->name('play.phase');
 
 // Adicione esta rota ao seu arquivo de rotas

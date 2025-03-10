@@ -18,7 +18,7 @@ import UserMenuContent from '@/components/UserMenuContent.vue';
 import { getInitials } from '@/composables/useInitials';
 import type { BreadcrumbItem, NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
-import { BookOpen, Folder, Play, Menu, Search, FileText, Lock } from 'lucide-vue-next';
+import { BookOpen, Heart, Play, Menu, Lock } from 'lucide-vue-next';
 import { computed } from 'vue';
 
 interface Props {
@@ -29,7 +29,18 @@ const props = withDefaults(defineProps<Props>(), {
     breadcrumbs: () => [],
 });
 
-const page = usePage();
+const page = usePage<{
+    auth: {
+        user: {
+            id: number;
+            name: string;
+            email: string;
+            is_admin: boolean;
+            lives: number;
+            avatar?: string;
+        } | null;
+    };
+}>();
 const auth = computed(() => page.props.auth);
 const isAdmin = computed(() => page.props.auth.user?.is_admin);
 
@@ -64,6 +75,8 @@ const mainNavItems: NavItem[] = [
         ]
         : []),
 ];
+
+const userLives = computed(() => page.props.auth.user?.lives ?? 0);
 
 const rightNavItems: NavItem[] = [
     // {
@@ -127,7 +140,7 @@ const rightNavItems: NavItem[] = [
                     </Sheet>
                 </div>
 
-                <Link :href="route('dashboard')" class="flex items-center gap-x-2">
+                <Link :href="route('play.map')" class="flex items-center gap-x-2">
                     <AppLogo class="hidden h-6 xl:block" />
                 </Link>
 
@@ -153,8 +166,16 @@ const rightNavItems: NavItem[] = [
                     </NavigationMenu>
                 </div>
 
-                <div class="ml-auto flex items-center space-x-2">
-                    <div class="relative flex items-center space-x-1">
+                    <div class="ml-auto flex items-center space-x-4">
+                        <!-- Lives Counter -->
+                        <div v-if="auth.user?.lives !== undefined" class="flex items-center gap-1">
+                            <Heart class="w-5 h-5" :class="userLives > 0 ? 'text-red-500' : 'text-gray-400'" fill="currentColor" />
+                            <span class="font-medium" :class="userLives > 0 ? 'text-red-500' : 'text-gray-400'">
+                                {{ userLives }}
+                            </span>
+                        </div>
+                        
+                        <div class="relative flex items-center space-x-1">
                         <!-- <Button variant="ghost" size="icon" class="group h-9 w-9 cursor-pointer">
                             <Search class="size-5 opacity-80 group-hover:opacity-100" />
                         </Button> -->
