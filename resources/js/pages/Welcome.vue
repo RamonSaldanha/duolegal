@@ -4,7 +4,7 @@ import { Book, Award, Brain, GraduationCap, Scale, Target, Users, PlayCircle, Ga
 </script>
 
 <template>
-    <Head title="Vadeco - Aprenda legislação de forma divertida">
+    <Head title="Memorize Direito - Aprenda legislação de forma divertida">
         <link rel="preconnect" href="https://rsms.me/" />
         <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -15,7 +15,7 @@ import { Book, Award, Brain, GraduationCap, Scale, Target, Users, PlayCircle, Ga
             <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
                 <div class="flex items-center">
                     <div class="flex items-center gap-x-2">
-                        <img src="/img/vadeco-brain.PNG" alt="Vadeco" class="h-8 w-auto" />
+                        Memorize Direito
                     </div>
                 </div>
                 <nav class="flex items-center gap-2 sm:gap-4">
@@ -54,7 +54,7 @@ import { Book, Award, Brain, GraduationCap, Scale, Target, Users, PlayCircle, Ga
                             Aprenda legislação de forma <span class="text-[#498304]">divertida</span>
                         </h1>
                         <p class="mb-6 sm:mb-8 text-base sm:text-lg text-[#706f6c] dark:text-[#A1A09A] md:text-xl">
-                            O Vadeco transforma o estudo do direito em um jogo envolvente, com desafios progressivos e recompensas.
+                            O Memorize Direito transforma o estudo do direito em um jogo envolvente, com desafios progressivos e recompensas.
                         </p>
                         <div class="flex flex-col sm:flex-row gap-3 sm:gap-4">
                             <Link
@@ -81,13 +81,13 @@ import { Book, Award, Brain, GraduationCap, Scale, Target, Users, PlayCircle, Ga
                                     <div class="w-3 h-3 bg-[#ffbd44] rounded-full mr-1.5 border border-[#e0a63d]"></div>
                                     <div class="w-3 h-3 bg-[#00ca4e] rounded-full border border-[#14ae46]"></div>
                                     <div class="absolute top-0 left-0 w-full h-full flex items-center justify-center">
-                                        <span class="text-[10px] text-white font-medium">Vadeco</span>
+                                        <span class="text-[10px] text-white font-medium">Memorize Direito</span>
                                     </div>
                                 </div>
                                 
                                 <!-- Conteúdo principal -->
                                 <div class="text-[#333333] dark:text-white flex flex-col items-center w-full p-4 mt-8">
-                                    <div class="text-xl sm:text-2xl font-bold">Vadeco</div>
+                                    <div class="text-xl sm:text-2xl font-bold">Memorize Direito</div>
                                     <div class="text-xs sm:text-sm opacity-80 mt-1">Aprendizado jurídico gamificado</div>
 
                                     <div class="bg-[#498304] text-white rounded-lg px-4 py-2 mt-4 sm:mt-6 font-medium text-sm sm:text-base shadow-[inset_0_-5px_0_rgba(0,0,0,0.2),0_5px_6px_rgba(0,0,0,0.1)] w-full sm:w-auto text-center">
@@ -126,7 +126,7 @@ import { Book, Award, Brain, GraduationCap, Scale, Target, Users, PlayCircle, Ga
                             <div class="relative rounded-xl overflow-hidden">
                                 <img 
                                     src="/img/happy-monster-removebg-preview.png" 
-                                    alt="Estudante usando o Vadeco" 
+                                    alt="Estudante usando o Memorize Direito" 
                                     class="w-full h-auto object-cover"
                                 />
                             </div>
@@ -137,7 +137,7 @@ import { Book, Award, Brain, GraduationCap, Scale, Target, Users, PlayCircle, Ga
                     <div class="w-full lg:w-1/2">
                         <h2 class="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">Estude com <span class="text-[#498304]">qualquer dispositivo</span></h2>
                         <p class="text-base sm:text-lg text-[#706f6c] dark:text-[#A1A09A]">
-                            Acesse o Vadeco no celular, tablet ou computador e continue seus estudos jurídicos de onde parou.
+                            Acesse o Memorize Direito no celular, tablet ou computador e continue seus estudos jurídicos de onde parou.
                         </p>
                     </div>
                 </div>
@@ -155,7 +155,7 @@ import { Book, Award, Brain, GraduationCap, Scale, Target, Users, PlayCircle, Ga
                     <div class="w-full lg:w-1/2">
                         <h2 class="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">Domine a <span class="text-[#498304]">legislação</span> enquanto se diverte</h2>
                         <p class="text-base sm:text-lg text-[#706f6c] dark:text-[#A1A09A] mb-6">
-                            Transforme horas de estudo cansativo em uma experiência divertida e eficiente. O Vadeco utiliza técnicas comprovadas de memorização para ajudá-lo a reter conhecimento jurídico por mais tempo.
+                            Transforme horas de estudo cansativo em uma experiência divertida e eficiente. O Memorize Direito utiliza técnicas comprovadas de memorização para ajudá-lo a reter conhecimento jurídico por mais tempo.
                         </p>
                         <div class="space-y-4">
                             <div class="flex items-center gap-3">
@@ -198,7 +198,7 @@ import { Book, Award, Brain, GraduationCap, Scale, Target, Users, PlayCircle, Ga
                             <div class="relative rounded-xl overflow-hidden">
                                 <img 
                                     src="/img/selecionados/lawyer-monster.png" 
-                                    alt="Estudante usando o Vadeco" 
+                                    alt="Estudante usando o Memorize Direito" 
                                     class="w-full h-auto object-cover"
                                 />
                             </div>
@@ -242,7 +242,7 @@ import { Book, Award, Brain, GraduationCap, Scale, Target, Users, PlayCircle, Ga
                 <div class="flex flex-col items-center justify-between gap-4 md:flex-row">
                     <div class="flex items-center gap-x-2">
                         <div class="flex h-8 items-center justify-center">
-                            <img src="/img/vadeco-brain.PNG" alt="Vadeco" class="h-8 w-auto" />
+                            <img src="/img/Memorize Direito-brain.PNG" alt="Memorize Direito" class="h-8 w-auto" />
                         </div>
                         <span class="text-sm font-medium">© 2025</span>
                     </div>
