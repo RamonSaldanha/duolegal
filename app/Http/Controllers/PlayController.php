@@ -253,4 +253,21 @@ class PlayController extends Controller
         $totalDifficulty = $articles->sum('difficulty_level');
         return round($totalDifficulty / $articles->count());
     }
+
+    /**
+     * Recompensa o usuário com uma vida após assistir o anúncio
+     */
+    public function rewardLife()
+    {
+        $user = Auth::user();
+        $user->lives = min($user->lives + 1, 5); // Adiciona uma vida, máximo de 5
+        $user->save();
+
+        return response()->json([
+            'success' => true,
+            'user' => [
+                'lives' => $user->lives
+            ]
+        ]);
+    }
 }

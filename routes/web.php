@@ -30,6 +30,7 @@ Route::get('/play/{reference}/{phase}', [PlayController::class, 'phase'])->name(
 // Adicione esta rota ao seu arquivo de rotas
 Route::middleware(['auth'])->group(function () {
     Route::post('/play/progress', [PlayController::class, 'saveProgress'])->name('play.progress');
+    Route::post('/play/reward-life', [PlayController::class, 'rewardLife'])->name('play.reward-life');
 });
 
 require __DIR__.'/settings.php';

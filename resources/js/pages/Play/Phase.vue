@@ -38,10 +38,20 @@
                         <!-- Barra de progresso - sempre visível -->
                         <div class="w-full max-w-md">
                             <div class="relative h-2 bg-muted rounded-full overflow-hidden">
-                                <div
-                                    class="absolute left-0 top-0 h-full bg-green-500 transition-all duration-300"
-                                    :style="`width: ${(completedArticles.length / articlesArray.length) * 100}%`"
-                                ></div>
+                                <!-- Segmentos de progresso para cada artigo -->
+                                <template v-for="(article, index) in articlesArray" :key="`progress-${index}`">
+                                    <div
+                                        v-if="article.progress && article.progress.is_completed"
+                                        class="absolute h-full transition-all duration-300"
+                                        :class="article.progress.percentage >= 70 ? 'bg-green-500' : 'bg-red-500'"
+                                        :style="`
+                                            left: ${(index / articlesArray.length) * 100}%;
+                                            width: ${(1 / articlesArray.length) * 100}%;
+                                        `"
+                                    ></div>
+                                </template>
+                                
+                                <!-- Indicador do artigo atual -->
                                 <div
                                     class="absolute h-full bg-yellow-500 transition-all duration-300"
                                     :style="`
