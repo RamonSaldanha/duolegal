@@ -19,7 +19,7 @@ import { getInitials } from '@/composables/useInitials';
 import type { BreadcrumbItem, NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
 import { BookOpen, Heart, Play, Menu, Lock } from 'lucide-vue-next';
-import { computed } from 'vue';
+import { computed, watch } from 'vue';
 
 interface Props {
     breadcrumbs?: BreadcrumbItem[];
@@ -77,6 +77,22 @@ const mainNavItems: NavItem[] = [
 ];
 
 const userLives = computed(() => page.props.auth.user?.lives ?? 0);
+
+// Observa mudanças nas vidas para recriar a animação
+watch(userLives, (newValue, oldValue) => {
+    if (newValue !== oldValue) {
+        // Remove e readiciona a classe para recriar a animação
+        const heartElement = document.querySelector('.animate-pulse-once') as HTMLElement;
+        if (heartElement) {
+            heartElement.classList.remove('animate-pulse-once');
+            // Force reflow usando uma maneira type-safe
+            heartElement.style.animation = 'none';
+            heartElement.getBoundingClientRect();
+            heartElement.style.animation = '';
+            heartElement.classList.add('animate-pulse-once');
+        }
+    }
+});
 
 const rightNavItems: NavItem[] = [
     // {
@@ -167,13 +183,20 @@ const rightNavItems: NavItem[] = [
                 </div>
 
                     <div class="ml-auto flex items-center space-x-4">
-                        <!-- Lives Counter -->
-                        <div v-if="auth.user?.lives !== undefined" class="flex items-center gap-1">
-                            <Heart class="w-5 h-5" :class="userLives > 0 ? 'text-red-500' : 'text-gray-400'" fill="currentColor" />
-                            <span class="font-medium" :class="userLives > 0 ? 'text-red-500' : 'text-gray-400'">
-                                {{ userLives }}
-                            </span>
-                        </div>
+<!-- Lives Counter -->
+<div v-if="auth.user?.lives !== undefined" class="flex items-center gap-1">
+    <Heart 
+        class="w-5 h-5 transition-transform" 
+        :class="[
+            userLives > 0 ? 'text-red-500' : 'text-gray-400',
+            'animate-pulse-once'
+        ]" 
+        fill="currentColor" 
+    />
+    <span class="font-medium" :class="userLives > 0 ? 'text-red-500' : 'text-gray-400'">
+        {{ userLives }}
+    </span>
+</div>
                         
                         <div class="relative flex items-center space-x-1">
                         <!-- <Button variant="ghost" size="icon" class="group h-9 w-9 cursor-pointer">
@@ -201,7 +224,7 @@ const rightNavItems: NavItem[] = [
                         </div>
                     </div>
 
-                    <DropdownMenu>
+                    <DropdownMenu v-if="auth.user">
                         <DropdownMenuTrigger :as-child="true">
                             <Button
                                 variant="ghost"
@@ -209,9 +232,9 @@ const rightNavItems: NavItem[] = [
                                 class="relative size-10 w-auto rounded-full p-1 focus-within:ring-2 focus-within:ring-primary"
                             >
                                 <Avatar class="size-8 overflow-hidden rounded-full">
-                                    <AvatarImage v-if="auth.user.avatar" :src="auth.user.avatar" :alt="auth.user.name" />
+                                    <AvatarImage v-if="auth.user?.avatar" :src="auth.user.avatar" :alt="auth.user.name" />
                                     <AvatarFallback class="rounded-lg bg-neutral-200 font-semibold text-black dark:bg-neutral-700 dark:text-white">
-                                        {{ getInitials(auth.user?.name) }}
+                                        {{ getInitials(auth.user.name) }}
                                     </AvatarFallback>
                                 </Avatar>
                             </Button>
@@ -232,3 +255,22 @@ const rightNavItems: NavItem[] = [
         </div>
     </div>
 </template>
+
+<style scoped>
+@keyframes pulse-once {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.3); }
+}
+
+.animate-pulse-once {
+    animation: pulse-once 0.6s cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+.animate-pulse-once {
+    animation: none;
+}
+
+:deep(.animate-pulse-once:not(:hover)) {
+    animation: pulse-once 0.6s cubic-bezier(0.4, 0, 0.6, 1);
+}
+</style>
