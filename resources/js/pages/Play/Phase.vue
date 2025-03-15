@@ -9,35 +9,31 @@
         <div class="container py-4 md:py-8 px-3 md:px-4">
             <div class="max-w-4xl mx-auto">
                 <!-- Cabeçalho da fase - versão responsiva -->
-                <div class="mb-4 md:mb-8">
+                <div class="mb-4 md:mb-4">
                     <!-- Mostrar apenas no desktop -->
-                    <Link :href="route('play.map')" class="hidden md:flex items-center text-primary hover:underline mb-4">
-                        <ChevronLeft class="h-5 w-5 mr-1" />
+                    <Link :href="route('play.map')" class="hidden md:flex text-sm items-center text-primary hover:underline mb-4">
+                        <ChevronLeft class="h-3 w-3 mr-1" />
                         Voltar ao mapa
                     </Link>
 
-                    <div class="flex flex-row justify-between items-center gap-4">
-                        <!-- Botão X para mobile -->
-                        <Link :href="route('play.map')" class="md:hidden flex items-center justify-center h-8 w-8 rounded-full bg-muted/30 hover:bg-muted/50">
-                            <X class="h-4 w-4" />
-                        </Link>
-                        
-                        <!-- Título e nível apenas no desktop -->
-                        <div class="hidden md:block">
-                            <h1 class="text-3xl font-bold">{{ phase.title }}</h1>
-                            <p class="text-muted-foreground mt-1">
-                                Nível:
-                                <span
-                                    :class="`inline-flex items-center px-2 py-1 rounded-full text-xs text-white ${getDifficultyColor(phase.difficulty)}`"
-                                >
-                                    {{ getDifficultyText(phase.difficulty) }}
-                                </span>
-                            </p>
-                        </div>
+                    <!-- Título e nível apenas no desktop - tamanho reduzido -->
+                    <div class="hidden md:block md:mb-4">
+                        <h1 class="text-2xl font-bold">{{ phase.title }}</h1>
+                        <p class="text-muted-foreground mt-1">
+                            Nível:
+                            <span
+                                :class="`inline-flex items-center px-2 py-1 rounded-full text-xs text-white ${getDifficultyColor(phase.difficulty)}`"
+                            >
+                                {{ getDifficultyText(phase.difficulty) }}
+                            </span>
+                        </p>
+                    </div>
 
-                        <!-- Barra de progresso - sempre visível -->
-                        <div class="w-full max-w-md">
-                            <div class="relative h-2 bg-muted rounded-full overflow-hidden">
+                    <!-- Barra de progresso - sempre visível (ajustada para width 100%) -->
+                    <div class="w-full">
+                        <div class="flex items-center justify-between w-full mb-2">
+                            <!-- Container da barra de progresso (largura reduzida para acomodar o botão) -->
+                            <div class="relative h-2 bg-muted rounded-full overflow-hidden grow">
                                 <!-- Segmentos de progresso para cada artigo -->
                                 <template v-for="(article, index) in articlesArray" :key="`progress-${index}`">
                                     <div
@@ -60,10 +56,19 @@
                                     `"
                                 ></div>
                             </div>
-                            <!-- Texto de progresso apenas no desktop -->
-                            <div class="mt-2 text-sm text-center text-muted-foreground hidden md:block">
-                                {{ completedArticles.length }} de {{ articlesArray.length }} artigos completados
-                            </div>
+                            
+                            <!-- Botão de voltar para o mapa - apenas no mobile -->
+                            <Link 
+                                :href="route('play.map')" 
+                                class="md:hidden ml-3 rounded-full p-1.5 bg-muted hover:bg-muted/80 transition-colors"
+                            >
+                                <X class="h-4 w-4" />
+                            </Link>
+                        </div>
+                        
+                        <!-- Texto de progresso apenas no desktop -->
+                        <div class="mt-2 text-sm text-center text-muted-foreground hidden md:block">
+                            {{ completedArticles.length }} de {{ articlesArray.length }} artigos completados
                         </div>
                     </div>
                 </div>
@@ -94,16 +99,16 @@
                 </div>
 
                 <!-- Artigo atual -->
-                <Card v-if="currentArticle" class="mb-6 border-0">
-                    <CardHeader>
+                <Card v-if="currentArticle" class="mb-6 border-0 p-0">
+                    <CardHeader class="px-0">
                         <CardTitle>Art. {{ currentArticle.article_reference }} - Leia e responda:</CardTitle>
                     </CardHeader>
 
-                    <CardContent class="pb-0">
+                    <CardContent class="px-0 pb-0">
                         <!-- Texto com lacunas - aumentado no mobile -->
                         <div
                             ref="textContainerRef"
-                            class="md:p-6 rounded-md mb-7 text-xl md:text-lg leading-relaxed whitespace-pre-line overflow-hidden transition-all duration-300 font-medium"
+                            class="rounded-md mb-7 text-xl md:text-lg leading-relaxed whitespace-pre-line overflow-hidden transition-all duration-300 font-medium"
                             :class="{ 'mobile-collapsed': isMobile && !allLacunasFilled }"
                             :style="isMobile ? { maxHeight: textContainerHeight + 'px' } : {}"
                             v-html="processedText"
@@ -120,21 +125,6 @@
                             <ChevronUp v-else class="ml-1 h-4 w-4" />
                         </button>
                         
-                        <!-- Palavras selecionadas que podem ser removidas (estilo Duolingo) -->
-                        <div v-if="Object.keys(userAnswers[currentArticleIndex] || {}).length > 0 && !answered" class="mb-6 hidden md:block">
-                            <h3 class="text-sm font-medium mb-2 text-muted-foreground">Palavras selecionadas:</h3>
-                            <div class="flex flex-wrap gap-2">
-                                <button
-                                    v-for="(word, lacunaIndex) in userAnswers[currentArticleIndex]"
-                                    :key="`selected-${lacunaIndex}`"
-                                    @click="removeWordFromLacuna(Number(lacunaIndex))"
-                                    class="inline-flex items-center justify-center px-3.5 py-2 rounded-xl text-base font-medium bg-primary/10 dark:bg-primary-dark/20 text-primary dark:text-primary-dark/90 border-2 border-primary/30 dark:border-primary-dark/40 hover:bg-primary/20 hover:border-primary/40 transition-all duration-200 shadow-duolingo-selected"
-                                >
-                                    <span>{{ word }}</span>
-                                    <X class="h-3.5 w-3.5 ml-1.5" />
-                                </button>
-                            </div>
-                        </div>
                         <!-- Offcanvas - alterado para garantir visibilidade e minimize correto -->
                         <div 
                         class="offcanvas-container"
@@ -164,7 +154,7 @@
                                         </div>
                                         <span class="font-semibold">
                                             {{ articleScore && articleScore.percentage >= 70 ? 'Parabéns!' : 'Continue tentando!' }}
-                                        </span>
+                                        </span>xx'
                                     </div>
                                     
                                     <Button variant="ghost" size="sm" @click="closeOffcanvas">
@@ -237,19 +227,21 @@
                         <!-- Resto do conteúdo sem alteração -->
                     </CardContent>
 
-                    <CardFooter>
+                    <CardFooter class="px-0">
                         <!-- Botões na parte inferior do card -->
                         <div v-if="!answered" class="w-full">
                             <div v-if="availableOptions.length > 0">
                                 <div class="flex flex-wrap gap-2 mb-4">
-                                    <button
+                                    <Button
                                         v-for="(word, index) in availableOptions"
                                         :key="`word-${index}`"
                                         @click="selectWord(word)"
-                                        class="inline-flex items-center justify-center px-3.5 py-2 rounded-xl text-base font-medium bg-background dark:bg-slate-800 text-foreground dark:text-slate-200 border-2 border-muted hover:bg-primary/5 hover:border-primary/30 transition-all duration-200 shadow-duolingo"
+                                        size="sm"
+                                        variant="outline"
+                                        class="text-base px-3.5 p-5 rounded-xl hover:bg-primary/5 hover:border-primary/30 transition-all duration-200"
                                     >
                                         {{ word }}
-                                    </button>
+                                    </Button>
                                 </div>
                             </div>
                             
@@ -774,6 +766,16 @@ const { reward: confettiReward } = useReward('confetti-canvas', 'confetti', {
         if (answered.value) return;
         
         const target = event.target as HTMLElement | null;
+        // Verificar se o clique foi no indicador de remoção (X)
+        if (target && target.classList.contains('lacuna-remove-indicator')) {
+            const lacunaElement = target.parentElement;
+            if (lacunaElement && lacunaElement.hasAttribute('data-lacuna-index')) {
+                const lacunaIndex = Number(lacunaElement.getAttribute('data-lacuna-index'));
+                removeWordFromLacuna(lacunaIndex);
+            }
+            return;
+        }
+        
         if (target && target.classList.contains('filled') && target.hasAttribute('data-lacuna-index')) {
             const lacunaIndex = Number(target.getAttribute('data-lacuna-index'));
             removeWordFromLacuna(lacunaIndex);
@@ -937,25 +939,15 @@ const { reward: confettiReward } = useReward('confetti-canvas', 'confetti', {
         }
     };
 
-// Remova ou comente este watch
-/*
-watch(allArticlesAttempted, (allAttempted) => {
-    if (allAttempted && currentArticleIndex.value === articlesArray.value.length - 1) {
-        // Exibir modal de parabéns e oferecer botão para avançar
-        showCompletionModal.value = true;
-    }
-});
-*/
+    // Estado para controlar a exibição do modal de conclusão
+    const showCompletionModal = ref(false);
 
-// Estado para controlar a exibição do modal de conclusão
-const showCompletionModal = ref(false);
-
-// Adicionar este watch para fechar o offcanvas quando o modal aparecer
-watch(showCompletionModal, (isShowing) => {
-    if (isShowing) {
-        offcanvasMinimize.value = true; // Minimiza o offcanvas quando o modal de conclusão aparecer
-    }
-});
+    // Adicionar este watch para fechar o offcanvas quando o modal aparecer
+    watch(showCompletionModal, (isShowing) => {
+        if (isShowing) {
+            offcanvasMinimize.value = true; // Minimiza o offcanvas quando o modal de conclusão aparecer
+        }
+    });
 </script>
 
 <style scoped>
@@ -993,19 +985,6 @@ watch(showCompletionModal, (isShowing) => {
 }
 </style>
 <style>
-.lacuna {
-
-}
-
-.lacuna.empty {
-    background: rgb(254, 252, 232);
-    border: 1px dashed rgb(202, 191, 137);
-    font-weight: normal;
-    padding: 4px 12px;
-    border-radius: 6px;
-    color: rgb(161, 151, 95);
-}
-
 /* Atualizações para o estilo do X nas lacunas */
 .lacuna.filled {
     background-color: rgb(240, 249, 255);
@@ -1182,12 +1161,11 @@ button {
 }
 
 .lacuna.empty {
-    background: rgb(254, 252, 232);
-    border: 1px dashed rgb(202, 191, 137);
-    font-weight: normal;
+    background: rgb(255, 251, 205);
+    font-weight: semibold;
     padding: 4px;
     border-radius: 6px;
-    color: rgb(161, 151, 95);
+    color: rgb(142, 126, 38);
 }
 
 /* Modo escuro para as lacunas */
