@@ -49,7 +49,7 @@
                                 
                                 <!-- Indicador do artigo atual -->
                                 <div
-                                    class="absolute h-full bg-yellow-500 transition-all duration-300"
+                                    class="absolute h-full bg-blue-500 transition-all duration-300"
                                     :style="`
                                         left: ${(currentArticleIndex / articlesArray.length) * 100}%;
                                         width: ${(1 / articlesArray.length) * 100}%;
@@ -154,7 +154,7 @@
                                         </div>
                                         <span class="font-semibold">
                                             {{ articleScore && articleScore.percentage >= 70 ? 'Parabéns!' : 'Continue tentando!' }}
-                                        </span>xx'
+                                        </span>
                                     </div>
                                     
                                     <Button variant="ghost" size="sm" @click="closeOffcanvas">
@@ -386,8 +386,13 @@ const page = usePage<{
 // Usar props para inicializar articlesArray
 const articlesArray = ref(Object.values(props.articles));
 
-// Controle do artigo atual
-const currentArticleIndex = ref(0);
+// Determina o primeiro artigo não completado
+const firstUncompletedIndex = computed(() => {
+    return articlesArray.value.findIndex(article => !article.progress?.is_completed);
+});
+
+// Controle do artigo atual - inicia no primeiro não completado
+const currentArticleIndex = ref(firstUncompletedIndex.value !== -1 ? firstUncompletedIndex.value : 0);
 const currentArticle = computed(() => {
     return articlesArray.value[currentArticleIndex.value];
 });
@@ -401,8 +406,14 @@ interface UserAnswers {
 // Estado para armazenar as respostas do usuário para cada artigo
 const userAnswers = ref<UserAnswers>({});
 const answered = ref(false);
-const offcanvasMinimize = ref(false)
-const completedArticles = ref<number[]>([]);
+const offcanvasMinimize = ref(false);
+
+// Inicializa completedArticles com os índices dos artigos já completados
+const completedArticles = ref<number[]>(
+    articlesArray.value
+        .map((article, index) => article.progress?.is_completed ? index : -1)
+        .filter(index => index !== -1)
+);
 
 // Adicione esta variável perto das outras variáveis de estado
 const isPhaseComplete = ref(false);
