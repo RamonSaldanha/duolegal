@@ -1104,14 +1104,25 @@ const { reward: confettiReward } = useReward('confetti-canvas', 'confetti', {
     border-radius: 4px;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: all 0.2s;
     position: relative;
     display: inline-flex;
     align-items: center;
-    line-height: 1.2; /* Reduzido para ajustar melhor o texto */
+    line-height: 1.2;
     vertical-align: baseline;
-    font-size: inherit; /* Garante que o texto tenha o mesmo tamanho do texto ao redor */
-    height: auto; /* Remove altura fixa */
+    font-size: inherit;
+    height: auto;
+    color: rgb(30, 41, 59); /* Cor escura para tema claro */
+}
+
+/* Tema escuro para lacuna preenchida */
+@media (prefers-color-scheme: dark) {
+    .lacuna.filled {
+        background-color: rgb(30, 58, 138); /* Azul escuro */
+        border-bottom-color: rgb(56, 189, 248);
+        color: rgb(226, 232, 240); /* Texto claro para melhor contraste */
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    }
 }
 
 .lacuna-remove-indicator {
@@ -1272,11 +1283,20 @@ button {
 }
 
 .lacuna.empty {
-    background: rgb(255, 251, 205);
+    background: #fffbcd;
     font-weight: semibold;
     padding: 4px;
     border-radius: 6px;
-    color: rgb(142, 126, 38);
+    color: #8e7e26;
+}
+
+/* Tema escuro para lacuna vazia */
+@media (prefers-color-scheme: dark) {
+    .lacuna.empty {
+        background: rgb(41, 37, 36); /* Fundo mais escuro */
+        color: rgb(253, 230, 138); /* Amarelo mais claro para melhor legibilidade */
+        border: 1px solid rgb(120, 113, 108); /* Borda sutil */
+    }
 }
 
 /* Modo escuro para as lacunas */

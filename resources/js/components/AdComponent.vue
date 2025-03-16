@@ -3,7 +3,7 @@
         :open="showAdDialog" 
         @update:open="handleDialogUpdate"
     >
-        <DialogContent class="sm:max-w-[425px] min-h-[400px] flex flex-col bg-white">
+        <DialogContent class="sm:max-w-[425px] min-h-[400px] flex flex-col bg-background">
             <DialogHeader>
                 <DialogTitle>Assistindo anúncio...</DialogTitle>
                 <DialogDescription>
@@ -19,7 +19,7 @@
                     <Button 
                         v-if="countdown <= 0"
                         @click="handleAdComplete"
-                        class="bg-primary text-white hover:bg-primary/90"
+                        class="bg-primary hover:bg-primary/90 text-primary-foreground"
                     >
                         Pular anúncio e ganhar vida
                     </Button>
