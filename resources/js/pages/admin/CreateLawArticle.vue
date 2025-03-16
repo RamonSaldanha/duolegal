@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, useForm, router } from '@inertiajs/vue3';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -9,29 +9,19 @@ import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge'; 
-import { LoaderCircle, Plus, X } from 'lucide-vue-next';
+import { LoaderCircle, X } from 'lucide-vue-next';
 import { ref, onMounted, computed, watch } from 'vue';
 import SearchCreateSelect from '@/components/SearchCreateSelect.vue';
 import axios from 'axios';
-import {
-  NumberField,
-  NumberFieldContent,
-  NumberFieldDecrement,
-  NumberFieldIncrement,
-  NumberFieldInput,
-} from '@/components/ui/number-field';
 import { useToast } from '@/components/ui/toast/use-toast'
 import Toaster from '@/components/ui/toast/Toaster.vue'
 
 
 const { toast } = useToast()
 
-const props = defineProps({
-    legalReferences: {
-        type: Array,
-        default: () => []
-    }
-});
+const props = defineProps<{
+    legalReferences?: LegalReference[]
+}>();
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -44,8 +34,27 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-const form = useForm({
-    legal_reference_id: null,
+type FormFields = {
+    legal_reference_id: string | number;
+    original_content: string;
+    article_reference: string;
+    difficulty_level: number;
+    position: number;
+    selected_words: Array<{
+        word: string;
+        position: number;
+        gap_order: number;
+    }>;
+    custom_options: Array<{
+        word: string;
+        is_correct: boolean;
+    }>;
+    practice_content: string;
+    [key: string]: unknown;
+}
+
+const form = useForm<FormFields>({
+    legal_reference_id: '',
     original_content: '',       // Conteúdo original completo
     article_reference: '',      // Alterado de 0 para string vazia
     difficulty_level: 1,        // Nível de dificuldade
@@ -55,18 +64,36 @@ const form = useForm({
     practice_content: '',       // Inicializar o campo practice_content
 });
 
+interface LawArticleOption {
+    id: number;
+    word: string;
+    frequency: number;
+}
+
+interface Word {
+    text: string;
+    space: string;
+    index: number;
+}
+
+interface LegalReference {
+    id: number;
+    name: string;
+    description?: string;
+}
+
 // Usar as referências legais fornecidas pela prop ou começar com um array vazio
-const legalReferences = ref(props.legalReferences || []);
+const legalReferences = ref<LegalReference[]>(props.legalReferences || []);
 
 // Estado para gerenciar palavras selecionadas e opções personalizadas
-const words = ref([]);
-const textLines = ref([]);
-const selectedWordIndices = ref(new Set());
+const words = ref<Word[]>([]);
+const textLines = ref<Word[][]>([]);
+const selectedWordIndices = ref<Set<number>>(new Set());
 const customWordInput = ref('');
-const lawArticleOptions = ref([]); // Adicionar para armazenar todas as opções existentes
+const lawArticleOptions = ref<LawArticleOption[]>([]); 
 
 // Função para adicionar uma nova referência legal à lista
-const handleReferenceCreated = (newReference) => {
+const handleReferenceCreated = (newReference: LegalReference) => {
     legalReferences.value.unshift(newReference);
 };
 
@@ -87,9 +114,9 @@ onMounted(async () => {
     try {
         const response = await axios.get('/admin/law-article-options');
         // Agrupar opções com o mesmo texto
-        const groupedOptions = {};
+        const groupedOptions: Record<string, LawArticleOption> = {};
         
-        response.data.forEach(option => {
+        response.data.forEach((option: { id: number; word: string }) => {
             if (!groupedOptions[option.word]) {
                 groupedOptions[option.word] = {
                     id: option.id,
@@ -111,7 +138,7 @@ onMounted(async () => {
 });
 
 // Função melhorada para detectar automaticamente o número do artigo no texto
-const detectArticleNumber = (text) => {
+const detectArticleNumber = (text: string) => {
     console.log('Detectando número do artigo...');
     
     // Regex melhorada para capturar mais formatos de artigos
@@ -133,13 +160,14 @@ const detectArticleNumber = (text) => {
 };
 
 // Usa input event para garantir que a detecção seja feita imediatamente
-const handleContentInput = (event) => {
-    const newText = event.target.value;
+const handleContentInput = (event: Event) => {
+    const target = event.target as HTMLTextAreaElement;
+    const newText = target.value;
     detectArticleNumber(newText);
 };
 
 // Código corrigido para detectar mudanças no texto e processar corretamente
-watch(() => form.original_content, (newText) => {
+watch(() => form.original_content, (newText: string) => {
     console.log('Watcher de original_content acionado');
     console.log('Texto novo:', newText);
     
@@ -164,8 +192,8 @@ watch(() => form.original_content, (newText) => {
     words.value = [];
     textLines.value = [];
     
-    lines.forEach((line, lineIdx) => {
-        const lineWords = [];
+lines.forEach((line, lineIdx) => {
+        const lineWords: Word[] = [];
         
         // Verifica se a linha está vazia e adiciona um espaço para manter quebras de linha
         if (line.trim() === '') {
@@ -216,10 +244,24 @@ watch(() => form.original_content, (newText) => {
 }, { immediate: true });
 
 // Processa a seleção de palavra
-const toggleWordSelection = (wordIndex) => {
+const toggleWordSelection = (wordIndex: number) => {
+    // Se a palavra já está selecionada, apenas remove
     if (selectedWordIndices.value.has(wordIndex)) {
         selectedWordIndices.value.delete(wordIndex);
     } else {
+        // Verifica se a palavra já existe nas seleções
+        const newWord = words.value[wordIndex].text;
+        const isDuplicate = form.selected_words.some(item => item.word === newWord);
+        
+        if (isDuplicate) {
+            toast({
+                variant: "destructive",
+                title: "Palavra duplicada",
+                description: "Esta palavra já foi selecionada como lacuna neste texto.",
+            });
+            return;
+        }
+        
         selectedWordIndices.value.add(wordIndex);
     }
     
@@ -234,20 +276,8 @@ const toggleWordSelection = (wordIndex) => {
     });
 };
 
-// Adiciona uma opção personalizada
-const addCustomOption = () => {
-    if (!customWordInput.value.trim()) return;
-    
-    form.custom_options.push({
-        word: customWordInput.value.trim(),
-        is_correct: false
-    });
-    
-    customWordInput.value = '';
-};
-
 // Remove uma opção personalizada
-const removeCustomOption = (index) => {
+const removeCustomOption = (index: number) => {
     form.custom_options.splice(index, 1);
 };
 
@@ -273,7 +303,7 @@ const allOptions = computed(() => {
 });
 
 // Função para lidar com opção criada
-const handleOptionCreated = (newOption) => {
+const handleOptionCreated = (newOption: { word: string }) => {
     // Adicionar a nova opção ao início da lista
     lawArticleOptions.value.unshift({
         id: Date.now(), // ID temporário para nova opção
@@ -289,7 +319,7 @@ const handleOptionCreated = (newOption) => {
 };
 
 // Função para lidar com opção selecionada
-const handleOptionSelected = (option) => {
+const handleOptionSelected = (option: LawArticleOption | null) => {
     if (!option) return;
     
     // Verificar se a opção já foi adicionada
@@ -489,7 +519,7 @@ const submit = () => {
                                     variant="default"
                                     class="flex items-center gap-1"
                                 >
-                                    {{ item.word }}
+                                    {{ item.gap_order }}- {{ item.word }}
                                     <button type="button" @click="toggleWordSelection(item.position)" class="hover:text-red-500">
                                         <X class="h-3 w-3" />
                                     </button>
@@ -502,7 +532,7 @@ const submit = () => {
                                     variant="outline"
                                     class="flex items-center gap-1"
                                 >
-                                    {{ item.word }}
+                                    0- {{ item.word }}
                                     <button type="button" @click="removeCustomOption(index)" class="hover:text-red-500">
                                         <X class="h-3 w-3" />
                                     </button>
@@ -541,7 +571,7 @@ const submit = () => {
                             <Button 
                                 type="button" 
                                 variant="outline" 
-                                @click="() => $inertia.visit(route('play.map'))"
+            @click="() => router.visit(route('play.map'))"
                             >
                                 Cancelar
                             </Button>

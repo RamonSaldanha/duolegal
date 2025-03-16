@@ -11,41 +11,21 @@
                 <p class="text-lg text-muted-foreground mb-8">
                     Aguarde até que suas vidas sejam recarregadas para continuar jogando.
                 </p>
-                <Button @click="startAdExperience" class="inline-flex items-center">
+                <Button @click="handleShowAd" class="inline-flex items-center">
                     <Play class="mr-2 h-4 w-4" />
                     Assistir anúncio para ganhar uma vida
                 </Button>
             </div>
         </div>
 
-        <Dialog 
-            :open="showAdDialog" 
-            @update:open="handleDialogUpdate"
-        >
-            <DialogContent class="sm:max-w-[425px] min-h-[400px] flex flex-col bg-white">
-                <DialogHeader>
-                    <DialogTitle>Assistindo anúncio...</DialogTitle>
-                    <DialogDescription>
-                        Aguarde a contagem regressiva para ganhar uma vida.
-                    </DialogDescription>
-                </DialogHeader>
-
-                <div class="flex-1 flex items-center justify-center">
-                    <div class="text-center">
-                        <div v-if="countdown > 0" class="text-xl font-bold mb-4">
-                            {{ countdown }}s
-                        </div>
-                        <Button 
-                            v-if="countdown <= 0"
-                            @click="handleAdComplete"
-                            class="bg-primary text-white hover:bg-primary/90"
-                        >
-                            Pular anúncio e ganhar vida
-                        </Button>
-                    </div>
-                </div>
-            </DialogContent>
-        </Dialog>
+        <AdComponent
+            ref="adComponentRef"
+            :reward-route="route('play.reward-life')"
+            :redirect-route="route('play.map')"
+            @ad-started="handleAdStarted"
+            @ad-completed="handleAdCompleted"
+            @ad-closed="handleAdClosed"
+        />
     </AppLayout>
 </template>
 
@@ -53,75 +33,28 @@
 import { Head } from '@inertiajs/vue3'
 import AppLayout from '@/layouts/AppLayout.vue'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Heart, Play } from 'lucide-vue-next'
-import { ref, onUnmounted } from 'vue'
-import axios from 'axios'
+import AdComponent from '@/components/AdComponent.vue'
+import { ref } from 'vue'
 
-// Component state
-const showAdDialog = ref(false)
-const countdown = ref(15)
-let countdownInterval: ReturnType<typeof setInterval> | null = null
+// Referência para o componente de anúncio
+const adComponentRef = ref<InstanceType<typeof AdComponent> | null>(null)
 
-// Inicia a experiência de anúncio
-const startAdExperience = () => {
-    showAdDialog.value = true
-    startCountdown()
+// Mostra o anúncio quando o botão é clicado
+const handleShowAd = () => {
+    adComponentRef.value?.startAdExperience()
 }
 
-// Inicia o contador regressivo
-const startCountdown = () => {
-    countdown.value = 15
-    
-    if (countdownInterval) {
-        clearInterval(countdownInterval)
-    }
-    
-    countdownInterval = setInterval(() => {
-        countdown.value--
-        
-        if (countdown.value <= 0 && countdownInterval) {
-            clearInterval(countdownInterval)
-        }
-    }, 1000)
+// Handlers para eventos do anúncio
+const handleAdStarted = () => {
+    console.log('Ad started')
 }
 
-// Trata a abertura/fechamento do diálogo
-const handleDialogUpdate = (isOpen: boolean) => {
-    if (!isOpen && countdown.value <= 0) {
-        // Só permitir fechar se a contagem terminou
-        if (countdownInterval) {
-            clearInterval(countdownInterval)
-            countdownInterval = null
-        }
-        
-        showAdDialog.value = false
-        countdown.value = 15
-    } else if (!isOpen && countdown.value > 0) {
-        // Se tentar fechar antes da contagem acabar, mantenha aberto
-        return true
-    }
+const handleAdCompleted = () => {
+    console.log('Ad completed successfully')
 }
 
-// Trata a conclusão do anúncio
-const handleAdComplete = async () => {
-    try {
-        const response = await axios.post(route('play.reward-life'))
-        if (response.data.success) {
-            window.location.href = route('play.map')
-        }
-    } catch (error) {
-        console.error('Error rewarding life:', error)
-    } finally {
-        showAdDialog.value = false
-    }
+const handleAdClosed = () => {
+    console.log('Ad closed')
 }
-
-// Limpa o intervalo quando o componente for desmontado
-onUnmounted(() => {
-    if (countdownInterval) {
-        clearInterval(countdownInterval)
-        countdownInterval = null
-    }
-})
 </script>

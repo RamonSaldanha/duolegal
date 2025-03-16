@@ -1,3 +1,4 @@
+table.php
 <?php
 
 use Illuminate\Database\Migrations\Migration;
@@ -17,10 +18,11 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->foreignId('law_article_id')->constrained()->onDelete('cascade');
             $table->integer('correct_answers')->default(0);
-            $table->integer('total_answers')->default(0);
             $table->decimal('percentage', 5, 2)->default(0); // Porcentagem de acerto (0-100)
             $table->integer('attempts')->default(0); // Número de tentativas
             $table->integer('best_score')->default(0); // Melhor pontuação
+            $table->integer('wrong_answers')->default(0); // Número de respostas erradas
+            $table->integer('revisions')->default(0); // Número de revisões feitas
             $table->timestamp('completed_at')->nullable(); // Quando o artigo foi concluído
             $table->boolean('is_completed')->default(false); // Marca se o artigo foi concluído
             $table->timestamps();

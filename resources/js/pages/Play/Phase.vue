@@ -68,7 +68,8 @@
                         
                         <!-- Texto de progresso apenas no desktop -->
                         <div class="mt-2 text-sm text-center text-muted-foreground hidden md:block">
-                            {{ completedArticles.length }} de {{ articlesArray.length }} artigos completados
+                            {{ attemptedArticles.length }} de {{ articlesArray.length }} artigos tentados
+                            <!-- <span class="text-xs text-muted-foreground ml-1">({{ completedArticles.length }} com sucesso)</span> -->
                         </div>
                     </div>
                 </div>
@@ -173,6 +174,8 @@
                                     <div class="text-lg font-medium mb-2">
                                         Você acertou {{ articleScore.correct }} de {{ articleScore.total }} lacunas ({{ articleScore.percentage }}%)
                                     </div>
+                                    
+                                    <!-- Removido a exibição de estatísticas adicionais conforme solicitado -->
 
                                     <div class="mt-6">
                                         <h3 class="font-medium mb-2">Texto original:</h3>
@@ -358,6 +361,8 @@ interface Article {
         is_completed: boolean;
         best_score: number;
         attempts: number;
+        wrong_answers?: number;
+        revisions?: number;
     } | null;
 }
 
@@ -386,13 +391,26 @@ const page = usePage<{
 // Usar props para inicializar articlesArray
 const articlesArray = ref(Object.values(props.articles));
 
-// Determina o primeiro artigo não completado
-const firstUncompletedIndex = computed(() => {
-    return articlesArray.value.findIndex(article => !article.progress?.is_completed);
+// Determina o primeiro artigo não tentado (prioridade 1) ou não completado (prioridade 2)
+const firstArticleToShowIndex = computed(() => {
+    // Primeiro, procura por artigos que ainda não foram tentados (progress === null)
+    const notAttemptedIndex = articlesArray.value.findIndex(article => article.progress === null);
+    if (notAttemptedIndex !== -1) {
+        return notAttemptedIndex;
+    }
+    
+    // Se não encontrar nenhum não tentado, procura por artigos não completados
+    const uncompletedIndex = articlesArray.value.findIndex(article => article.progress && !article.progress.is_completed);
+    if (uncompletedIndex !== -1) {
+        return uncompletedIndex;
+    }
+    
+    // Se todos os artigos foram completados, retorna o primeiro
+    return 0;
 });
 
-// Controle do artigo atual - inicia no primeiro não completado
-const currentArticleIndex = ref(firstUncompletedIndex.value !== -1 ? firstUncompletedIndex.value : 0);
+// Controle do artigo atual - inicia no primeiro não tentado ou não completado
+const currentArticleIndex = ref(firstArticleToShowIndex.value);
 const currentArticle = computed(() => {
     return articlesArray.value[currentArticleIndex.value];
 });
@@ -408,7 +426,14 @@ const userAnswers = ref<UserAnswers>({});
 const answered = ref(false);
 const offcanvasMinimize = ref(false);
 
-// Inicializa completedArticles com os índices dos artigos já completados
+// Inicializa attemptedArticles com os índices dos artigos já tentados (com progresso)
+const attemptedArticles = ref<number[]>(
+    articlesArray.value
+        .map((article, index) => article.progress ? index : -1)
+        .filter(index => index !== -1)
+);
+
+// Inicializa completedArticles com os índices dos artigos completados com sucesso
 const completedArticles = ref<number[]>(
     articlesArray.value
         .map((article, index) => article.progress?.is_completed ? index : -1)
@@ -442,8 +467,8 @@ const isPhaseComplete = ref(false);
             }
         });
 
-        // Embaralha as palavras e remove duplicatas
-        const shuffledWords = [...new Set(allWords)].sort(() => Math.random() - 0.5);
+        // Embaralha as palavras (mantendo duplicatas)
+        const shuffledWords = [...allWords].sort(() => Math.random() - 0.5);
 
         return {
             allOptions: shuffledWords,
@@ -608,14 +633,6 @@ const { reward: confettiReward } = useReward('confetti-canvas', 'confetti', {
             delete userAnswers.value[currentArticleIndex.value][index];
             userAnswers.value = { ...userAnswers.value }; // Força atualização reativa
         }
-    }
-
-    // Substitua a função checkAnswers
-    const checkAnswers = () => {
-        answered.value = true;
-        offcanvasMinimize.value = false; // Garante que o offcanvas está visível ao verificar respostas
-
-        // Calcular resultados
         const score = articleScore.value;
         
         if (score) {
@@ -932,6 +949,89 @@ const { reward: confettiReward } = useReward('confetti-canvas', 'confetti', {
     const closeOffcanvas = () => {
         // Mantenha answered como true, apenas minimize o offcanvas
         offcanvasMinimize.value = true;
+    };
+
+    // Função para verificar as respostas do usuário
+    const checkAnswers = () => {
+        if (!allLacunasFilled.value) return;
+        
+        answered.value = true;
+        
+        // Se não estiver no array de artigos tentados, adicione
+        if (!attemptedArticles.value.includes(currentArticleIndex.value)) {
+            attemptedArticles.value.push(currentArticleIndex.value);
+        }
+        
+        const score = articleScore.value;
+        
+        if (score) {
+            // Salvar progresso no servidor
+            axios.post(route('play.progress'), {
+                article_uuid: currentArticle.value.uuid,
+                correct_answers: score.correct,
+                total_answers: score.total,
+            })
+            .then(response => {
+                // Atualizar o progresso local com os dados do servidor
+                if (response.data.success) {
+                    console.log('Progresso atualizado:', response.data.progress);
+                    
+                    // Se houver redirecionamento (sem vidas), redireciona
+                    if (response.data.redirect) {
+                        router.visit(response.data.redirect);
+                        return;
+                    }
+
+                    // Atualiza o objeto do artigo atual com o progresso atualizado
+                    const currentIdx = currentArticleIndex.value;
+                    const articlesCopy = [...articlesArray.value];
+                    articlesCopy[currentIdx] = {
+                        ...articlesCopy[currentIdx],
+                        progress: response.data.progress
+                    };
+                    
+                    // Atualizar o array reativo
+                    articlesArray.value = articlesCopy;
+
+                    // Atualizar as vidas do usuário no estado da página
+                    if (response.data.user?.lives !== undefined) {
+                        page.props.auth.user.lives = response.data.user.lives;
+                    }
+                    
+                    // Verificar se todos os artigos foram respondidos, mas NÃO exibe o modal
+                    // Se for o último artigo, só marca como pronto para exibir o botão especial
+                    if (currentArticleIndex.value === articlesArray.value.length - 1) {
+                        const allDone = articlesCopy.every(article => article.progress !== null);
+                        if (allDone) {
+                            // Ao invés de mostrar o modal, marcamos que a fase está completa
+                            isPhaseComplete.value = true;
+                        }
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao salvar progresso:', error);
+            });
+        
+            // Código para exibir recompensas visuais
+            if (score.percentage >= 70) {
+                if (!completedArticles.value.includes(currentArticleIndex.value)) {
+                    completedArticles.value.push(currentArticleIndex.value);
+                }
+                
+                // Dispara o confetti para acertos acima de 70%
+                setTimeout(() => {
+                    confettiReward();
+                }, 300);
+                
+                // Para 100% de acerto, mostre emojis também
+                if (score.percentage === 100) {
+                    setTimeout(() => {
+                        emojiReward();
+                    }, 600);
+                }
+            }
+        }
     };
 
 

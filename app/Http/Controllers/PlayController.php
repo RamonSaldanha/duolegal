@@ -85,6 +85,32 @@ class PlayController extends Controller
         }
         
         $reference = LegalReference::where('uuid', $referenceUuid)->firstOrFail();
+
+        // Obter todos os artigos desta referência para verificar o progresso
+        $allArticles = $reference->articles()
+            ->orderBy('position', 'asc')
+            ->where('is_active', true)
+            ->get();
+        
+        // Agrupar os artigos em fases
+        $chunkedArticles = $allArticles->chunk(self::ARTICLES_PER_PHASE);
+        
+        // Encontrar a primeira fase não completa
+        $firstIncompletePhase = 1;
+        foreach ($chunkedArticles as $index => $phaseArticles) {
+            $progress = $this->getPhaseProgress(Auth::id(), $phaseArticles);
+            if ($progress['completed'] < $progress['total']) {
+                $firstIncompletePhase = $index + 1;
+                break;
+            }
+        }
+        
+        // Se a fase solicitada vier depois da primeira fase não completa, redirecionar
+        if ($phaseNumber > $firstIncompletePhase) {
+            return redirect()
+                ->route('play.map')
+                ->with('message', 'Complete a fase atual antes de avançar para as próximas.');
+        }
         
         // Obter artigos da fase específica COM suas opções
         $articles = $reference->articles()
@@ -129,6 +155,8 @@ class PlayController extends Controller
                     'is_completed' => $progress->is_completed,
                     'best_score' => $progress->best_score,
                     'attempts' => $progress->attempts,
+                    'wrong_answers' => $progress->wrong_answers,
+                    'revisions' => $progress->revisions,
                 ] : null,
             ];
         });
@@ -190,10 +218,11 @@ class PlayController extends Controller
             'article_uuid' => $validated['article_uuid'],
             'user_id' => Auth::id(),
             'correct_answers' => $correctAnswers,
-            'total_answers' => $totalAnswers,
             'percentage' => $progress->percentage,
             'best_score' => $progress->best_score,
             'attempts' => $progress->attempts,
+            'wrong_answers' => $progress->wrong_answers,
+            'revisions' => $progress->revisions,
             'is_completed' => $progress->is_completed
         ]);
         
@@ -204,6 +233,8 @@ class PlayController extends Controller
                 'is_completed' => $progress->is_completed,
                 'best_score' => $progress->best_score,
                 'attempts' => $progress->attempts,
+                'wrong_answers' => $progress->wrong_answers,
+                'revisions' => $progress->revisions,
             ],
             'user' => [
                 'lives' => $user->lives
@@ -222,22 +253,50 @@ class PlayController extends Controller
                 'completed' => 0,
                 'total' => $articles->count(),
                 'percentage' => 0,
+                'article_status' => array_fill(0, $articles->count(), 'pending') // Todos os artigos como pendentes
             ];
         }
         
         $articleIds = $articles->pluck('id');
         
-        $completedCount = UserProgress::where('user_id', $userId)
+        // Buscar o progresso de todos os artigos desta fase para o usuário
+        $progressRecords = UserProgress::where('user_id', $userId)
             ->whereIn('law_article_id', $articleIds)
-            ->count();
+            ->get();
             
         $totalArticles = $articleIds->count();
+        $completedCount = $progressRecords->where('is_completed', true)->count();
         $progressPercentage = $totalArticles > 0 ? round(($completedCount / $totalArticles) * 100, 2) : 0;
+        
+        // Mapear o status de cada artigo (correct, incorrect, pending)
+        $articleStatus = [];
+        
+        // Inicializar todos os artigos como pendentes
+        foreach ($articles as $index => $article) {
+            $articleStatus[$index] = 'pending';
+        }
+        
+        // Atualizar o status com base nos registros de progresso
+        foreach ($progressRecords as $progress) {
+            // Encontrar o índice do artigo no array de artigos
+            $index = $articles->search(function($article) use ($progress) {
+                return $article->id === $progress->law_article_id;
+            });
+            
+            if ($index !== false) {
+                if ($progress->is_completed) {
+                    $articleStatus[$index] = 'correct'; // Artigo completado com sucesso (>= 70%)
+                } else {
+                    $articleStatus[$index] = 'incorrect'; // Artigo tentado mas não completado (< 70%)
+                }
+            }
+        }
         
         return [
             'completed' => $completedCount,
             'total' => $totalArticles,
             'percentage' => $progressPercentage,
+            'article_status' => array_values($articleStatus) // Converter para array indexado
         ];
     }
     

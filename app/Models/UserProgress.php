@@ -22,10 +22,11 @@ class UserProgress extends Model
         'user_id',
         'law_article_id',
         'correct_answers',
-        'total_answers',
         'percentage',
         'attempts',
         'best_score',
+        'wrong_answers',
+        'revisions',
         'completed_at',
         'is_completed'
     ];
@@ -37,6 +38,8 @@ class UserProgress extends Model
         'percentage' => 'float',
         'attempts' => 'integer',
         'best_score' => 'integer',
+        'wrong_answers' => 'integer',
+        'revisions' => 'integer',
         'completed_at' => 'datetime',
         'is_completed' => 'boolean',
     ];
@@ -89,14 +92,29 @@ class UserProgress extends Model
         $isNewRecord = !$progress->exists;
         if (!$isNewRecord) {
             $progress->attempts += 1;
+            
+            // Se o usuário já completou o artigo antes e está revisando
+            if ($progress->is_completed) {
+                $progress->revisions += 1;
+            }
         } else {
             // Se for um novo registro, inicializa com 1
             $progress->attempts = 1;
+            $progress->wrong_answers = 0;
+            $progress->revisions = 0;
         }
         
-        // Atualiza os valores desta tentativa
-        $progress->correct_answers = $correctAnswers;
-        $progress->total_answers = $totalAnswers;
+        // Verifica se o usuário acertou ou errou (baseado na porcentagem)
+        if ($percentage >= 70) {
+            // Se acertou, incrementa o contador de respostas corretas
+            $progress->correct_answers = ($progress->correct_answers ?? 0) + 1;
+        } else {
+            // Se errou, incrementa o contador de respostas erradas
+            $progress->wrong_answers = ($progress->wrong_answers ?? 0) + 1;
+        }
+        
+        // Atualiza a porcentagem com base nos valores passados
+        // Não armazenamos mais total_answers, apenas usamos para cálculo
         $progress->percentage = $percentage;
         
         // Atualizar pontuação máxima se a atual for maior

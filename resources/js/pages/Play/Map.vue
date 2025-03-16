@@ -13,6 +13,7 @@ interface Progress {
     completed: number;
     total: number;
     percentage: number;
+    article_status?: string[]; // Novo campo para status de cada artigo
 }
 
 interface Phase {
@@ -81,6 +82,83 @@ const getPhaseIcon = (phaseNumber: number) => {
 const isPhaseComplete = (phase: Phase): boolean => {
     return phase.progress && phase.progress.completed === phase.article_count;
 };
+
+// Verifica se é a fase atual (primeira fase não completa em cada referência)
+const isCurrentPhase = (phase: Phase, phases: Phase[]): boolean => {
+    // Se a fase estiver completa, não é a atual
+    if (isPhaseComplete(phase)) {
+        return false;
+    }
+    
+    // Encontra a primeira fase não completa na mesma referência
+    const firstIncompletePhase = phases
+        .filter(p => p.reference_uuid === phase.reference_uuid)
+        .sort((a, b) => a.phase_number - b.phase_number)
+        .find(p => !isPhaseComplete(p));
+    
+    // Se não encontrou nenhuma fase incompleta, não é a fase atual
+    if (!firstIncompletePhase) {
+        return false;
+    }
+    
+    // É a fase atual se for a primeira fase não completa
+    return firstIncompletePhase.phase_number === phase.phase_number;
+};
+
+// Verifica se a fase está bloqueada (vem depois da fase atual)
+const isPhaseBlocked = (phase: Phase, phases: Phase[]): boolean => {
+    // Se a fase estiver completa, não está bloqueada
+    if (isPhaseComplete(phase)) {
+        return false;
+    }
+    
+    // Encontra a primeira fase não completa na mesma referência
+    const firstIncompletePhase = phases
+        .filter(p => p.reference_uuid === phase.reference_uuid)
+        .sort((a, b) => a.phase_number - b.phase_number)
+        .find(p => !isPhaseComplete(p));
+    
+    // Se não encontrou nenhuma fase incompleta, não está bloqueada
+    if (!firstIncompletePhase) {
+        return false;
+    }
+    
+    // Está bloqueada se vier depois da primeira fase não completa
+    return phase.phase_number > firstIncompletePhase.phase_number;
+};
+
+// Obtém o status de cada artigo na fase (acerto, erro, não respondido)
+const getArticleStatus = (phase: Phase): string[] => {
+    // Verifica se o backend forneceu informações detalhadas sobre o status dos artigos
+    if (phase.progress && phase.progress.article_status) {
+        return phase.progress.article_status;
+    }
+    
+    // Fallback para o caso de o backend não fornecer as informações detalhadas
+    // (compatibilidade com versões anteriores)
+    const status: string[] = [];
+    
+    // Número de artigos tentados mas não completados (erros)
+    // Vamos assumir que há pelo menos 1 erro se a fase não estiver completa e tiver algum progresso
+    const hasProgress = phase.progress && phase.progress.completed > 0;
+    const isIncomplete = phase.progress && phase.progress.completed < phase.article_count;
+    const errorCount = hasProgress && isIncomplete ? 1 : 0;
+    
+    for (let i = 1; i <= phase.article_count; i++) {
+        if (i <= phase.progress.completed) {
+            // Artigos completados são considerados acertos (verde)
+            status.push('correct');
+        } else if (i <= phase.progress.completed + errorCount) {
+            // Artigos tentados mas não completados são considerados erros (vermelho)
+            status.push('incorrect');
+        } else {
+            // Artigos não tentados são considerados não respondidos (cinza)
+            status.push('pending');
+        }
+    }
+    
+    return status;
+};
 </script>
 
 <template>
@@ -129,16 +207,19 @@ const isPhaseComplete = (phase: Phase): boolean => {
                       style="width: 55%;"
                     >
                       <Link 
-                        :href="props.user.lives > 0 ? route('play.phase', [phase.reference_uuid, phase.phase_number]) : '#'"
+                        :href="props.user.lives > 0 && !isPhaseBlocked(phase, props.phases) ? route('play.phase', [phase.reference_uuid, phase.phase_number]) : '#'"
                         class="relative group transition-transform duration-300"
-                        :class="props.user.lives > 0 ? 'hover:scale-110' : 'opacity-50 cursor-not-allowed'"
+                        :class="props.user.lives > 0 && !isPhaseBlocked(phase, props.phases) ? 'hover:scale-110' : 'opacity-50 cursor-not-allowed'"
                         :style="`margin-${index % 2 === 0 ? 'right' : 'left'}: -5px;`"
                       >
                         <!-- Bolinha da fase -->
                         <div 
                           :class="[
                             'w-16 h-16 rounded-full flex items-center justify-center phase-circle',
-                            isPhaseComplete(phase) ? 'bg-green-500' : getDifficultyColor(phase.difficulty)
+                            isPhaseComplete(phase) ? 'bg-green-500' : 
+                            isCurrentPhase(phase, props.phases) ? 'bg-blue-500' :
+                            isPhaseBlocked(phase, props.phases) ? 'bg-gray-400' : 
+                            getDifficultyColor(phase.difficulty)
                           ]"
                         >
                           <component 
@@ -155,10 +236,14 @@ const isPhaseComplete = (phase: Phase): boolean => {
                         <!-- Indicador de progresso -->
                         <div class="mt-1 flex justify-center gap-1">
                           <span 
-                            v-for="i in phase.article_count" 
-                            :key="i" 
+                            v-for="(status, index) in getArticleStatus(phase)" 
+                            :key="index" 
                             class="w-2 h-2 rounded-full transition-colors duration-300"
-                            :class="phase.progress && i <= phase.progress.completed ? 'bg-green-500' : 'bg-muted'"
+                            :class="{
+                              'bg-green-500': status === 'correct',
+                              'bg-red-500': status === 'incorrect',
+                              'bg-muted': status === 'pending'
+                            }"
                           ></span>
                         </div>
 

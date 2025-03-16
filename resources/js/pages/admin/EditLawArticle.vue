@@ -2,7 +2,7 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, useForm, router } from '@inertiajs/vue3';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge'; 
-import { LoaderCircle, Plus, X } from 'lucide-vue-next';
+import { LoaderCircle, X } from 'lucide-vue-next';
 import { ref, onMounted, computed, watch } from 'vue';
 import SearchCreateSelect from '@/components/SearchCreateSelect.vue';
 import axios from 'axios';
@@ -137,10 +137,11 @@ const handleContentInput = (event) => {
 
 // Atualiza o formulário com as palavras selecionadas
 const updateSelectedWords = () => {
-    form.selected_words = Array.from(selectedWordIndices.value).map(index => {
+    form.selected_words = Array.from(selectedWordIndices.value).map((index, gapOrder) => {
         return {
             word: words.value[index]?.text || '',
-            position: index
+            position: index,
+            gap_order: gapOrder + 1 // A ordem da lacuna começa em 1
         };
     });
 };
@@ -150,6 +151,19 @@ const toggleWordSelection = (wordIndex) => {
     if (selectedWordIndices.value.has(wordIndex)) {
         selectedWordIndices.value.delete(wordIndex);
     } else {
+        // Verifica se a palavra já existe nas seleções
+        const newWord = words.value[wordIndex].text;
+        const isDuplicate = form.selected_words.some(item => item.word === newWord);
+        
+        if (isDuplicate) {
+            toast({
+                variant: "destructive",
+                title: "Palavra duplicada",
+                description: "Esta palavra já foi selecionada como lacuna neste texto.",
+            });
+            return;
+        }
+        
         selectedWordIndices.value.add(wordIndex);
     }
     
@@ -454,7 +468,7 @@ const submit = () => {
                                     variant="default"
                                     class="flex items-center gap-1"
                                 >
-                                    {{ item.word }}
+                                    {{ item.gap_order }}- {{ item.word }}
                                     <button type="button" @click="toggleWordSelection(item.position)" class="hover:text-red-500">
                                         <X class="h-3 w-3" />
                                     </button>
@@ -467,7 +481,7 @@ const submit = () => {
                                     variant="outline"
                                     class="flex items-center gap-1"
                                 >
-                                    {{ item.word }}
+                                    0- {{ item.word }}
                                     <button type="button" @click="removeCustomOption(index)" class="hover:text-red-500">
                                         <X class="h-3 w-3" />
                                     </button>
@@ -506,7 +520,7 @@ const submit = () => {
                             <Button 
                                 type="button" 
                                 variant="outline" 
-                                @click="() => $inertia.visit(route('admin.legislations.show', lawArticle.legal_reference_id))"
+                                @click="() => router.visit(route('admin.legislations.show', lawArticle.legal_reference_id))"
                             >
                                 Cancelar
                             </Button>
