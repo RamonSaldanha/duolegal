@@ -541,7 +541,7 @@ const submit = () => {
                             <Button 
                                 type="button" 
                                 variant="outline" 
-                                @click="() => $inertia.visit(route('dashboard'))"
+                                @click="() => $inertia.visit(route('play.map'))"
                             >
                                 Cancelar
                             </Button>
