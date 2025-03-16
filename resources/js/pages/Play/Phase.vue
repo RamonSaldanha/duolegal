@@ -37,7 +37,7 @@
                                 <!-- Segmentos de progresso para cada artigo -->
                                 <template v-for="(article, index) in articlesArray" :key="`progress-${index}`">
                                     <div
-                                        v-if="article.progress && article.progress.is_completed"
+                                        v-if="article.progress"
                                         class="absolute h-full transition-all duration-300"
                                         :class="article.progress.percentage >= 70 ? 'bg-green-500' : 'bg-red-500'"
                                         :style="`
