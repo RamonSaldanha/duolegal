@@ -180,8 +180,7 @@
                                     <div class="mt-6">
                                         <h3 class="font-medium mb-2">Texto original:</h3>
                                         <div class="p-1 bg-muted/70 dark:bg-muted/10 border border-muted/80 rounded-md max-h-[150px] overflow-y-auto">
-                                            <p class="whitespace-pre-line text-md">
-                                                {{ currentArticle?.original_content }}
+                                            <p class="whitespace-pre-line text-md" v-html="highlightedOriginalText">
                                             </p>
                                         </div>
                                     </div>
@@ -575,7 +574,7 @@ const isPhaseComplete = ref(false);
 
     // Configure as recompensas
     // Recompensas
-const { reward: confettiReward } = useReward('confetti-canvas', 'confetti', {
+    const { reward: confettiReward } = useReward('confetti-canvas', 'confetti', {
         startVelocity: 30, 
         spread: 360,
         elementCount: 100,
@@ -601,7 +600,38 @@ const { reward: confettiReward } = useReward('confetti-canvas', 'confetti', {
         }
         return null; // Todas as lacunas estão preenchidas
     });
-
+    const highlightedOriginalText = computed(() => {
+        if (!currentArticle.value) return '';
+        
+        let originalText = currentArticle.value.original_content;
+        const correctAnswers = new Map();
+        
+        // Obter todas as respostas corretas
+        currentArticle.value.options.forEach(option => {
+            if (option.is_correct && option.gap_order !== undefined) {
+                correctAnswers.set(option.gap_order, option.word);
+            }
+        });
+        
+        // Para cada resposta correta, destaque no texto original
+        correctAnswers.forEach((word, gapOrder) => {
+            // Usamos uma regex que busca a palavra exata para evitar problemas com substrings
+            const regex = new RegExp(`\\b${word}\\b`, 'g');
+            
+            // Apenas substitui a primeira ocorrência para evitar destacar palavras repetidas
+            // que não sejam as das lacunas
+            let found = false;
+            originalText = originalText.replace(regex, (match) => {
+                if (!found) {
+                    found = true;
+                    return `<strong class="text-primary font-bold underline decoration-2 underline-offset-2">${match}</strong>`;
+                }
+                return match;
+            });
+        });
+        
+        return originalText;
+    });
     // Ao clicar em uma palavra, ela é selecionada para preencher a próxima lacuna disponível
     function selectWord(word: string) {
         if (answered.value) return;
