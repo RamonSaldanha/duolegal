@@ -513,14 +513,15 @@ const isPhaseComplete = ref(false);
             const correctAnswer = correctAnswersMap.get(index + 1); // gap_order é 1-based
             
             // No computed property processedText, modifique a parte que cria o replacement:
+
             const replacement = answered.value 
                 ? (selectedWord
                     ? `<span class="lacuna ${selectedWord === correctAnswer ? 'correct' : 'incorrect'}">${selectedWord}</span>`
-                    : '<span class="lacuna empty">(...)</span>')
+                    : `<span class="lacuna empty lacuna-empty-${document.documentElement.classList.contains('dark') ? 'dark' : 'light'}">(...)</span>`)
                 : (selectedWord
                     ? `<span class="lacuna filled" data-lacuna-index="${index}">${selectedWord}<span class="lacuna-remove-indicator">×</span></span>`
-                    : '<span class="lacuna empty">(...)</span>');
-                    
+                    : `<span class="lacuna empty lacuna-empty-${document.documentElement.classList.contains('dark') ? 'dark' : 'light'}">(...)</span>`);
+                                
             text = text.replace(lacuna, replacement);
         });
 
@@ -647,11 +648,11 @@ const { reward: confettiReward } = useReward('confetti-canvas', 'confetti', {
                 if (response.data.success) {
                     console.log('Progresso atualizado:', response.data.progress);
                     
-                    // Se houver redirecionamento (sem vidas), redireciona
-                    if (response.data.redirect) {
-                        router.visit(response.data.redirect);
-                        return;
-                    }
+                    // Atualiza o estado de redirecionamento de sem vidas
+                    noLivesState.value = {
+                        shouldRedirect: response.data.should_redirect,
+                        redirectUrl: response.data.redirect_url
+                    };
 
                     // Atualiza o objeto do artigo atual com o progresso atualizado
                     const currentIdx = currentArticleIndex.value;
@@ -736,31 +737,47 @@ const { reward: confettiReward } = useReward('confetti-canvas', 'confetti', {
         }, 100);
     };
 
+    // Estado para controlar o redirecionamento quando sem vidas
+    const noLivesState = ref<{shouldRedirect: boolean; redirectUrl: string | null}>({
+        shouldRedirect: false,
+        redirectUrl: null
+    });
+
+    // Função para verificar se deve redirecionar
+    const checkNoLivesRedirect = () => {
+        if (noLivesState.value.shouldRedirect && noLivesState.value.redirectUrl) {
+            router.visit(noLivesState.value.redirectUrl);
+        }
+    };
+
     // Modifique a função resetAnswers
     const resetAnswers = () => {
+        checkNoLivesRedirect(); // Verifica redirecionamento antes de qualquer ação
+        
         if (userAnswers.value[currentArticleIndex.value]) {
             userAnswers.value[currentArticleIndex.value] = {};
         }
         answered.value = false;
-        // isShowingCorrections.value = false; // Reset o estado de correções
         resetTextState();
     };
 
     // Modifique as funções nextArticle e previousArticle
     const nextArticle = () => {
+        checkNoLivesRedirect(); // Verifica redirecionamento antes de qualquer ação
+        
         if (currentArticleIndex.value < articlesArray.value.length - 1) {
             currentArticleIndex.value++;
             answered.value = false;
-            // isShowingCorrections.value = false; // Reset o estado de correções
             resetTextState();
         }
     };
 
     const previousArticle = () => {
+        checkNoLivesRedirect(); // Verifica redirecionamento antes de qualquer ação
+        
         if (currentArticleIndex.value > 0) {
             currentArticleIndex.value--;
             answered.value = false;
-            // isShowingCorrections.value = false; // Reset o estado de correções
             resetTextState();
         }
     };
@@ -976,11 +993,11 @@ const { reward: confettiReward } = useReward('confetti-canvas', 'confetti', {
                 if (response.data.success) {
                     console.log('Progresso atualizado:', response.data.progress);
                     
-                    // Se houver redirecionamento (sem vidas), redireciona
-                    if (response.data.redirect) {
-                        router.visit(response.data.redirect);
-                        return;
-                    }
+                    // Atualiza o estado de redirecionamento de sem vidas
+                    noLivesState.value = {
+                        shouldRedirect: response.data.should_redirect,
+                        redirectUrl: response.data.redirect_url
+                    };
 
                     // Atualiza o objeto do artigo atual com o progresso atualizado
                     const currentIdx = currentArticleIndex.value;
@@ -1118,8 +1135,8 @@ const { reward: confettiReward } = useReward('confetti-canvas', 'confetti', {
 /* Tema escuro para lacuna preenchida */
 @media (prefers-color-scheme: dark) {
     .lacuna.filled {
-        background-color: rgb(30, 58, 138); /* Azul escuro */
-        border-bottom-color: rgb(56, 189, 248);
+        background-color: rgb(30, 59, 138); /* Azul escuro */
+        border-bottom-color: rgb(5, 36, 121);
         color: rgb(226, 232, 240); /* Texto claro para melhor contraste */
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
     }
@@ -1132,7 +1149,7 @@ const { reward: confettiReward } = useReward('confetti-canvas', 'confetti', {
     margin-left: 3px;
     font-size: 12px;
     font-weight: bold;
-    color: rgba(107, 114, 128, 0.7);
+    color: rgba(239, 239, 239, 0.7);
     width: 16px;
     height: 16px;
     border-radius: 50%;
@@ -1146,7 +1163,7 @@ const { reward: confettiReward } = useReward('confetti-canvas', 'confetti', {
     }
     
     .lacuna-remove-indicator {
-        background-color: rgba(107, 114, 128, 0.1);
+        background-color: rgba(248, 248, 248, 0.407);
     }
     
     .lacuna.filled:hover .lacuna-remove-indicator,
@@ -1189,89 +1206,29 @@ button {
     border: 1px solid rgba(59, 130, 246, 0.3);
 }
 
-
-/* Botões estilo Duolingo */
-.duolingo-button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0.5rem 0.875rem;
-    border-radius: 1rem;
-    font-size: 1rem;
-    font-weight: 500;
-    line-height: 1.5;
-    color: rgb(75, 85, 99);
-    background-color: white;
-    border: 2px solid rgb(226, 232, 240);
-    box-shadow: 0 2px 3px rgba(0, 0, 0, 0.05);
-    cursor: pointer;
-    transition: all 0.15s ease;
+.lacuna.empty.lacuna-empty-light {
+    background: #fffbcd !important;
+    font-weight: semibold;
+    padding: 4px;
+    border-radius: 6px;
+    color: #8e7e26;
 }
 
-.duolingo-button:hover {
-    background-color: rgb(240, 249, 255);
-    border-color: rgb(186, 230, 253);
-    transform: translateY(-1px);
-    box-shadow: 0 3px 5px rgba(0, 0, 0, 0.08);
-}
-
-.duolingo-button:active {
-    transform: translateY(0);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-}
-
-/* Versão para palavras já selecionadas */
-.duolingo-button-selected {
-    background-color: rgb(240, 249, 255);
-    border-color: rgb(125, 211, 252);
-    color: rgb(14, 116, 144);
-}
-
-.duolingo-button-selected:hover {
-    background-color: rgb(224, 242, 254);
-    border-color: rgb(56, 189, 248);
-}
-
-/* Adaptação para tema escuro */
-@media (prefers-color-scheme: dark) {
-    .duolingo-button {
-        background-color: rgb(30, 41, 59);
-        border-color: rgb(51, 65, 85);
-        color: rgb(226, 232, 240);
-    }
-    
-    .duolingo-button:hover {
-        background-color: rgb(44, 55, 74);
-        border-color: rgb(71, 85, 105);
-    }
-    
-    .duolingo-button-selected {
-        background-color: rgb(6, 95, 129);
-        border-color: rgb(8, 145, 178);
-        color: rgb(198, 198, 198);
-    }
-    
-    .duolingo-button-selected:hover {
-        background-color: rgb(14, 116, 144);
-        border-color: rgb(2, 132, 199);
-    }
-}
-
-/* Responsividade para dispositivos móveis */
-@media (max-width: 640px) {
-    .duolingo-button {
-        padding: 0.625rem 1rem;
-        font-size: 1.125rem;
-    }
+.lacuna.empty.lacuna-empty-dark {
+    background: #242424 !important; 
+    color: #fffbcd !important;
+    font-weight: semibold;
+    padding: 4px;
+    border-radius: 6px;
 }
 
 /* Estilos para quando o modal é fechado mas ainda mostrando correções */
 .lacuna.correct {
-    background-color: rgb(220, 252, 231);
-    border-bottom: 2px solid rgb(34, 197, 94);
+    background-color: rgba(38, 184, 89, 0.802);
+    border-bottom: 2px solid rgb(17, 133, 58);
     padding: 2px 6px;
     border-radius: 4px;
-    color: rgb(22, 101, 52);
+    color: rgb(2, 51, 19);
 }
 
 .lacuna.incorrect {
@@ -1283,36 +1240,23 @@ button {
 }
 
 .lacuna.empty {
-    background: #fffbcd;
+    background: #fffbcd !important;
     font-weight: semibold;
     padding: 4px;
     border-radius: 6px;
-    color: #8e7e26;
+    color: #8e7e26 !important;
 }
 
-/* Tema escuro para lacuna vazia */
-@media (prefers-color-scheme: dark) {
-    .lacuna.empty {
-        background: rgb(41, 37, 36); /* Fundo mais escuro */
-        color: rgb(253, 230, 138); /* Amarelo mais claro para melhor legibilidade */
-        border: 1px solid rgb(120, 113, 108); /* Borda sutil */
-    }
+/* Modo escuro para as lacunas - usando a classe dark do Tailwind */
+:global(.dark) .lacuna.correct {
+    background-color: rgba(34, 197, 94, 0.2);
+    border-bottom-color: rgb(22, 163, 74);
+    color: rgb(134, 239, 172);
 }
 
-/* Modo escuro para as lacunas */
-@media (prefers-color-scheme: dark) {
-    .lacuna.correct {
-        background-color: rgba(34, 197, 94, 0.2);
-        border-bottom-color: rgb(22, 163, 74);
-        color: rgb(134, 239, 172);
-    }
-    
-    .lacuna.incorrect {
-        background-color: rgba(239, 68, 68, 0.2);
-        border-bottom-color: rgb(220, 38, 38);
-        color: rgb(252, 165, 165);
-    }
-    
-    
+:global(.dark) .lacuna.incorrect {
+    background-color: rgba(239, 68, 68, 0.2);
+    border-bottom-color: rgb(220, 38, 38);
+    color: rgb(252, 165, 165);
 }
 </style>

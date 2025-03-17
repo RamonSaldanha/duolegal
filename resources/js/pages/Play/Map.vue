@@ -83,48 +83,45 @@ const isPhaseComplete = (phase: Phase): boolean => {
     return phase.progress && phase.progress.completed === phase.article_count;
 };
 
-// Verifica se é a fase atual (primeira fase não completa em cada referência)
+// Verifica se é a fase atual (primeira fase não totalmente tentada em cada referência)
+// Verifica se é a fase atual (primeira fase não totalmente tentada em cada referência)
 const isCurrentPhase = (phase: Phase, phases: Phase[]): boolean => {
     // Se a fase estiver completa, não é a atual
     if (isPhaseComplete(phase)) {
         return false;
     }
     
-    // Encontra a primeira fase não completa na mesma referência
+    // Encontra a primeira fase não totalmente tentada na mesma referência
     const firstIncompletePhase = phases
         .filter(p => p.reference_uuid === phase.reference_uuid)
         .sort((a, b) => a.phase_number - b.phase_number)
-        .find(p => !isPhaseComplete(p));
+        .find(p => {
+            // Verifica se há artigos pendentes (não tentados) na fase
+            return p.progress && p.progress.article_status && 
+                p.progress.article_status.some(status => status === 'pending');
+        });
     
-    // Se não encontrou nenhuma fase incompleta, não é a fase atual
+    // Se não encontrou nenhuma fase incompleta, a última fase é a atual
     if (!firstIncompletePhase) {
-        return false;
+        const phasesInReference = phases
+            .filter(p => p.reference_uuid === phase.reference_uuid)
+            .sort((a, b) => a.phase_number - b.phase_number);
+        return phase.phase_number === phasesInReference[phasesInReference.length - 1].phase_number;
     }
     
-    // É a fase atual se for a primeira fase não completa
+    // É a fase atual se for a primeira fase não totalmente tentada
     return firstIncompletePhase.phase_number === phase.phase_number;
 };
 
-// Verifica se a fase está bloqueada (vem depois da fase atual)
+// Verifica se a fase está bloqueada (vem depois da fase atual ou já foi concluída)
 const isPhaseBlocked = (phase: Phase, phases: Phase[]): boolean => {
-    // Se a fase estiver completa, não está bloqueada
-    if (isPhaseComplete(phase)) {
+    // Se a fase não estiver completa e for a primeira fase incompleta, não está bloqueada
+    if (!isPhaseComplete(phase) && isCurrentPhase(phase, phases)) {
         return false;
     }
     
-    // Encontra a primeira fase não completa na mesma referência
-    const firstIncompletePhase = phases
-        .filter(p => p.reference_uuid === phase.reference_uuid)
-        .sort((a, b) => a.phase_number - b.phase_number)
-        .find(p => !isPhaseComplete(p));
-    
-    // Se não encontrou nenhuma fase incompleta, não está bloqueada
-    if (!firstIncompletePhase) {
-        return false;
-    }
-    
-    // Está bloqueada se vier depois da primeira fase não completa
-    return phase.phase_number > firstIncompletePhase.phase_number;
+    // Se a fase estiver completa OU vier depois da fase atual, está bloqueada
+    return true;
 };
 
 // Obtém o status de cada artigo na fase (acerto, erro, não respondido)
@@ -206,19 +203,18 @@ const getArticleStatus = (phase: Phase): string[] => {
                       :class="`flex ${index % 2 === 0 ? 'justify-end ml-auto' : 'justify-start mr-auto'}`" 
                       style="width: 55%;"
                     >
-                      <Link 
-                        :href="props.user.lives > 0 && !isPhaseBlocked(phase, props.phases) ? route('play.phase', [phase.reference_uuid, phase.phase_number]) : '#'"
-                        class="relative group transition-transform duration-300"
-                        :class="props.user.lives > 0 && !isPhaseBlocked(phase, props.phases) ? 'hover:scale-110' : 'opacity-50 cursor-not-allowed'"
-                        :style="`margin-${index % 2 === 0 ? 'right' : 'left'}: -5px;`"
-                      >
+                    <Link 
+                      :href="props.user.lives > 0 && isCurrentPhase(phase, props.phases) ? route('play.phase', [phase.reference_uuid, phase.phase_number]) : '#'"
+                      class="relative group transition-transform duration-300"
+                      :class="props.user.lives > 0 && isCurrentPhase(phase, props.phases) ? 'hover:scale-110' : 'opacity-50 cursor-not-allowed'"
+                      :style="`margin-${index % 2 === 0 ? 'right' : 'left'}: -5px;`"
+                    >
                         <!-- Bolinha da fase -->
                         <div 
                           :class="[
                             'w-16 h-16 rounded-full flex items-center justify-center phase-circle',
                             isPhaseComplete(phase) ? 'bg-green-500' : 
                             isCurrentPhase(phase, props.phases) ? 'bg-blue-500' :
-                            isPhaseBlocked(phase, props.phases) ? 'bg-gray-400' : 
                             getDifficultyColor(phase.difficulty)
                           ]"
                         >

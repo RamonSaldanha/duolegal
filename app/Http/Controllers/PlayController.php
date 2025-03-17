@@ -95,11 +95,18 @@ class PlayController extends Controller
         // Agrupar os artigos em fases
         $chunkedArticles = $allArticles->chunk(self::ARTICLES_PER_PHASE);
         
-        // Encontrar a primeira fase não completa
+        // Encontrar a primeira fase que não foi totalmente tentada
         $firstIncompletePhase = 1;
         foreach ($chunkedArticles as $index => $phaseArticles) {
             $progress = $this->getPhaseProgress(Auth::id(), $phaseArticles);
-            if ($progress['completed'] < $progress['total']) {
+            
+            // Verificar se todos os artigos da fase foram pelo menos tentados
+            // (artigos com status 'pending' não foram tentados)
+            $pendingArticles = array_filter($progress['article_status'], function($status) {
+                return $status === 'pending';
+            });
+            
+            if (count($pendingArticles) > 0) {
                 $firstIncompletePhase = $index + 1;
                 break;
             }
@@ -110,6 +117,13 @@ class PlayController extends Controller
             return redirect()
                 ->route('play.map')
                 ->with('message', 'Complete a fase atual antes de avançar para as próximas.');
+        }
+        
+        // Se a fase solicitada estiver completa, redirecionar para a fase atual
+        if ($phaseNumber < $firstIncompletePhase) {
+            return redirect()
+                ->route('play.map')
+                ->with('message', 'Esta fase já foi concluída. Avance para a próxima fase.');
         }
         
         // Obter artigos da fase específica COM suas opções
@@ -239,7 +253,8 @@ class PlayController extends Controller
             'user' => [
                 'lives' => $user->lives
             ],
-            'redirect' => $user->lives <= 0 ? route('play.nolives') : null
+            'should_redirect' => $user->lives <= 0,
+            'redirect_url' => $user->lives <= 0 ? route('play.nolives') : null
         ]);
     }
     
@@ -265,8 +280,6 @@ class PlayController extends Controller
             ->get();
             
         $totalArticles = $articleIds->count();
-        $completedCount = $progressRecords->where('is_completed', true)->count();
-        $progressPercentage = $totalArticles > 0 ? round(($completedCount / $totalArticles) * 100, 2) : 0;
         
         // Mapear o status de cada artigo (correct, incorrect, pending)
         $articleStatus = [];
@@ -291,6 +304,14 @@ class PlayController extends Controller
                 }
             }
         }
+        
+        // Uma fase é considerada "completada" quando todos os artigos foram pelo menos tentados
+        $pendingArticles = array_filter($articleStatus, function($status) {
+            return $status === 'pending';
+        });
+        
+        $completedCount = count($pendingArticles) === 0 ? $totalArticles : 0;
+        $progressPercentage = $totalArticles > 0 ? round((($totalArticles - count($pendingArticles)) / $totalArticles) * 100, 2) : 0;
         
         return [
             'completed' => $completedCount,
