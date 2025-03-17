@@ -527,8 +527,8 @@ const isPhaseComplete = ref(false);
 
         // Limita o texto até a quebra de linha que contém a primeira lacuna não preenchida para dispositivos móveis
         if (isMobile.value && !isTextExpanded.value && !allLacunasFilled.value) {
-            // Procura a ocorrência de lacuna, se não existir retorna -1
-            const firstEmptyIndex = text.indexOf('<span class="lacuna empty">');
+            // Procura a ocorrência de qualquer tipo de lacuna vazia
+            const firstEmptyIndex = text.indexOf('<span class="lacuna empty');
             if(firstEmptyIndex !== -1) {
                 // Encontra a primeira quebra de linha após a primeira lacuna vazia
                 const nextLineBreak = text.indexOf('\n', firstEmptyIndex);
@@ -873,7 +873,7 @@ const { reward: confettiReward } = useReward('confetti-canvas', 'confetti', {
 
         // Usar setTimeout para garantir que o DOM está atualizado
         setTimeout(() => {
-            const emptyLacunas = textContainerRef.value!.querySelectorAll('.lacuna.empty');
+            const emptyLacunas = textContainerRef.value!.querySelectorAll('.lacuna.empty, .lacuna.lacuna-empty-light, .lacuna.lacuna-empty-dark');
             const allLacunas = currentArticle.value?.practice_content.match(/_{5,}/g) || [];
             const filledLacunasCount = Object.keys(userAnswers.value[currentArticleIndex.value] || {}).length;
             

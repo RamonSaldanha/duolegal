@@ -203,34 +203,35 @@ const getArticleStatus = (phase: Phase): string[] => {
                       :class="`flex ${index % 2 === 0 ? 'justify-end ml-auto' : 'justify-start mr-auto'}`" 
                       style="width: 55%;"
                     >
-                    <Link 
-                      :href="props.user.lives > 0 && isCurrentPhase(phase, props.phases) ? route('play.phase', [phase.reference_uuid, phase.phase_number]) : '#'"
-                      class="relative group transition-transform duration-300"
-                      :class="props.user.lives > 0 && isCurrentPhase(phase, props.phases) ? 'hover:scale-110' : 'opacity-50 cursor-not-allowed'"
-                      :style="`margin-${index % 2 === 0 ? 'right' : 'left'}: -5px;`"
-                    >
-                        <!-- Bolinha da fase -->
-                        <div 
-                          :class="[
-                            'w-16 h-16 rounded-full flex items-center justify-center phase-circle',
-                            isPhaseComplete(phase) ? 'bg-green-500' : 
-                            isCurrentPhase(phase, props.phases) ? 'bg-blue-500' :
-                            getDifficultyColor(phase.difficulty)
-                          ]"
-                        >
-                          <component 
-                            :is="isPhaseComplete(phase) ? CheckCircle : getPhaseIcon(phase.phase_number)" 
-                            class="w-6 h-6 text-white" 
-                          />
-                        </div>
-                        
-                        <!-- Badge com número da fase -->
-                        <Badge class="absolute -top-2 -right-2 bg-primary">
-                          {{ phase.phase_number }}
-                        </Badge>
-                        
-                        <!-- Indicador de progresso -->
-                        <div class="mt-1 flex justify-center gap-1">
+                      <Link 
+                          :href="props.user.lives > 0 && isCurrentPhase(phase, props.phases) ? route('play.phase', [phase.reference_uuid, phase.phase_number]) : '#'"
+                          class="relative group transition-transform duration-300"
+                          :class="props.user.lives > 0 && isCurrentPhase(phase, props.phases) ? 'hover:scale-110' : 'cursor-not-allowed'"
+                          :style="`margin-${index % 2 === 0 ? 'right' : 'left'}: -5px;`"
+                      >
+                          <!-- Bolinha da fase -->
+                          <div 
+                              :class="[
+                                  'w-16 h-16 rounded-full flex items-center justify-center phase-circle',
+                                  isPhaseComplete(phase) ? 'bg-green-500' : 
+                                  isCurrentPhase(phase, props.phases) ? 'bg-blue-500' :
+                                  !isCurrentPhase(phase, props.phases) && !isPhaseComplete(phase) ? 'bg-gray-400' :
+                                  getDifficultyColor(phase.difficulty)
+                              ]"
+                          >
+                              <component 
+                                  :is="isPhaseComplete(phase) ? CheckCircle : getPhaseIcon(phase.phase_number)" 
+                                  class="w-6 h-6 text-white" 
+                              />
+                          </div>
+                          
+                          <!-- Badge com número da fase -->
+                          <Badge class="absolute -top-2 -right-2 bg-primary">
+                              {{ phase.phase_number }}
+                          </Badge>
+                          
+                          <!-- Indicador de progresso -->
+                          <div class="mt-1 flex justify-center gap-1">
                           <span 
                             v-for="(status, index) in getArticleStatus(phase)" 
                             :key="index" 
