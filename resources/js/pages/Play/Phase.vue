@@ -171,6 +171,7 @@
                                             Você perdeu 1 vida!
                                         </span>
                                     </div>
+
                                     <div class="text-lg font-medium mb-2">
                                         Você acertou {{ articleScore.correct }} de {{ articleScore.total }} lacunas ({{ articleScore.percentage }}%)
                                     </div>
@@ -294,7 +295,39 @@
             </div>
         </div>
     </AppLayout>
-
+    <!-- Adicione este componente de diálogo após os modais existentes, antes do fechamento da tag AppLayout -->
+    <transition 
+        enter-active-class="transition duration-300 ease-out"
+        enter-from-class="opacity-0 scale-95"
+        enter-to-class="opacity-100 scale-100"
+        leave-active-class="transition duration-200 ease-in"
+        leave-from-class="opacity-100 scale-100"
+        leave-to-class="opacity-0 scale-95"
+    >
+        <div v-if="showResetConfirmDialog" class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50">
+            <div class="max-w-md w-full bg-background rounded-lg shadow-lg p-6 border border-border">
+                <div class="text-center">
+                    <div class="mb-4 inline-flex items-center justify-center w-16 h-16 rounded-full bg-yellow-100 text-yellow-600 dark:bg-yellow-900/40 dark:text-yellow-300">
+                        <AlertTriangle class="h-8 w-8" />
+                    </div>
+                    <h2 class="text-xl font-bold mb-4">Limpar respostas?</h2>
+                    <p class="mb-6">Você perderá todas as respostas que já preencheu neste artigo. Tem certeza?</p>
+                    
+                    <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                        <Button variant="outline" @click="showResetConfirmDialog = false">
+                            Cancelar
+                        </Button>
+                        <Button 
+                            variant="destructive"
+                            @click="() => { showResetConfirmDialog = false; resetAnswersConfirmed(); }"
+                        >
+                            Sim, limpar tudo
+                        </Button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </transition>
     <!-- Adicione isto ao final do template, antes do fechamento da tag AppLayout -->
     <transition 
         enter-active-class="transition duration-300 ease-out"
@@ -337,7 +370,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { Heart } from 'lucide-vue-next';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, Check, X, RefreshCw, ChevronDown, ChevronUp } from 'lucide-vue-next';
+import { ChevronLeft, ChevronRight, Check, X, RefreshCw, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-vue-next';
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 // @ts-expect-error: vue-rewards package does not provide proper type definitions
 import { useReward } from 'vue-rewards';
@@ -600,38 +633,60 @@ const isPhaseComplete = ref(false);
         }
         return null; // Todas as lacunas estão preenchidas
     });
+
+
     const highlightedOriginalText = computed(() => {
         if (!currentArticle.value) return '';
         
-        let originalText = currentArticle.value.original_content;
-        const correctAnswers = new Map();
+        // Primeiro precisamos obter todas as palavras que deveriam estar nas lacunas, na ordem correta
+        const correctWords: string[] = [];
+        const gapOrdersToWords = new Map<number, string>();
         
-        // Obter todas as respostas corretas
         currentArticle.value.options.forEach(option => {
             if (option.is_correct && option.gap_order !== undefined) {
-                correctAnswers.set(option.gap_order, option.word);
+                gapOrdersToWords.set(option.gap_order, option.word);
             }
         });
         
-        // Para cada resposta correta, destaque no texto original
-        correctAnswers.forEach((word, gapOrder) => {
-            // Usamos uma regex que busca a palavra exata para evitar problemas com substrings
-            const regex = new RegExp(`\\b${word}\\b`, 'g');
-            
-            // Apenas substitui a primeira ocorrência para evitar destacar palavras repetidas
-            // que não sejam as das lacunas
-            let found = false;
-            originalText = originalText.replace(regex, (match) => {
-                if (!found) {
-                    found = true;
-                    return `<strong class="text-primary font-bold underline decoration-2 underline-offset-2">${match}</strong>`;
-                }
-                return match;
-            });
+        // Ordenar os gap_orders para obter as palavras na ordem correta
+        const orderedGapOrders = [...gapOrdersToWords.keys()].sort((a, b) => a - b);
+        orderedGapOrders.forEach(gapOrder => {
+            const word = gapOrdersToWords.get(gapOrder);
+            if (word) {
+                correctWords.push(word);
+            }
         });
         
-        return originalText;
+        // Agora temos a lista de palavras corretas na ordem que aparecem no texto
+        // Vamos localizar cada uma no texto original usando uma abordagem mais simples
+        
+        const originalText = currentArticle.value.original_content;
+        let result = '';
+        let lastIndex = 0;
+        
+        // Para cada palavra correta, encontre a primeira ocorrência não marcada no texto
+        for (const word of correctWords) {
+            // Procura a palavra a partir do último ponto de processamento
+            const wordIndex = originalText.indexOf(word, lastIndex);
+            
+            if (wordIndex >= 0) {
+                // Adiciona o texto antes da palavra
+                result += originalText.substring(lastIndex, wordIndex);
+                
+                // Adiciona a palavra destacada
+                result += `<strong class="text-primary font-bold underline decoration-2 underline-offset-2">${word}</strong>`;
+                
+                // Atualiza o último índice processado
+                lastIndex = wordIndex + word.length;
+            }
+        }
+        
+        // Adiciona o restante do texto
+        result += originalText.substring(lastIndex);
+        
+        return result;
     });
+
     // Ao clicar em uma palavra, ela é selecionada para preencher a próxima lacuna disponível
     function selectWord(word: string) {
         if (answered.value) return;
@@ -779,9 +834,23 @@ const isPhaseComplete = ref(false);
             router.visit(noLivesState.value.redirectUrl);
         }
     };
-
-    // Modifique a função resetAnswers
+    
+    const showResetConfirmDialog = ref(false);
+    
     const resetAnswers = () => {
+        // Se não tiver nenhuma resposta, não precisa confirmar
+        if (!userAnswers.value[currentArticleIndex.value] || 
+            Object.keys(userAnswers.value[currentArticleIndex.value]).length === 0) {
+            resetAnswersConfirmed();
+            return;
+        }
+        
+        // Exibe o diálogo de confirmação
+        showResetConfirmDialog.value = true;
+    };
+
+    // Nova função que realiza o reset após confirmação
+    const resetAnswersConfirmed = () => {
         checkNoLivesRedirect(); // Verifica redirecionamento antes de qualquer ação
         
         if (userAnswers.value[currentArticleIndex.value]) {

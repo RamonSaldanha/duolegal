@@ -183,21 +183,21 @@ const rightNavItems: NavItem[] = [
                 </div>
 
                     <div class="ml-auto flex items-center space-x-4">
-<!-- Lives Counter -->
-<div v-if="auth.user?.lives !== undefined" class="flex items-center gap-1">
-    <Heart 
-        class="w-5 h-5 transition-transform" 
-        :class="[
-            userLives > 0 ? 'text-red-500' : 'text-gray-400',
-            'animate-pulse-once'
-        ]" 
-        fill="currentColor" 
-    />
-    <span class="font-medium" :class="userLives > 0 ? 'text-red-500' : 'text-gray-400'">
-        {{ userLives }}
-    </span>
-</div>
-                        
+                        <!-- Lives Counter -->
+                        <div v-if="auth.user?.lives !== undefined" class="flex items-center gap-1">
+                            <Heart 
+                                class="w-5 h-5 transition-transform" 
+                                :class="[
+                                    userLives > 0 ? 'text-red-500' : 'text-gray-400',
+                                    'animate-pulse-once'
+                                ]" 
+                                fill="currentColor" 
+                            />
+                            <span class="font-medium" :class="userLives > 0 ? 'text-red-500' : 'text-gray-400'">
+                                {{ userLives }}
+                            </span>
+                        </div>
+                                                
                         <div class="relative flex items-center space-x-1">
                         <!-- <Button variant="ghost" size="icon" class="group h-9 w-9 cursor-pointer">
                             <Search class="size-5 opacity-80 group-hover:opacity-100" />

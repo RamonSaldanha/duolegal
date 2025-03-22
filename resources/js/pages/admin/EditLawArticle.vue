@@ -137,11 +137,15 @@ const handleContentInput = (event) => {
 
 // Atualiza o formulário com as palavras selecionadas
 const updateSelectedWords = () => {
-    form.selected_words = Array.from(selectedWordIndices.value).map((index, gapOrder) => {
+    // Obter os índices selecionados e ordená-los pela posição no texto
+    const selectedIndices = Array.from(selectedWordIndices.value);
+    selectedIndices.sort((a, b) => a - b); // Ordena por posição no texto
+    
+    form.selected_words = selectedIndices.map((index, i) => {
         return {
             word: words.value[index]?.text || '',
             position: index,
-            gap_order: gapOrder + 1 // A ordem da lacuna começa em 1
+            gap_order: i + 1 // A ordem da lacuna começa em 1 e segue a ordem no texto
         };
     });
 };

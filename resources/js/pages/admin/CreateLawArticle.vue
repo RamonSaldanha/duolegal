@@ -266,12 +266,15 @@ const toggleWordSelection = (wordIndex: number) => {
     }
     
     // Atualiza o formulário com as palavras selecionadas
-    // Incluindo a ordem da lacuna (gap_order) baseada na ordem de seleção
-    form.selected_words = Array.from(selectedWordIndices.value).map((index, gapOrder) => {
+    // A ordem da lacuna (gap_order) é baseada na posição real no texto, não na ordem de seleção
+    const selectedIndices = Array.from(selectedWordIndices.value);
+    selectedIndices.sort((a, b) => a - b); // Ordena por posição no texto
+    
+    form.selected_words = selectedIndices.map((index, i) => {
         return {
             word: words.value[index].text,
             position: index,
-            gap_order: gapOrder + 1 // A ordem da lacuna começa em 1
+            gap_order: i + 1 // A ordem da lacuna começa em 1 e segue a ordem no texto
         };
     });
 };
