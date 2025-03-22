@@ -157,7 +157,7 @@ const rightNavItems: NavItem[] = [
                 </div>
 
                 <Link :href="route('play.map')" class="flex items-center gap-x-2">
-                    <AppLogo class="hidden h-6 xl:block" />
+                    <AppLogo class="hidden h-16 xl:block" />
                 </Link>
 
                 <!-- Desktop Menu -->
