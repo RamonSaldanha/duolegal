@@ -156,6 +156,12 @@ const getArticleStatus = (phase: Phase): string[] => {
     
     return status;
 };
+
+// Configurações dos conectores
+const connectorSpacing = 100; // Espaçamento total entre conectores (posicionamento)
+const connectorHeight = 100;   // Altura real do SVG do conector
+// O gutter (espaçamento) será: connectorSpacing - connectorHeight
+
 </script>
 
 <template>
@@ -186,9 +192,33 @@ const getArticleStatus = (phase: Phase): string[] => {
 
             <!-- Container da trilha -->
             <div class="relative trail-container mx-auto">
-              <!-- Linha vertical base (caminho principal) -->
-              <div class="absolute left-1/2 top-0 bottom-0 w-3 bg-muted transform -translate-x-1/2 rounded-full -z-10"></div>
-              
+             <!-- Linhas diagonais conectoras (geradas dinamicamente) -->
+              <div 
+                v-for="(phase, index) in referenceData.phases.slice(0, -1)" 
+                :key="`connector-${index}`"
+                class="absolute left-0 w-full -z-10"
+                :style="{
+                  top: `${index * connectorSpacing}px`,
+                }"
+              >
+                <div class="absolute top-[50px] left-[-10px] w-full h-full">
+                  <svg 
+                    class="h-full w-full" 
+                    viewBox="0 0 100 100" 
+                    preserveAspectRatio="none"
+                    :style="{ height: `${connectorHeight}px` }"
+                  >
+                    <path 
+                      :d="index % 2 === 0 ? 'M80,0 L30,100' : 'M30,0 L80,100'" 
+                      stroke="currentColor" 
+                      stroke-width="8"
+                      class="text-muted-foreground/5" 
+                      fill="none" 
+                    />
+                  </svg>
+                </div>
+              </div>
+
               <!-- Fases aproximadas no centro -->
               <div class="space-y-6">
                 <div 
