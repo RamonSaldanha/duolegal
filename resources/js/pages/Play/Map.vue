@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { computed } from 'vue';
+import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { Badge } from '@/components/ui/badge';
 import { Book, FileText, Bookmark, CheckCircle, Star } from 'lucide-vue-next';
 
@@ -158,10 +158,35 @@ const getArticleStatus = (phase: Phase): string[] => {
 };
 
 // Configurações dos conectores
-const connectorSpacing = 100; // Espaçamento total entre conectores (posicionamento)
-const connectorHeight = 100;   // Altura real do SVG do conector
-// O gutter (espaçamento) será: connectorSpacing - connectorHeight
+const windowWidth = ref(window.innerWidth);
 
+// Função para atualizar a largura da janela
+const updateWindowWidth = () => {
+  windowWidth.value = window.innerWidth;
+};
+
+// Adicionar event listener ao montar o componente
+onMounted(() => {
+  window.addEventListener('resize', updateWindowWidth);
+});
+
+// Remover event listener ao desmontar o componente
+onUnmounted(() => {
+  window.removeEventListener('resize', updateWindowWidth);
+});
+
+// Valor do espaçamento responsivo
+const connectorSpacing = computed(() => {
+  return windowWidth.value <= 640 ? 90 : 100; // 90px para mobile, 100px para desktop
+});
+
+const connectorHeight = computed(() => {
+  return windowWidth.value <= 640 ? 90 : 100; // 90px para mobile, 100px para desktop
+});
+
+const connectorWidth = computed(() => {
+  return windowWidth.value <= 640 ? 235 : 220; // 230px para mobile, 220px para desktop
+});
 </script>
 
 <template>
@@ -171,10 +196,9 @@ const connectorHeight = 100;   // Altura real do SVG do conector
     <div class="container py-8 px-4">
       <div class="max-w-4xl mx-auto">
         <!-- Cabeçalho -->
-        <div class="mb-8 text-center">
-          <h1 class="text-3xl font-bold mb-2">Aprenda Legislação Brincando</h1>
+        <div class="mb-4 text-center">
+          <h1 class="text-2xl font-bold mb-1">Memorize legislação brincando</h1>
           <p class="text-muted-foreground mb-4">Escolha uma fase e comece a aprender os artigos de lei de forma divertida.</p>
-
         </div>
 
         <!-- Mapa de fases -->
@@ -185,8 +209,8 @@ const connectorHeight = 100;   // Altura real do SVG do conector
             class="relative"
           >
             <div class="flex justify-center mb-4">
-              <div class="px-6 py-2 bg-primary/10 rounded-full">
-                <h2 class="text-xl font-bold">{{ referenceData.name }}</h2>
+              <div class="px-5 py-2 bg-primary/10 rounded">
+                <h2 class="text-lg font-bold">{{ referenceData.name }}</h2>
               </div>
             </div>
 
@@ -201,20 +225,20 @@ const connectorHeight = 100;   // Altura real do SVG do conector
                   top: `${index * connectorSpacing}px`,
                 }"
               >
-                <div class="absolute top-[50px] left-[-10px] w-full h-full">
+                <div class="absolute top-[50px] left-0" :style="{ width: `${connectorWidth.value}px`, height: `${connectorHeight.value}px` }">
                   <svg 
-                    class="h-full w-full" 
-                    viewBox="0 0 100 100" 
-                    preserveAspectRatio="none"
-                    :style="{ height: `${connectorHeight}px` }"
+                  :width="connectorWidth" 
+                  height="100"
+                  :viewBox="`0 0 ${connectorWidth} 100`" 
+                  :style="{ height: `${connectorHeight}px`, width: `${connectorWidth}px` }"
                   >
-                    <path 
-                      :d="index % 2 === 0 ? 'M80,0 L30,100' : 'M30,0 L80,100'" 
-                      stroke="currentColor" 
-                      stroke-width="8"
-                      class="text-muted-foreground/5" 
-                      fill="none" 
-                    />
+                  <path 
+                    :d="index % 2 === 0 ? 'M160,0 L60,100' : 'M60,0 L160,100'" 
+                    stroke="currentColor" 
+                    stroke-width="8"
+                    class="text-muted-foreground/5" 
+                    fill="none" 
+                  />
                   </svg>
                 </div>
               </div>
@@ -342,6 +366,19 @@ const connectorHeight = 100;   // Altura real do SVG do conector
   .phase-circle svg {
     width: 1.25rem !important;
     height: 1.25rem !important;
+  }
+}
+
+/* Garantir que os conectores tenham tamanho fixo mesmo no mobile */
+@media (max-width: 640px) {
+  svg {
+    width: 220px !important;
+    transform: none !important;
+  }
+  
+  .absolute.top-[50px] {
+    left: 0 !important;
+    width: 220px !important;
   }
 }
 </style>

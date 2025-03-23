@@ -3,11 +3,17 @@ import AppLogoIcon from '@/components/AppLogoIcon.vue';
 </script>
 
 <template>
-    <!-- <div class="flex aspect-square size-8 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
-        <AppLogoIcon class="size-5 fill-current text-white dark:text-black" />
-    </div> -->
     <div class="ml-1 grid flex-1 text-left text-sm">
         <!-- <span class="mb-0.5 truncate font-semibold leading-none">Memorize Direito</span> -->
-         <img src="/img/Novo_Projeto__1_-removebg-preview.png" alt="Logo" class="h-16 " />
+        <img 
+            src="/img/logomemorizeblack.svg"
+            class="mt-[-20px] h-[90px] w-[100px] block dark:hidden" 
+            alt="Logo" 
+        />
+        <img 
+            src="/img/logomemorize.svg"
+            class="mt-[-20px] h-[90px] w-[100px] hidden dark:block" 
+            alt="Logo" 
+        />
     </div>
 </template>
