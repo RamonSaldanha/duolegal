@@ -48,7 +48,7 @@ const closeMenu = () => {
                     <Link
                         v-if="$page.props.auth.user"
                         :href="route('play.map')"
-                        class="rounded-full bg-[#f6c402] px-5 py-2 text-base font-medium text-white transition hover:bg-[#3a6903]"
+                        class="rounded-full bg-[#f6c402] px-5 py-2 text-base font-medium text-black transition hover:bg-[#3a6903]"
                     >
                         Dashboard
                     </Link>
