@@ -1,5 +1,16 @@
 <script setup lang="ts">
-import AppLogoIcon from '@/components/AppLogoIcon.vue';
+// import AppLogoIcon from '@/components/AppLogoIcon.vue';
+
+defineProps({
+  height: {
+    type: String,
+    default: '90px'
+  },
+  width: {
+    type: String,
+    default: '110px'
+  }
+});
 </script>
 
 <template>
@@ -7,12 +18,14 @@ import AppLogoIcon from '@/components/AppLogoIcon.vue';
         <!-- <span class="mb-0.5 truncate font-semibold leading-none">Memorize Direito</span> -->
         <img 
             src="/img/logomemorizeblack.svg"
-            class="mt-[-16px] h-[90px] w-[110px] block dark:hidden" 
+            :style="{ height, width }"
+            class="mt-[-16px] block dark:hidden" 
             alt="Logo" 
         />
         <img 
             src="/img/logomemorize.svg"
-            class="mt-[-16px] h-[90px] w-[110px] hidden dark:block" 
+            :style="{ height, width }"
+            class="mt-[-16px] hidden dark:block" 
             alt="Logo" 
         />
     </div>
