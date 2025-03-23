@@ -197,7 +197,7 @@ const connectorWidth = computed(() => {
       <div class="max-w-4xl mx-auto">
         <!-- Cabeçalho -->
         <div class="mb-4 text-center">
-          <h1 class="text-2xl font-bold mb-1">Memorize legislação brincando</h1>
+          <h1 class="text-3xl font-bold mb-1">Memorize legislação brincando</h1>
           <p class="text-muted-foreground mb-4">Escolha uma fase e comece a aprender os artigos de lei de forma divertida.</p>
         </div>
 
