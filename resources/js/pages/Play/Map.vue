@@ -26,6 +26,7 @@ interface Phase {
     first_article: string | null;
     phase_number: number;
     progress: Progress;
+    is_blocked: boolean;
 }
 
 interface ReferenceGroup {
@@ -61,17 +62,6 @@ const phasesByReference = computed<GroupedPhases>(() => {
     
     return grouped;
 });
-
-const getDifficultyColor = (level: number): string => {
-    switch (level) {
-        case 1: return 'bg-green-500';
-        case 2: return 'bg-emerald-500';
-        case 3: return 'bg-yellow-500';
-        case 4: return 'bg-orange-500';
-        case 5: return 'bg-red-500';
-        default: return 'bg-blue-500';
-    }
-};
 
 const getPhaseIcon = (phaseNumber: number) => {
     const icons = [Book, FileText, Bookmark, Star, CheckCircle];
@@ -111,17 +101,6 @@ const isCurrentPhase = (phase: Phase, phases: Phase[]): boolean => {
     
     // É a fase atual se for a primeira fase não totalmente tentada
     return firstIncompletePhase.phase_number === phase.phase_number;
-};
-
-// Verifica se a fase está bloqueada (vem depois da fase atual ou já foi concluída)
-const isPhaseBlocked = (phase: Phase, phases: Phase[]): boolean => {
-    // Se a fase não estiver completa e for a primeira fase incompleta, não está bloqueada
-    if (!isPhaseComplete(phase) && isCurrentPhase(phase, phases)) {
-        return false;
-    }
-    
-    // Se a fase estiver completa OU vier depois da fase atual, está bloqueada
-    return true;
 };
 
 // Obtém o status de cada artigo na fase (acerto, erro, não respondido)
@@ -175,18 +154,10 @@ onUnmounted(() => {
   window.removeEventListener('resize', updateWindowWidth);
 });
 
-// Valor do espaçamento responsivo
-const connectorSpacing = computed(() => {
-  return windowWidth.value <= 640 ? 90 : 100; // 90px para mobile, 100px para desktop
-});
-
-const connectorHeight = computed(() => {
-  return windowWidth.value <= 640 ? 90 : 100; // 90px para mobile, 100px para desktop
-});
-
-const connectorWidth = computed(() => {
-  return windowWidth.value <= 640 ? 235 : 220; // 230px para mobile, 220px para desktop
-});
+// Valores responsivos para os conectores
+const getConnectorWidth = () => windowWidth.value <= 640 ? "235px" : "220px";
+const getConnectorHeight = () => windowWidth.value <= 640 ? "90px" : "100px";
+const getConnectorSpacing = (index: number) => `${index * (windowWidth.value <= 640 ? 90 : 100)}px`;
 </script>
 
 <template>
@@ -222,15 +193,15 @@ const connectorWidth = computed(() => {
                 :key="`connector-${index}`"
                 class="absolute left-0 w-full -z-10"
                 :style="{
-                  top: `${index * connectorSpacing}px`,
+                  top: getConnectorSpacing(index),
                 }"
               >
-                <div class="absolute top-[50px] left-0" :style="{ width: `${connectorWidth.value}px`, height: `${connectorHeight.value}px` }">
+                <div class="absolute top-[50px] left-0" :style="{ width: getConnectorWidth(), height: getConnectorHeight() }">
                   <svg 
-                  :width="connectorWidth" 
+                  :width="getConnectorWidth()" 
                   height="100"
-                  :viewBox="`0 0 ${connectorWidth} 100`" 
-                  :style="{ height: `${connectorHeight}px`, width: `${connectorWidth}px` }"
+                  :viewBox="`0 0 ${parseInt(getConnectorWidth())} 100`" 
+                  :style="{ height: getConnectorHeight(), width: getConnectorWidth() }"
                   >
                   <path 
                     :d="index % 2 === 0 ? 'M160,0 L60,100' : 'M60,0 L160,100'" 
@@ -258,19 +229,19 @@ const connectorWidth = computed(() => {
                       style="width: 55%;"
                     >
                       <Link 
-                          :href="props.user.lives > 0 && isCurrentPhase(phase, props.phases) ? route('play.phase', [phase.reference_uuid, phase.phase_number]) : '#'"
+                          :href="props.user.lives > 0 && isCurrentPhase(phase, props.phases) && !phase.is_blocked ? route('play.phase', [phase.reference_uuid, phase.phase_number]) : '#'"
                           class="relative group transition-transform duration-300"
-                          :class="props.user.lives > 0 && isCurrentPhase(phase, props.phases) ? 'hover:scale-110' : 'cursor-not-allowed'"
+                          :class="props.user.lives > 0 && isCurrentPhase(phase, props.phases) && !phase.is_blocked ? 'hover:scale-110' : 'cursor-not-allowed'"
                           :style="`margin-${index % 2 === 0 ? 'right' : 'left'}: -5px;`"
                       >
                           <!-- Bolinha da fase -->
                           <div 
                               :class="[
                                   'w-16 h-16 rounded-full flex items-center justify-center phase-circle',
+                                  phase.is_blocked ? 'bg-gray-400' :
                                   isPhaseComplete(phase) ? 'bg-green-500' : 
                                   isCurrentPhase(phase, props.phases) ? 'bg-blue-500' :
-                                  !isCurrentPhase(phase, props.phases) && !isPhaseComplete(phase) ? 'bg-gray-400' :
-                                  getDifficultyColor(phase.difficulty)
+                                  'bg-gray-400'
                               ]"
                           >
                               <component 

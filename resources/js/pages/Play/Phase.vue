@@ -7,6 +7,7 @@
         <span id="emoji-canvas" class="fixed top-1/2 left-1/2 z-[100] pointer-events-none"></span>
         
         <div class="container py-4 md:py-8 px-3 md:px-4">
+            
             <div class="max-w-4xl mx-auto">
                 <!-- Cabeçalho da fase - versão responsiva -->
                 <div class="mb-4 md:mb-4">

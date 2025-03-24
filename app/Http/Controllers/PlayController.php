@@ -32,13 +32,28 @@ class PlayController extends Controller
         // Buscar referências legais com seus artigos
         $legalReferences = LegalReference::with(['articles' => function($query) {
             $query->orderBy('position', 'asc')->where('is_active', true);
-        }])->get();
+        }])->orderBy('position', 'asc')->get();
         
         // Preparar dados das fases
         $phases = [];
         $phaseCount = 0;
+        $isLawBlocked = false; // Controle para leis bloqueadas
         
-        foreach ($legalReferences as $reference) {
+        foreach ($legalReferences as $referenceIndex => $reference) {
+            // Verifica se a lei anterior está completa
+            if ($referenceIndex > 0) {
+                $previousReference = $legalReferences[$referenceIndex - 1];
+                $previousArticles = $previousReference->articles;
+                
+                // Verifica se todas as fases da lei anterior estão completas
+                foreach ($previousArticles->chunk(self::ARTICLES_PER_PHASE) as $phaseArticles) {
+                    $progress = $this->getPhaseProgress($userId, $phaseArticles);
+                    if ($progress['completed'] < $progress['total']) {
+                        $isLawBlocked = true;
+                        break;
+                    }
+                }
+            }
             // Agrupar artigos em grupos de ARTICLES_PER_PHASE
             $chunks = $reference->articles->chunk(self::ARTICLES_PER_PHASE);
             
@@ -60,6 +75,7 @@ class PlayController extends Controller
                     'phase_number' => $index + 1,
                     'is_complete' => $isPhaseComplete,
                     'progress' => $progress,
+                    'is_blocked' => $isLawBlocked, // Indica se a fase está bloqueada
                 ];
             }
         }
@@ -82,6 +98,30 @@ class PlayController extends Controller
         // Verifica se o usuário tem vidas disponíveis
         if (!$user->hasLives()) {
             return redirect()->route('play.nolives');
+        }
+
+        // Verifica se as leis anteriores estão completas
+        $legalReferences = LegalReference::with(['articles' => function($query) {
+            $query->orderBy('position', 'asc')->where('is_active', true);
+        }])->orderBy('position', 'asc')->get();
+        
+        $currentReferenceIndex = $legalReferences->search(function($reference) use ($referenceUuid) {
+            return $reference->uuid === $referenceUuid;
+        });
+
+        // Verifica se todas as leis anteriores estão completas
+        for ($i = 0; $i < $currentReferenceIndex; $i++) {
+            $previousReference = $legalReferences[$i];
+            $articles = $previousReference->articles;
+            
+            foreach ($articles->chunk(self::ARTICLES_PER_PHASE) as $phaseArticles) {
+                $progress = $this->getPhaseProgress($user->id, $phaseArticles);
+                if ($progress['completed'] < $progress['total']) {
+                    return redirect()
+                        ->route('play.map')
+                        ->with('message', 'Complete todas as fases da ' . $previousReference->name . ' antes de avançar.');
+                }
+            }
         }
         
         $reference = LegalReference::where('uuid', $referenceUuid)->firstOrFail();
