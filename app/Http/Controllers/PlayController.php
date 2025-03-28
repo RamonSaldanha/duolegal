@@ -103,7 +103,7 @@ class PlayController extends Controller
         // Verifica se as leis anteriores estão completas
         $legalReferences = LegalReference::with(['articles' => function($query) {
             $query->orderBy('position', 'asc')->where('is_active', true);
-        }])->orderBy('id', 'asc')->get(); // Exemplo de ordenação alternativa
+        }])->orderBy('id', 'asc')->get();
         
         $currentReferenceIndex = $legalReferences->search(function($reference) use ($referenceUuid) {
             return $reference->uuid === $referenceUuid;
