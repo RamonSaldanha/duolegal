@@ -115,7 +115,6 @@ class PlayController extends Controller
                     $revisionKey = "revision_{$reference->uuid}_{$revisionNumber}";
                     // (opcional) se quiser limpar a sessão anterior, faça:
                     // session()->forget($revisionKey);
-                    echo $revisionKey;
                     // Agora sempre recalcule
                     // Se quiser ignorar completamente artigos que atingiram 100% na revisão anterior:
                     $revisionArticleIds = UserProgress::where('user_id', $userId)
