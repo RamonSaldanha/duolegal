@@ -31,7 +31,6 @@ class PlayController extends Controller
         return $user;
     }
 
-
     /**
      * Número de artigos por fase
      */
@@ -79,16 +78,32 @@ class PlayController extends Controller
                     }
                 }
             }
+            
             // Agrupar artigos em grupos de ARTICLES_PER_PHASE
             $chunks = $reference->articles->chunk(self::ARTICLES_PER_PHASE);
+            $referencePhaseCount = 0;
             
             foreach ($chunks as $index => $articleChunk) {
+                $phaseCount++;
+                $referencePhaseCount++;
+                
                 // Adicionar fase regular
                 $progress = $this->getPhaseProgress($userId, $articleChunk);
-                $phaseCount++;
-                
-                // Marcar a fase como bloqueada se os artigos estiverem completos
                 $isPhaseComplete = $progress['completed'] === $progress['total'];
+                
+                // Se for uma fase após revisão (index > 0 e index % 3 === 0)
+                $isAfterRevision = $index > 0 && ($index % self::PHASES_BEFORE_REVISION === 0);
+                
+                $isBlocked = $isLawBlocked;
+                
+                // Fases após revisão só verificam a revisão anterior
+                if ($isAfterRevision) {
+                    $isBlocked = $isBlocked || !$this->isPreviousRevisionComplete($userId, $reference, $index);
+                } 
+                // Fases regulares verificam a fase anterior
+                else if ($index > 0) {
+                    $isBlocked = $isBlocked || !$this->isPreviousPhaseComplete($userId, $reference, $index);
+                }
                 
                 $phases[] = [
                     'id' => $phaseCount,
@@ -98,43 +113,63 @@ class PlayController extends Controller
                     'article_count' => $articleChunk->count(),
                     'difficulty' => $this->calculateAverageDifficulty($articleChunk),
                     'first_article' => $articleChunk->first()->uuid ?? null,
-                    'phase_number' => $index + 1,
+                    'phase_number' => $referencePhaseCount,
                     'is_complete' => $isPhaseComplete,
                     'progress' => $progress,
-                    'is_blocked' => $isLawBlocked,
+                    'is_blocked' => $isBlocked,
                     'type' => 'regular'
                 ];
 
                 // Verificar se deve adicionar uma fase de revisão
-                if (($index + 1) % self::PHASES_BEFORE_REVISION === 0) {
-                    // Calcular o número da revisão
-                    $phaseNumber = $index + 1;
-                    $revisionNumber = ceil($phaseNumber / self::PHASES_BEFORE_REVISION);
+                if ($referencePhaseCount % self::PHASES_BEFORE_REVISION === 0) {
+                    $phaseCount++;
+                    $revisionNumber = $referencePhaseCount / self::PHASES_BEFORE_REVISION;
                     
                     // Chave para armazenar os IDs dos artigos de revisão na sessão
                     $revisionKey = "revision_{$reference->uuid}_{$revisionNumber}";
-                    // (opcional) se quiser limpar a sessão anterior, faça:
-                    // session()->forget($revisionKey);
-                    // Agora sempre recalcule
-                    // Se quiser ignorar completamente artigos que atingiram 100% na revisão anterior:
+                    
+                    // Seleciona artigos para revisão:
+                    // - Artigos com menos de 70% OU não completados
+                    // - Que ainda não foram revisados nesta rodada
+                    // - Prioriza os com menor porcentagem e menos revisões
                     $revisionArticleIds = UserProgress::where('user_id', $userId)
-                    ->whereIn('law_article_id', $reference->articles->pluck('id'))
-                    ->where(function ($query) {
-                        $query->where('is_completed', false)
-                            ->orWhere('percentage', '<', 70);
-                    })
-                    ->where('revisions', '<', $revisionNumber) // ignora artigos que já foram revisados nessa ou em revisões maiores
-                    ->orderByRaw('percentage ASC, revisions ASC')
-                    ->limit(5)
-                    ->pluck('law_article_id')
-                    ->toArray();
+                        ->whereIn('law_article_id', $reference->articles->pluck('id'))
+                        ->where(function($query) {
+                            $query->where('is_completed', false)
+                                ->orWhere('percentage', '<', 70);
+                        })
+                        ->where(function($query) use ($revisionNumber) {
+                            $query->where('revisions', '<', $revisionNumber)
+                                  ->orWhereNull('last_revision_at');
+                        })
+                        ->orderByRaw('percentage ASC, revisions ASC, last_revision_at ASC')
+                        ->limit(5)
+                        ->pluck('law_article_id')
+                        ->toArray();
 
+                    // Garantir que não haja artigos duplicados
+                    $revisionArticleIds = array_unique($revisionArticleIds);
+                    
+                    // Se não tivermos artigos suficientes, pegar mais artigos que precisam de revisão
+                    if (count($revisionArticleIds) < 5) {
+                        $additionalArticles = UserProgress::where('user_id', $userId)
+                            ->whereIn('law_article_id', $reference->articles->pluck('id'))
+                            ->whereNotIn('law_article_id', $revisionArticleIds)
+                            ->where(function($query) {
+                                $query->where('is_completed', false)
+                                    ->orWhere('percentage', '<', 70);
+                            })
+                            ->orderByRaw('percentage ASC, revisions ASC, last_revision_at ASC')
+                            ->limit(5 - count($revisionArticleIds))
+                            ->pluck('law_article_id')
+                            ->toArray();
+                            
+                        $revisionArticleIds = array_merge($revisionArticleIds, $additionalArticles);
+                    }
 
-
-                    // Armazenar/atualizar a sessão, se quiser
+                    // Armazenar/atualizar a sessão
                     session([$revisionKey => $revisionArticleIds]);
 
-                    
                     // Buscar os artigos de revisão com seus progressos
                     $articlesForRevision = UserProgress::where('user_id', $userId)
                         ->whereIn('law_article_id', $revisionArticleIds)
@@ -142,9 +177,12 @@ class PlayController extends Controller
                         ->get();
 
                     if ($articlesForRevision->isNotEmpty()) {
-                        $phaseCount++;
                         // Verifica se o usuário já completou esta fase de revisão
                         $revisionProgress = $this->getRevisionProgress($userId, $revisionArticleIds);
+                        
+                        // Para revisões, consideramos completa se todos os artigos foram respondidos (não necessariamente corretos)
+                        $isRevisionComplete = $revisionProgress['completed'] === count($revisionArticleIds);
+                        
                         $phases[] = [
                             'id' => $phaseCount,
                             'title' => 'Revisão ' . $revisionNumber,
@@ -154,9 +192,9 @@ class PlayController extends Controller
                             'difficulty' => $this->calculateAverageDifficulty($articleChunk),
                             'first_article' => null,
                             'phase_number' => $revisionNumber + 0.5,
-                            'is_complete' => $revisionProgress['completed'] === count($revisionArticleIds),
+                            'is_complete' => $isRevisionComplete,
                             'progress' => $revisionProgress,
-                            'is_blocked' => $isLawBlocked,
+                            'is_blocked' => $isLawBlocked, // Revisões herdam apenas o bloqueio da lei
                             'type' => 'revision',
                             'revision_article_ids' => $revisionArticleIds
                         ];
@@ -164,7 +202,6 @@ class PlayController extends Controller
                 }
             }
         }
-        
         
         return Inertia::render('Play/Map', [
             'phases' => $phases,
@@ -227,19 +264,36 @@ class PlayController extends Controller
             
             if (!$revisionArticleIds) {
                 // Se não existir na sessão, selecionar os artigos com menor pontuação
-                // Se quiser ignorar completamente artigos que atingiram 100% na revisão anterior:
+                // Seleciona artigos para revisão:
+                // 1. Artigos não completados OU com porcentagem < 70
+                // 2. Que ainda não foram revisados o suficiente (revisions < revisão atual)
+                // 3. Prioriza artigos com menor porcentagem e menos revisões
                 $revisionArticleIds = UserProgress::where('user_id', Auth::id())
                     ->whereIn('law_article_id', $reference->articles->pluck('id'))
                     ->where(function ($query) {
                         $query->where('is_completed', false)
                             ->orWhere('percentage', '<', 70);
                     })
-                    ->where('revisions', '<', $revisionNumber) // ignora artigos que já foram revisados nessa ou em revisões maiores
+                    ->where('revisions', '<', $revisionNumber)
                     ->orderByRaw('percentage ASC, revisions ASC')
                     ->limit(5)
                     ->pluck('law_article_id')
                     ->toArray();
 
+                // Se não encontrou artigos suficientes, pega os que precisam de mais revisão
+                if (count($revisionArticleIds) < 5) {
+                    $additionalArticles = UserProgress::where('user_id', Auth::id())
+                        ->whereIn('law_article_id', $reference->articles->pluck('id'))
+                        ->where('revisions', '<', $revisionNumber + 1) // Permite mais uma revisão
+                        ->whereNotIn('law_article_id', $revisionArticleIds)
+                        ->orderBy('revisions', 'asc')
+                        ->orderBy('percentage', 'asc')
+                        ->limit(5 - count($revisionArticleIds))
+                        ->pluck('law_article_id')
+                        ->toArray();
+
+                    $revisionArticleIds = array_merge($revisionArticleIds, $additionalArticles);
+                }
                     
                 // Armazenar na sessão
                 session([$revisionKey => $revisionArticleIds]);
@@ -286,7 +340,6 @@ class PlayController extends Controller
                         return [
                             'id' => $option->id,
                             'word' => $option->word,
-                            'is_correct' => $option->is_correct,
                             'gap_order' => $option->gap_order,
                             'position' => $option->position,
                         ];
@@ -373,9 +426,8 @@ class PlayController extends Controller
         $phaseArticles = $chunkedArticles[$phaseNumber - 1];
         
         // Obter o progresso dos artigos para o usuário autenticado
-        $userId = Auth::id();
-        $articlesWithProgress = $phaseArticles->map(function($article) use ($userId) {
-            $progress = UserProgress::where('user_id', $userId)
+        $articlesWithProgress = $phaseArticles->map(function($article) {
+            $progress = UserProgress::where('user_id', Auth::id())
                 ->where('law_article_id', $article->id)
                 ->first();
                 
@@ -388,7 +440,6 @@ class PlayController extends Controller
                     return [
                         'id' => $option->id,
                         'word' => $option->word,
-                        'is_correct' => $option->is_correct,
                         'gap_order' => $option->gap_order,
                         'position' => $option->position,
                     ];
@@ -590,6 +641,53 @@ class PlayController extends Controller
 
     
     /**
+     * Verifica se a revisão anterior está completa
+     */
+    private function isPreviousRevisionComplete($userId, LegalReference $reference, int $currentIndex): bool
+    {
+        $articles = $reference->articles()
+            ->orderBy('position', 'asc')
+            ->where('is_active', true)
+            ->get();
+            
+        $chunks = $articles->chunk(self::ARTICLES_PER_PHASE);
+        
+        // Encontrar a revisão anterior
+        $revisionNumber = floor($currentIndex / self::PHASES_BEFORE_REVISION);
+        $revisionKey = "revision_{$reference->uuid}_{$revisionNumber}";
+        $revisionArticleIds = session($revisionKey);
+        
+        if (!$revisionArticleIds) {
+            return false;
+        }
+        
+        $progress = $this->getRevisionProgress($userId, $revisionArticleIds);
+        return $progress['completed'] === count($revisionArticleIds);
+    }
+
+    /**
+     * Verifica se a fase anterior está completa
+     */
+    private function isPreviousPhaseComplete($userId, LegalReference $reference, int $currentIndex): bool
+    {
+        if ($currentIndex === 0) return true;
+        
+        $articles = $reference->articles()
+            ->orderBy('position', 'asc')
+            ->where('is_active', true)
+            ->get();
+            
+        $chunks = $articles->chunk(self::ARTICLES_PER_PHASE);
+        
+        if (!isset($chunks[$currentIndex - 1])) return true;
+        
+        $previousPhaseArticles = $chunks[$currentIndex - 1];
+        $progress = $this->getPhaseProgress($userId, $previousPhaseArticles);
+        
+        return $progress['completed'] === $progress['total'];
+    }
+
+    /**
      * Calcular dificuldade média de um conjunto de artigos
      */
     private function calculateAverageDifficulty($articles)
@@ -603,6 +701,8 @@ class PlayController extends Controller
     }
 
     /**
+    /**
+   /**
      * Recompensa o usuário com uma vida após assistir o anúncio
      */
     public function rewardLife()

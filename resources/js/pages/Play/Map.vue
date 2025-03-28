@@ -261,7 +261,8 @@ const getConnectorSpacing = (index: number) => `${index * (windowWidth.value <= 
                               ]"
                           >
                               <component 
-                              :is="phase.type === 'revision' ? Repeat2 : (isPhaseComplete(phase) ? CheckCircle : getPhaseIcon(phase.phase_number))"
+                              :is="phase.type === 'revision' ? Repeat2 : 
+                                  (isPhaseComplete(phase) ? CheckCircle : getPhaseIcon(phase.phase_number))"
                               class="w-6 h-6 text-white" 
                               />
                           </div>
