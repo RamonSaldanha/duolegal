@@ -1,10 +1,9 @@
 <?php
-
+// routes\web.php
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\Admin\LawArticleOptionController;
 use App\Http\Controllers\PlayController;
-use App\Http\Controllers\GameController;
 
 Route::get('/', function () {
     return Inertia::render('Welcome');

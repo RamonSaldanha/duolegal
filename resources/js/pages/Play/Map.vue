@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// resources\js\pages\Play\Map.vue
 import { Head, Link } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { computed, ref, onMounted, onUnmounted } from 'vue';
@@ -75,33 +76,43 @@ const isPhaseComplete = (phase: Phase): boolean => {
 };
 
 // Verifica se é a fase atual (primeira fase não totalmente tentada em cada referência)
-// Verifica se é a fase atual (primeira fase não totalmente tentada em cada referência)
 const isCurrentPhase = (phase: Phase, phases: Phase[]): boolean => {
     // Se a fase estiver completa, não é a atual
     if (isPhaseComplete(phase)) {
         return false;
     }
     
-    // Encontra a primeira fase não totalmente tentada na mesma referência
+    // Encontra a primeira fase não bloqueada e não completada na mesma referência
     const firstIncompletePhase = phases
-        .filter(p => p.reference_uuid === phase.reference_uuid)
-        .sort((a, b) => a.phase_number - b.phase_number)
-        .find(p => {
-            // Verifica se há artigos pendentes (não tentados) na fase
-            return p.progress && p.progress.article_status && 
-                p.progress.article_status.some(status => status === 'pending');
-        });
+        .filter(p => p.reference_uuid === phase.reference_uuid && !p.is_blocked)
+        .sort((a, b) => {
+            // Ordenar por número de fase, garantindo que números decimais (revisões) venham antes
+            // das próximas fases inteiras
+            const aNum = typeof a.phase_number === 'string' ? 
+                parseFloat(a.phase_number) : a.phase_number;
+            const bNum = typeof b.phase_number === 'string' ? 
+                parseFloat(b.phase_number) : b.phase_number;
+            return aNum - bNum;
+        })
+        .find(p => !isPhaseComplete(p));
     
     // Se não encontrou nenhuma fase incompleta, a última fase é a atual
     if (!firstIncompletePhase) {
         const phasesInReference = phases
             .filter(p => p.reference_uuid === phase.reference_uuid)
-            .sort((a, b) => a.phase_number - b.phase_number);
+            .sort((a, b) => {
+                // Ordenação considerando números decimais
+                const aNum = typeof a.phase_number === 'string' ? 
+                    parseFloat(a.phase_number) : a.phase_number;
+                const bNum = typeof b.phase_number === 'string' ? 
+                    parseFloat(b.phase_number) : b.phase_number;
+                return aNum - bNum;
+            });
         return phase.phase_number === phasesInReference[phasesInReference.length - 1].phase_number;
     }
     
-    // É a fase atual se for a primeira fase não totalmente tentada
-    return firstIncompletePhase.phase_number === phase.phase_number;
+    // É a fase atual se for a primeira fase incompleta
+    return firstIncompletePhase.id === phase.id;
 };
 
 // Obtém o status de cada artigo na fase (acerto, erro, não respondido)

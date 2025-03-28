@@ -1,5 +1,5 @@
 <?php
-
+// app\Http\Controllers\PlayController.php
 namespace App\Http\Controllers;
 
 use App\Models\LawArticle;
@@ -9,11 +9,7 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
-use App\Http\Middleware\Authenticate;
 use App\Models\User;
-use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
-use Illuminate\Foundation\Validation\ValidatesRequests;
 
 class PlayController extends Controller
 {
@@ -142,6 +138,8 @@ class PlayController extends Controller
 
                     if ($articlesForRevision->isNotEmpty()) {
                         $phaseCount++;
+                        // Verifica se o usuário já completou esta fase de revisão
+                        $revisionProgress = $this->getRevisionProgress($userId, $revisionArticleIds);
                         $phases[] = [
                             'id' => $phaseCount,
                             'title' => 'Revisão ' . $revisionNumber,
@@ -151,16 +149,11 @@ class PlayController extends Controller
                             'difficulty' => $this->calculateAverageDifficulty($articleChunk),
                             'first_article' => null,
                             'phase_number' => $revisionNumber + 0.5,
-                            'is_complete' => false,
-                            'progress' => [
-                                'completed' => 0,
-                                'total' => count($revisionArticleIds),
-                                'percentage' => 0,
-                                'article_status' => array_fill(0, count($revisionArticleIds), 'pending')
-                            ],
+                            'is_complete' => $revisionProgress['completed'] === count($revisionArticleIds),
+                            'progress' => $revisionProgress,
                             'is_blocked' => $isLawBlocked,
                             'type' => 'revision',
-                            'revision_article_ids' => $revisionArticleIds // Armazenar os IDs para referência
+                            'revision_article_ids' => $revisionArticleIds
                         ];
                     }
                 }
@@ -543,6 +536,54 @@ class PlayController extends Controller
             'total' => $totalArticles,
             'percentage' => $progressPercentage,
             'article_status' => array_values($articleStatus) // Converter para array indexado
+        ];
+    }
+
+    /**
+     * Obtém o progresso de uma fase de revisão para um usuário
+     */
+    private function getRevisionProgress($userId, $articleIds)
+    {
+        if (!$userId || empty($articleIds)) {
+            return [
+                'completed' => 0,
+                'total' => count($articleIds),
+                'percentage' => 0,
+                'article_status' => array_fill(0, count($articleIds), 'pending')
+            ];
+        }
+        
+        // Buscar o progresso de todos os artigos desta revisão para o usuário
+        $progressRecords = UserProgress::where('user_id', $userId)
+            ->whereIn('law_article_id', $articleIds)
+            ->get();
+            
+        $totalArticles = count($articleIds);
+        $articleStatus = array_fill(0, $totalArticles, 'pending');
+        
+        // Atualizar o status com base nos registros de progresso
+        foreach ($progressRecords as $index => $progress) {
+            if ($index < $totalArticles) {
+                if ($progress->is_completed) {
+                    $articleStatus[$index] = 'correct';
+                } else {
+                    $articleStatus[$index] = 'incorrect';
+                }
+            }
+        }
+        
+        // Contar artigos completados
+        $completedCount = count(array_filter($articleStatus, function($status) {
+            return $status === 'correct';
+        }));
+        
+        $progressPercentage = $totalArticles > 0 ? round(($completedCount / $totalArticles) * 100, 2) : 0;
+        
+        return [
+            'completed' => $completedCount,
+            'total' => $totalArticles,
+            'percentage' => $progressPercentage,
+            'article_status' => array_values($articleStatus)
         ];
     }
     

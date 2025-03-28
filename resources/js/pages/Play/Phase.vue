@@ -1,4 +1,5 @@
 <template>
+    <!-- resources\js\pages\Play\Phase.vue -->
     <Head :title="`Fase ${phase.phase_number}: ${phase.reference_name}`" />
 
     <AppLayout>
