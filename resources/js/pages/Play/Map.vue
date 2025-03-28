@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// resources\js\pages\Play\Map.vue
 import { Head, Link } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { computed, ref, onMounted, onUnmounted } from 'vue';
