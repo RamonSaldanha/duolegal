@@ -113,22 +113,28 @@ class PlayController extends Controller
                     
                     // Chave para armazenar os IDs dos artigos de revisão na sessão
                     $revisionKey = "revision_{$reference->uuid}_{$revisionNumber}";
-                    
-                    // Buscar IDs dos artigos para revisão
-                    $revisionArticleIds = session($revisionKey);
-                    
-                    if (!$revisionArticleIds) {
-                        // Se não existir na sessão, selecionar os artigos com menor pontuação
-                        $revisionArticleIds = UserProgress::where('user_id', $userId)
-                            ->whereIn('law_article_id', $reference->articles->pluck('id'))
-                            ->orderByRaw('percentage ASC, revisions ASC')
-                            ->limit(5)
-                            ->pluck('law_article_id')
-                            ->toArray();
-                            
-                        // Armazenar na sessão
-                        session([$revisionKey => $revisionArticleIds]);
-                    }
+                    // (opcional) se quiser limpar a sessão anterior, faça:
+                    // session()->forget($revisionKey);
+                    echo $revisionKey;
+                    // Agora sempre recalcule
+                    // Se quiser ignorar completamente artigos que atingiram 100% na revisão anterior:
+                    $revisionArticleIds = UserProgress::where('user_id', $userId)
+                    ->whereIn('law_article_id', $reference->articles->pluck('id'))
+                    ->where(function ($query) {
+                        $query->where('is_completed', false)
+                            ->orWhere('percentage', '<', 70);
+                    })
+                    ->where('revisions', '<', $revisionNumber) // ignora artigos que já foram revisados nessa ou em revisões maiores
+                    ->orderByRaw('percentage ASC, revisions ASC')
+                    ->limit(5)
+                    ->pluck('law_article_id')
+                    ->toArray();
+
+
+
+                    // Armazenar/atualizar a sessão, se quiser
+                    session([$revisionKey => $revisionArticleIds]);
+
                     
                     // Buscar os artigos de revisão com seus progressos
                     $articlesForRevision = UserProgress::where('user_id', $userId)
@@ -222,12 +228,19 @@ class PlayController extends Controller
             
             if (!$revisionArticleIds) {
                 // Se não existir na sessão, selecionar os artigos com menor pontuação
+                // Se quiser ignorar completamente artigos que atingiram 100% na revisão anterior:
                 $revisionArticleIds = UserProgress::where('user_id', Auth::id())
                     ->whereIn('law_article_id', $reference->articles->pluck('id'))
+                    ->where(function ($query) {
+                        $query->where('is_completed', false)
+                            ->orWhere('percentage', '<', 70);
+                    })
+                    ->where('revisions', '<', $revisionNumber) // ignora artigos que já foram revisados nessa ou em revisões maiores
                     ->orderByRaw('percentage ASC, revisions ASC')
                     ->limit(5)
                     ->pluck('law_article_id')
                     ->toArray();
+
                     
                 // Armazenar na sessão
                 session([$revisionKey => $revisionArticleIds]);
@@ -446,17 +459,7 @@ class PlayController extends Controller
             $totalAnswers
         );
         
-        Log::info('Progresso salvo:', [
-            'article_uuid' => $validated['article_uuid'],
-            'user_id' => Auth::id(),
-            'correct_answers' => $correctAnswers,
-            'percentage' => $progress->percentage,
-            'best_score' => $progress->best_score,
-            'attempts' => $progress->attempts,
-            'wrong_answers' => $progress->wrong_answers,
-            'revisions' => $progress->revisions,
-            'is_completed' => $progress->is_completed
-        ]);
+        
         
         return response()->json([
             'success' => true,
@@ -552,40 +555,40 @@ class PlayController extends Controller
                 'article_status' => array_fill(0, count($articleIds), 'pending')
             ];
         }
-        
-        // Buscar o progresso de todos os artigos desta revisão para o usuário
+
         $progressRecords = UserProgress::where('user_id', $userId)
             ->whereIn('law_article_id', $articleIds)
-            ->get();
-            
+            ->get()
+            ->keyBy('law_article_id');
+
         $totalArticles = count($articleIds);
-        $articleStatus = array_fill(0, $totalArticles, 'pending');
-        
-        // Atualizar o status com base nos registros de progresso
-        foreach ($progressRecords as $index => $progress) {
-            if ($index < $totalArticles) {
+        $articleStatus = [];
+        $completedCount = 0;
+
+        foreach ($articleIds as $articleId) {
+            if (isset($progressRecords[$articleId])) {
+                $progress = $progressRecords[$articleId];
                 if ($progress->is_completed) {
-                    $articleStatus[$index] = 'correct';
+                    $articleStatus[] = 'correct';
+                    $completedCount++;
                 } else {
-                    $articleStatus[$index] = 'incorrect';
+                    $articleStatus[] = 'incorrect';
                 }
+            } else {
+                $articleStatus[] = 'pending';
             }
         }
-        
-        // Contar artigos completados
-        $completedCount = count(array_filter($articleStatus, function($status) {
-            return $status === 'correct';
-        }));
-        
+
         $progressPercentage = $totalArticles > 0 ? round(($completedCount / $totalArticles) * 100, 2) : 0;
-        
+
         return [
             'completed' => $completedCount,
             'total' => $totalArticles,
             'percentage' => $progressPercentage,
-            'article_status' => array_values($articleStatus)
+            'article_status' => $articleStatus
         ];
     }
+
     
     /**
      * Calcular dificuldade média de um conjunto de artigos

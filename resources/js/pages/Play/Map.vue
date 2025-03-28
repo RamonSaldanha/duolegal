@@ -4,7 +4,8 @@ import { Head, Link } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { Badge } from '@/components/ui/badge';
-import { Book, FileText, Bookmark, CheckCircle, Star } from 'lucide-vue-next';
+import { Book, FileText, Bookmark, Star, CheckCircle, Repeat2 } from 'lucide-vue-next';
+
 
 interface User {
     lives: number;
@@ -173,6 +174,7 @@ const getConnectorSpacing = (index: number) => `${index * (windowWidth.value <= 
 </script>
 
 <template>
+
   <Head title="Aprender Jogando" />
 
   <AppLayout>
@@ -251,17 +253,16 @@ const getConnectorSpacing = (index: number) => `${index * (windowWidth.value <= 
                           <div 
                               :class="[
                                   'w-16 h-16 rounded-full flex items-center justify-center phase-circle',
-                phase.type === 'revision' && isPhaseComplete(phase) ? 'bg-green-500' :
-                phase.type === 'revision' ? 'bg-purple-500' :
-                phase.is_blocked ? 'bg-gray-400' :
-                isPhaseComplete(phase) ? 'bg-green-500' : 
-                isCurrentPhase(phase, props.phases) ? 'bg-blue-500' :
-                'bg-gray-400'
+                                  phase.type === 'revision' ? 'bg-purple-500' :
+                                  phase.is_blocked ? 'bg-gray-400' :
+                                  isPhaseComplete(phase) ? 'bg-green-500' : 
+                                  isCurrentPhase(phase, props.phases) ? 'bg-blue-500' :
+                                  'bg-gray-400'
                               ]"
                           >
                               <component 
-                                  :is="isPhaseComplete(phase) ? CheckCircle : getPhaseIcon(phase.phase_number)" 
-                                  class="w-6 h-6 text-white" 
+                              :is="phase.type === 'revision' ? Repeat2 : (isPhaseComplete(phase) ? CheckCircle : getPhaseIcon(phase.phase_number))"
+                              class="w-6 h-6 text-white" 
                               />
                           </div>
                           
