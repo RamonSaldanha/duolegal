@@ -18,6 +18,11 @@ class PlayController extends Controller
     const ARTICLES_PER_PHASE = 5;
 
     /**
+     * Intervalo para inserção de fases de revisão
+     */
+    const REVIEW_PHASE_INTERVAL = 3;
+
+    /**
      * Exibir o mapa de fases do jogo
      */
     public function map()
@@ -37,6 +42,7 @@ class PlayController extends Controller
         // Preparar dados das fases
         $phases = [];
         $phaseCount = 0;
+        $regularPhaseCount = 0; // Contador para fases regulares (não de revisão)
         $isLawBlocked = false; // Controle para leis bloqueadas
         
         foreach ($legalReferences as $referenceIndex => $reference) {
@@ -60,9 +66,13 @@ class PlayController extends Controller
             foreach ($chunks as $index => $articleChunk) {
                 $progress = $this->getPhaseProgress($userId, $articleChunk);
                 $phaseCount++;
+                $regularPhaseCount++;
                 
-                // Marcar a fase como bloqueada se os artigos estiverem completos
-                $isPhaseComplete = $progress['completed'] === $progress['total'];
+                // Verificar se a fase está completa - artigos sem status "pending"
+                $pendingArticles = array_filter($progress['article_status'], function($status) {
+                    return $status === 'pending';
+                });
+                $isPhaseComplete = empty($pendingArticles);
                 
                 $phases[] = [
                     'id' => $phaseCount,
@@ -76,7 +86,29 @@ class PlayController extends Controller
                     'is_complete' => $isPhaseComplete,
                     'progress' => $progress,
                     'is_blocked' => $isLawBlocked, // Indica se a fase está bloqueada
+                    'is_review' => false, // Marca como fase regular
                 ];
+
+                // Inserir fase de revisão após cada REVIEW_PHASE_INTERVAL fases regulares
+                if ($regularPhaseCount % self::REVIEW_PHASE_INTERVAL === 0) {
+                    $phaseCount++; // Incrementar contador geral de fases
+                    
+                    // Adicionar fase de revisão, sem verificar se existem artigos completados
+                    $phases[] = [
+                        'id' => $phaseCount,
+                        'title' => 'Revisão ' . ceil($regularPhaseCount / self::REVIEW_PHASE_INTERVAL),
+                        'reference_name' => $reference->name,
+                        'reference_uuid' => $reference->uuid,
+                        'article_count' => null, // Será determinado dinamicamente na página de revisão
+                        'difficulty' => $this->calculateAverageDifficulty($articleChunk),
+                        'first_article' => null,
+                        'phase_number' => 'review', // Marcador especial para fase de revisão
+                        'is_complete' => false, // Revisões são sempre disponíveis
+                        'progress' => ['completed' => 0, 'total' => 1, 'percentage' => 0],
+                        'is_blocked' => $isLawBlocked, // A fase de revisão segue a mesma regra de bloqueio das regulares
+                        'is_review' => true, // Marca como fase de revisão
+                    ];
+                }
             }
         }
         
@@ -388,6 +420,83 @@ class PlayController extends Controller
             'user' => [
                 'lives' => $user->lives
             ]
+        ]);
+    }
+
+    /**
+     * Exibir a fase de revisão para uma referência legal
+     */
+    public function review($referenceUuid)
+    {
+        $user = Auth::user();
+        
+        // Verifica se o usuário tem vidas disponíveis
+        if (!$user->hasLives()) {
+            return redirect()->route('play.nolives');
+        }
+        
+        // Buscar a referência legal
+        $reference = LegalReference::where('uuid', $referenceUuid)->firstOrFail();
+        
+        // Buscar os IDs dos artigos da referência
+        $articleIds = $reference->articles()
+            ->where('is_active', true)
+            ->pluck('id');
+            
+        // Buscar os artigos que o usuário já completou
+        $completedArticleIds = UserProgress::where('user_id', $user->id)
+            ->whereIn('law_article_id', $articleIds)
+            ->where('is_completed', true)
+            ->pluck('law_article_id');
+            
+        // Se não há artigos completados, redirecionar para o mapa
+        if ($completedArticleIds->isEmpty()) {
+            return redirect()
+                ->route('play.map')
+                ->with('message', 'Não há artigos para revisar nesta referência legal.');
+        }
+        
+        // Buscar os artigos completados COM suas opções
+        $articlesWithProgress = LawArticle::with('options')
+            ->whereIn('id', $completedArticleIds)
+            ->where('is_active', true)
+            ->get()
+            ->map(function($article) use ($user) {
+                $progress = UserProgress::where('user_id', $user->id)
+                    ->where('law_article_id', $article->id)
+                    ->first();
+                    
+                return [
+                    'uuid' => $article->uuid,
+                    'article_reference' => $article->article_reference,
+                    'original_content' => $article->original_content,
+                    'practice_content' => $article->practice_content,
+                    'options' => $article->options->map(function($option) {
+                        return [
+                            'id' => $option->id,
+                            'word' => $option->word,
+                            'is_correct' => $option->is_correct,
+                            'gap_order' => $option->gap_order,
+                            'position' => $option->position,
+                        ];
+                    })->sortBy('position')->values()->all(),
+                    'progress' => $progress ? [
+                        'percentage' => $progress->percentage,
+                        'is_completed' => $progress->is_completed,
+                        'best_score' => $progress->best_score,
+                        'attempts' => $progress->attempts,
+                        'wrong_answers' => $progress->wrong_answers,
+                        'revisions' => $progress->revisions,
+                    ] : null,
+                ];
+            });
+        
+        return Inertia::render('Play/Review', [
+            'reference' => [
+                'uuid' => $reference->uuid,
+                'name' => $reference->name,
+            ],
+            'articles' => $articlesWithProgress
         ]);
     }
 }
