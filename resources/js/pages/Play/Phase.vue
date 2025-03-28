@@ -7,8 +7,8 @@
         <span id="emoji-canvas" class="fixed top-1/2 left-1/2 z-[100] pointer-events-none"></span>
         
         <div class="container py-4 md:py-8 px-3 md:px-4">
-            
-            <div class="max-w-4xl mx-auto">
+
+            <div class="w-full md:w-[768px] max-w-3xl mx-auto">
                 <!-- Cabeçalho da fase - versão responsiva -->
                 <div class="mb-4 md:mb-4">
                     <!-- Mostrar apenas no desktop -->
@@ -197,6 +197,7 @@
                                     </div>
 
                                     <div class="mt-6 flex justify-between gap-4">
+                                        
                                         <Button variant="outline" class="w-full" @click="resetAnswers">
                                             <RefreshCw class="mr-2 h-4 w-4" />
                                             <!-- Texto diferente para mobile e desktop -->
@@ -1083,53 +1084,60 @@ const isPhaseComplete = ref(false);
         
         if (score) {
             // Salvar progresso no servidor
-            axios.post(route('play.progress'), {
+            const requestData = {
                 article_uuid: currentArticle.value.uuid,
                 correct_answers: score.correct,
                 total_answers: score.total,
-            })
-            .then(response => {
-                // Atualizar o progresso local com os dados do servidor
-                if (response.data.success) {
-                    console.log('Progresso atualizado:', response.data.progress);
-                    
-                    // Atualiza o estado de redirecionamento de sem vidas
-                    noLivesState.value = {
-                        shouldRedirect: response.data.should_redirect,
-                        redirectUrl: response.data.redirect_url
-                    };
+            };
+            
+            // Adicionar o número da revisão se for uma fase de revisão
+            if (props.phase.is_revision && props.phase.revision_number) {
+                requestData.revision_number = props.phase.revision_number;
+            }
+            
+            axios.post(route('play.progress'), requestData)
+                .then(response => {
+                    // Atualizar o progresso local com os dados do servidor
+                    if (response.data.success) {
+                        console.log('Progresso atualizado:', response.data.progress);
+                        
+                        // Atualiza o estado de redirecionamento de sem vidas
+                        noLivesState.value = {
+                            shouldRedirect: response.data.should_redirect,
+                            redirectUrl: response.data.redirect_url
+                        };
 
-                    // Atualiza o objeto do artigo atual com o progresso atualizado
-                    const currentIdx = currentArticleIndex.value;
-                    const articlesCopy = [...articlesArray.value];
-                    articlesCopy[currentIdx] = {
-                        ...articlesCopy[currentIdx],
-                        progress: response.data.progress
-                    };
-                    
-                    // Atualizar o array reativo
-                    articlesArray.value = articlesCopy;
+                        // Atualiza o objeto do artigo atual com o progresso atualizado
+                        const currentIdx = currentArticleIndex.value;
+                        const articlesCopy = [...articlesArray.value];
+                        articlesCopy[currentIdx] = {
+                            ...articlesCopy[currentIdx],
+                            progress: response.data.progress
+                        };
+                        
+                        // Atualizar o array reativo
+                        articlesArray.value = articlesCopy;
 
-                    // Atualizar as vidas do usuário no estado da página
-                    if (response.data.user?.lives !== undefined) {
-                        page.props.auth.user.lives = response.data.user.lives;
-                    }
-                    
-                    // Verificar se todos os artigos foram respondidos, mas NÃO exibe o modal
-                    // Se for o último artigo, só marca como pronto para exibir o botão especial
-                    if (currentArticleIndex.value === articlesArray.value.length - 1) {
-                        const allDone = articlesCopy.every(article => article.progress !== null);
-                        if (allDone) {
-                            // Ao invés de mostrar o modal, marcamos que a fase está completa
-                            isPhaseComplete.value = true;
+                        // Atualizar as vidas do usuário no estado da página
+                        if (response.data.user?.lives !== undefined) {
+                            page.props.auth.user.lives = response.data.user.lives;
+                        }
+                        
+                        // Verificar se todos os artigos foram respondidos, mas NÃO exibe o modal
+                        // Se for o último artigo, só marca como pronto para exibir o botão especial
+                        if (currentArticleIndex.value === articlesArray.value.length - 1) {
+                            const allDone = articlesCopy.every(article => article.progress !== null);
+                            if (allDone) {
+                                // Ao invés de mostrar o modal, marcamos que a fase está completa
+                                isPhaseComplete.value = true;
+                            }
                         }
                     }
-                }
-            })
-            .catch(error => {
-                console.error('Erro ao salvar progresso:', error);
-            });
-        
+                })
+                .catch(error => {
+                    console.error('Erro ao salvar progresso:', error);
+                });
+            
             // Código para exibir recompensas visuais
             if (score.percentage >= 70) {
                 if (!completedArticles.value.includes(currentArticleIndex.value)) {
@@ -1151,18 +1159,42 @@ const isPhaseComplete = ref(false);
         }
     };
 
-
     // Substituir a função advanceToNextPhase existente por esta:
     const advanceToNextPhase = () => {
-        if (props.phase.has_next_phase) {
+        // Verificar se a fase atual é uma fase de revisão
+        const isCurrentRevision = typeof props.phase.phase_number === 'string' && 
+                                props.phase.phase_number.startsWith('R');
+        
+        // Se a fase atual é uma fase de revisão, precisamos obter a próxima fase do mapa
+        if (isCurrentRevision) {
+            // Retornar ao mapa (não podemos determinar facilmente a próxima fase após uma revisão)
+            router.visit(route('play.map'));
+            return;
+        }
+
+        // Verificar se a próxima fase deveria ser uma revisão
+        // A cada 3 fases normais (3, 6, 9, etc.), a próxima deve ser uma revisão
+        const isNextPhaseRevision = props.phase.phase_number % 3 === 0;
+        
+        if (isNextPhaseRevision) {
+            // Calcular qual revisão seria (R1, R2, etc.)
+            const revisionNumber = Math.floor(props.phase.phase_number / 3);
+            
+            // Redirecionar para a fase de revisão
+            router.visit(route('play.phase', {
+                reference: 'revision',
+                phase: `R${revisionNumber}`
+            }));
+        } else if (props.phase.has_next_phase) {
+            // Próxima fase normal na mesma referência
             const nextPhaseNumber = props.phase.phase_number + 1;
             
-            // Usar o reference_uuid que foi passado do controller
             router.visit(route('play.phase', {
                 reference: props.phase.reference_uuid,
                 phase: nextPhaseNumber
             }));
         } else {
+            // Se não houver próxima fase, voltar ao mapa
             router.visit(route('play.map'));
         }
     };

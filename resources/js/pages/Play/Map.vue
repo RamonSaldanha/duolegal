@@ -27,6 +27,7 @@ interface Phase {
     phase_number: number;
     progress: Progress;
     is_blocked: boolean;
+    type?: 'regular' | 'revision';
 }
 
 interface ReferenceGroup {
@@ -196,8 +197,9 @@ const getConnectorSpacing = (index: number) => `${index * (windowWidth.value <= 
                   top: getConnectorSpacing(index),
                 }"
               >
-                <div class="absolute top-[50px] left-0" :style="{ width: getConnectorWidth(), height: getConnectorHeight() }">
+                <div class="absolute top-[50px] left-0 trail-connector-position" :style="{ width: getConnectorWidth(), height: getConnectorHeight() }">
                   <svg 
+                  class="trail-connector"
                   :width="getConnectorWidth()" 
                   height="100"
                   :viewBox="`0 0 ${parseInt(getConnectorWidth())} 100`" 
@@ -238,10 +240,12 @@ const getConnectorSpacing = (index: number) => `${index * (windowWidth.value <= 
                           <div 
                               :class="[
                                   'w-16 h-16 rounded-full flex items-center justify-center phase-circle',
-                                  phase.is_blocked ? 'bg-gray-400' :
-                                  isPhaseComplete(phase) ? 'bg-green-500' : 
-                                  isCurrentPhase(phase, props.phases) ? 'bg-blue-500' :
-                                  'bg-gray-400'
+                phase.type === 'revision' && isPhaseComplete(phase) ? 'bg-green-500' :
+                phase.type === 'revision' ? 'bg-purple-500' :
+                phase.is_blocked ? 'bg-gray-400' :
+                isPhaseComplete(phase) ? 'bg-green-500' : 
+                isCurrentPhase(phase, props.phases) ? 'bg-blue-500' :
+                'bg-gray-400'
                               ]"
                           >
                               <component 
@@ -314,40 +318,43 @@ const getConnectorSpacing = (index: number) => `${index * (windowWidth.value <= 
   margin-top: 1.25rem; /* Menos espaço vertical */
 }
 
-/* Responsividade */
 @media (max-width: 640px) {
   .trail-container {
-    max-width: 200px !important; /* Ainda mais estreito no mobile */
+    max-width: 200px !important;
   }
-  
+}
+
+@media (max-width: 640px) {
   .phase-item > div > div {
-    width: 52% !important; /* Ligeiramente mais próximo do centro */
-  }
-  
-  .phase-item > div > div a {
+    width: 52% !important;
     margin-left: 0 !important;
     margin-right: 0 !important;
   }
-  
+}
+
+@media (max-width: 640px) {
   .phase-circle {
     width: 3.5rem !important;
     height: 3.5rem !important;
   }
-  
+}
+
+@media (max-width: 640px) {
   .phase-circle svg {
     width: 1.25rem !important;
     height: 1.25rem !important;
   }
 }
 
-/* Garantir que os conectores tenham tamanho fixo mesmo no mobile */
 @media (max-width: 640px) {
-  svg {
+  .trail-connector svg {
     width: 220px !important;
     transform: none !important;
   }
-  
-  .absolute.top-[50px] {
+}
+
+@media (max-width: 640px) {
+  .trail-connector-position {
     left: 0 !important;
     width: 220px !important;
   }

@@ -28,6 +28,7 @@ class UserProgress extends Model
         'wrong_answers',
         'revisions',
         'completed_at',
+        'last_revision_at',
         'is_completed'
     ];
 
@@ -41,6 +42,7 @@ class UserProgress extends Model
         'wrong_answers' => 'integer',
         'revisions' => 'integer',
         'completed_at' => 'datetime',
+        'last_revision_at' => 'datetime',
         'is_completed' => 'boolean',
     ];
 
@@ -88,17 +90,14 @@ class UserProgress extends Model
             'law_article_id' => $lawArticleId
         ]);
         
-        // Incrementa tentativas apenas se for um registro existente
-        $isNewRecord = !$progress->exists;
-        if (!$isNewRecord) {
+        // Incrementa tentativas
+        if ($progress->exists) {
             $progress->attempts += 1;
-            
-            // Se o usuário já completou o artigo antes e está revisando
-            if ($progress->is_completed) {
-                $progress->revisions += 1;
-            }
+            // Se já existe um registro, é uma revisão
+            $progress->revisions += 1;
+            $progress->last_revision_at = now();
         } else {
-            // Se for um novo registro, inicializa com 1
+            // Novo registro
             $progress->attempts = 1;
             $progress->wrong_answers = 0;
             $progress->revisions = 0;
@@ -117,8 +116,8 @@ class UserProgress extends Model
         // Não armazenamos mais total_answers, apenas usamos para cálculo
         $progress->percentage = $percentage;
         
-        // Atualizar pontuação máxima se a atual for maior
-        if ($isNewRecord || $percentage > $progress->best_score) {
+        // Atualizar pontuação máxima se for novo registro ou se a atual for maior
+        if (!$progress->exists || $percentage > $progress->best_score) {
             $progress->best_score = $percentage;
         }
         

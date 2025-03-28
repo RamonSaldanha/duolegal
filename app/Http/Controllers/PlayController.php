@@ -9,13 +9,42 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use App\Http\Middleware\Authenticate;
+use App\Models\User;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Foundation\Validation\ValidatesRequests;
 
 class PlayController extends Controller
 {
+    private function checkAuth()
+    {
+        $user = Auth::user();
+        if (!$user) {
+            redirect()->route('login');
+        }
+        return $user;
+    }
+
+    private function checkLives()
+    {
+        $user = $this->checkAuth();
+        if ($user->lives <= 0) {
+            return redirect()->route('play.nolives');
+        }
+        return $user;
+    }
+
+
     /**
      * Número de artigos por fase
      */
     const ARTICLES_PER_PHASE = 5;
+
+    /**
+     * Número de fases antes de uma revisão
+     */
+    const PHASES_BEFORE_REVISION = 3;
 
     /**
      * Exibir o mapa de fases do jogo
@@ -25,7 +54,7 @@ class PlayController extends Controller
         $user = Auth::user();
         $userId = $user->id;
         
-        if (!$user->hasLives()) {
+        if ($user->lives <= 0) {
             return redirect()->route('play.nolives');
         }
         
@@ -58,6 +87,7 @@ class PlayController extends Controller
             $chunks = $reference->articles->chunk(self::ARTICLES_PER_PHASE);
             
             foreach ($chunks as $index => $articleChunk) {
+                // Adicionar fase regular
                 $progress = $this->getPhaseProgress($userId, $articleChunk);
                 $phaseCount++;
                 
@@ -75,10 +105,68 @@ class PlayController extends Controller
                     'phase_number' => $index + 1,
                     'is_complete' => $isPhaseComplete,
                     'progress' => $progress,
-                    'is_blocked' => $isLawBlocked, // Indica se a fase está bloqueada
+                    'is_blocked' => $isLawBlocked,
+                    'type' => 'regular'
                 ];
+
+                // Verificar se deve adicionar uma fase de revisão
+                if (($index + 1) % self::PHASES_BEFORE_REVISION === 0) {
+                    // Calcular o número da revisão
+                    $phaseNumber = $index + 1;
+                    $revisionNumber = ceil($phaseNumber / self::PHASES_BEFORE_REVISION);
+                    
+                    // Chave para armazenar os IDs dos artigos de revisão na sessão
+                    $revisionKey = "revision_{$reference->uuid}_{$revisionNumber}";
+                    
+                    // Buscar IDs dos artigos para revisão
+                    $revisionArticleIds = session($revisionKey);
+                    
+                    if (!$revisionArticleIds) {
+                        // Se não existir na sessão, selecionar os artigos com menor pontuação
+                        $revisionArticleIds = UserProgress::where('user_id', $userId)
+                            ->whereIn('law_article_id', $reference->articles->pluck('id'))
+                            ->orderByRaw('percentage ASC, revisions ASC')
+                            ->limit(5)
+                            ->pluck('law_article_id')
+                            ->toArray();
+                            
+                        // Armazenar na sessão
+                        session([$revisionKey => $revisionArticleIds]);
+                    }
+                    
+                    // Buscar os artigos de revisão com seus progressos
+                    $articlesForRevision = UserProgress::where('user_id', $userId)
+                        ->whereIn('law_article_id', $revisionArticleIds)
+                        ->with('lawArticle')
+                        ->get();
+
+                    if ($articlesForRevision->isNotEmpty()) {
+                        $phaseCount++;
+                        $phases[] = [
+                            'id' => $phaseCount,
+                            'title' => 'Revisão ' . $revisionNumber,
+                            'reference_name' => $reference->name,
+                            'reference_uuid' => $reference->uuid,
+                            'article_count' => count($revisionArticleIds),
+                            'difficulty' => $this->calculateAverageDifficulty($articleChunk),
+                            'first_article' => null,
+                            'phase_number' => $revisionNumber + 0.5,
+                            'is_complete' => false,
+                            'progress' => [
+                                'completed' => 0,
+                                'total' => count($revisionArticleIds),
+                                'percentage' => 0,
+                                'article_status' => array_fill(0, count($revisionArticleIds), 'pending')
+                            ],
+                            'is_blocked' => $isLawBlocked,
+                            'type' => 'revision',
+                            'revision_article_ids' => $revisionArticleIds // Armazenar os IDs para referência
+                        ];
+                    }
+                }
             }
         }
+        
         
         return Inertia::render('Play/Map', [
             'phases' => $phases,
@@ -96,7 +184,7 @@ class PlayController extends Controller
         $user = Auth::user();
         
         // Verifica se o usuário tem vidas disponíveis
-        if (!$user->hasLives()) {
+        if ($user->lives <= 0) {
             return redirect()->route('play.nolives');
         }
 
@@ -126,7 +214,103 @@ class PlayController extends Controller
         
         $reference = LegalReference::where('uuid', $referenceUuid)->firstOrFail();
 
-        // Obter todos os artigos desta referência para verificar o progresso
+        // Verifica se é uma fase de revisão (números decimais são fases de revisão)
+        $isRevisionPhase = floor($phaseNumber) != $phaseNumber;
+
+        if ($isRevisionPhase) {
+            // Calcular o número da revisão
+            $revisionNumber = ceil($phaseNumber * 2) - 2;
+            
+            // Chave para recuperar os IDs dos artigos de revisão da sessão
+            $revisionKey = "revision_{$reference->uuid}_{$revisionNumber}";
+            
+            // Buscar IDs dos artigos para revisão
+            $revisionArticleIds = session($revisionKey);
+            
+            if (!$revisionArticleIds) {
+                // Se não existir na sessão, selecionar os artigos com menor pontuação
+                $revisionArticleIds = UserProgress::where('user_id', Auth::id())
+                    ->whereIn('law_article_id', $reference->articles->pluck('id'))
+                    ->orderByRaw('percentage ASC, revisions ASC')
+                    ->limit(5)
+                    ->pluck('law_article_id')
+                    ->toArray();
+                    
+                // Armazenar na sessão
+                session([$revisionKey => $revisionArticleIds]);
+            }
+            
+            // Buscar os artigos de revisão com seus progressos
+            $articlesForRevision = UserProgress::where('user_id', Auth::id())
+                ->whereIn('law_article_id', $revisionArticleIds)
+                ->with('lawArticle.options')
+                ->get();
+
+            if ($articlesForRevision->isEmpty()) {
+                return redirect()->route('play.map')
+                    ->with('message', 'Nenhum artigo disponível para revisão.');
+            }
+
+            // Verifica se a fase anterior foi completada
+            $previousPhaseNumber = floor($phaseNumber);
+            $chunkedArticles = $reference->articles()
+                ->orderBy('position', 'asc')
+                ->where('is_active', true)
+                ->get()
+                ->chunk(self::ARTICLES_PER_PHASE);
+
+            if (isset($chunkedArticles[$previousPhaseNumber - 1])) {
+                $previousPhaseArticles = $chunkedArticles[$previousPhaseNumber - 1];
+                $previousPhaseProgress = $this->getPhaseProgress(Auth::id(), $previousPhaseArticles);
+                
+                if ($previousPhaseProgress['percentage'] < 100) {
+                    return redirect()->route('play.map')
+                        ->with('message', 'Complete a fase anterior antes de fazer a revisão.');
+                }
+            }
+
+            // Preparar artigos para revisão
+            $articlesWithProgress = $articlesForRevision->map(function($progress) {
+                $article = $progress->lawArticle;
+                return [
+                    'uuid' => $article->uuid,
+                    'article_reference' => $article->article_reference,
+                    'original_content' => $article->original_content,
+                    'practice_content' => $article->practice_content,
+                    'options' => $article->options->map(function($option) {
+                        return [
+                            'id' => $option->id,
+                            'word' => $option->word,
+                            'is_correct' => $option->is_correct,
+                            'gap_order' => $option->gap_order,
+                            'position' => $option->position,
+                        ];
+                    })->sortBy('position')->values()->all(),
+                    'progress' => [
+                        'percentage' => $progress->percentage,
+                        'is_completed' => $progress->is_completed,
+                        'best_score' => $progress->best_score,
+                        'attempts' => $progress->attempts,
+                        'wrong_answers' => $progress->wrong_answers,
+                        'revisions' => $progress->revisions,
+                    ]
+                ];
+            });
+
+            return Inertia::render('Play/Phase', [
+                'phase' => [
+                    'title' => 'Revisão ' . (ceil($phaseNumber * 2) - 2) . ': ' . $reference->name,
+                    'reference_name' => $reference->name,
+                    'phase_number' => (float)$phaseNumber,
+                    'type' => 'revision',
+                    'progress' => $this->getPhaseProgress(Auth::id(), $articlesForRevision->pluck('lawArticle')),
+                    'reference_uuid' => $referenceUuid
+                ],
+                'articles' => $articlesWithProgress
+            ]);
+        }
+
+        // Lógica para fases regulares
         $allArticles = $reference->articles()
             ->orderBy('position', 'asc')
             ->where('is_active', true)
@@ -252,8 +436,9 @@ class PlayController extends Controller
         $percentage = ($validated['correct_answers'] / $validated['total_answers']) * 100;
         
         // Se o usuário acertou menos de 70%, perde uma vida
-        if ($percentage < 70) {
-            $user->decrementLife();
+        if ($percentage < 70 && $user->lives > 0) {
+            User::where('id', $user->id)->update(['lives' => $user->lives - 1]);
+            $user = Auth::user(); // Buscar usuário atualizado
         }
         
         // Verifica e corrige possíveis valores inconsistentes
@@ -380,8 +565,10 @@ class PlayController extends Controller
     public function rewardLife()
     {
         $user = Auth::user();
-        $user->lives = min($user->lives + 1, 5); // Adiciona uma vida, máximo de 5
-        $user->save();
+        // Adiciona uma vida, máximo de 5
+        $newLives = min($user->lives + 1, 5);
+        User::where('id', $user->id)->update(['lives' => $newLives]);
+        $user = Auth::user(); // Buscar usuário atualizado
 
         return response()->json([
             'success' => true,
