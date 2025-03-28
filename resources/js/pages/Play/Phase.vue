@@ -8,7 +8,7 @@
         
         <div class="container py-4 md:py-8 px-3 md:px-4">
             
-            <div class="max-w-4xl mx-auto">
+            <div class="w-full sm:w-[95%] lg:w-[50rem] mx-auto">
                 <!-- Cabeçalho da fase - versão responsiva -->
                 <div class="mb-4 md:mb-4">
                     <!-- Mostrar apenas no desktop -->
