@@ -37,13 +37,20 @@ class PlayController extends Controller
         // Buscar referências legais com seus artigos
         $legalReferences = LegalReference::with(['articles' => function($query) {
             $query->orderBy('position', 'asc')->where('is_active', true);
-        }])->orderBy('id', 'asc')->get(); // Exemplo de ordenação alternativa
+        }])->orderBy('id', 'asc')->get();
         
         // Preparar dados das fases
         $phases = [];
         $phaseCount = 0;
-        $regularPhaseCount = 0; // Contador para fases regulares (não de revisão)
-        $isLawBlocked = false; // Controle para leis bloqueadas
+        $regularPhaseCount = 0;
+        $isLawBlocked = false;
+        
+        // Verificar se existem artigos não completados (percentage < 100) para o usuário
+        $hasIncompleteArticles = UserProgress::where('user_id', $userId)
+            ->where('percentage', '<', 100)
+            ->exists();
+        
+        $lastPhaseWasReview = false; // Controle para saber se a última fase adicionada foi revisão
         
         foreach ($legalReferences as $referenceIndex => $reference) {
             // Verifica se a lei anterior está completa
@@ -74,6 +81,10 @@ class PlayController extends Controller
                 });
                 $isPhaseComplete = empty($pendingArticles);
                 
+                // Se a última fase adicionada foi uma revisão e há artigos incompletos, bloquear esta fase
+                $isBlockedAfterReview = $lastPhaseWasReview && $hasIncompleteArticles;
+                $isBlocked = $isLawBlocked || $isBlockedAfterReview;
+                
                 $phases[] = [
                     'id' => $phaseCount,
                     'title' => 'Fase ' . $phaseCount,
@@ -85,29 +96,30 @@ class PlayController extends Controller
                     'phase_number' => $index + 1,
                     'is_complete' => $isPhaseComplete,
                     'progress' => $progress,
-                    'is_blocked' => $isLawBlocked, // Indica se a fase está bloqueada
-                    'is_review' => false, // Marca como fase regular
+                    'is_blocked' => $isBlocked, // Agora usa a variável que considera revisões anteriores
+                    'is_review' => false,
                 ];
-
+                
+                $lastPhaseWasReview = false; // Resetar o controle pois acabamos de adicionar uma fase regular
+                
                 // Inserir fase de revisão após cada REVIEW_PHASE_INTERVAL fases regulares
                 if ($regularPhaseCount % self::REVIEW_PHASE_INTERVAL === 0) {
-                    $phaseCount++; // Incrementar contador geral de fases
-                    
-                    // Adicionar fase de revisão, sem verificar se existem artigos completados
+                    $phaseCount++;
                     $phases[] = [
                         'id' => $phaseCount,
                         'title' => 'Revisão ' . ceil($regularPhaseCount / self::REVIEW_PHASE_INTERVAL),
                         'reference_name' => $reference->name,
                         'reference_uuid' => $reference->uuid,
-                        'article_count' => null, // Será determinado dinamicamente na página de revisão
+                        'article_count' => null,
                         'difficulty' => $this->calculateAverageDifficulty($articleChunk),
                         'first_article' => null,
-                        'phase_number' => 'review', // Marcador especial para fase de revisão
-                        'is_complete' => false, // Revisões são sempre disponíveis
+                        'phase_number' => 'review',
+                        'is_complete' => false,
                         'progress' => ['completed' => 0, 'total' => 1, 'percentage' => 0],
-                        'is_blocked' => $isLawBlocked, // A fase de revisão segue a mesma regra de bloqueio das regulares
-                        'is_review' => true, // Marca como fase de revisão
+                        'is_blocked' => !$hasIncompleteArticles,
+                        'is_review' => true,
                     ];
+                    $lastPhaseWasReview = true; // Marcar que a última fase adicionada foi de revisão
                 }
             }
         }

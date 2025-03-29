@@ -4,7 +4,7 @@ import { Head, Link } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { Badge } from '@/components/ui/badge';
-import { Book, FileText, Bookmark, CheckCircle, Star } from 'lucide-vue-next';
+import { Book, FileText, Bookmark, CheckCircle, Star, Repeat } from 'lucide-vue-next';
 
 interface User {
     lives: number;
@@ -28,6 +28,7 @@ interface Phase {
     phase_number: number;
     progress: Progress;
     is_blocked: boolean;
+    is_review?: boolean; // Novo campo para indicar se é uma fase de revisão
 }
 
 interface ReferenceGroup {
@@ -74,7 +75,6 @@ const isPhaseComplete = (phase: Phase): boolean => {
     return phase.progress && phase.progress.completed === phase.article_count;
 };
 
-// Verifica se é a fase atual (primeira fase não totalmente tentada em cada referência)
 // Verifica se é a fase atual (primeira fase não totalmente tentada em cada referência)
 const isCurrentPhase = (phase: Phase, phases: Phase[]): boolean => {
     // Se a fase estiver completa, não é a atual
@@ -230,23 +230,40 @@ const getConnectorSpacing = (index: number) => `${index * (windowWidth.value <= 
                       style="width: 55%;"
                     >
                       <Link 
-                          :href="props.user.lives > 0 && isCurrentPhase(phase, props.phases) && !phase.is_blocked ? route('play.phase', [phase.reference_uuid, phase.phase_number]) : '#'"
+                          :href="phase.is_blocked 
+                              ? '#' 
+                              : (phase.is_review
+                                  ? route('play.review', [phase.reference_uuid, phase.phase_number])
+                                  : (props.user.lives > 0 && isCurrentPhase(phase, props.phases))
+                                      ? route('play.phase', [phase.reference_uuid, phase.phase_number])
+                                      : '#')"
                           class="relative group transition-transform duration-300"
-                          :class="props.user.lives > 0 && isCurrentPhase(phase, props.phases) && !phase.is_blocked ? 'hover:scale-110' : 'cursor-not-allowed'"
+                          :class="phase.is_blocked 
+                              ? 'cursor-not-allowed' 
+                              : (phase.is_review || (props.user.lives > 0 && isCurrentPhase(phase, props.phases)))
+                                  ? 'hover:scale-110'
+                                  : 'cursor-not-allowed'"
                           :style="`margin-${index % 2 === 0 ? 'right' : 'left'}: -5px;`"
                       >
                           <!-- Bolinha da fase -->
                           <div 
                               :class="[
                                   'w-16 h-16 rounded-full flex items-center justify-center phase-circle',
-                                  phase.is_blocked ? 'bg-gray-400' :
-                                  isPhaseComplete(phase) ? 'bg-green-500' : 
-                                  isCurrentPhase(phase, props.phases) ? 'bg-blue-500' :
-                                  'bg-gray-400'
+                                  phase.is_blocked ? 'bg-gray-400' : // Se bloqueado, sempre cinza
+                                  phase.is_review ? 'bg-purple-500' : // Se for revisão, roxo
+                                  isPhaseComplete(phase) ? 'bg-green-500' : // Se completo, verde
+                                  isCurrentPhase(phase, props.phases) ? 'bg-blue-500' : // Se atual, azul
+                                  'bg-gray-400' // Padrão: cinza
                               ]"
                           >
                               <component 
-                                  :is="isPhaseComplete(phase) ? CheckCircle : getPhaseIcon(phase.phase_number)" 
+                                  :is="phase.is_blocked 
+                                      ? getPhaseIcon(phase.phase_number) 
+                                      : (phase.is_review 
+                                          ? Repeat 
+                                          : (isPhaseComplete(phase) 
+                                              ? CheckCircle 
+                                              : getPhaseIcon(phase.phase_number)))" 
                                   class="w-6 h-6 text-white" 
                               />
                           </div>
