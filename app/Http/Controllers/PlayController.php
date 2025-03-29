@@ -20,7 +20,7 @@ class PlayController extends Controller
     /**
      * Intervalo para inserção de fases de revisão
      */
-    const REVIEW_PHASE_INTERVAL = 3;
+    const REVIEW_PHASE_INTERVAL = 2;
 
     /**
      * Exibir o mapa de fases do jogo
@@ -181,7 +181,11 @@ class PlayController extends Controller
         
         // Encontrar a primeira fase que não foi totalmente tentada
         $firstIncompletePhase = 1;
+        $currentPhaseIndex = 1;
+        $regularPhaseCount = 0;
+
         foreach ($chunkedArticles as $index => $phaseArticles) {
+            $regularPhaseCount++;
             $progress = $this->getPhaseProgress(Auth::id(), $phaseArticles);
             
             // Verificar se todos os artigos da fase foram pelo menos tentados
@@ -191,13 +195,38 @@ class PlayController extends Controller
             });
             
             if (count($pendingArticles) > 0) {
-                $firstIncompletePhase = $index + 1;
+                $firstIncompletePhase = $currentPhaseIndex;
                 break;
             }
+            
+            $currentPhaseIndex++; // Incrementa para a próxima fase regular
+            
+            // Se esta fase regular completou um intervalo de revisão, aumenta o contador
+            // para considerar a fase de revisão que estaria no meio
+            if ($regularPhaseCount % self::REVIEW_PHASE_INTERVAL === 0) {
+                $currentPhaseIndex++;
+            }
         }
-        
+
         // Se a fase solicitada vier depois da primeira fase não completa, redirecionar
-        if ($phaseNumber > $firstIncompletePhase) {
+        // Exceção: se a fase solicitada for uma fase de revisão
+        $isReviewPhase = false;
+        $reviewPhaseNumbers = [];
+
+        // Calcular quais números de fase são de revisão
+        $reviewCount = 1;
+        for ($i = self::REVIEW_PHASE_INTERVAL; $i <= count($chunkedArticles); $i += self::REVIEW_PHASE_INTERVAL) {
+            $reviewPhaseNumbers[] = $i + $reviewCount;
+            $reviewCount++;
+        }
+
+        // Verificar se a fase solicitada é uma fase de revisão
+        if (in_array($phaseNumber, $reviewPhaseNumbers)) {
+            $isReviewPhase = true;
+        }
+
+        // Só bloqueia acesso se não for fase de revisão E vier depois da primeira incompleta
+        if (!$isReviewPhase && $phaseNumber > $firstIncompletePhase) {
             return redirect()
                 ->route('play.map')
                 ->with('message', 'Complete a fase atual antes de avançar para as próximas.');
