@@ -438,7 +438,7 @@ class PlayController extends Controller
     /**
      * Exibir a fase de revisão para uma referência legal
      */
-    public function review($referenceUuid)
+    public function review($referenceUuid, $phaseNumber)
     {
         $user = Auth::user();
         
@@ -455,23 +455,24 @@ class PlayController extends Controller
             ->where('is_active', true)
             ->pluck('id');
             
-        // Buscar os artigos que o usuário já completou
-        $completedArticleIds = UserProgress::where('user_id', $user->id)
+        // Buscar os artigos que o usuário já tentou mas não completou (percentage < 100)
+        $incompleteArticleIds = UserProgress::where('user_id', $user->id)
             ->whereIn('law_article_id', $articleIds)
-            ->where('is_completed', true)
+            ->where('percentage', '<', 100)
             ->pluck('law_article_id');
             
-        // Se não há artigos completados, redirecionar para o mapa
-        if ($completedArticleIds->isEmpty()) {
+        // Se não há artigos incompletos, redirecionar para o mapa
+        if ($incompleteArticleIds->isEmpty()) {
             return redirect()
                 ->route('play.map')
-                ->with('message', 'Não há artigos para revisar nesta referência legal.');
+                ->with('message', 'Não há artigos para revisar nesta referência legal. Todos os artigos estão completos!');
         }
         
-        // Buscar os artigos completados COM suas opções
+        // Buscar os artigos incompletos COM suas opções
         $articlesWithProgress = LawArticle::with('options')
-            ->whereIn('id', $completedArticleIds)
+            ->whereIn('id', $incompleteArticleIds)
             ->where('is_active', true)
+            ->orderBy('position', 'asc')
             ->get()
             ->map(function($article) use ($user) {
                 $progress = UserProgress::where('user_id', $user->id)
@@ -504,9 +505,12 @@ class PlayController extends Controller
             });
         
         return Inertia::render('Play/Review', [
-            'reference' => [
-                'uuid' => $reference->uuid,
-                'name' => $reference->name,
+            'phase' => [
+                'title' => 'Revisão: ' . $reference->name,
+                'reference_name' => $reference->name,
+                'phase_number' => $phaseNumber,
+                'is_review' => true,
+                'reference_uuid' => $referenceUuid
             ],
             'articles' => $articlesWithProgress
         ]);
