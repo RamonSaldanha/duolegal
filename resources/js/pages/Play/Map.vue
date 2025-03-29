@@ -233,7 +233,7 @@ const getConnectorSpacing = (index: number) => `${index * (windowWidth.value <= 
                           :href="phase.is_blocked 
                               ? '#' 
                               : (phase.is_review
-                                  ? route('play.review', [phase.reference_uuid])
+                                  ? route('play.review', [phase.reference_uuid, phase.phase_number])
                                   : (props.user.lives > 0 && isCurrentPhase(phase, props.phases))
                                       ? route('play.phase', [phase.reference_uuid, phase.phase_number])
                                       : '#')"

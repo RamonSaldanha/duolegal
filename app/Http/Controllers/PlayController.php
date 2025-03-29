@@ -93,7 +93,7 @@ class PlayController extends Controller
                     'article_count' => $articleChunk->count(),
                     'difficulty' => $this->calculateAverageDifficulty($articleChunk),
                     'first_article' => $articleChunk->first()->uuid ?? null,
-                    'phase_number' => $index + 1,
+                    'phase_number' => $phaseCount,
                     'is_complete' => $isPhaseComplete,
                     'progress' => $progress,
                     'is_blocked' => $isBlocked, // Agora usa a variável que considera revisões anteriores
@@ -113,7 +113,7 @@ class PlayController extends Controller
                         'article_count' => null,
                         'difficulty' => $this->calculateAverageDifficulty($articleChunk),
                         'first_article' => null,
-                        'phase_number' => 'review',
+                        'phase_number' => $phaseCount, // Alterado de 'review' para $phaseCount
                         'is_complete' => false,
                         'progress' => ['completed' => 0, 'total' => 1, 'percentage' => 0],
                         'is_blocked' => !$hasIncompleteArticles,
@@ -440,7 +440,9 @@ class PlayController extends Controller
      */
     public function review($referenceUuid, $phaseNumber)
     {
-        dd($referenceUuid, $phaseNumber);
+        // Remova o dd() e trate phaseNumber como inteiro
+        $phaseNumber = (int)$phaseNumber;
+        
         $user = Auth::user();
         
         // Verifica se o usuário tem vidas disponíveis

@@ -29,7 +29,7 @@ Route::post('/admin/law-article-options', [LawArticleOptionController::class, 's
         Route::get('/play', [PlayController::class, 'map'])->name('play.map');
         Route::get('/play/no-lives', fn() => Inertia::render('Play/NoLives'))->name('play.nolives');
         Route::get('/play/{reference}/{phase}', [PlayController::class, 'phase'])->name('play.phase');
-        Route::get('/play/review/{referenceUuid}', action: [PlayController::class, 'review'])->name('play.review');
+        Route::get('/play/review/{referenceUuid}/{phase}', action: [PlayController::class, 'review'])->name('play.review');
 
         Route::post('/play/progress', [PlayController::class, 'saveProgress'])->name('play.progress');
         Route::post('/play/reward-life', [PlayController::class, 'rewardLife'])->name('play.reward-life');
