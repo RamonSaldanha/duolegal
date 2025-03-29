@@ -249,21 +249,20 @@ const getConnectorSpacing = (index: number) => `${index * (windowWidth.value <= 
                           <div 
                               :class="[
                                   'w-16 h-16 rounded-full flex items-center justify-center phase-circle',
-                                  phase.is_blocked ? 'bg-gray-400' : // Se bloqueado, sempre cinza
-                                  phase.is_review ? 'bg-purple-500' : // Se for revisão, roxo
-                                  isPhaseComplete(phase) ? 'bg-green-500' : // Se completo, verde
-                                  isCurrentPhase(phase, props.phases) ? 'bg-blue-500' : // Se atual, azul
+                                  phase.is_blocked && !phase.is_review ? 'bg-gray-400' : // Fase normal bloqueada: cinza
+                                  phase.is_blocked && phase.is_review ? 'bg-purple-400' : // Fase de revisão bloqueada: roxo mais claro
+                                  phase.is_review ? 'bg-purple-500' : // Revisão não bloqueada: roxo normal
+                                  isPhaseComplete(phase) ? 'bg-green-500' : // Fase completa: verde
+                                  isCurrentPhase(phase, props.phases) ? 'bg-blue-500' : // Fase atual: azul
                                   'bg-gray-400' // Padrão: cinza
                               ]"
                           >
                               <component 
-                                  :is="phase.is_blocked 
-                                      ? getPhaseIcon(phase.phase_number) 
-                                      : (phase.is_review 
-                                          ? Repeat 
-                                          : (isPhaseComplete(phase) 
-                                              ? CheckCircle 
-                                              : getPhaseIcon(phase.phase_number)))" 
+                                  :is="phase.is_review 
+                                      ? Repeat 
+                                      : (isPhaseComplete(phase) 
+                                          ? CheckCircle 
+                                          : getPhaseIcon(phase.phase_number))" 
                                   class="w-6 h-6 text-white" 
                               />
                           </div>
@@ -275,18 +274,17 @@ const getConnectorSpacing = (index: number) => `${index * (windowWidth.value <= 
                           
                           <!-- Indicador de progresso -->
                           <div class="mt-1 flex justify-center gap-1">
-                          <span 
-                            v-for="(status, index) in getArticleStatus(phase)" 
-                            :key="index" 
-                            class="w-2 h-2 rounded-full transition-colors duration-300"
-                            :class="{
-                              'bg-green-500': status === 'correct',
-                              'bg-red-500': status === 'incorrect',
-                              'bg-muted': status === 'pending'
-                            }"
-                          ></span>
-                        </div>
-
+                            <span 
+                              v-for="(status, index) in getArticleStatus(phase)" 
+                              :key="index" 
+                              class="w-2 h-2 rounded-full transition-colors duration-300"
+                              :class="{
+                                'bg-green-500': status === 'correct',
+                                'bg-red-500': status === 'incorrect',
+                                'bg-muted': status === 'pending'
+                              }"
+                            ></span>
+                          </div>
                       </Link>
                     </div>
                   </div>

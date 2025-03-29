@@ -312,18 +312,6 @@ class PlayController extends Controller
             $totalAnswers
         );
         
-        Log::info('Progresso salvo:', [
-            'article_uuid' => $validated['article_uuid'],
-            'user_id' => Auth::id(),
-            'correct_answers' => $correctAnswers,
-            'percentage' => $progress->percentage,
-            'best_score' => $progress->best_score,
-            'attempts' => $progress->attempts,
-            'wrong_answers' => $progress->wrong_answers,
-            'revisions' => $progress->revisions,
-            'is_completed' => $progress->is_completed
-        ]);
-        
         return response()->json([
             'success' => true,
             'progress' => [
