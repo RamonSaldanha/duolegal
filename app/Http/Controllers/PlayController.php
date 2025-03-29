@@ -440,6 +440,7 @@ class PlayController extends Controller
      */
     public function review($referenceUuid, $phaseNumber)
     {
+        dd($referenceUuid, $phaseNumber);
         $user = Auth::user();
         
         // Verifica se o usuário tem vidas disponíveis
@@ -504,7 +505,7 @@ class PlayController extends Controller
                 ];
             });
         
-        return Inertia::render('Play/Review', [
+        return Inertia::render('Play/Phase', [
             'phase' => [
                 'title' => 'Revisão: ' . $reference->name,
                 'reference_name' => $reference->name,
