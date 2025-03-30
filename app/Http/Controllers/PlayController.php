@@ -254,9 +254,27 @@ class PlayController extends Controller
             ];
         });
         
-        // Verificar se existe próxima fase (agora considerando apenas fases regulares)
-        $nextRegularPhaseIndex = $chunkIndex + 1;
-        $hasNextPhase = isset($chunkedArticles[$nextRegularPhaseIndex]);
+        // Verificar se existe próxima fase
+        $nextPhaseNumber = $phaseNumber + 1;
+        $hasNextPhase = isset($phaseToChunkMap[$nextPhaseNumber]);
+        
+        // Verificar se a próxima fase é uma fase de revisão
+        $nextPhaseIsReview = $hasNextPhase && $phaseToChunkMap[$nextPhaseNumber] === 'review';
+        
+        // Verificar se existem artigos para revisar
+        $hasArticlesToReview = false;
+        if ($nextPhaseIsReview) {
+            // Buscar os IDs dos artigos da referência
+            $articleIds = $reference->articles()
+                ->where('is_active', true)
+                ->pluck('id');
+                
+            // Verificar se existem artigos incompletos para o usuário
+            $hasArticlesToReview = UserProgress::where('user_id', $user->id)
+                ->whereIn('law_article_id', $articleIds)
+                ->where('percentage', '<', 100)
+                ->exists();
+        }
         
         return Inertia::render('Play/Phase', [
             'phase' => [
@@ -266,6 +284,9 @@ class PlayController extends Controller
                 'difficulty' => $this->calculateAverageDifficulty($phaseArticles),
                 'progress' => $this->getPhaseProgress(Auth::id(), $phaseArticles),
                 'has_next_phase' => $hasNextPhase,
+                'next_phase_number' => $hasNextPhase ? $nextPhaseNumber : null,
+                'next_phase_is_review' => $nextPhaseIsReview,
+                'has_articles_to_review' => $hasArticlesToReview,
                 'reference_uuid' => $referenceUuid
             ],
             'articles' => $articlesWithProgress
@@ -424,7 +445,6 @@ class PlayController extends Controller
      */
     public function review($referenceUuid, $phaseNumber)
     {
-        // Remova o dd() e trate phaseNumber como inteiro
         $phaseNumber = (int)$phaseNumber;
         
         $user = Auth::user();
@@ -447,12 +467,58 @@ class PlayController extends Controller
             ->whereIn('law_article_id', $articleIds)
             ->where('percentage', '<', 100)
             ->pluck('law_article_id');
+        $hasArticlesToReview = UserProgress::where('user_id', $user->id)
+            ->whereIn('law_article_id', $articleIds)
+            ->where('percentage', '<', 100)
+            ->exists();
+        // Mapear as fases para determinar qual é a próxima após esta revisão
+        $allArticles = $reference->articles()
+            ->orderBy('position', 'asc')
+            ->where('is_active', true)
+            ->get();
+        
+        // Agrupar os artigos em fases
+        $chunkedArticles = $allArticles->chunk(self::ARTICLES_PER_PHASE);
+        
+        // Criar um mapeamento entre números de fase e índices de chunks
+        $phaseToChunkMap = [];
+        $regularPhaseCount = 0;
+        $phaseCount = 0;
+        
+        foreach ($chunkedArticles as $index => $chunk) {
+            $regularPhaseCount++;
+            $phaseCount++;
             
-        // Se não há artigos incompletos, redirecionar para o mapa
+            // Mapear fase regular ao índice do chunk
+            $phaseToChunkMap[$phaseCount] = $index;
+            
+            // Se esta fase regular completou um intervalo de revisão, 
+            // adicionar uma fase de revisão (que não mapeia para nenhum chunk)
+            if ($regularPhaseCount % self::REVIEW_PHASE_INTERVAL === 0) {
+                $phaseCount++;
+                // Fase de revisão não mapeia para nenhum chunk específico
+                $phaseToChunkMap[$phaseCount] = 'review';
+            }
+        }
+        
+        // Encontrar a próxima fase após a fase de revisão atual
+        $nextPhaseNumber = $phaseNumber + 1;
+        $hasNextPhase = isset($phaseToChunkMap[$nextPhaseNumber]);
+        
+        // Se não há artigos incompletos, redirecionar para a PRÓXIMA fase após esta fase de revisão
         if ($incompleteArticleIds->isEmpty()) {
-            return redirect()
-                ->route('play.map')
-                ->with('message', 'Não há artigos para revisar nesta referência legal. Todos os artigos estão completos!');
+            // Se existe uma próxima fase, redirecionar para ela
+            if ($hasNextPhase) {
+                return redirect()->route('play.phase', [
+                    'referenceUuid' => $referenceUuid,
+                    'phaseNumber' => $nextPhaseNumber
+                ]);
+            } else {
+                // Se não existe próxima fase, volta para o mapa
+                return redirect()
+                    ->route('play.map')
+                    ->with('message', 'Não há mais fases nesta referência legal. Parabéns por completar todas!');
+            }
         }
         
         // Buscar os artigos incompletos COM suas opções
@@ -497,7 +563,11 @@ class PlayController extends Controller
                 'reference_name' => $reference->name,
                 'phase_number' => $phaseNumber,
                 'is_review' => true,
-                'reference_uuid' => $referenceUuid
+                'reference_uuid' => $referenceUuid,
+                'has_next_phase' => $hasNextPhase,
+                'next_phase_number' => $hasNextPhase ? $nextPhaseNumber : null,
+                'next_phase_is_review' => false, // A próxima fase depois de uma revisão é sempre uma fase regular
+                'has_articles_to_review' => $hasArticlesToReview,
             ],
             'articles' => $articlesWithProgress
         ]);

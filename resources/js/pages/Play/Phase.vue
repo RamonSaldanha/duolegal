@@ -216,7 +216,7 @@
                                         
                                         <!-- Botão especial para o último artigo quando a fase estiver completa -->
                                         <Button 
-                                            v-else-if="isPhaseComplete"
+                                            v-else-if="isPhaseComplete || (props.phase.is_review && areAllReviewArticlesCompleted)"
                                             class="w-full" 
                                             @click="showPhaseCompletionModal"
                                         >
@@ -283,7 +283,7 @@
                             
                             <!-- Botão especial para o último artigo quando a fase estiver completa -->
                             <Button 
-                                v-else-if="isPhaseComplete"
+                                v-else-if="isPhaseComplete || (props.phase.is_review && areAllReviewArticlesCompleted)"
                                 variant="default"
                                 @click="showPhaseCompletionModal"
                             >
@@ -345,8 +345,8 @@
                     <div class="mb-4 inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-300">
                         <Check class="h-8 w-8" />
                     </div>
-                    <h2 class="text-2xl font-bold mb-4">Fase Concluída!</h2>
-                    <p class="mb-6">Parabéns! Você completou todos os artigos desta fase.</p>
+                    <h2 class="text-2xl font-bold mb-4">{{ props.phase.is_review ? 'Revisão Concluída!' : 'Fase Concluída!' }}</h2>
+                    <p class="mb-6">{{ props.phase.is_review ? 'Parabéns! Você revisou todos os artigos desta fase.' : 'Parabéns! Você completou todos os artigos desta fase.' }}</p>
                     
                     <div class="flex flex-col sm:flex-row gap-3 justify-center">
                         <Button variant="outline" @click="showCompletionModal = false">
@@ -407,7 +407,11 @@ const props = defineProps<{
         title: string;
         difficulty: number;
         has_next_phase: boolean;
+        next_phase_number?: number;
+        next_phase_is_review?: boolean;
+        has_articles_to_review?: boolean;
         reference_uuid: string;
+        is_review?: boolean;
     };
     articles: Record<string, Article>;
 }>();
@@ -475,6 +479,18 @@ const completedArticles = ref<number[]>(
 
 // Adicione esta variável perto das outras variáveis de estado
 const isPhaseComplete = ref(false);
+
+// Verifica se todos os artigos da fase de revisão foram revisados
+const areAllReviewArticlesCompleted = computed(() => {
+    // Se não for uma fase de revisão, não se aplica
+    if (!props.phase.is_review) {
+        return false;
+    }
+    
+    // Verifica se todos os artigos têm progresso e estão completados (acima de 70%)
+    return articlesArray.value.every(article => 
+        article.progress && article.progress.percentage >= 70);
+});
 
 // Extrai todas as opções para o artigo atual e monta as respostas corretas
     const articleOptions = computed(() => {
@@ -1152,20 +1168,75 @@ const isPhaseComplete = ref(false);
     };
 
 
-    // Substituir a função advanceToNextPhase existente por esta:
+    // Substituir a função advanceToNextPhase existente por esta versão corrigida:
     const advanceToNextPhase = () => {
         if (props.phase.has_next_phase) {
-            const nextPhaseNumber = props.phase.phase_number + 1;
+            const nextPhaseNumber = props.phase.next_phase_number;
+            // Se estamos em uma fase de revisão, sempre vamos para a próxima fase regular
+            if (props.phase.is_review ) {
+                if( props.phase.has_articles_to_review ) {
+                    // Se é uma fase de revisão e há artigos para revisar, use a rota de revisão
+                    router.visit(route('play.review', {
+                        referenceUuid: props.phase.reference_uuid,
+                        phase: nextPhaseNumber
+                    }));
+                } else {
+                    // Se é uma fase de revisão mas não há artigos para revisar, vá para a próxima fase
+                    // A rota review vai redirecionar automaticamente para a fase seguinte
+                    router.visit(route('play.review', {
+                        referenceUuid: props.phase.reference_uuid,
+                        phase: nextPhaseNumber
+                    }));
+                }
+                return;
+            }
             
-            // Usar o reference_uuid que foi passado do controller
-            router.visit(route('play.phase', {
-                reference: props.phase.reference_uuid,
-                phase: nextPhaseNumber
-            }));
+            // Determinar qual rota usar com base no tipo da próxima fase
+            if (props.phase.next_phase_is_review) {
+                if (props.phase.has_articles_to_review) {
+                    // Se é uma fase de revisão e há artigos para revisar, use a rota de revisão
+                    router.visit(route('play.review', {
+                        referenceUuid: props.phase.reference_uuid,
+                        phase: nextPhaseNumber
+                    }));
+                } else {
+                    // Se é uma fase de revisão mas não há artigos para revisar, vá para a próxima fase
+                    // A rota review vai redirecionar automaticamente para a fase seguinte
+                    router.visit(route('play.review', {
+                        referenceUuid: props.phase.reference_uuid,
+                        phase: nextPhaseNumber
+                    }));
+                }
+            } else {
+                // Se é uma fase regular, use a rota phase
+                router.visit(route('play.phase', {
+                    reference: props.phase.reference_uuid,
+                    phase: nextPhaseNumber
+                }));
+            }
         } else {
+            // Se não há próxima fase, volta para o mapa
             router.visit(route('play.map'));
         }
     };
+
+    // Atualiza o watch para verificar quando todos os artigos foram respondidos
+    watch(
+        () => articlesArray.value.filter(a => a.progress).length,
+        (newCompletedCount) => {
+            // Se todos os artigos têm progresso
+            if (newCompletedCount === articlesArray.value.length) {
+                // Se for uma fase de revisão com todos os artigos completados com sucesso
+                if (props.phase.is_review && areAllReviewArticlesCompleted.value) {
+                    isPhaseComplete.value = true;
+                } 
+                // Para fases regulares, apenas marcar que a fase está completa
+                else if (!props.phase.is_review) {
+                    isPhaseComplete.value = true;
+                }
+            }
+        }
+    );
 
     // Estado para controlar a exibição do modal de conclusão
     const showCompletionModal = ref(false);
