@@ -34,10 +34,35 @@ class PlayController extends Controller
             return redirect()->route('play.nolives');
         }
         
+        // Verificar se o usuário tem leis preferidas
+        $hasPreferences = $user->legalReferences()->exists();
+        
         // Buscar referências legais com seus artigos
-        $legalReferences = LegalReference::with(['articles' => function($query) {
+        $legalReferencesQuery = LegalReference::with(['articles' => function($query) {
             $query->orderBy('position', 'asc')->where('is_active', true);
-        }])->orderBy('id', 'asc')->get();
+        }]);
+        
+        // Se o usuário tem preferências, filtrar apenas as leis selecionadas
+        if ($hasPreferences) {
+            $legalReferencesQuery->whereHas('users', function($query) use ($userId) {
+                $query->where('users.id', $userId);
+            });
+        }
+        
+        $legalReferences = $legalReferencesQuery->orderBy('id', 'asc')->get();
+        
+        // Se não há leis para mostrar (nenhuma preferência ou nenhuma lei cadastrada)
+        if ($legalReferences->isEmpty()) {
+            if ($hasPreferences) {
+                // Usuário tem preferências, mas nenhuma lei associada (situação improvável)
+                return redirect()->route('user.legal-references.index')
+                    ->with('message', 'Você precisa selecionar pelo menos uma lei para estudar.');
+            } else {
+                // Usuário não tem preferências, redirecionar para a página de seleção
+                return redirect()->route('user.legal-references.index')
+                    ->with('message', 'Selecione as leis que deseja estudar.');
+            }
+        }
         
         // Preparar dados das fases
         $phases = [];
@@ -141,7 +166,6 @@ class PlayController extends Controller
                     ];
                     $lastPhaseWasReview = true;
                 }
-                
                 // Incremente o índice do chunk manualmente
                 $chunkIndex++;
             }
@@ -156,9 +180,30 @@ class PlayController extends Controller
     }
     
     private function getCurrentPhase() {
-        $userId = Auth::id();
-        $currentArticleCount = UserProgress::where('user_id', $userId)
-            ->count();
+        $user = Auth::user();
+        $userId = $user->id;
+        
+        // Verificar se o usuário tem leis preferidas
+        $hasPreferences = $user->legalReferences()->exists();
+        
+        // Query base para UserProgress
+        $query = UserProgress::where('user_id', $userId);
+        
+        // Se o usuário tem preferências, filtrar apenas os artigos das leis selecionadas
+        if ($hasPreferences) {
+            // Buscar os IDs dos artigos relacionados às leis de preferência do usuário
+            $userLegalReferences = $user->legalReferences()->pluck('legal_references.id')->toArray();
+            
+            $preferredArticleIds = LawArticle::whereHas('legalReference', function($q) use ($userLegalReferences) {
+                $q->whereIn('legal_reference_id', $userLegalReferences);
+            })->pluck('id')->toArray();
+            
+            // Aplicar filtro à consulta para considerar apenas artigos das leis preferidas
+            $query->whereIn('law_article_id', $preferredArticleIds);
+        }
+        
+        // Contar apenas os artigos relevantes
+        $currentArticleCount = $query->count();
 
         // Calcula quantas fases regulares foram completadas
         $regularPhasesCompleted = ceil($currentArticleCount / self::ARTICLES_PER_PHASE);
@@ -171,10 +216,16 @@ class PlayController extends Controller
         
         // Verifica se a fase atual é uma fase de revisão (após completar REVIEW_PHASE_INTERVAL fases regulares)
         if ($regularPhasesCompleted % self::REVIEW_PHASE_INTERVAL === 0 && $regularPhasesCompleted > 0) {
-            // Verifica se existem artigos incompletos para revisar
-            $hasIncompleteArticles = UserProgress::where('user_id', $userId)
-                ->where('percentage', '<', 100)
-                ->exists();
+            // Verifica se existem artigos incompletos para revisar (também filtrados por preferências)
+            $hasIncompleteArticlesQuery = UserProgress::where('user_id', $userId)
+                ->where('percentage', '<', 100);
+                
+            // Aplicar o mesmo filtro de preferências, se necessário
+            if ($hasPreferences && !empty($preferredArticleIds)) {
+                $hasIncompleteArticlesQuery->whereIn('law_article_id', $preferredArticleIds);
+            }
+            
+            $hasIncompleteArticles = $hasIncompleteArticlesQuery->exists();
             
             // Se não há artigos incompletos, o usuário já passou pela fase de revisão
             if (!$hasIncompleteArticles) {
@@ -192,16 +243,35 @@ class PlayController extends Controller
     public function phase($referenceUuid, $phaseNumber)
     {
         $user = Auth::user();
+        $userId = $user->id;
         
-        // Verificações iniciais (mantidas)...
+        // Verificações iniciais
         if (!$user->hasLives()) {
             return redirect()->route('play.nolives');
         }
         
-        // Buscar todas as referências legais para calcular o mapeamento global
-        $allLegalReferences = LegalReference::with(['articles' => function($query) {
+        // Verificar se o usuário tem leis preferidas
+        $hasPreferences = $user->legalReferences()->exists();
+        
+        // Buscar referências legais com filtro por preferências
+        $legalReferencesQuery = LegalReference::with(['articles' => function($query) {
             $query->orderBy('position', 'asc')->where('is_active', true);
-        }])->orderBy('id', 'asc')->get();
+        }]);
+        
+        // Se o usuário tem preferências, filtrar apenas as leis selecionadas
+        if ($hasPreferences) {
+            $legalReferencesQuery->whereHas('users', function($query) use ($userId) {
+                $query->where('users.id', $userId);
+            });
+        }
+        
+        $allLegalReferences = $legalReferencesQuery->orderBy('id', 'asc')->get();
+        
+        // Se não há leis para mostrar, redirecionar para a seleção
+        if ($allLegalReferences->isEmpty()) {
+            return redirect()->route('user.legal-references.index')
+                ->with('message', 'Selecione as leis que deseja estudar.');
+        }
         
         // Criar mapeamento global de fases para referências e chunks
         $globalPhaseMap = [];
@@ -505,10 +575,26 @@ class PlayController extends Controller
         $phaseNumber = (int)$phaseNumber;
         
         $user = Auth::user();
+        $userId = $user->id;
         
         // Verifica se o usuário tem vidas disponíveis
         if (!$user->hasLives()) {
             return redirect()->route('play.nolives');
+        }
+        
+        // Verificar se o usuário tem leis preferidas
+        $hasPreferences = $user->legalReferences()->exists();
+        
+        // Verificar se a referência está nas preferências do usuário
+        if ($hasPreferences) {
+            $referenceExists = $user->legalReferences()
+                ->where('legal_references.uuid', $referenceUuid)
+                ->exists();
+                
+            if (!$referenceExists) {
+                return redirect()->route('user.legal-references.index')
+                    ->with('message', 'Esta lei não está nas suas preferências de estudo.');
+            }
         }
         
         // Buscar a referência legal

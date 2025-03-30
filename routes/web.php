@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\Admin\LawArticleOptionController;
 use App\Http\Controllers\PlayController;
-use App\Http\Controllers\GameController;
+use App\Http\Controllers\UserLegalReferenceController;
 
 Route::get('/', function () {
     return Inertia::render('Welcome');
@@ -24,7 +24,10 @@ Route::post('/admin/law-article-options', [LawArticleOptionController::class, 's
     
     // Adicione esta rota ao seu arquivo de rotas
     Route::middleware(['auth'])->group(function () {
-        
+        Route::get('/user/legal-references', [UserLegalReferenceController::class, 'index'])
+            ->name('user.legal-references.index');
+        Route::post('/user/legal-references', [UserLegalReferenceController::class, 'store'])
+        ->name('user.legal-references.store');
         // Rotas de jogo (Play)
         Route::get('/play', [PlayController::class, 'map'])->name('play.map');
         Route::get('/play/no-lives', fn() => Inertia::render('Play/NoLives'))->name('play.nolives');
@@ -34,6 +37,7 @@ Route::post('/admin/law-article-options', [LawArticleOptionController::class, 's
         Route::post('/play/progress', [PlayController::class, 'saveProgress'])->name('play.progress');
         Route::post('/play/reward-life', [PlayController::class, 'rewardLife'])->name('play.reward-life');
     });
+
 
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';

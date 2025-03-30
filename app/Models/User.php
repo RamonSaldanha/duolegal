@@ -89,4 +89,13 @@ class User extends Authenticatable
     {
         return $this->is_admin === true;
     }
+
+    /**
+     * Define a relação com referências legais
+     */
+    public function legalReferences()
+    {
+        return $this->belongsToMany(LegalReference::class, 'user_legal_references')
+                    ->withTimestamps();
+    }
 }

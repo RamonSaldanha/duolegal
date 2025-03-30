@@ -27,6 +27,15 @@ class LegalReference extends Model
     }
 
     /**
+     * Obter os usuários associados a esta referência legal.
+     */
+    public function users()
+    {
+        return $this->belongsToMany(User::class, 'user_legal_references')
+                    ->withTimestamps();
+    }
+
+    /**
      * O que acontece quando este modelo é excluído
      */
     protected static function boot()
