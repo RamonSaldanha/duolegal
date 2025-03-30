@@ -2,12 +2,17 @@
     <Head :title="`Fase ${phase.phase_number}: ${phase.reference_name}`" />
 
     <AppLayout>
+        <Toaster
+          position="top-right"
+          class="z-[200]"
+        />
+
         <!-- Elementos para os efeitos de recompensa -->
         <span id="confetti-canvas" class="fixed top-1/2 left-1/2 z-[100] pointer-events-none"></span>
         <span id="emoji-canvas" class="fixed top-1/2 left-1/2 z-[100] pointer-events-none"></span>
         
         <div class="container py-4 md:py-8 px-3 md:px-4">
-            
+
             <div class="w-full sm:w-[95%] lg:w-[50rem] mx-auto">
                 <!-- Cabeçalho da fase - versão responsiva -->
                 <div class="mb-4 md:mb-4">
@@ -75,8 +80,32 @@
                     </div>
                 </div>
 
+                <!-- Adicione este componente onde achar adequado no template -->
+                <div v-if="props.phase.is_review" class="mb-4 p-4 rounded-md border" 
+                     :class="hasArticlesToReview ? 'border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-900' : 'border-green-200 bg-green-50 dark:bg-green-950/30 dark:border-green-900'">
+                  <div class="flex items-center gap-3">
+                    <div v-if="hasArticlesToReview" class="flex h-8 w-8 items-center justify-center rounded-full bg-amber-200 dark:bg-amber-800">
+                      <AlertCircle class="h-5 w-5 text-amber-700 dark:text-amber-300" />
+                    </div>
+                    <div v-else class="flex h-8 w-8 items-center justify-center rounded-full bg-green-200 dark:bg-green-800">
+                      <Check class="h-5 w-5 text-green-700 dark:text-green-300" />
+                    </div>
+                    <div>
+                      <h4 class="font-medium" :class="hasArticlesToReview ? 'text-amber-800 dark:text-amber-300' : 'text-green-800 dark:text-green-300'">
+                        {{ hasArticlesToReview ? 'Revisão em andamento' : 'Revisão completa' }}
+                      </h4>
+                      <p class="text-sm" :class="hasArticlesToReview ? 'text-amber-700 dark:text-amber-400' : 'text-green-700 dark:text-green-400'">
+                        {{ reviewCompletionPercentage }}% dos artigos com 100% de acerto 
+                        <Button v-if="hasArticlesToReview" variant="link" size="sm" class="p-0 h-auto" @click="navigateToNextIncompleteArticle">
+                          Ver próximo artigo incompleto
+                        </Button>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
                 <!-- Navegação entre artigos - apenas desktop -->
-                <div class="hidden md:flex justify-between items-center mb-4">
+                <div class="flex justify-between items-center mb-4" :class="{'hidden md:flex': !props.phase.is_review}">
                     <Button
                         variant="outline"
                         :disabled="currentArticleIndex === 0"
@@ -371,12 +400,15 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { Heart } from 'lucide-vue-next';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, Check, X, RefreshCw, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-vue-next';
+import { ChevronLeft, ChevronRight, Check, X, RefreshCw, ChevronDown, ChevronUp, AlertTriangle, AlertCircle } from 'lucide-vue-next';
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 // @ts-expect-error: vue-rewards package does not provide proper type definitions
 import { useReward } from 'vue-rewards';
 import { useWindowSize } from '@vueuse/core';
 import axios from 'axios';
+import { useToast } from '@/components/ui/toast/use-toast';
+import Toaster from '@/components/ui/toast/Toaster.vue';
+const { toast } = useToast()
 
 // Atualizar a interface Article para incluir progresso
 interface Article {
@@ -409,7 +441,6 @@ const props = defineProps<{
         has_next_phase: boolean;
         next_phase_number?: number;
         next_phase_is_review?: boolean;
-        has_articles_to_review?: boolean;
         reference_uuid: string;
         is_review?: boolean;
     };
@@ -490,6 +521,26 @@ const areAllReviewArticlesCompleted = computed(() => {
     // Verifica se todos os artigos têm progresso e estão completados (acima de 70%)
     return articlesArray.value.every(article => 
         article.progress && article.progress.percentage >= 70);
+});
+
+// Computed property para verificar artigos que precisam de revisão
+const hasArticlesToReview = computed(() => {
+    // Verifica se algum artigo não tem 100% de progresso
+    return articlesArray.value.some(article => 
+        !article.progress || article.progress.percentage < 100
+    );
+});
+
+// Computed property para ver a porcentagem geral da revisão
+const reviewCompletionPercentage = computed(() => {
+    if (!articlesArray.value.length) return 0;
+    
+    const totalArticles = articlesArray.value.length;
+    const completedArticles = articlesArray.value.filter(
+        article => article.progress && article.progress.percentage === 100
+    ).length;
+    
+    return Math.round((completedArticles / totalArticles) * 100);
 });
 
 // Extrai todas as opções para o artigo atual e monta as respostas corretas
@@ -815,6 +866,40 @@ const areAllReviewArticlesCompleted = computed(() => {
     };
     
     const showPhaseCompletionModal = () => {
+        // Se for uma fase de revisão, verificar se todos os artigos estão 100% completos
+        if (props.phase.is_review && hasArticlesToReview.value) {
+            // Calcular estatísticas para mensagem informativa
+            const totalArticles = articlesArray.value.length;
+            const remainingArticles = articlesArray.value.filter(
+                article => !article.progress || article.progress.percentage < 100
+            ).length;
+            
+            // Exibe toast explicativo
+            toast({
+                variant: "destructive",
+                title: "Revisão incompleta",
+                description: `Você ainda precisa revisar ${remainingArticles} de ${totalArticles} artigos com 100% de acerto.`,
+                action: {
+                    label: "Ver próximo",
+                    onClick: () => {
+                        // Encontra o próximo artigo a ser revisado
+                        const nextIndex = articlesArray.value.findIndex(
+                            article => !article.progress || article.progress.percentage < 100
+                        );
+                        
+                        if (nextIndex >= 0) {
+                            currentArticleIndex.value = nextIndex;
+                            answered.value = false;
+                            resetTextState();
+                        }
+                    }
+                }
+            });
+            
+            return;
+        }
+        
+        // Se não houver problemas, mostra o modal normalmente
         showCompletionModal.value = true;
         offcanvasMinimize.value = true; // Minimiza o offcanvas quando o modal aparecer
     };
@@ -1172,41 +1257,36 @@ const areAllReviewArticlesCompleted = computed(() => {
     const advanceToNextPhase = () => {
         if (props.phase.has_next_phase) {
             const nextPhaseNumber = props.phase.next_phase_number;
-            // Se estamos em uma fase de revisão, sempre vamos para a próxima fase regular
-            if (props.phase.is_review ) {
-                if( props.phase.has_articles_to_review ) {
-                    // Se é uma fase de revisão e há artigos para revisar, use a rota de revisão
-                    router.visit(route('play.review', {
-                        referenceUuid: props.phase.reference_uuid,
-                        phase: nextPhaseNumber
-                    }));
-                } else {
-                    // Se é uma fase de revisão mas não há artigos para revisar, vá para a próxima fase
-                    // A rota review vai redirecionar automaticamente para a fase seguinte
-                    router.visit(route('play.review', {
-                        referenceUuid: props.phase.reference_uuid,
-                        phase: nextPhaseNumber
-                    }));
+            
+            // Se estamos em uma fase de revisão, verificar se todos os artigos estão 100% completos
+            if (props.phase.is_review) {
+                if (hasArticlesToReview.value) {
+                    // Ainda existem artigos para revisar
+                    toast({
+                        variant: "destructive",
+                        title: "Revisão incompleta",
+                        description: `Você precisa acertar 100% em todos os artigos para avançar (${reviewCompletionPercentage.value}% concluído).`,
+                    });
+                    
+                    showCompletionModal.value = false; // Fecha o modal se estiver aberto
+                    return;
                 }
+                
+                // Todos os artigos estão 100% completos, podemos avançar
+                router.visit(route('play.phase', {
+                    reference: props.phase.reference_uuid,
+                    phase: nextPhaseNumber
+                }));
                 return;
             }
             
             // Determinar qual rota usar com base no tipo da próxima fase
             if (props.phase.next_phase_is_review) {
-                if (props.phase.has_articles_to_review) {
-                    // Se é uma fase de revisão e há artigos para revisar, use a rota de revisão
-                    router.visit(route('play.review', {
-                        referenceUuid: props.phase.reference_uuid,
-                        phase: nextPhaseNumber
-                    }));
-                } else {
-                    // Se é uma fase de revisão mas não há artigos para revisar, vá para a próxima fase
-                    // A rota review vai redirecionar automaticamente para a fase seguinte
-                    router.visit(route('play.review', {
-                        referenceUuid: props.phase.reference_uuid,
-                        phase: nextPhaseNumber
-                    }));
-                }
+                // Use a rota de revisão para a próxima fase
+                router.visit(route('play.review', {
+                    referenceUuid: props.phase.reference_uuid,
+                    phase: nextPhaseNumber
+                }));
             } else {
                 // Se é uma fase regular, use a rota phase
                 router.visit(route('play.phase', {
@@ -1247,6 +1327,25 @@ const areAllReviewArticlesCompleted = computed(() => {
             offcanvasMinimize.value = true; // Minimiza o offcanvas quando o modal de conclusão aparecer
         }
     });
+
+    // Método para navegar para o próximo artigo incompleto
+    const navigateToNextIncompleteArticle = () => {
+        const nextIndex = articlesArray.value.findIndex(
+            article => !article.progress || article.progress.percentage < 100
+        );
+        
+        if (nextIndex >= 0) {
+            currentArticleIndex.value = nextIndex;
+            answered.value = false;
+            resetTextState();
+            
+            // Dá feedback para o usuário
+            toast({
+                title: "Navegando",
+                description: `Artigo ${articlesArray.value[nextIndex].article_reference} precisa ser revisado com 100% de acerto.`
+            });
+        }
+    };
 </script>
 
 <style scoped>

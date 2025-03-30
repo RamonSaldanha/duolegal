@@ -566,8 +566,7 @@ class PlayController extends Controller
                 'reference_uuid' => $referenceUuid,
                 'has_next_phase' => $hasNextPhase,
                 'next_phase_number' => $hasNextPhase ? $nextPhaseNumber : null,
-                'next_phase_is_review' => false, // A próxima fase depois de uma revisão é sempre uma fase regular
-                'has_articles_to_review' => $hasArticlesToReview,
+                'next_phase_is_review' => false // A próxima fase depois de uma revisão é sempre uma fase regular
             ],
             'articles' => $articlesWithProgress
         ]);
