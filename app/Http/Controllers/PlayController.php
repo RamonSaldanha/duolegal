@@ -42,7 +42,6 @@ class PlayController extends Controller
         // Preparar dados das fases
         $phases = [];
         $phaseCount = 0;
-        $regularPhaseCount = 0;
         $isLawBlocked = false;
         
         $lastPhaseWasReview = false; // Controle para saber se a última fase adicionada foi revisão
@@ -135,14 +134,17 @@ class PlayController extends Controller
                             'percentage' => 0, 
                             'article_status' => [] // Array vazio para status de artigos
                         ],
-                        'is_blocked' => $isLawBlocked && !$hasIncompleteArticlesInThisReference,
+                        'is_blocked' => !($this->getCurrentPhase() == $phaseCount) || !$hasIncompleteArticlesInThisReference,
                         'is_review' => true,
                     ];
                     $lastPhaseWasReview = true;
                 }
             }
         }
-        
+
+        // dd();       
+
+
         return Inertia::render('Play/Map', [
             'phases' => $phases,
             'user' => [
@@ -151,6 +153,37 @@ class PlayController extends Controller
         ]);
     }
     
+    private function getCurrentPhase() {
+        $userId = Auth::id();
+        $currentArticleCount = UserProgress::where('user_id', $userId)
+            ->count();
+
+        // Calcula quantas fases regulares foram completadas
+        $regularPhasesCompleted = ceil($currentArticleCount / self::ARTICLES_PER_PHASE);
+        
+        // Calcula quantas fases de revisão já foram completadas
+        $reviewPhasesCompleted = floor($regularPhasesCompleted / self::REVIEW_PHASE_INTERVAL);
+        
+        // Fase base (soma das fases regulares + revisões completadas)
+        $currentPhase = $regularPhasesCompleted + $reviewPhasesCompleted;
+        
+        // Verifica se a fase atual é uma fase de revisão (após completar REVIEW_PHASE_INTERVAL fases regulares)
+        if ($regularPhasesCompleted % self::REVIEW_PHASE_INTERVAL === 0 && $regularPhasesCompleted > 0) {
+            // Verifica se existem artigos incompletos para revisar
+            $hasIncompleteArticles = UserProgress::where('user_id', $userId)
+                ->where('percentage', '<', 100)
+                ->exists();
+            
+            // Se não há artigos incompletos, o usuário já passou pela fase de revisão
+            if (!$hasIncompleteArticles) {
+                $currentPhase++;
+            }
+        }
+        
+        // A fase atual é pelo menos 1
+        return (int)max(1, $currentPhase);
+    }
+
     /**
      * Visualizar os detalhes de uma fase
      */
