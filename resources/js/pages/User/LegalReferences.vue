@@ -66,13 +66,13 @@
 
 <script setup>
 import { ref, computed } from 'vue';
-import AppLayout from '@/Layouts/AppLayout.vue';
+import AppLayout from '@/layouts/AppLayout.vue';
 import { useForm } from '@inertiajs/vue3';
-import { Card, CardHeader, CardTitle, CardContent } from '@/Components/ui/card';
-import { Button } from '@/Components/ui/button';
-import { Checkbox } from '@/Components/ui/checkbox';
-import { Label } from '@/Components/ui/label';
-import { Input } from '@/Components/ui/input';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { Search, FileSearch } from 'lucide-vue-next';
 import { useToast } from '@/components/ui/toast/use-toast';
 import Toaster from '@/components/ui/toast/Toaster.vue';
