@@ -79,6 +79,7 @@ class PlayController extends Controller
                 $pendingArticles = array_filter($progress['article_status'], function($status) {
                     return $status === 'pending';
                 });
+                
                 $isPhaseComplete = empty($pendingArticles);
                 
                 // Se a última fase adicionada foi uma revisão e há artigos incompletos, bloquear esta fase

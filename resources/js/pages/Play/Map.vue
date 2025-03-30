@@ -283,7 +283,9 @@ const getConnectorSpacing = (index: number) => `${index * (windowWidth.value <= 
                                 'bg-red-500': status === 'incorrect',
                                 'bg-muted': status === 'pending'
                               }"
-                            ></span>
+                            >
+                              
+                          </span>
                           </div>
                       </Link>
                     </div>
