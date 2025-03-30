@@ -69,7 +69,6 @@ class PlayController extends Controller
                 ->whereIn('law_article_id', $referenceArticleIds)
                 ->where('percentage', '<', 100)
                 ->exists();
-                
             // Agrupar artigos em grupos de ARTICLES_PER_PHASE
             $chunks = $reference->articles->chunk(self::ARTICLES_PER_PHASE);
             $phaseMap = []; // Armazena o mapeamento entre números de fase e chunks
@@ -136,7 +135,7 @@ class PlayController extends Controller
                             'percentage' => 0, 
                             'article_status' => [] // Array vazio para status de artigos
                         ],
-                        'is_blocked' => !$hasIncompleteArticlesInThisReference,
+                        'is_blocked' => $isLawBlocked && !$hasIncompleteArticlesInThisReference,
                         'is_review' => true,
                     ];
                     $lastPhaseWasReview = true;
