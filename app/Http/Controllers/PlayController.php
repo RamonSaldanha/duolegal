@@ -510,7 +510,7 @@ class PlayController extends Controller
             // Se existe uma próxima fase, redirecionar para ela
             if ($hasNextPhase) {
                 return redirect()->route('play.phase', [
-                    'referenceUuid' => $referenceUuid,
+                    'reference' => $referenceUuid,
                     'phase' => $nextPhaseNumber
                 ]);
             } else {
