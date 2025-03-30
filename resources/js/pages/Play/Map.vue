@@ -29,6 +29,7 @@ interface Phase {
     progress: Progress;
     is_blocked: boolean;
     is_review?: boolean; // Novo campo para indicar se é uma fase de revisão
+    is_complete?: boolean; // Novo campo para indicar se a fase está completa
 }
 
 interface ReferenceGroup {
@@ -70,21 +71,42 @@ const getPhaseIcon = (phaseNumber: number) => {
     return icons[(phaseNumber - 1) % icons.length];
 };
 
-// Verifica se a fase está completa (todos os artigos foram completados)
+// Verifica se a fase está completa (todos os artigos foram pelo menos tentados)
 const isPhaseComplete = (phase: Phase): boolean => {
-    return phase.progress && phase.progress.completed === phase.article_count;
+    // Para fase de revisão, usamos o campo is_complete direto do backend
+    if (phase.is_review) {
+        return phase.is_complete || false;
+    }
+    
+    // Verificar se há dados de progresso
+    if (!phase.progress || !phase.progress.article_status || phase.progress.article_status.length === 0) {
+        return false;
+    }
+    
+    // Verificar se existe algum artigo pendente
+    const hasPendingArticle = phase.progress.article_status.some(status => status === 'pending');
+    
+    // A fase está completa quando não há artigos pendentes
+    return !hasPendingArticle;
 };
 
 // Verifica se é a fase atual (primeira fase não totalmente tentada em cada referência)
 const isCurrentPhase = (phase: Phase, phases: Phase[]): boolean => {
+    // Se for uma fase de revisão, tem lógica diferente
+    if (phase.is_review) {
+        // Uma fase de revisão é atual se não estiver bloqueada
+        return !phase.is_blocked;
+    }
+    
     // Se a fase estiver completa, não é a atual
     if (isPhaseComplete(phase)) {
         return false;
     }
     
     // Encontra a primeira fase não totalmente tentada na mesma referência
+    // Considerando apenas fases regulares (não de revisão)
     const firstIncompletePhase = phases
-        .filter(p => p.reference_uuid === phase.reference_uuid)
+        .filter(p => p.reference_uuid === phase.reference_uuid && !p.is_review)
         .sort((a, b) => a.phase_number - b.phase_number)
         .find(p => {
             // Verifica se há artigos pendentes (não tentados) na fase
@@ -92,20 +114,29 @@ const isCurrentPhase = (phase: Phase, phases: Phase[]): boolean => {
                 p.progress.article_status.some(status => status === 'pending');
         });
     
-    // Se não encontrou nenhuma fase incompleta, a última fase é a atual
+    // Se não encontrou nenhuma fase incompleta, a última fase regular é a atual
     if (!firstIncompletePhase) {
-        const phasesInReference = phases
-            .filter(p => p.reference_uuid === phase.reference_uuid)
+        const regularPhasesInReference = phases
+            .filter(p => p.reference_uuid === phase.reference_uuid && !p.is_review)
             .sort((a, b) => a.phase_number - b.phase_number);
-        return phase.phase_number === phasesInReference[phasesInReference.length - 1].phase_number;
+        
+        if (regularPhasesInReference.length > 0) {
+            return phase.phase_number === regularPhasesInReference[regularPhasesInReference.length - 1].phase_number;
+        }
+        return false;
     }
     
-    // É a fase atual se for a primeira fase não totalmente tentada
+    // É a fase atual se for a primeira fase regular não totalmente tentada
     return firstIncompletePhase.phase_number === phase.phase_number;
 };
 
 // Obtém o status de cada artigo na fase (acerto, erro, não respondido)
 const getArticleStatus = (phase: Phase): string[] => {
+    // Para fases de revisão, retornar um array vazio (não tem indicadores de progresso)
+    if (phase.is_review) {
+        return [];
+    }
+    
     // Verifica se o backend forneceu informações detalhadas sobre o status dos artigos
     if (phase.progress && phase.progress.article_status) {
         return phase.progress.article_status;
@@ -249,11 +280,11 @@ const getConnectorSpacing = (index: number) => `${index * (windowWidth.value <= 
                           <div 
                               :class="[
                                   'w-16 h-16 rounded-full flex items-center justify-center phase-circle',
-                                  phase.is_blocked && !phase.is_review ? 'bg-gray-400' : // Fase normal bloqueada: cinza
-                                  phase.is_blocked && phase.is_review ? 'bg-purple-400' : // Fase de revisão bloqueada: roxo mais claro
-                                  phase.is_review ? 'bg-purple-500' : // Revisão não bloqueada: roxo normal
-                                  isPhaseComplete(phase) ? 'bg-green-500' : // Fase completa: verde
-                                  isCurrentPhase(phase, props.phases) ? 'bg-blue-500' : // Fase atual: azul
+                                  phase.is_review && phase.is_blocked ? 'bg-purple-400' : // Revisão bloqueada
+                                  phase.is_review ? 'bg-purple-500' : // Revisão não bloqueada
+                                  phase.is_blocked ? 'bg-gray-400' : // Fase bloqueada
+                                  isPhaseComplete(phase) ? 'bg-green-500' : // Fase completa
+                                  isCurrentPhase(phase, props.phases) ? 'bg-blue-500' : // Fase atual
                                   'bg-gray-400' // Padrão: cinza
                               ]"
                           >
@@ -272,8 +303,8 @@ const getConnectorSpacing = (index: number) => `${index * (windowWidth.value <= 
                               {{ phase.phase_number }}
                           </Badge>
                           
-                          <!-- Indicador de progresso -->
-                          <div class="mt-1 flex justify-center gap-1">
+                          <!-- Indicador de progresso - mostrado apenas para fases regulares -->
+                          <div v-if="!phase.is_review" class="mt-1 flex justify-center gap-1">
                             <span 
                               v-for="(status, index) in getArticleStatus(phase)" 
                               :key="index" 
@@ -283,9 +314,17 @@ const getConnectorSpacing = (index: number) => `${index * (windowWidth.value <= 
                                 'bg-red-500': status === 'incorrect',
                                 'bg-muted': status === 'pending'
                               }"
-                            >
-                              
-                          </span>
+                            ></span>
+                          </div>
+                          
+                          <!-- Para debug - remover depois -->
+                          <div v-if="false" class="text-xs">
+                            Phase: {{ phase.phase_number }} | 
+                            Complete: {{ isPhaseComplete(phase) }} | 
+                            Status: {{ JSON.stringify(phase.progress?.article_status) }} |
+                            Blocked: {{ phase.is_blocked }} |
+                            Review: {{ phase.is_review }} |
+                            Current: {{ isCurrentPhase(phase, props.phases) }}
                           </div>
                       </Link>
                     </div>
