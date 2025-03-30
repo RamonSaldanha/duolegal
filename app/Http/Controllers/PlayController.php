@@ -134,7 +134,7 @@ class PlayController extends Controller
                             'percentage' => 0, 
                             'article_status' => [] // Array vazio para status de artigos
                         ],
-                        'is_blocked' => !($this->getCurrentPhase() == $phaseCount) || !$hasIncompleteArticlesInThisReference,
+                        'is_blocked' => ($this->getCurrentPhase() != $phaseCount) || !$hasIncompleteArticlesInThisReference,
                         'is_review' => true,
                     ];
                     $lastPhaseWasReview = true;
@@ -142,7 +142,6 @@ class PlayController extends Controller
             }
         }
 
-        // dd();       
 
 
         return Inertia::render('Play/Map', [
