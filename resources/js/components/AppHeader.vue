@@ -12,13 +12,13 @@ import {
     NavigationMenuList,
     navigationMenuTriggerStyle,
 } from '@/components/ui/navigation-menu';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, Settings2 } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger,  } from '@/components/ui/sheet';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import UserMenuContent from '@/components/UserMenuContent.vue';
 import { getInitials } from '@/composables/useInitials';
 import type { BreadcrumbItem, NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
-import { BookOpen, Heart, Play, Menu, Lock, LayoutGrid } from 'lucide-vue-next';
+import { BookOpen, Heart, Play, Menu, Lock, Settings2 } from 'lucide-vue-next';
 import { computed, watch } from 'vue';
 
 interface Props {
