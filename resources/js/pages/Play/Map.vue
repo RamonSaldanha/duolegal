@@ -228,15 +228,15 @@ const getConnectorSpacing = (index: number) => `${index * (windowWidth.value <= 
                   top: getConnectorSpacing(index),
                 }"
               >
-                <div class="absolute top-[50px] left-0" :style="{ width: getConnectorWidth(), height: getConnectorHeight() }">
+                <div class="absolute top-[40px] left-0" :style="{ width: getConnectorWidth(), height: getConnectorHeight() }">
                   <svg 
                   :width="getConnectorWidth()" 
-                  height="100"
-                  :viewBox="`0 0 ${parseInt(getConnectorWidth())} 100`" 
+                  height="108"
+                  :viewBox="`0 0 ${parseInt(getConnectorWidth())} 108`" 
                   :style="{ height: getConnectorHeight(), width: getConnectorWidth() }"
                   >
                   <path 
-                    :d="index % 2 === 0 ? 'M160,0 L60,100' : 'M60,0 L160,100'" 
+                    :d="index % 2 === 0 ? 'M160,0 L60,108' : 'M60,0 L160,108'" 
                     stroke="currentColor" 
                     stroke-width="8"
                     class="text-muted-foreground/5" 
@@ -315,6 +315,10 @@ const getConnectorSpacing = (index: number) => `${index * (windowWidth.value <= 
                                 'bg-muted': status === 'pending'
                               }"
                             ></span>
+                            
+                          </div>
+                          <div class="text-sm text-center text-muted-foreground h-[5px]" v-else>
+                            Revisão
                           </div>
                           
                           <!-- Para debug - remover depois -->
