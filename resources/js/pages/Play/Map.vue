@@ -318,7 +318,7 @@ const getConnectorSpacing = (index: number) => `${index * (windowWidth.value <= 
                           </div>
                           
                           <!-- Para debug - remover depois -->
-                          <div v-if="true" class="text-xs">
+                          <div v-if="false" class="text-xs">
                             Phase: {{ phase.phase_number }} | 
                             Complete: {{ isPhaseComplete(phase) }} | 
                             Status: {{ JSON.stringify(phase.progress?.article_status) }} |

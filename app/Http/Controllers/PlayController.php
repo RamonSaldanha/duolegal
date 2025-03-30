@@ -72,15 +72,17 @@ class PlayController extends Controller
             $chunks = $reference->articles->chunk(self::ARTICLES_PER_PHASE);
             $phaseMap = []; // Armazena o mapeamento entre números de fase e chunks
             $regularPhaseCounter = 0;
+            $chunkIndex = 0; // Reinicia índice para cada referência
             
             foreach ($chunks as $index => $articleChunk) {
+                // Use $chunkIndex em vez de $index
                 $regularPhaseCounter++;
                 $phaseCount++;
                 
                 $progress = $this->getPhaseProgress($userId, $articleChunk);
                 
                 // Armazenar o mapeamento
-                $phaseMap[$phaseCount] = $index;
+                $phaseMap[$phaseCount] = $chunkIndex;
                 
                 // Verificar se a fase está completa - artigos sem status "pending"
                 $pendingArticles = array_filter($progress['article_status'], function($status) {
@@ -107,7 +109,7 @@ class PlayController extends Controller
                     'progress' => $progress,
                     'is_blocked' => $isBlocked,
                     'is_review' => false,
-                    'chunk_index' => $index, // Adiciona o índice do chunk para debug
+                    'chunk_index' => $chunkIndex, // Adiciona o índice do chunk para debug
                 ];
                 
                 $lastPhaseWasReview = false;
@@ -139,10 +141,11 @@ class PlayController extends Controller
                     ];
                     $lastPhaseWasReview = true;
                 }
+                
+                // Incremente o índice do chunk manualmente
+                $chunkIndex++;
             }
         }
-
-
 
         return Inertia::render('Play/Map', [
             'phases' => $phases,
@@ -190,61 +193,84 @@ class PlayController extends Controller
     {
         $user = Auth::user();
         
-        // Verifica se o usuário tem vidas disponíveis
+        // Verificações iniciais (mantidas)...
         if (!$user->hasLives()) {
             return redirect()->route('play.nolives');
         }
-
-        // Verificações de leis anteriores (mesmo código)
-        // ...
         
-        $reference = LegalReference::where('uuid', $referenceUuid)->firstOrFail();
-
-        // Obter todos os artigos desta referência para verificar o progresso
-        $allArticles = $reference->articles()
-            ->orderBy('position', 'asc')
-            ->where('is_active', true)
-            ->get();
+        // Buscar todas as referências legais para calcular o mapeamento global
+        $allLegalReferences = LegalReference::with(['articles' => function($query) {
+            $query->orderBy('position', 'asc')->where('is_active', true);
+        }])->orderBy('id', 'asc')->get();
         
-        // Agrupar os artigos em fases
-        $chunkedArticles = $allArticles->chunk(self::ARTICLES_PER_PHASE);
+        // Criar mapeamento global de fases para referências e chunks
+        $globalPhaseMap = [];
+        $globalPhaseCount = 0;
+        $referenceIndex = 0;
+        $phaseFound = false;
         
-        // Criar um mapeamento entre números de fase e índices de chunks
-        $phaseToChunkMap = [];
-        $regularPhaseCount = 0;
-        $phaseCount = 0;
-        
-        foreach ($chunkedArticles as $index => $chunk) {
-            $regularPhaseCount++;
-            $phaseCount++;
+        foreach ($allLegalReferences as $reference) {
+            $chunks = $reference->articles->chunk(self::ARTICLES_PER_PHASE);
+            $regularPhaseCounter = 0;
             
-            // Mapear fase regular ao índice do chunk
-            $phaseToChunkMap[$phaseCount] = $index;
-            
-            // Se esta fase regular completou um intervalo de revisão, 
-            // adicionar uma fase de revisão (que não mapeia para nenhum chunk)
-            if ($regularPhaseCount % self::REVIEW_PHASE_INTERVAL === 0) {
-                $phaseCount++;
-                // Fase de revisão não mapeia para nenhum chunk específico
-                $phaseToChunkMap[$phaseCount] = 'review';
+            foreach ($chunks as $chunkIndex => $articleChunk) {
+                $regularPhaseCounter++;
+                $globalPhaseCount++;
+                
+                // Mapear fase regular
+                $globalPhaseMap[$globalPhaseCount] = [
+                    'reference_uuid' => $reference->uuid,
+                    'chunk_index' => $chunkIndex,
+                    'is_review' => false
+                ];
+                
+                // Se encontramos a fase solicitada, armazene a referência e o índice
+                if ($globalPhaseCount == $phaseNumber) {
+                    $phaseFound = true;
+                    $referenceUuid = $reference->uuid; // Use a referência correta
+                }
+                
+                // Inserir fase de revisão após cada REVIEW_PHASE_INTERVAL fases regulares
+                if ($regularPhaseCounter % self::REVIEW_PHASE_INTERVAL === 0) {
+                    $globalPhaseCount++;
+                    
+                    $globalPhaseMap[$globalPhaseCount] = [
+                        'reference_uuid' => $reference->uuid,
+                        'is_review' => true
+                    ];
+                    
+                    if ($globalPhaseCount == $phaseNumber) {
+                        $phaseFound = true;
+                        $referenceUuid = $reference->uuid;
+                    }
+                }
             }
+            $referenceIndex++;
         }
         
-        // Verificar se a fase solicitada é válida
-        if (!isset($phaseToChunkMap[$phaseNumber])) {
+        // Se a fase não foi encontrada no mapeamento global
+        if (!$phaseFound) {
             return redirect()->route('play.map')->with('message', 'Fase não encontrada');
         }
         
-        // Se for fase de revisão, redirecionar para a rota de revisão
-        if ($phaseToChunkMap[$phaseNumber] === 'review') {
+        // Se é uma fase de revisão, redirecionar para review
+        if ($globalPhaseMap[$phaseNumber]['is_review']) {
             return redirect()->route('play.review', [
                 'referenceUuid' => $referenceUuid,
                 'phaseNumber' => $phaseNumber
             ]);
         }
         
-        // Aqui estamos usando o mapeamento para obter o índice correto do chunk
-        $chunkIndex = $phaseToChunkMap[$phaseNumber];
+        // Carregar a referência e artigos
+        $reference = LegalReference::where('uuid', $referenceUuid)->firstOrFail();
+        
+        $allArticles = $reference->articles()
+            ->orderBy('position', 'asc')
+            ->where('is_active', true)
+            ->get();
+        
+        $chunkedArticles = $allArticles->chunk(self::ARTICLES_PER_PHASE);
+        $chunkIndex = $globalPhaseMap[$phaseNumber]['chunk_index'];
         
         // Verificar se este chunk existe
         if (!isset($chunkedArticles[$chunkIndex]) || $chunkedArticles[$chunkIndex]->isEmpty()) {
@@ -287,10 +313,10 @@ class PlayController extends Controller
         
         // Verificar se existe próxima fase
         $nextPhaseNumber = $phaseNumber + 1;
-        $hasNextPhase = isset($phaseToChunkMap[$nextPhaseNumber]);
+        $hasNextPhase = isset($globalPhaseMap[$nextPhaseNumber]);
         
         // Verificar se a próxima fase é uma fase de revisão
-        $nextPhaseIsReview = $hasNextPhase && $phaseToChunkMap[$nextPhaseNumber] === 'review';
+        $nextPhaseIsReview = $hasNextPhase && $globalPhaseMap[$nextPhaseNumber]['is_review'];
         
         // Verificar se existem artigos para revisar
         $hasArticlesToReview = false;
