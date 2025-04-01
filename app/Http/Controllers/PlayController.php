@@ -161,7 +161,7 @@ class PlayController extends Controller
                             'percentage' => 0, 
                             'article_status' => [] // Array vazio para status de artigos
                         ],
-                        'is_blocked' => ($this->getCurrentPhase($reference->uuid) != $phaseCount) || !$hasIncompleteArticlesInThisReference,
+                        'is_blocked' => ($this->getCurrentPhase() != $phaseCount) || !$hasIncompleteArticlesInThisReference,
                         'is_review' => true,
                     ];
                     $lastPhaseWasReview = true;
@@ -179,33 +179,33 @@ class PlayController extends Controller
         ]);
     }
     
-    private function getCurrentPhase($legalReferenceUuid) {
+    private function getCurrentPhase() {
         $user = Auth::user();
         $userId = $user->id;
         
-        // Buscar o ID da referência legal a partir do UUID
-        $legalReference = LegalReference::where('uuid', $legalReferenceUuid)->first();
+        // Verificar se o usuário tem leis preferidas
+        $hasPreferences = $user->legalReferences()->exists();
         
-        if (!$legalReference) {
-            return 1; // Retornar fase 1 se a referência não existir
+        // Query base para UserProgress
+        $query = UserProgress::where('user_id', $userId);
+        
+        // Se o usuário tem preferências, filtrar apenas os artigos das leis selecionadas
+        if ($hasPreferences) {
+            // Buscar os IDs dos artigos relacionados às leis de preferência do usuário
+            $userLegalReferences = $user->legalReferences()->pluck('legal_references.id')->toArray();
+            
+            $preferredArticleIds = LawArticle::whereHas('legalReference', function($q) use ($userLegalReferences) {
+                $q->whereIn('legal_reference_id', $userLegalReferences);
+            })->pluck('id')->toArray();
+            
+            // Aplicar filtro à consulta para considerar apenas artigos das leis preferidas
+            $query->whereIn('law_article_id', $preferredArticleIds);
         }
         
-        // Buscar os IDs dos artigos relacionados à referência legal especificada
-        $referenceArticleIds = LawArticle::where('legal_reference_id', $legalReference->id)
-            ->where('is_active', true)
-            ->pluck('id')
-            ->toArray();
-        
-        if (empty($referenceArticleIds)) {
-            return 1; // Retornar fase 1 se não houver artigos
-        }
-        
-        // Contar apenas os artigos da referência especificada que o usuário já progrediu
-        $currentArticleCount = UserProgress::where('user_id', $userId)
-            ->whereIn('law_article_id', $referenceArticleIds)
-            ->count();
-        
-        // Calcula quantas fases regulares foram completadas para esta referência
+        // Contar apenas os artigos relevantes
+        $currentArticleCount = $query->count();
+
+        // Calcula quantas fases regulares foram completadas
         $regularPhasesCompleted = ceil($currentArticleCount / self::ARTICLES_PER_PHASE);
         
         // Calcula quantas fases de revisão já foram completadas
@@ -216,11 +216,16 @@ class PlayController extends Controller
         
         // Verifica se a fase atual é uma fase de revisão (após completar REVIEW_PHASE_INTERVAL fases regulares)
         if ($regularPhasesCompleted % self::REVIEW_PHASE_INTERVAL === 0 && $regularPhasesCompleted > 0) {
-            // Verifica se existem artigos incompletos para revisar apenas nesta referência
-            $hasIncompleteArticles = UserProgress::where('user_id', $userId)
-                ->whereIn('law_article_id', $referenceArticleIds)
-                ->where('percentage', '<', 100)
-                ->exists();
+            // Verifica se existem artigos incompletos para revisar (também filtrados por preferências)
+            $hasIncompleteArticlesQuery = UserProgress::where('user_id', $userId)
+                ->where('percentage', '<', 100);
+                
+            // Aplicar o mesmo filtro de preferências, se necessário
+            if ($hasPreferences && !empty($preferredArticleIds)) {
+                $hasIncompleteArticlesQuery->whereIn('law_article_id', $preferredArticleIds);
+            }
+            
+            $hasIncompleteArticles = $hasIncompleteArticlesQuery->exists();
             
             // Se não há artigos incompletos, o usuário já passou pela fase de revisão
             if (!$hasIncompleteArticles) {
