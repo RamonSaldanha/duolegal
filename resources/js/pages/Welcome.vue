@@ -55,7 +55,7 @@ const closeMenu = () => {
                         :href="route('play.map')"
                         class="rounded-full bg-[#f6c402] px-5 py-2 text-base font-medium text-black transition hover:bg-[#c39b01]"
                     >
-                        Dashboard
+                        Jogar
                     </Link>
                     <template v-else>
                         <Link
@@ -145,7 +145,7 @@ const closeMenu = () => {
                     <!-- Conteúdo -->
                     <div class="w-full md:w-1/2 text-center md:text-left">
                         <h1 class="mb-6 text-4xl sm:text-5xl font-extrabold leading-tight heading-font">
-                            Aprenda legislação de forma <span class="text-[#f6c402]">divertida</span>
+                            Aprenda legislação de forma <span class="">divertida</span>
                         </h1>
                         
                         <p class="mb-8 text-lg text-[#706f6c] dark:text-[#A1A09A] max-w-lg mx-auto md:mx-0">
@@ -201,12 +201,12 @@ const closeMenu = () => {
         <section class="w-full py-0  bg-[#f5f5f3] dark:bg-[#121212]" id="sobre">
             <div class="mx-auto max-w-7xl px-4 sm:px-6">
 
-            <div class="text-center mb-12">
-                <h2 class="text-3xl sm:text-4xl font-bold heading-font text-[#f6c402]">
+            <div class="text-center mb-16">
+                <h2 class="text-2xl sm:text-5xl font-bold heading-font">
                 <span>Diferencial</span> do Memorize Direito
                 </h2>
                 <p class="text-lg text-[#706f6c] dark:text-[#A1A09A] max-w-2xl mx-auto mt-4">
-                Conheça as vantagens que tornam nossa plataforma única para o aprendizado jurídico
+                    Conheça as vantagens que tornam nossa <span class="text-[#f6c402] font-bold">plataforma única</span> para o aprendizado jurídico
                 </p>
             </div>
                        
@@ -225,9 +225,9 @@ const closeMenu = () => {
                     <!-- Conteúdo à esquerda (com largura reduzida) -->
                     <div class="w-full md:w-1/2 md:max-w-[450px] md:ml-auto">
                         <h3 class="text-4xl font-bold mb-4 heading-font text-center md:text-left">Método Tradicional</h3>
-                        <p class="text-lg text-[#706f6c] dark:text-[#A1A09A]">
-                        Estudar legislação de forma tradicional é cansativo e desmotivador. 
-                        Textos densos e memorização forçada tornam o processo ineficiente.
+                        <p class="text-center md:text-justify text-lg text-[#706f6c] dark:text-[#A1A09A]">
+                            Estudar legislação de <span class="text-[#1c79b2] font-bold">forma tradicional é cansativo e desmotivador</span>. 
+                            Textos densos e memorização forçada tornam o processo ineficiente.
                         </p>
                     </div>
                 </div>
@@ -246,9 +246,9 @@ const closeMenu = () => {
                 <!-- Conteúdo à direita (com largura reduzida) -->
                 <div class="w-full md:w-1/2 md:max-w-[450px]">
                     <h3 class="text-4xl font-bold mb-4 heading-font text-center md:text-left">Com Memorize Direito</h3>
-                    <p class="text-lg text-[#706f6c] dark:text-[#A1A09A]">
+                    <p class="text-center md:text-justify text-lg text-[#706f6c] dark:text-[#A1A09A]">
                     Transformamos o estudo jurídico em uma experiência divertida! 
-                    Nossa plataforma gamificada mantém você motivado com desafios 
+                    Nossa plataforma <span class="text-[#1c79b2] font-bold">gamificada mantém você motivado</span> com desafios 
                     interativos.
                     </p>
                     
@@ -267,15 +267,14 @@ const closeMenu = () => {
         </div>
 
         <!-- App Preview Section - Simplificado -->
-        <section class="w-full py-16 bg-[#FDFDFC] dark:bg-[#0a0a0a]">
+        <section class="w-full py-0 md:py-8 bg-[#FDFDFC] dark:bg-[#0a0a0a]">
             <div class="mx-auto max-w-7xl px-4 sm:px-6">
                 <div class="flex flex-col-reverse md:flex-row items-center gap-6">
-                    
-                    
+                   
                     <!-- Conteúdo (agora à direita) -->
                     <div class="w-full md:w-1/2 text-center md:text-left">
                         <h2 class="text-3xl sm:text-4xl font-bold mb-4 heading-font text-center md:text-end">
-                            Interface <span class="text-[#f6c402]">intuitiva</span>
+                            Interface <span class="">intuitiva</span>
                         </h2>
                         
                         <p class="text-lg text-center md:text-end text-[#706f6c] dark:text-[#A1A09A] mb-8 md:mx-0">
@@ -292,7 +291,7 @@ const closeMenu = () => {
                         </div>
                     </div>
                     <!-- Imagem (agora à esquerda) -->
-                    <div class="w-full md:w-1/2 flex justify-start">
+                    <div class="w-full md:w-1/2 flex justify-center md:justify-start">
                         <img 
                             src="/img/bicho-preguica-feliz.png" 
                             alt="Memorize Direito App Preview" 
@@ -312,10 +311,10 @@ const closeMenu = () => {
         </div>
 
         <!-- Recursos Section - Simplificado -->
-        <section class="w-full py-16 bg-[#f5f5f3] dark:bg-[#121212]" id="recursos">
+        <section class="w-full py-0 bg-[#f5f5f3] dark:bg-[#121212]" id="recursos">
             <div class="mx-auto max-w-7xl px-4 sm:px-6">
                 <div class="text-center mb-8">
-                    <h2 class="text-3xl sm:text-4xl font-bold mb-4 heading-font">Principais <span class="text-[#f6c402]">recursos</span></h2>
+                    <h2 class="text-3xl sm:text-4xl font-bold mb-4 heading-font">Principais <span class="">recursos</span></h2>
                     <p class="text-lg text-[#706f6c] dark:text-[#A1A09A] max-w-2xl mx-auto mb-12">
                         Técnicas de aprendizado eficientes com gamificação para tornar o estudo mais envolvente
                     </p>
@@ -384,7 +383,7 @@ const closeMenu = () => {
                         <img 
                             src="/img/bicho-preguica-e-arara-medalha.png" 
                             alt="Mascotes do Memorize Direito comemorando conquistas" 
-                            class="w-full max-w-md mx-auto"
+                            class="w-full max-w-sm mx-auto"
                         />
                     </div>
                 </div>
@@ -437,7 +436,7 @@ const closeMenu = () => {
                         <div class="mb-6 md:mb-0">
                             <h3 class="text-sm font-semibold uppercase tracking-wider mb-4">Plataforma</h3>
                             <ul class="space-y-2">
-                                <li><a href="#" class="text-[#706f6c] dark:text-[#A1A09A] hover:text-[#f6c402] text-sm">Dashboard</a></li>
+                                <li><a href="#" class="text-[#706f6c] dark:text-[#A1A09A] hover:text-[#f6c402] text-sm">Jogar</a></li>
                                 <li><a href="#" class="text-[#706f6c] dark:text-[#A1A09A] hover:text-[#f6c402] text-sm">Módulos</a></li>
                                 <li><a href="#" class="text-[#706f6c] dark:text-[#A1A09A] hover:text-[#f6c402] text-sm">Estatísticas</a></li>
                             </ul>
