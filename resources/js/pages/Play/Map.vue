@@ -240,11 +240,11 @@ const getConnectorSpacing = (index: number) => `${index * (windowWidth.value <= 
                     <!-- Linha tracejada que conecta as bolinhas -->
                     <path 
                       :d="index % 2 === 0 
-                        ? `M160,0 Q130,25 ${160-25*Math.sin(0.5)},50 T60,108` 
-                        : `M60,0 Q90,25 ${60+25*Math.sin(0.5)},50 T160,108`" 
+                        ? `M160,0 C145,10 130,25 ${160-25*Math.sin(0.5)},50 S80,90 60,108` 
+                        : `M60,0 C75,10 90,25 ${60+25*Math.sin(0.5)},50 S140,90 160,108`" 
                       :stroke="isPhaseComplete(referenceData.phases[index]) || 
                               (referenceData.phases[index].is_review && referenceData.phases[index].is_complete) || 
-                              referenceData.phases[index].phase_number <= props.currentPhaseNumber ? '#3B82F6' : 'currentColor'"
+                              referenceData.phases[index].phase_number <= props.currentPhaseNumber ? '#432818' : 'currentColor'"
                       stroke-width="2"
                       :stroke-opacity="isPhaseComplete(referenceData.phases[index]) || 
                                       (referenceData.phases[index].is_review && referenceData.phases[index].is_complete) || 
