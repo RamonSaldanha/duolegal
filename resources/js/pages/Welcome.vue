@@ -138,12 +138,8 @@ const closeMenu = () => {
         </header>
 
         <!-- Hero Section - Minimalista com Arara Feliz -->
-        <section class="w-full py-0 pt-8 md:py-16 relative overflow-hidden" id="hero">
-            <div class="absolute inset-0">
-                <div class="absolute top-1/4 left-1/5 w-64 h-64 rounded-full bg-[#f6c402] opacity-5 blur-3xl"></div>
-                <div class="absolute bottom-1/3 right-1/4 w-80 h-80 rounded-full bg-[#f6c402] opacity-5 blur-3xl"></div>
-            </div>
-            
+        <section class="w-full py-0 pt-8 md:pt-16 relative overflow-hidden" id="hero">
+     
             <div class="mx-auto max-w-7xl px-4 sm:px-6 relative z-10">
                 <div class="flex flex-col md:flex-row items-center gap-8 md:gap-16">
                     <!-- Conteúdo -->
@@ -159,7 +155,7 @@ const closeMenu = () => {
                         <div class="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
                             <Link
                                 :href="route('register')"
-                                class="rounded-xl bg-[#f6c402] px-6 py-3 text-lg font-medium text-black transition hover:bg-[#c39b01] flex items-center justify-center gap-2 shadow-md"
+                                class="rounded-xl bg-[#f6c402] px-6 py-3 text-lg font-medium text-black transition hover:bg-[#c39b01] flex items-center justify-center gap-2"
                             >
                                 <PlayCircle class="h-5 w-5" /> Começar agora
                             </Link>
@@ -173,9 +169,9 @@ const closeMenu = () => {
                         
                         <div class="mt-8 flex items-center justify-center md:justify-start">
                             <div class="flex -space-x-2 mr-3">
-                                <img class="h-8 w-8 rounded-full border-2 border-white" src="https://i.pravatar.cc/100?img=1" alt="Usuário" />
-                                <img class="h-8 w-8 rounded-full border-2 border-white" src="https://i.pravatar.cc/100?img=2" alt="Usuário" />
-                                <img class="h-8 w-8 rounded-full border-2 border-white" src="https://i.pravatar.cc/100?img=3" alt="Usuário" />
+                                <img class="h-8 w-8 rounded-full" src="https://i.pravatar.cc/100?img=1" alt="Usuário" />
+                                <img class="h-8 w-8 rounded-full" src="https://i.pravatar.cc/100?img=2" alt="Usuário" />
+                                <img class="h-8 w-8 rounded-full" src="https://i.pravatar.cc/100?img=3" alt="Usuário" />
                             </div>
                             <span class="text-sm text-[#706f6c] dark:text-[#A1A09A]">+3.500 estudantes</span>
                         </div>
@@ -202,7 +198,7 @@ const closeMenu = () => {
         </div>
 
         <!-- Seção Sobre - Comparativo simplificado -->
-        <section class="w-full py-0 md:py-16 bg-[#f5f5f3] dark:bg-[#121212]" id="sobre">
+        <section class="w-full py-0  bg-[#f5f5f3] dark:bg-[#121212]" id="sobre">
             <div class="mx-auto max-w-7xl px-4 sm:px-6">
 
             <div class="text-center mb-12">
@@ -214,7 +210,7 @@ const closeMenu = () => {
                 </p>
             </div>
                        
-            <div class="flex flex-col gap-16">
+            <div class="flex flex-col gap-8">
                 <!-- Método Tradicional -->
                 <div class="flex flex-col md:flex-row-reverse items-center gap-10">
                     <!-- Imagem à direita -->
@@ -222,7 +218,7 @@ const closeMenu = () => {
                         <img 
                         src="/img/arara-exausta.png" 
                         alt="Arara exausta estudando pelo método tradicional" 
-                        class="w-full rounded-lg shadow-md max-w-[280px] mx-auto"
+                        class="w-full rounded-lg max-w-[280px] mx-auto"
                         />
                     </div>
                     
@@ -243,7 +239,7 @@ const closeMenu = () => {
                     <img 
                     src="/img/arara-feliz.png" 
                     alt="Arara feliz estudando com o Memorize Direito" 
-                    class="w-full rounded-lg shadow-md max-w-[280px] mx-auto"
+                    class="w-full rounded-lg  max-w-[280px] mx-auto"
                     />
                 </div>
                 
@@ -273,34 +269,35 @@ const closeMenu = () => {
         <!-- App Preview Section - Simplificado -->
         <section class="w-full py-16 bg-[#FDFDFC] dark:bg-[#0a0a0a]">
             <div class="mx-auto max-w-7xl px-4 sm:px-6">
-                <div class="flex flex-col-reverse md:flex-row items-center gap-12">
-                    <!-- Imagem -->
-                    <div class="w-full md:w-1/2">
-                        <img 
-                            src="/img/bicho-preguica-feliz.png" 
-                            alt="Memorize Direito App Preview" 
-                            class="w-full max-w-md mx-auto rounded-xl"
-                        />
-                    </div>
+                <div class="flex flex-col-reverse md:flex-row items-center gap-6">
                     
-                    <!-- Conteúdo -->
+                    
+                    <!-- Conteúdo (agora à direita) -->
                     <div class="w-full md:w-1/2 text-center md:text-left">
-                        <h2 class="text-3xl sm:text-4xl font-bold mb-4 heading-font">
+                        <h2 class="text-3xl sm:text-4xl font-bold mb-4 heading-font text-center md:text-end">
                             Interface <span class="text-[#f6c402]">intuitiva</span>
                         </h2>
                         
-                        <p class="text-lg text-[#706f6c] dark:text-[#A1A09A] mb-8 max-w-lg mx-auto md:mx-0">
+                        <p class="text-lg text-center md:text-end text-[#706f6c] dark:text-[#A1A09A] mb-8 md:mx-0">
                             Uma experiência de estudo fluida e agradável que torna o aprendizado jurídico mais eficiente.
                         </p>
                         
-                        <div class="flex justify-center md:justify-start">
+                        <div class="flex justify-center md:justify-end">
                             <Link
                                 :href="route('register')"
-                                class="rounded-xl bg-[#f6c402] px-6 py-3 text-lg font-medium text-black transition hover:bg-[#c39b01] shadow-md"
+                                class="rounded-xl bg-[#f6c402] px-6 py-3 text-lg font-medium text-black transition hover:bg-[#c39b01]"
                             >
                                 Experimentar agora
                             </Link>
                         </div>
+                    </div>
+                    <!-- Imagem (agora à esquerda) -->
+                    <div class="w-full md:w-1/2 flex justify-start">
+                        <img 
+                            src="/img/bicho-preguica-feliz.png" 
+                            alt="Memorize Direito App Preview" 
+                            class="w-full max-w-sm rounded-xl"
+                        />
                     </div>
                 </div>
             </div>
@@ -412,7 +409,7 @@ const closeMenu = () => {
                 <div class="flex flex-col sm:flex-row gap-4 justify-center">
                     <Link
                         :href="route('register')"
-                        class="rounded-xl bg-[#f6c402] px-8 py-4 text-lg font-medium text-black transition hover:bg-[#c39b01] shadow-md"
+                        class="rounded-xl bg-[#f6c402] px-8 py-4 text-lg font-medium text-black transition hover:bg-[#c39b01]"
                     >
                         Começar gratuitamente
                     </Link>
