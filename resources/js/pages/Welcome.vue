@@ -138,7 +138,7 @@ const closeMenu = () => {
         </header>
 
         <!-- Hero Section - Minimalista com Arara Feliz -->
-        <section class="w-full py-16 md:py-16 relative overflow-hidden" id="hero">
+        <section class="w-full py-0 pt-8 md:py-16 relative overflow-hidden" id="hero">
             <div class="absolute inset-0">
                 <div class="absolute top-1/4 left-1/5 w-64 h-64 rounded-full bg-[#f6c402] opacity-5 blur-3xl"></div>
                 <div class="absolute bottom-1/3 right-1/4 w-80 h-80 rounded-full bg-[#f6c402] opacity-5 blur-3xl"></div>
@@ -202,55 +202,63 @@ const closeMenu = () => {
         </div>
 
         <!-- Seção Sobre - Comparativo simplificado -->
-        <section class="w-full py-16 bg-[#f5f5f3] dark:bg-[#121212]" id="sobre">
+        <section class="w-full py-0 md:py-16 bg-[#f5f5f3] dark:bg-[#121212]" id="sobre">
             <div class="mx-auto max-w-7xl px-4 sm:px-6">
-                
-                <div class="flex flex-col gap-12">
-                    <!-- Método Tradicional -->
-                    <div class="flex flex-col md:flex-row items-center gap-8">
-                        <!-- Imagem à esquerda -->
-                        <div class="w-full md:w-2/5 lg:w-1/3">
-                            <img 
-                                src="/img/arara-exausta.png" 
-                                alt="Arara exausta estudando pelo método tradicional" 
-                                class="w-full rounded-lg"
-                            />
-                        </div>
-                        
-                        <!-- Conteúdo à direita -->
-                        <div class="w-full md:w-3/5 lg:w-2/3">
-                            <h3 class="text-5xl font-bold mb-3 heading-font">Método Tradicional</h3>
-                            <p class="text-lg text-[#706f6c] dark:text-[#A1A09A]">
-                                Estudar legislação pelo método tradicional é exaustivo e pouco produtivo. 
-                                Com textos densos e revisões desorganizadas, o aprendizado se torna uma tarefa 
-                                desmotivadora, sem acompanhamento de progresso e sem reforço positivo.
-                            </p>
-                        </div>
+
+            <div class="text-center mb-12">
+                <h2 class="text-3xl sm:text-4xl font-bold heading-font text-[#f6c402]">
+                <span>Diferencial</span> do Memorize Direito
+                </h2>
+                <p class="text-lg text-[#706f6c] dark:text-[#A1A09A] max-w-2xl mx-auto mt-4">
+                Conheça as vantagens que tornam nossa plataforma única para o aprendizado jurídico
+                </p>
+            </div>
+                       
+            <div class="flex flex-col gap-16">
+                <!-- Método Tradicional -->
+                <div class="flex flex-col md:flex-row-reverse items-center gap-10">
+                    <!-- Imagem à direita -->
+                    <div class="w-full md:w-1/2">
+                        <img 
+                        src="/img/arara-exausta.png" 
+                        alt="Arara exausta estudando pelo método tradicional" 
+                        class="w-full rounded-lg shadow-md max-w-[280px] mx-auto"
+                        />
                     </div>
                     
-                    <!-- Com Memorize Direito -->
-                    <div class="flex flex-col md:flex-row-reverse items-center gap-8">
-                        <!-- Imagem à direita -->
-                        <div class="w-full md:w-2/5 lg:w-1/3">
-                            <img 
-                                src="/img/arara-feliz.png" 
-                                alt="Bicho-preguiça feliz estudando com o Memorize Direito" 
-                                class="w-full rounded-lg"
-                            />
-                        </div>
-                        
-                        <!-- Conteúdo à esquerda -->
-                        <div class="w-full md:w-3/5 lg:w-2/3">
-                            <h3 class="text-5xl font-bold mb-3 heading-font">Com Memorize Direito</h3>
-                            <p class="text-lg text-[#706f6c] dark:text-[#A1A09A]">
-                                Transformamos o estudo jurídico em uma experiência divertida e eficiente! 
-                                Nossa plataforma gamificada mantém você motivado com desafios interativos, 
-                                acompanhamento de progresso em tempo real e um sistema de recompensas que 
-                                torna o aprendizado realmente prazeroso.
-                            </p>
-                        </div>
+                    <!-- Conteúdo à esquerda (com largura reduzida) -->
+                    <div class="w-full md:w-1/2 md:max-w-[450px] md:ml-auto">
+                        <h3 class="text-4xl font-bold mb-4 heading-font text-center md:text-left">Método Tradicional</h3>
+                        <p class="text-lg text-[#706f6c] dark:text-[#A1A09A]">
+                        Estudar legislação de forma tradicional é cansativo e desmotivador. 
+                        Textos densos e memorização forçada tornam o processo ineficiente.
+                        </p>
                     </div>
                 </div>
+                
+                <!-- Com Memorize Direito -->
+                <div class="flex flex-col md:flex-row items-center gap-10">
+                <!-- Imagem à esquerda -->
+                <div class="w-full md:w-1/2">
+                    <img 
+                    src="/img/arara-feliz.png" 
+                    alt="Arara feliz estudando com o Memorize Direito" 
+                    class="w-full rounded-lg shadow-md max-w-[280px] mx-auto"
+                    />
+                </div>
+                
+                <!-- Conteúdo à direita (com largura reduzida) -->
+                <div class="w-full md:w-1/2 md:max-w-[450px]">
+                    <h3 class="text-4xl font-bold mb-4 heading-font text-center md:text-left">Com Memorize Direito</h3>
+                    <p class="text-lg text-[#706f6c] dark:text-[#A1A09A]">
+                    Transformamos o estudo jurídico em uma experiência divertida! 
+                    Nossa plataforma gamificada mantém você motivado com desafios 
+                    interativos.
+                    </p>
+                    
+                </div>
+                </div>
+            </div>
             </div>
         </section>
 
@@ -413,7 +421,7 @@ const closeMenu = () => {
         </section>
 
         <!-- Footer - Simplificado -->
-        <footer class="w-full border-t border-[#19140035] py-8 dark:border-[#3E3E3A]">
+        <footer class="w-full py-8">
             <div class="mx-auto max-w-7xl px-4 sm:px-6">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
                     <!-- Logo e descrição -->
@@ -472,7 +480,7 @@ const closeMenu = () => {
                     </div>
                 </div>
                 
-                <div class="mt-8 pt-8 border-t border-[#19140035] dark:border-[#3E3E3A] flex flex-col md:flex-row justify-between items-center">
+                <div class="mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
                     <p class="text-sm text-[#706f6c] dark:text-[#A1A09A]">© 2025 Memorize Direito. Todos os direitos reservados.</p>
                     <div class="mt-4 md:mt-0">
                         <a href="#" class="text-sm text-[#706f6c] dark:text-[#A1A09A] hover:text-[#f6c402]">Política de Privacidade</a>
