@@ -173,6 +173,7 @@ class PlayController extends Controller
 
         return Inertia::render('Play/Map', [
             'phases' => $phases,
+            'currentPhaseNumber' => $this->getCurrentPhase(),
             'user' => [
                 'lives' => $user->lives
             ]

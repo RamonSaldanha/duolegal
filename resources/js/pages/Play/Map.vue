@@ -44,6 +44,7 @@ interface GroupedPhases {
 const props = defineProps<{
     phases: Phase[];
     user: User;
+    currentPhaseNumber: number;
 }>();
 
 // Agrupar fases por referência legal
@@ -190,6 +191,7 @@ onUnmounted(() => {
 const getConnectorWidth = () => windowWidth.value <= 640 ? "235px" : "220px";
 const getConnectorHeight = () => windowWidth.value <= 640 ? "90px" : "100px";
 const getConnectorSpacing = (index: number) => `${index * (windowWidth.value <= 640 ? 90 : 100)}px`;
+
 </script>
 
 <template>
@@ -230,19 +232,45 @@ const getConnectorSpacing = (index: number) => `${index * (windowWidth.value <= 
               >
                 <div class="absolute top-[40px] left-0" :style="{ width: getConnectorWidth(), height: getConnectorHeight() }">
                   <svg 
-                  :width="getConnectorWidth()" 
-                  height="108"
-                  :viewBox="`0 0 ${parseInt(getConnectorWidth())} 108`" 
-                  :style="{ height: getConnectorHeight(), width: getConnectorWidth() }"
+                    :width="getConnectorWidth()" 
+                    height="108"
+                    :viewBox="`0 0 ${parseInt(getConnectorWidth())} 108`" 
+                    :style="{ height: getConnectorHeight(), width: getConnectorWidth() }"
                   >
-                  <path 
-                    :d="index % 2 === 0 ? 'M160,0 L60,108' : 'M60,0 L160,108'" 
-                    stroke="currentColor" 
-                    stroke-width="8"
-                    class="text-muted-foreground/5" 
-                    fill="none" 
-                  />
+                    <!-- Linha tracejada que conecta as bolinhas -->
+                    <path 
+                      :d="index % 2 === 0 
+                        ? `M160,0 Q130,25 ${160-25*Math.sin(0.5)},50 T60,108` 
+                        : `M60,0 Q90,25 ${60+25*Math.sin(0.5)},50 T160,108`" 
+                      :stroke="isPhaseComplete(referenceData.phases[index]) || 
+                              (referenceData.phases[index].is_review && referenceData.phases[index].is_complete) || 
+                              referenceData.phases[index].phase_number <= props.currentPhaseNumber ? '#3B82F6' : 'currentColor'"
+                      stroke-width="2"
+                      :stroke-opacity="isPhaseComplete(referenceData.phases[index]) || 
+                                      (referenceData.phases[index].is_review && referenceData.phases[index].is_complete) || 
+                                      referenceData.phases[index].phase_number <= props.currentPhaseNumber ? '0.8' : '0.3'"
+                      stroke-dasharray="6,4"
+                      fill="none" 
+                    />
                   </svg>
+
+                  <!-- <svg 
+                    :width="getConnectorWidth()" 
+                    height="108"
+                    :viewBox="`0 0 ${parseInt(getConnectorWidth())} 108`" 
+                    :style="{ height: getConnectorHeight(), width: getConnectorWidth() }"
+                  >
+                    <path 
+                      :d="index % 2 === 0 
+                        ? `M160,0 Q130,25 ${160-25*Math.sin(0.5)},50 T60,108` 
+                        : `M60,0 Q90,25 ${60+25*Math.sin(0.5)},50 T160,108`" 
+                      :stroke="isPhaseComplete(referenceData.phases[index]) ? '#3B82F6' : 'currentColor'"
+                      stroke-width="2"
+                      :stroke-opacity="isPhaseComplete(referenceData.phases[index]) ? '0.8' : '0.3'"
+                      stroke-dasharray="6,4"
+                      fill="none" 
+                    />
+                  </svg> -->
                 </div>
               </div>
 
