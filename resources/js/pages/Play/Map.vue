@@ -203,16 +203,16 @@ const getConnectorSpacing = (index: number) => `${index * (windowWidth.value <= 
         <!-- Cabeçalho -->
         <div class="mb-4 flex justify-center items-center max-w-[500px] mx-auto mt-8">
             <div class="relative">
-                <div class="absolute -top-[-0px] -left-28 bg-white rounded-lg px-3 py-1 shadow-md text-sm font-medium speech-bubble">
-                Vamos por aqui!
-                </div>
-                <img src="/img/arara-e-preguica-mapa.png" alt="Logo" class="w-32 sm:w-40" />
-                <div class="absolute -top-[25px] -right-12 bg-white rounded-lg px-3 py-1 shadow-md text-sm font-medium speech-bubble">
-                Eaí... Vamos começar?
-                </div>
-                <div class="absolute -top-[-10px] -right-16 bg-white rounded-lg px-3 py-1 shadow-md text-sm font-medium speech-bubble">
-                Beleza!
-                </div>
+              <div class="absolute -top-[-0px] -left-28 bg-card dark:bg-card rounded-lg px-3 py-1 shadow-md text-sm font-medium speech-bubble text-foreground">
+              Vamos por aqui!
+              </div>
+              <img src="/img/arara-e-preguica-mapa.png" alt="Logo" class="w-32 sm:w-40" />
+              <div class="absolute -top-[25px] -right-12 bg-card dark:bg-card rounded-lg px-3 py-1 shadow-md text-sm font-medium speech-bubble text-foreground">
+              Eaí... Vamos começar?
+              </div>
+              <div class="absolute -top-[-10px] -right-16 bg-card dark:bg-card rounded-lg px-3 py-1 shadow-md text-sm font-medium speech-bubble text-foreground">
+              Beleza!
+              </div>
             </div>
         </div>
 
