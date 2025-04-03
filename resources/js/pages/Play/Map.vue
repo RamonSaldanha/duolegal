@@ -245,11 +245,11 @@ const getConnectorSpacing = (index: number) => `${index * (windowWidth.value <= 
                       :stroke="isPhaseComplete(referenceData.phases[index]) || 
                               (referenceData.phases[index].is_review && referenceData.phases[index].is_complete) || 
                               referenceData.phases[index].phase_number <= props.currentPhaseNumber ? '#432818' : 'currentColor'"
-                      stroke-width="2"
+                      stroke-width="3"
                       :stroke-opacity="isPhaseComplete(referenceData.phases[index]) || 
                                       (referenceData.phases[index].is_review && referenceData.phases[index].is_complete) || 
                                       referenceData.phases[index].phase_number <= props.currentPhaseNumber ? '0.8' : '0.3'"
-                      stroke-dasharray="6,4"
+                      stroke-dasharray="8,6"
                       fill="none" 
                     />
                   </svg>
@@ -285,7 +285,7 @@ const getConnectorSpacing = (index: number) => `${index * (windowWidth.value <= 
                   <div class="flex items-center justify-center">
                     <!-- Fases ligeiramente à direita ou esquerda do centro -->
                     <div 
-                      :class="`flex ${index % 2 === 0 ? 'justify-end ml-auto' : 'justify-start mr-auto'}`" 
+                      :class="`flex ${index % 2 === 0 ? 'justify-end ml-auto me-[10px]' : 'justify-start mr-auto ms-[10px]'}`" 
                       style="width: 55%;"
                     >
                       <Link 
@@ -379,6 +379,7 @@ const getConnectorSpacing = (index: number) => `${index * (windowWidth.value <= 
 </template>
 
 <style scoped>
+
 /* Estilo para as bolinhas sem degradê branco */
 .phase-circle {
   box-shadow: inset 0 -5px 0 rgba(0, 0, 0, 0.2), 0 5px 6px rgba(0, 0, 0, 0.1);
