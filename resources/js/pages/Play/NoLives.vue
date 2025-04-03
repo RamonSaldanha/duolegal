@@ -5,7 +5,8 @@
         <div class="container py-8">
             <div class="max-w-lg mx-auto text-center">
                 <div class="mb-6 flex justify-center">
-                    <Heart class="w-20 h-20 text-red-500" />
+                    <img src="/img/nolives.png" alt="Coração vazio" class="w-60" />
+                    <!-- <Heart class="w-20 h-20 text-red-500" /> -->
                 </div>
                 <h1 class="text-4xl font-bold mb-4">Você ficou sem vidas!</h1>
                 <p class="text-lg text-muted-foreground mb-8">
