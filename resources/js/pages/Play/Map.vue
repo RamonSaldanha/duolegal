@@ -8,6 +8,7 @@ import { Book, FileText, Bookmark, CheckCircle, Star, Repeat } from 'lucide-vue-
 
 interface User {
     lives: number;
+    has_infinite_lives?: boolean;
 }
 
 interface Progress {
@@ -50,7 +51,7 @@ const props = defineProps<{
 // Agrupar fases por referência legal
 const phasesByReference = computed<GroupedPhases>(() => {
     const grouped: GroupedPhases = {};
-    
+
     if (props.phases) {
         props.phases.forEach(phase => {
             if (!grouped[phase.reference_uuid]) {
@@ -59,11 +60,11 @@ const phasesByReference = computed<GroupedPhases>(() => {
                     phases: []
                 };
             }
-            
+
             grouped[phase.reference_uuid].phases.push(phase);
         });
     }
-    
+
     return grouped;
 });
 
@@ -78,15 +79,15 @@ const isPhaseComplete = (phase: Phase): boolean => {
     if (phase.is_review) {
         return phase.is_complete || false;
     }
-    
+
     // Verificar se há dados de progresso
     if (!phase.progress || !phase.progress.article_status || phase.progress.article_status.length === 0) {
         return false;
     }
-    
+
     // Verificar se existe algum artigo pendente
     const hasPendingArticle = phase.progress.article_status.some(status => status === 'pending');
-    
+
     // A fase está completa quando não há artigos pendentes
     return !hasPendingArticle;
 };
@@ -98,12 +99,12 @@ const isCurrentPhase = (phase: Phase, phases: Phase[]): boolean => {
         // Uma fase de revisão é atual se não estiver bloqueada
         return !phase.is_blocked;
     }
-    
+
     // Se a fase estiver completa, não é a atual
     if (isPhaseComplete(phase)) {
         return false;
     }
-    
+
     // Encontra a primeira fase não totalmente tentada na mesma referência
     // Considerando apenas fases regulares (não de revisão)
     const firstIncompletePhase = phases
@@ -111,22 +112,22 @@ const isCurrentPhase = (phase: Phase, phases: Phase[]): boolean => {
         .sort((a, b) => a.phase_number - b.phase_number)
         .find(p => {
             // Verifica se há artigos pendentes (não tentados) na fase
-            return p.progress && p.progress.article_status && 
+            return p.progress && p.progress.article_status &&
                 p.progress.article_status.some(status => status === 'pending');
         });
-    
+
     // Se não encontrou nenhuma fase incompleta, a última fase regular é a atual
     if (!firstIncompletePhase) {
         const regularPhasesInReference = phases
             .filter(p => p.reference_uuid === phase.reference_uuid && !p.is_review)
             .sort((a, b) => a.phase_number - b.phase_number);
-        
+
         if (regularPhasesInReference.length > 0) {
             return phase.phase_number === regularPhasesInReference[regularPhasesInReference.length - 1].phase_number;
         }
         return false;
     }
-    
+
     // É a fase atual se for a primeira fase regular não totalmente tentada
     return firstIncompletePhase.phase_number === phase.phase_number;
 };
@@ -137,22 +138,22 @@ const getArticleStatus = (phase: Phase): string[] => {
     if (phase.is_review) {
         return [];
     }
-    
+
     // Verifica se o backend forneceu informações detalhadas sobre o status dos artigos
     if (phase.progress && phase.progress.article_status) {
         return phase.progress.article_status;
     }
-    
+
     // Fallback para o caso de o backend não fornecer as informações detalhadas
     // (compatibilidade com versões anteriores)
     const status: string[] = [];
-    
+
     // Número de artigos tentados mas não completados (erros)
     // Vamos assumir que há pelo menos 1 erro se a fase não estiver completa e tiver algum progresso
     const hasProgress = phase.progress && phase.progress.completed > 0;
     const isIncomplete = phase.progress && phase.progress.completed < phase.article_count;
     const errorCount = hasProgress && isIncomplete ? 1 : 0;
-    
+
     for (let i = 1; i <= phase.article_count; i++) {
         if (i <= phase.progress.completed) {
             // Artigos completados são considerados acertos (verde)
@@ -165,7 +166,7 @@ const getArticleStatus = (phase: Phase): string[] => {
             status.push('pending');
         }
     }
-    
+
     return status;
 };
 
@@ -218,9 +219,9 @@ const getConnectorSpacing = (index: number) => `${index * (windowWidth.value <= 
 
         <!-- Mapa de fases -->
         <div class="space-y-16">
-          <div 
-            v-for="(referenceData, referenceUuid) in phasesByReference" 
-            :key="referenceUuid" 
+          <div
+            v-for="(referenceData, referenceUuid) in phasesByReference"
+            :key="referenceUuid"
             class="relative"
           >
             <div class="flex justify-center mb-4">
@@ -232,8 +233,8 @@ const getConnectorSpacing = (index: number) => `${index * (windowWidth.value <= 
             <!-- Container da trilha -->
             <div class="relative trail-container mx-auto">
              <!-- Linhas diagonais conectoras (geradas dinamicamente) -->
-              <div 
-                v-for="(phase, index) in referenceData.phases.slice(0, -1)" 
+              <div
+                v-for="(phase, index) in referenceData.phases.slice(0, -1)"
                 :key="`connector-${index}`"
                 class="absolute left-0 w-full -z-10"
                 :style="{
@@ -241,44 +242,44 @@ const getConnectorSpacing = (index: number) => `${index * (windowWidth.value <= 
                 }"
               >
                 <div class="absolute top-[40px] left-0" :style="{ width: getConnectorWidth(), height: getConnectorHeight() }">
-                  <svg 
-                    :width="getConnectorWidth()" 
+                  <svg
+                    :width="getConnectorWidth()"
                     height="108"
-                    :viewBox="`0 0 ${parseInt(getConnectorWidth())} 108`" 
+                    :viewBox="`0 0 ${parseInt(getConnectorWidth())} 108`"
                     :style="{ height: getConnectorHeight(), width: getConnectorWidth() }"
                   >
                     <!-- Linha tracejada que conecta as bolinhas -->
-                    <path 
-                      :d="index % 2 === 0 
-                        ? `M160,0 C145,10 130,25 ${160-25*Math.sin(0.5)},50 S80,90 60,108` 
-                        : `M60,0 C75,10 90,25 ${60+25*Math.sin(0.5)},50 S140,90 160,108`" 
-                      :stroke="isPhaseComplete(referenceData.phases[index]) || 
-                              (referenceData.phases[index].is_review && referenceData.phases[index].is_complete) || 
+                    <path
+                      :d="index % 2 === 0
+                        ? `M160,0 C145,10 130,25 ${160-25*Math.sin(0.5)},50 S80,90 60,108`
+                        : `M60,0 C75,10 90,25 ${60+25*Math.sin(0.5)},50 S140,90 160,108`"
+                      :stroke="isPhaseComplete(referenceData.phases[index]) ||
+                              (referenceData.phases[index].is_review && referenceData.phases[index].is_complete) ||
                               referenceData.phases[index].phase_number <= props.currentPhaseNumber ? '#432818' : 'currentColor'"
                       stroke-width="3"
-                      :stroke-opacity="isPhaseComplete(referenceData.phases[index]) || 
-                                      (referenceData.phases[index].is_review && referenceData.phases[index].is_complete) || 
+                      :stroke-opacity="isPhaseComplete(referenceData.phases[index]) ||
+                                      (referenceData.phases[index].is_review && referenceData.phases[index].is_complete) ||
                                       referenceData.phases[index].phase_number <= props.currentPhaseNumber ? '0.8' : '0.3'"
                       stroke-dasharray="8,6"
-                      fill="none" 
+                      fill="none"
                     />
                   </svg>
 
-                  <!-- <svg 
-                    :width="getConnectorWidth()" 
+                  <!-- <svg
+                    :width="getConnectorWidth()"
                     height="108"
-                    :viewBox="`0 0 ${parseInt(getConnectorWidth())} 108`" 
+                    :viewBox="`0 0 ${parseInt(getConnectorWidth())} 108`"
                     :style="{ height: getConnectorHeight(), width: getConnectorWidth() }"
                   >
-                    <path 
-                      :d="index % 2 === 0 
-                        ? `M160,0 Q130,25 ${160-25*Math.sin(0.5)},50 T60,108` 
-                        : `M60,0 Q90,25 ${60+25*Math.sin(0.5)},50 T160,108`" 
+                    <path
+                      :d="index % 2 === 0
+                        ? `M160,0 Q130,25 ${160-25*Math.sin(0.5)},50 T60,108`
+                        : `M60,0 Q90,25 ${60+25*Math.sin(0.5)},50 T160,108`"
                       :stroke="isPhaseComplete(referenceData.phases[index]) ? '#3B82F6' : 'currentColor'"
                       stroke-width="2"
                       :stroke-opacity="isPhaseComplete(referenceData.phases[index]) ? '0.8' : '0.3'"
                       stroke-dasharray="6,4"
-                      fill="none" 
+                      fill="none"
                     />
                   </svg> -->
                 </div>
@@ -286,36 +287,36 @@ const getConnectorSpacing = (index: number) => `${index * (windowWidth.value <= 
 
               <!-- Fases aproximadas no centro -->
               <div class="space-y-6">
-                <div 
-                  v-for="(phase, index) in referenceData.phases" 
+                <div
+                  v-for="(phase, index) in referenceData.phases"
                   :key="`phase-${phase.phase_number}`"
                   class="relative phase-item"
                 >
                   <!-- Fase com posicionamento levemente alternado -->
                   <div class="flex items-center justify-center">
                     <!-- Fases ligeiramente à direita ou esquerda do centro -->
-                    <div 
-                      :class="`flex ${index % 2 === 0 ? 'justify-end ml-auto me-[10px]' : 'justify-start mr-auto ms-[10px]'}`" 
+                    <div
+                      :class="`flex ${index % 2 === 0 ? 'justify-end ml-auto me-[10px]' : 'justify-start mr-auto ms-[10px]'}`"
                       style="width: 55%;"
                     >
-                      <Link 
-                          :href="phase.is_blocked 
-                              ? '#' 
+                      <Link
+                          :href="phase.is_blocked
+                              ? '#'
                               : (phase.is_review
                                   ? route('play.review', [phase.reference_uuid, phase.phase_number])
-                                  : (props.user.lives > 0 && isCurrentPhase(phase, props.phases))
+                                  : ((props.user.lives > 0 || props.user.has_infinite_lives) && isCurrentPhase(phase, props.phases))
                                       ? route('play.phase', [phase.reference_uuid, phase.phase_number])
                                       : '#')"
                           class="relative group transition-transform duration-300"
-                          :class="phase.is_blocked 
-                              ? 'cursor-not-allowed' 
-                              : (phase.is_review || (props.user.lives > 0 && isCurrentPhase(phase, props.phases)))
+                          :class="phase.is_blocked
+                              ? 'cursor-not-allowed'
+                              : (phase.is_review || ((props.user.lives > 0 || props.user.has_infinite_lives) && isCurrentPhase(phase, props.phases)))
                                   ? 'hover:scale-110'
                                   : 'cursor-not-allowed'"
                           :style="`margin-${index % 2 === 0 ? 'right' : 'left'}: -5px;`"
                       >
                           <!-- Bolinha da fase -->
-                          <div 
+                          <div
                               :class="[
                                   'w-16 h-16 rounded-full flex items-center justify-center phase-circle',
                                   phase.is_review && phase.is_blocked ? 'bg-purple-400' : // Revisão bloqueada
@@ -326,26 +327,26 @@ const getConnectorSpacing = (index: number) => `${index * (windowWidth.value <= 
                                   'bg-gray-400' // Padrão: cinza
                               ]"
                           >
-                              <component 
-                                  :is="phase.is_review 
-                                      ? Repeat 
-                                      : (isPhaseComplete(phase) 
-                                          ? CheckCircle 
-                                          : getPhaseIcon(phase.phase_number))" 
-                                  class="w-6 h-6 text-white" 
+                              <component
+                                  :is="phase.is_review
+                                      ? Repeat
+                                      : (isPhaseComplete(phase)
+                                          ? CheckCircle
+                                          : getPhaseIcon(phase.phase_number))"
+                                  class="w-6 h-6 text-white"
                               />
                           </div>
-                          
+
                           <!-- Badge com número da fase -->
                           <Badge class="absolute -top-2 -right-2 bg-primary">
                               {{ phase.phase_number }}
                           </Badge>
-                          
+
                           <!-- Indicador de progresso - mostrado apenas para fases regulares -->
                           <div v-if="!phase.is_review" class="mt-1 flex justify-center gap-1">
-                            <span 
-                              v-for="(status, index) in getArticleStatus(phase)" 
-                              :key="index" 
+                            <span
+                              v-for="(status, index) in getArticleStatus(phase)"
+                              :key="index"
                               class="w-2 h-2 rounded-full transition-colors duration-300"
                               :class="{
                                 'bg-green-500': status === 'correct',
@@ -353,21 +354,23 @@ const getConnectorSpacing = (index: number) => `${index * (windowWidth.value <= 
                                 'bg-muted': status === 'pending'
                               }"
                             ></span>
-                            
+
                           </div>
                           <div class="text-sm text-center text-muted-foreground h-[5px]" v-else>
                             Revisão
                           </div>
-                          
+
                           <!-- Para debug - remover depois -->
                           <div v-if="false" class="text-xs">
-                            Phase: {{ phase.phase_number }} | 
-                            Complete: {{ isPhaseComplete(phase) }} | 
+                            Phase: {{ phase.phase_number }} |
+                            Complete: {{ isPhaseComplete(phase) }} |
                             Status: {{ JSON.stringify(phase.progress?.article_status) }} |
                             Blocked: {{ phase.is_blocked }} |
                             Review: {{ phase.is_review }} |
                             Current: {{ isCurrentPhase(phase, props.phases) }}
                           </div>
+
+
                       </Link>
                     </div>
                   </div>
@@ -376,7 +379,7 @@ const getConnectorSpacing = (index: number) => `${index * (windowWidth.value <= 
             </div>
           </div>
         </div>
-        
+
         <!-- Instruções -->
         <div class="mt-12 p-6 bg-muted/50 rounded-lg text-center">
           <h3 class="text-xl font-bold mb-2">Como jogar?</h3>
@@ -419,21 +422,21 @@ const getConnectorSpacing = (index: number) => `${index * (windowWidth.value <= 
   .trail-container {
     max-width: 200px !important; /* Ainda mais estreito no mobile */
   }
-  
+
   .phase-item > div > div {
     width: 52% !important; /* Ligeiramente mais próximo do centro */
   }
-  
+
   .phase-item > div > div a {
     margin-left: 0 !important;
     margin-right: 0 !important;
   }
-  
+
   .phase-circle {
     width: 3.5rem !important;
     height: 3.5rem !important;
   }
-  
+
   .phase-circle svg {
     width: 1.25rem !important;
     height: 1.25rem !important;
@@ -446,8 +449,8 @@ const getConnectorSpacing = (index: number) => `${index * (windowWidth.value <= 
     width: 220px !important;
     transform: none !important;
   }
-  
-  .absolute.top-[50px] {
+
+  .absolute[class*="top-"] {
     left: 0 !important;
     width: 220px !important;
   }

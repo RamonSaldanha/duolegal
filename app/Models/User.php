@@ -5,9 +5,10 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Cashier\Billable;
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, Billable;
 
     /**
      * The attributes that are mass assignable.
@@ -18,7 +19,11 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'lives'
+        'lives',
+        'stripe_id',
+        'pm_type',
+        'pm_last_four',
+        'trial_ends_at'
     ];
 
     /**
@@ -41,6 +46,8 @@ class User extends Authenticatable
         'password' => 'hashed',
         'is_admin' => 'boolean',
         'lives' => 'integer',
+        'has_infinite_lives' => 'boolean',
+        'trial_ends_at' => 'datetime',
     ];
 
     /**
@@ -48,7 +55,22 @@ class User extends Authenticatable
      */
     public function hasLives(): bool
     {
-        return $this->lives > 0;
+        // Adiciona logs para depuração
+        $hasInfiniteLives = $this->hasInfiniteLives();
+        $hasLives = $this->lives > 0;
+
+        \Illuminate\Support\Facades\Log::info('Verificando vidas para usuário ' . $this->id, [
+            'lives' => $this->lives,
+            'hasLives' => $hasLives,
+            'hasInfiniteLives' => $hasInfiniteLives,
+        ]);
+
+        // Se o usuário tem vidas infinitas, sempre retorna true
+        if ($hasInfiniteLives) {
+            return true;
+        }
+
+        return $hasLives;
     }
 
     /**
@@ -56,9 +78,14 @@ class User extends Authenticatable
      */
     public function decrementLife(): void
     {
+        // Se o usuário tem vidas infinitas, não decrementa
+        if ($this->hasInfiniteLives()) {
+            return;
+        }
+
         // Só decrementa se tiver vidas disponíveis
         $this->decrement('lives', $this->lives > 0 ? 1 : 0);
-        
+
         // Garante que lives nunca será menor que 0
         if ($this->lives < 0) {
             $this->lives = 0;
@@ -98,4 +125,44 @@ class User extends Authenticatable
         return $this->belongsToMany(LegalReference::class, 'user_legal_references')
                     ->withTimestamps();
     }
+
+    /**
+     * Verifica se o usuário tem vidas infinitas (baseado apenas na assinatura ativa)
+     */
+    public function hasInfiniteLives(): bool
+    {
+        $hasActiveSubscription = $this->hasActiveSubscription();
+
+        // Adiciona logs para depuração
+        \Illuminate\Support\Facades\Log::info('Verificando vidas infinitas para usuário ' . $this->id, [
+            'hasActiveSubscription' => $hasActiveSubscription,
+        ]);
+
+        return $hasActiveSubscription;
+    }
+
+    /**
+     * Verifica se o usuário tem uma assinatura ativa
+     */
+    public function hasActiveSubscription(): bool
+    {
+        try {
+            // Verifica apenas se o usuário está inscrito no plano default
+            $subscribed = $this->subscribed('default');
+
+            \Illuminate\Support\Facades\Log::info('Verificando assinatura para usuário ' . $this->id, [
+                'subscribed' => $subscribed
+            ]);
+
+            // Retorna apenas se o usuário tem uma assinatura ativa
+            return $subscribed;
+        } catch (\Exception $exception) {
+            // Log do erro para depuração
+            \Illuminate\Support\Facades\Log::warning('Erro ao verificar assinatura: ' . $exception->getMessage());
+            return false;
+        }
+    }
+
+    // Os métodos activateInfiniteLives e deactivateInfiniteLives foram removidos
+    // pois agora as vidas infinitas são baseadas diretamente no status da assinatura
 }

@@ -5,6 +5,7 @@ import Breadcrumbs from '@/components/Breadcrumbs.vue';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { ref } from 'vue';
 import {
     NavigationMenu,
     NavigationMenuItem,
@@ -18,7 +19,7 @@ import UserMenuContent from '@/components/UserMenuContent.vue';
 import { getInitials } from '@/composables/useInitials';
 import type { BreadcrumbItem, NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
-import { BookOpen, Heart, Play, Menu, Lock, Settings2 } from 'lucide-vue-next';
+import { BookOpen, Heart, Play, Menu, Lock, Settings2, Crown } from 'lucide-vue-next';
 import { computed, watch } from 'vue';
 
 interface Props {
@@ -38,11 +39,27 @@ const page = usePage<{
             is_admin: boolean;
             lives: number;
             avatar?: string;
+            has_infinite_lives?: boolean;
+            debug_info?: {
+                has_active_subscription: boolean;
+                on_trial: boolean;
+                subscribed: boolean;
+                trial_ends_at: string | null;
+            };
         } | null;
     };
 }>();
 const auth = computed(() => page.props.auth);
 const isAdmin = computed(() => page.props.auth.user?.is_admin);
+
+// Verifica se o usuário tem uma assinatura ativa (vidas infinitas)
+const hasSubscription = computed(() => {
+    // Verifica se o usuário está logado e tem uma assinatura ativa
+    return !!page.props.auth.user?.has_infinite_lives;
+});
+
+// Variável para controlar a exibição das informações de depuração
+const showDebugInfo = ref(false);
 
 const isCurrentRoute = computed(() => (url: string) => page.url === url);
 
@@ -190,19 +207,67 @@ const rightNavItems: NavItem[] = [
                     <div class="ml-auto flex items-center space-x-4">
                         <!-- Lives Counter -->
                         <div v-if="auth.user?.lives !== undefined" class="flex items-center gap-1">
-                            <Heart 
-                                class="w-5 h-5 transition-transform" 
-                                :class="[
-                                    userLives > 0 ? 'text-red-500' : 'text-gray-400',
-                                    'animate-pulse-once'
-                                ]" 
-                                fill="currentColor" 
-                            />
-                            <span class="font-medium" :class="userLives > 0 ? 'text-red-500' : 'text-gray-400'">
-                                {{ userLives }}
-                            </span>
+                            <div class="flex items-center gap-1">
+                                <!-- Mostrar ícone de coração para usuários normais ou coroa para premium -->
+                                <template v-if="!hasSubscription">
+                                    <Heart
+                                        class="w-5 h-5 transition-transform"
+                                        :class="[
+                                            userLives > 0 ? 'text-red-500' : 'text-gray-400',
+                                            'animate-pulse-once'
+                                        ]"
+                                        fill="currentColor"
+                                    />
+                                </template>
+                                <template v-else>
+                                    <Link :href="route('subscription.index')" class="inline-flex">
+                                        <Crown
+                                            class="w-5 h-5 text-amber-500 animate-pulse-once cursor-pointer hover:text-amber-600 transition-colors"
+                                            fill="currentColor"
+                                        />
+                                    </Link>
+                                </template>
+
+                                <!-- Mostrar número de vidas para usuários normais -->
+                                <span v-if="!hasSubscription" class="font-medium" :class="userLives > 0 ? 'text-red-500' : 'text-gray-400'">
+                                    {{ userLives }}
+                                </span>
+                                <!-- Mostrar símbolo de infinito para usuários premium -->
+                                <span v-else class="font-medium text-amber-500">
+                                    ∞
+                                </span>
+                            </div>
+
+                            <!-- Badge Premium para usuários premium -->
+                            <Link v-if="hasSubscription" :href="route('subscription.index')" class="ml-2">
+                                <div class="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 text-xs font-medium rounded-full hover:bg-amber-200 dark:hover:bg-amber-800/30 transition-colors cursor-pointer">
+                                    Premium
+                                </div>
+                            </Link>
+
+                            <!-- Informações de depuração (apenas para administradores) -->
+                            <div v-if="isAdmin" class="ml-2 text-xs text-gray-500 cursor-pointer" @click="showDebugInfo = !showDebugInfo">
+                                [Debug]
+                            </div>
+                            <div v-if="isAdmin && showDebugInfo" class="absolute top-full right-0 mt-2 p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-50 text-xs">
+                                <div><strong>has_infinite_lives:</strong> {{ auth.user?.has_infinite_lives ? 'true' : 'false' }}</div>
+                                <div v-if="auth.user?.debug_info"><strong>has_active_subscription:</strong> {{ auth.user?.debug_info.has_active_subscription ? 'true' : 'false' }}</div>
+                                <div v-if="auth.user?.debug_info"><strong>on_trial:</strong> {{ auth.user?.debug_info.on_trial ? 'true' : 'false' }}</div>
+                                <div v-if="auth.user?.debug_info"><strong>subscribed:</strong> {{ auth.user?.debug_info.subscribed ? 'true' : 'false' }}</div>
+                                <div v-if="auth.user?.debug_info"><strong>trial_ends_at:</strong> {{ auth.user?.debug_info.trial_ends_at }}</div>
+                            </div>
+
+                            <!-- Botão de assinatura para usuários normais -->
+                            <Link
+                                v-if="!hasSubscription"
+                                :href="route('subscription.index')"
+                                class="ml-2 flex items-center gap-1 text-sm text-amber-500 hover:text-amber-600 font-medium"
+                            >
+                                <Crown class="w-4 h-4" />
+                                <span class="hidden sm:inline">Premium</span>
+                            </Link>
                         </div>
-                                                
+
                         <div class="relative flex items-center space-x-1">
                         <!-- <Button variant="ghost" size="icon" class="group h-9 w-9 cursor-pointer">
                             <Search class="size-5 opacity-80 group-hover:opacity-100" />

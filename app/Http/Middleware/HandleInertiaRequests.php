@@ -46,6 +46,14 @@ class HandleInertiaRequests extends Middleware
                 'user' => $request->user()
                     ? array_merge($request->user()->only('id', 'name', 'email', 'lives'), [
                         'is_admin' => $request->user()->isAdmin(),
+                        'has_infinite_lives' => $request->user()->hasActiveSubscription(),
+                        // Informações de depuração apenas para administradores
+                        'debug_info' => $request->user()->isAdmin() ? [
+                            'has_active_subscription' => $request->user()->hasActiveSubscription(),
+                            'on_trial' => $request->user()->onTrial(),
+                            'subscribed' => $request->user()->subscribed('default'),
+                            'trial_ends_at' => $request->user()->trial_ends_at?->format('Y-m-d H:i:s'),
+                        ] : null,
                     ])
                     : null,
             ],

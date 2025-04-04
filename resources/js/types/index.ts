@@ -31,6 +31,8 @@ export interface User {
     email_verified_at: string | null;
     created_at: string;
     updated_at: string;
+    lives?: number;
+    has_infinite_lives?: boolean;
 }
 
 export type BreadcrumbItemType = BreadcrumbItem;
