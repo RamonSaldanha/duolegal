@@ -56,9 +56,11 @@
                         </div>
                     </div>
                 </div>
-                <div v-else class=" rounded-lg shadow-sm p-6 mb-8 container mx-auto max-w-4xl">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-9">
-                        <div class="flex-1">
+                <div v-else class="rounded-lg shadow-sm p-6 mb-8 container mx-auto max-w-4xl">
+                    <!-- Modificando o grid para dar mais espaço à segunda coluna -->
+                    <div class="grid grid-cols-1 md:grid-cols-5 gap-9">
+                        <!-- Coluna da imagem ocupa 2/5 do espaço em desktop -->
+                        <div class="md:col-span-2">
                             <div class="relative inline-block">
                                 <div class="absolute -top-[45px] md:-top-[45px] md:-right-10 bg-card dark:bg-gray-800 rounded-lg px-3 py-1 shadow-md text-sm font-medium speech-bubble text-foreground">
                                     Não fique mais travado ✅
@@ -70,7 +72,8 @@
                             </div>
                         </div>
 
-                        <div class="flex-1">
+                        <!-- Coluna do formulário ocupa 3/5 do espaço em desktop -->
+                        <div class="md:col-span-3">
                             <div class="mb-4">
                                 <h2 class="text-2xl font-bold dark:text-white">Plano premium</h2>
                                 <div class="text-lg font-bold dark:text-white">R$ 9,90/mês</div>
