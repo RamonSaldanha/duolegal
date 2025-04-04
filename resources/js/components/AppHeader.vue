@@ -14,12 +14,11 @@ import {
     navigationMenuTriggerStyle,
 } from '@/components/ui/navigation-menu';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger,  } from '@/components/ui/sheet';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import UserMenuContent from '@/components/UserMenuContent.vue';
 import { getInitials } from '@/composables/useInitials';
 import type { BreadcrumbItem, NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
-import { BookOpen, Heart, Play, Menu, Lock, Settings2, Crown } from 'lucide-vue-next';
+import { BookOpen, Heart, Play, Menu, Lock, Settings2, Crown, Infinity } from 'lucide-vue-next';
 import { computed, watch } from 'vue';
 
 interface Props {
@@ -221,8 +220,8 @@ const rightNavItems: NavItem[] = [
                                 </template>
                                 <template v-else>
                                     <Link :href="route('subscription.index')" class="inline-flex">
-                                        <Crown
-                                            class="w-5 h-5 text-amber-500 animate-pulse-once cursor-pointer hover:text-amber-600 transition-colors"
+                                        <Heart
+                                            class="w-5 h-5 text-blue-500 animate-pulse-once cursor-pointer hover:text-blue-600 transition-colors"
                                             fill="currentColor"
                                         />
                                     </Link>
@@ -233,14 +232,14 @@ const rightNavItems: NavItem[] = [
                                     {{ userLives }}
                                 </span>
                                 <!-- Mostrar símbolo de infinito para usuários premium -->
-                                <span v-else class="font-medium text-amber-500">
-                                    ∞
+                                <span v-else class="font-medium text-blue-500">
+                                    <Infinity />
                                 </span>
                             </div>
 
                             <!-- Badge Premium para usuários premium -->
                             <Link v-if="hasSubscription" :href="route('subscription.index')" class="ml-2">
-                                <div class="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 text-xs font-medium rounded-full hover:bg-amber-200 dark:hover:bg-amber-800/30 transition-colors cursor-pointer">
+                                <div class="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 text-xs font-medium rounded-full hover:bg-blue-200 dark:hover:bg-blue-800/30 transition-colors cursor-pointer">
                                     Premium
                                 </div>
                             </Link>
@@ -261,7 +260,7 @@ const rightNavItems: NavItem[] = [
                             <Link
                                 v-if="!hasSubscription"
                                 :href="route('subscription.index')"
-                                class="ml-2 flex items-center gap-1 text-sm text-amber-500 hover:text-amber-600 font-medium"
+                                class="ml-2 flex items-center gap-1 text-sm text-blue-500 hover:text-blue-600 font-medium"
                             >
                                 <Crown class="w-4 h-4" />
                                 <span class="hidden sm:inline">Premium</span>

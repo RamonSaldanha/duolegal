@@ -114,9 +114,14 @@ class SubscriptionController extends Controller
                     throw new \Exception('Não foi possível criar um cliente Stripe para o usuário');
                 }
 
+                // Determina o preço com base no status de admin do usuário
+                $priceId = $user->is_admin 
+                    ? 'price_1RABA9JhFrAxy23kClj0jR7u' // PREÇO DE ADMIN
+                    : 'price_1R9xghJhFrAxy23kFqF5gDrD'; // Preço padrão para usuários normais
+
                 // Tenta criar a assinatura usando o Cashier (sem trial)
                 $subscription = $user
-                    ->newSubscription('default', 'price_1R9xghJhFrAxy23kFqF5gDrD')
+                    ->newSubscription('default', $priceId)
                     ->skipTrial() // Garante que não haja período de teste
                     ->create($request->payment_method);
 
