@@ -4,35 +4,35 @@
     <AppLayout>
         <div class="container py-8">
             <div class="max-w-3xl mx-auto">
-                <h1 class="text-3xl font-bold mb-6">Assinatura Premium</h1>
+                <h1 class="text-3xl font-bold mb-6 dark:text-white">Assinatura Premium</h1>
 
-                <div v-if="hasActiveSubscription" class="bg-green-50 border border-green-200 rounded-lg p-6 mb-8">
+                <div v-if="hasActiveSubscription" class="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg p-6 mb-8">
                     <div class="flex items-start">
-                        <CheckCircle class="text-green-500 w-6 h-6 mr-3 mt-1" />
+                        <CheckCircle class="text-green-500 dark:text-green-400 w-6 h-6 mr-3 mt-1" />
                         <div>
-                            <h2 class="text-xl font-semibold text-green-700">Assinatura Ativa</h2>
-                            <p class="text-green-600 mt-1">
+                            <h2 class="text-xl font-semibold text-green-700 dark:text-green-300">Assinatura Ativa</h2>
+                            <p class="text-green-600 dark:text-green-400 mt-1">
                                 Você tem acesso a vidas infinitas! Aproveite para estudar sem limitações.
                             </p>
 
                             <!-- Mostrar data de término se a assinatura foi cancelada -->
-                            <div v-if="props.subscriptionCancelled" class="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-md">
-                                <p class="text-amber-700 font-medium flex items-center">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <div v-if="props.subscriptionCancelled" class="mt-3 p-3 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-md">
+                                <p class="text-amber-700 dark:text-amber-300 font-medium flex items-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-amber-500 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
                                     Sua assinatura foi cancelada
                                 </p>
-                                <p v-if="props.subscriptionEndsAt" class="text-amber-600 mt-1 ml-7">
+                                <p v-if="props.subscriptionEndsAt" class="text-amber-600 dark:text-amber-400 mt-1 ml-7">
                                     Você continuará tendo acesso Premium até <span class="font-bold">{{ props.subscriptionEndsAt }}</span>
                                 </p>
-                                <p v-else class="text-amber-600 mt-1 ml-7">
+                                <p v-else class="text-amber-600 dark:text-amber-400 mt-1 ml-7">
                                     Você continuará tendo acesso Premium até o final do período já pago.
                                 </p>
                             </div>
 
                             <!-- Debug info (apenas para administradores) -->
-                            <div v-if="props.subscriptionCancelled && isAdmin" class="mt-2 text-xs text-gray-500 border-l-2 border-gray-300 pl-2">
+                            <div v-if="props.subscriptionCancelled && isAdmin" class="mt-2 text-xs text-gray-500 dark:text-gray-400 border-l-2 border-gray-300 dark:border-gray-600 pl-2">
                                 <div class="font-semibold">[Debug]</div>
                                 Status: {{ props.subscriptionCancelled ? 'Cancelada' : 'Ativa' }} |
                                 Data de término: {{ props.subscriptionEndsAt || 'Não definida' }}
@@ -44,8 +44,8 @@
                                     type="button"
                                     variant="outline"
                                     :class="{
-                                        'text-red-500 border-red-300 hover:bg-red-50': !props.subscriptionCancelled,
-                                        'text-gray-400 border-gray-300 cursor-not-allowed': props.subscriptionCancelled
+                                        'text-red-500 dark:text-red-400 border-red-300 dark:border-red-700 hover:bg-red-50 dark:hover:bg-red-900/30': !props.subscriptionCancelled,
+                                        'text-gray-400 dark:text-gray-500 border-gray-300 dark:border-gray-700 cursor-not-allowed': props.subscriptionCancelled
                                     }"
                                     @click="cancelSubscription"
                                     :disabled="props.subscriptionCancelled"
@@ -57,34 +57,34 @@
                     </div>
                 </div>
 
-                <div v-else class="bg-white border rounded-lg shadow-sm p-6 mb-8">
+                <div v-else class="bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg shadow-sm p-6 mb-8">
                     <div class="flex flex-col md:flex-row md:items-start gap-6">
                         <div class="flex-1">
-                            <h2 class="text-2xl font-bold mb-4">Vidas Infinitas</h2>
+                            <h2 class="text-2xl font-bold mb-4 dark:text-white">Vidas Infinitas</h2>
                             <ul class="space-y-3 mb-6">
                                 <li class="flex items-start">
-                                    <CheckCircle class="text-green-500 w-5 h-5 mr-2 mt-0.5" />
-                                    <span>Responda a desafios sem se preocupar com vidas</span>
+                                    <CheckCircle class="text-green-500 dark:text-green-400 w-5 h-5 mr-2 mt-0.5" />
+                                    <span class="dark:text-gray-300">Responda a desafios sem se preocupar com vidas</span>
                                 </li>
                                 <li class="flex items-start">
-                                    <CheckCircle class="text-green-500 w-5 h-5 mr-2 mt-0.5" />
-                                    <span>Estude sem interrupções</span>
+                                    <CheckCircle class="text-green-500 dark:text-green-400 w-5 h-5 mr-2 mt-0.5" />
+                                    <span class="dark:text-gray-300">Estude sem interrupções</span>
                                 </li>
                                 <li class="flex items-start">
-                                    <CheckCircle class="text-green-500 w-5 h-5 mr-2 mt-0.5" />
-                                    <span>Aprenda no seu próprio ritmo</span>
+                                    <CheckCircle class="text-green-500 dark:text-green-400 w-5 h-5 mr-2 mt-0.5" />
+                                    <span class="dark:text-gray-300">Aprenda no seu próprio ritmo</span>
                                 </li>
                                 <li class="flex items-start">
-                                    <CheckCircle class="text-green-500 w-5 h-5 mr-2 mt-0.5" />
-                                    <span>Cancele quando quiser</span>
+                                    <CheckCircle class="text-green-500 dark:text-green-400 w-5 h-5 mr-2 mt-0.5" />
+                                    <span class="dark:text-gray-300">Cancele quando quiser</span>
                                 </li>
                             </ul>
-                            <div class="text-lg font-bold mb-4">R$ 9,90/mês</div>
+                            <div class="text-lg font-bold mb-4 dark:text-white">R$ 9,90/mês</div>
                         </div>
 
                         <div class="flex-1">
-                            <h3 class="text-lg font-semibold mb-4">Informações de Pagamento</h3>
-                            <div v-if="cardError" class="bg-red-50 text-red-600 p-3 rounded-md mb-4">
+                            <h3 class="text-lg font-semibold mb-4 dark:text-white">Informações de Pagamento</h3>
+                            <div v-if="cardError" class="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 p-3 rounded-md mb-4">
                                 <div class="flex flex-col">
                                     <p>{{ cardError }}</p>
                                     <button
@@ -96,7 +96,7 @@
                                 </div>
                             </div>
 
-                            <div id="card-element" class="border rounded-md p-3 mb-4"></div>
+                            <div id="card-element" class="border dark:border-gray-700 rounded-md p-3 mb-4 dark:bg-gray-700"></div>
 
                             <Button
                                 type="button"
