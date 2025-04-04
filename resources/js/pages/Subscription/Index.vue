@@ -32,7 +32,7 @@
                             </div>
 
                             <!-- Debug info (apenas para administradores) -->
-                            <div v-if="props.subscriptionCancelled && isAdmin" class="mt-2 text-xs text-gray-500 dark:text-gray-400 border-l-2 border-gray-300 dark:border-gray-600 pl-2">
+                            <div v-if="props.subscriptionCancelled && isAdmin" class="mt-2 text-xs text-dark-500 dark:text-dark-400 border-l-2 border-dark-300 dark:border-dark-600 pl-2">
                                 <div class="font-semibold">[Debug]</div>
                                 Status: {{ props.subscriptionCancelled ? 'Cancelada' : 'Ativa' }} |
                                 Data de término: {{ props.subscriptionEndsAt || 'Não definida' }}
@@ -45,7 +45,7 @@
                                     variant="outline"
                                     :class="{
                                         'text-red-500 dark:text-red-400 border-red-300 dark:border-red-700 hover:bg-red-50 dark:hover:bg-red-900/30': !props.subscriptionCancelled,
-                                        'text-gray-400 dark:text-gray-500 border-gray-300 dark:border-gray-700 cursor-not-allowed': props.subscriptionCancelled
+                                        'text-dark-400 dark:text-dark-500 border-dark-300 dark:border-dark-700 cursor-not-allowed': props.subscriptionCancelled
                                     }"
                                     @click="cancelSubscription"
                                     :disabled="props.subscriptionCancelled"
@@ -56,47 +56,32 @@
                         </div>
                     </div>
                 </div>
-
-                <div v-else class="bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg shadow-sm p-6 mb-8">
-                    <div class="flex flex-col md:flex-row md:items-start gap-6">
+                <div v-else class="border dark:border-dark-900 rounded-lg shadow-sm p-6 mb-8 container mx-auto max-w-4xl">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div class="flex-1">
-                            <h2 class="text-2xl font-bold mb-4 dark:text-white">Vidas Infinitas</h2>
-                            <ul class="space-y-3 mb-6">
-                                <li class="flex items-start">
-                                    <CheckCircle class="text-green-500 dark:text-green-400 w-5 h-5 mr-2 mt-0.5" />
-                                    <span class="dark:text-gray-300">Responda a desafios sem se preocupar com vidas</span>
-                                </li>
-                                <li class="flex items-start">
-                                    <CheckCircle class="text-green-500 dark:text-green-400 w-5 h-5 mr-2 mt-0.5" />
-                                    <span class="dark:text-gray-300">Estude sem interrupções</span>
-                                </li>
-                                <li class="flex items-start">
-                                    <CheckCircle class="text-green-500 dark:text-green-400 w-5 h-5 mr-2 mt-0.5" />
-                                    <span class="dark:text-gray-300">Aprenda no seu próprio ritmo</span>
-                                </li>
-                                <li class="flex items-start">
-                                    <CheckCircle class="text-green-500 dark:text-green-400 w-5 h-5 mr-2 mt-0.5" />
-                                    <span class="dark:text-gray-300">Cancele quando quiser</span>
-                                </li>
-                            </ul>
-                            <div class="text-lg font-bold mb-4 dark:text-white">R$ 9,90/mês</div>
+                            <div class="relative inline-block">
+                                <div class="absolute -top-[45px] md:-top-[45px] md:-right-10 bg-card dark:bg-gray-800 rounded-lg px-3 py-1 shadow-md text-sm font-medium speech-bubble text-foreground">
+                                    Não fique mais travado ✅
+                                </div>
+                                <div class="absolute -top-[10px] -left-[0px] md:-top-[10px] md:-left-[95px] bg-card dark:bg-gray-800 rounded-lg px-3 py-1 shadow-md text-sm font-medium speech-bubble text-foreground">
+                                    Com o Premium, você estuda sem limites! ✅
+                                </div>
+                                <img src="/img/bicho-preguica-de-terno.png" class="w-56 mt-8 md:mt-3" />
+                            </div>
                         </div>
 
                         <div class="flex-1">
-                            <h3 class="text-lg font-semibold mb-4 dark:text-white">Informações de Pagamento</h3>
+                            <div class="mb-4">
+                                <h2 class="text-2xl font-bold dark:text-white">Plano premium</h2>
+                                <div class="text-lg font-bold dark:text-white">R$ 9,90/mês</div>
+                            </div>
                             <div v-if="cardError" class="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 p-3 rounded-md mb-4">
                                 <div class="flex flex-col">
                                     <p>{{ cardError }}</p>
-                                    <button
-                                        class="mt-2 px-4 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 transition-colors self-start"
-                                        @click="window.location.reload()"
-                                    >
-                                        Recarregar Página
-                                    </button>
                                 </div>
                             </div>
 
-                            <div id="card-element" class="border dark:border-gray-700 rounded-md p-3 mb-4 dark:bg-gray-700"></div>
+                            <div id="card-element" class="border dark:border-dark-700 rounded-md p-3 mb-4 dark:bg-dark-700"></div>
 
                             <Button
                                 type="button"
@@ -214,8 +199,30 @@ const loadStripe = async () => {
         stripe.value = Stripe(stripeKey);
         console.log('Stripe.js carregado com sucesso');
 
-        // Cria os elementos do Stripe
-        elements.value = stripe.value.elements();
+        // Verificar se está no modo dark
+        const isDarkMode = document.documentElement.classList.contains('dark');
+        console.log('Modo dark detectado:', isDarkMode);
+
+        // Cria os elementos do Stripe com estilo customizado para o modo dark
+        elements.value = stripe.value.elements({
+            appearance: {
+                theme: isDarkMode ? 'night' : 'stripe',
+                variables: {
+                    colorText: isDarkMode ? '#e2e8f0' : '#334155', // slate-200 no dark mode, slate-700 no light mode
+                },
+                rules: {
+                    '.Input': {
+                        color: isDarkMode ? '#e2e8f0' : '#334155', // slate-200 no dark mode, slate-700 no light mode
+                    },
+                    '.Label': {
+                        color: isDarkMode ? '#e2e8f0' : '#334155', // slate-200 no dark mode, slate-700 no light mode
+                    },
+                    '.Error': {
+                        color: '#ef4444', // red-500
+                    }
+                }
+            }
+        });
 
         // Cria o elemento de cartão com configurações mínimas
         cardElement.value = elements.value.create('card');
@@ -226,6 +233,9 @@ const loadStripe = async () => {
             throw new Error('Elemento #card-element não encontrado no DOM');
         }
 
+        // Aplicar estilos diretamente ao container para garantir consistência visual
+
+
         cardElement.value.mount('#card-element');
         console.log('Elemento de cartão montado com sucesso');
 
@@ -234,6 +244,22 @@ const loadStripe = async () => {
             console.log('Evento de mudança do cartão:', event);
             cardError.value = event.error ? event.error.message : null;
         });
+
+        // Adicionar um observer para mudanças no tema (dark/light)
+        const darkModeObserver = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.attributeName === 'class' && document.documentElement.classList.contains('dark') !== isDarkMode) {
+                    // O modo dark mudou, recarregar o elemento Stripe
+                    console.log('Tema mudou, recarregando elemento do Stripe...');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 100);
+                }
+            });
+        });
+        
+        darkModeObserver.observe(document.documentElement, { attributes: true });
+        
     } catch (error) {
         console.error('Erro ao carregar Stripe:', error);
         cardError.value = 'Erro ao carregar o formulário de pagamento: ' + (error instanceof Error ? error.message : 'Erro desconhecido');
@@ -244,7 +270,7 @@ const loadStripe = async () => {
             if (cardElementContainer) {
                 cardElementContainer.innerHTML = `
                     <div class="p-4 text-center">
-                        <p class="text-red-500 mb-4">${cardError.value}</p>
+                        <p class="text-red-500 dark:text-red-400 mb-4">${cardError.value}</p>
                         <button
                             class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
                             onclick="window.location.reload()"
@@ -386,3 +412,16 @@ const cancelSubscription = () => {
     }
 };
 </script>
+
+<!-- Adicione estilos específicos para o modo escuro do Stripe -->
+<style>
+/* Estilo global para ajudar a personalizar o iframe do Stripe no modo dark */
+:root.dark .StripeElement iframe {
+  filter: invert(0.85) hue-rotate(180deg) !important;
+}
+
+/* Evitar que os cartões mostrados no iframe fiquem invertidos no modo dark */
+:root.dark .StripeElement [data-stripe-type="card-preview"] iframe {
+  filter: invert(0) hue-rotate(0deg) !important;
+}
+</style>

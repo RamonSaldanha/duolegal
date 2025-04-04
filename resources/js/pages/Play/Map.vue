@@ -450,9 +450,5 @@ const getConnectorSpacing = (index: number) => `${index * (windowWidth.value <= 
     transform: none !important;
   }
 
-  .absolute[class*="top-"] {
-    left: 0 !important;
-    width: 220px !important;
-  }
 }
 </style>
