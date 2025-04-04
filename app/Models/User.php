@@ -59,12 +59,6 @@ class User extends Authenticatable
         $hasInfiniteLives = $this->hasInfiniteLives();
         $hasLives = $this->lives > 0;
 
-        \Illuminate\Support\Facades\Log::info('Verificando vidas para usuário ' . $this->id, [
-            'lives' => $this->lives,
-            'hasLives' => $hasLives,
-            'hasInfiniteLives' => $hasInfiniteLives,
-        ]);
-
         // Se o usuário tem vidas infinitas, sempre retorna true
         if ($hasInfiniteLives) {
             return true;
@@ -133,11 +127,6 @@ class User extends Authenticatable
     {
         $hasActiveSubscription = $this->hasActiveSubscription();
 
-        // Adiciona logs para depuração
-        \Illuminate\Support\Facades\Log::info('Verificando vidas infinitas para usuário ' . $this->id, [
-            'hasActiveSubscription' => $hasActiveSubscription,
-        ]);
-
         return $hasActiveSubscription;
     }
 
@@ -149,11 +138,6 @@ class User extends Authenticatable
         try {
             // Verifica apenas se o usuário está inscrito no plano default
             $subscribed = $this->subscribed('default');
-
-            \Illuminate\Support\Facades\Log::info('Verificando assinatura para usuário ' . $this->id, [
-                'subscribed' => $subscribed
-            ]);
-
             // Retorna apenas se o usuário tem uma assinatura ativa
             return $subscribed;
         } catch (\Exception $exception) {
