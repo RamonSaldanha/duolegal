@@ -3,8 +3,8 @@
 
     <AppLayout>
         <div class="container py-8">
-            <div class="max-w-3xl mx-auto">
-                <h1 class="text-3xl font-bold mb-6 dark:text-white">Assinatura Premium</h1>
+            <div class="max-w-3xl mx-auto mt-8">
+                <!-- <h1 class="text-3xl font-bold mb-6 dark:text-white">Assinatura Premium</h1> -->
 
                 <div v-if="hasActiveSubscription" class="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg p-6 mb-8">
                     <div class="flex items-start">
@@ -56,8 +56,8 @@
                         </div>
                     </div>
                 </div>
-                <div v-else class="border dark:border-dark-900 rounded-lg shadow-sm p-6 mb-8 container mx-auto max-w-4xl">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div v-else class=" rounded-lg shadow-sm p-6 mb-8 container mx-auto max-w-4xl">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-9">
                         <div class="flex-1">
                             <div class="relative inline-block">
                                 <div class="absolute -top-[45px] md:-top-[45px] md:-right-10 bg-card dark:bg-gray-800 rounded-lg px-3 py-1 shadow-md text-sm font-medium speech-bubble text-foreground">
@@ -66,7 +66,7 @@
                                 <div class="absolute -top-[10px] -left-[0px] md:-top-[10px] md:-left-[95px] bg-card dark:bg-gray-800 rounded-lg px-3 py-1 shadow-md text-sm font-medium speech-bubble text-foreground">
                                     Com o Premium, você estuda sem limites! ✅
                                 </div>
-                                <img src="/img/superarara.png" class="w-56 mt-6 md:mt-1" />
+                                <img src="/img/superararaazul.png" class="w-56 mt-6 md:mt-1" />
                             </div>
                         </div>
 
