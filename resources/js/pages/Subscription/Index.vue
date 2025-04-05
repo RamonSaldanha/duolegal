@@ -52,21 +52,21 @@
                     </div>
                 </div>
                 <div v-else class=" rounded-lg shadow-sm py-6 px-0 md:p-6 mb-8 container md:mx-auto md:max-w-4xl">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-9">
-                        <div class="flex-1">
-                            <div class="relative inline-block">
-                                <div class="absolute -top-[45px] md:-top-[45px] md:-right-10 bg-card dark:bg-gray-800 rounded-lg px-3 py-1 shadow-md text-sm font-medium speech-bubble text-foreground">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-9">
+                        <div class="flex-1 flex justify-center items-center md:block">
+                            <div class="relative inline-block text-center md:text-left">
+                                <div class="absolute -top-[45px] md:-top-[45px] md:-right-10 bg-card dark:border rounded-lg px-3 py-1 shadow-md text-sm font-medium speech-bubble text-foreground">
                                     Não fique mais travado ✅
                                 </div>
-                                <div class="absolute -top-[10px] -left-[0px] md:-top-[10px] md:-left-[95px] bg-card dark:bg-gray-800 rounded-lg px-3 py-1 shadow-md text-sm font-medium speech-bubble text-foreground">
+                                <div class="absolute -top-[10px] -left-[0px] md:-top-[10px] md:-left-[95px] bg-card dark:border rounded-lg px-3 py-1 shadow-md text-sm font-medium speech-bubble text-foreground">
                                     Com o Premium, você estuda sem limites! ✅
                                 </div>
-                                <img src="/img/superararaazul.png" class="w-56 mt-6 md:mt-1" />
+                                <img src="/img/superararaazul.png" class="w-56 mt-6 md:mt-1 mx-auto md:mx-0" />
                             </div>
                         </div>
 
                         <div class="flex-1 w-full md:w-auto min-w-[300px]">
-                            <div class="mb-4">
+                            <div class="mb-4 text-center md:text-left">
                                 <h2 class="text-2xl font-bold dark:text-white">Plano premium</h2>
                                 <div class="text-lg font-bold dark:text-white">R$ 9,90/mês</div>
                             </div>

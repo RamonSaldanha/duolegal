@@ -1,6 +1,6 @@
 <template>
-    <Dialog 
-        :open="showAdDialog" 
+    <Dialog
+        :open="showAdDialog"
         @update:open="handleDialogUpdate"
     >
         <DialogContent class="sm:max-w-[425px] min-h-[400px] flex flex-col bg-background">
@@ -11,12 +11,24 @@
                 </DialogDescription>
             </DialogHeader>
 
-            <div class="flex-1 flex items-center justify-center">
+            <div class="flex-1 flex items-center justify-center flex-col">
+                <!-- Container para o anúncio do AdSense -->
+                <div ref="adContainer" class="w-full mb-4 overflow-hidden min-h-[200px] flex items-center justify-center">
+                    <!-- O anúncio será inserido aqui dinamicamente -->
+                    <ins class="adsbygoogle"
+                         style="display:block; width:100%; height:200px"
+                         data-ad-client="ca-pub-2585274176504938"
+                         data-ad-slot="5997106715"
+                         data-ad-format="auto"
+                         data-adtest="on"
+                         data-full-width-responsive="true"></ins>
+                </div>
+
                 <div class="text-center">
                     <div v-if="countdown > 0" class="text-xl font-bold mb-4">
                         {{ countdown }}s
                     </div>
-                    <Button 
+                    <Button
                         v-if="countdown <= 0"
                         @click="handleAdComplete"
                         class="bg-primary hover:bg-primary/90 text-primary-foreground"
@@ -32,7 +44,7 @@
 <script setup lang="ts">
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
-import { ref, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import axios from 'axios'
 
 // Props
@@ -52,25 +64,72 @@ const emit = defineEmits<{
 const showAdDialog = ref(false)
 const countdown = ref(15)
 let countdownInterval: ReturnType<typeof setInterval> | null = null
+const adContainer = ref<HTMLElement | null>(null)
+let adLoaded = false
+
+// Carrega o script do AdSense
+const loadAdSenseScript = () => {
+    // Verifica se o script já foi carregado
+    if (document.querySelector('script[src*="adsbygoogle.js"]')) {
+        return Promise.resolve();
+    }
+
+    return new Promise<void>((resolve) => {
+        const script = document.createElement('script');
+        script.async = true;
+        script.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2585274176504938';
+        script.crossOrigin = 'anonymous';
+        script.onload = () => resolve();
+        document.head.appendChild(script);
+    });
+};
+
+// Inicializa o anúncio
+const initializeAd = async () => {
+    if (!adLoaded) {
+        try {
+            await nextTick();
+            // Verifica se o objeto adsbygoogle está disponível
+            if (window.adsbygoogle) {
+                (window.adsbygoogle = window.adsbygoogle || []).push({});
+                adLoaded = true;
+                console.log('AdSense ad initialized');
+            } else {
+                console.warn('AdSense not available, continuing without ads');
+                // Marca como carregado mesmo sem o AdSense para não bloquear a funcionalidade
+                adLoaded = true;
+            }
+        } catch (error) {
+            console.error('Error initializing AdSense ad:', error);
+            // Marca como carregado mesmo com erro para não bloquear a funcionalidade
+            adLoaded = true;
+        }
+    }
+};
 
 // Inicia a experiência de anúncio
-const startAdExperience = () => {
+const startAdExperience = async () => {
     showAdDialog.value = true
     startCountdown()
     emit('adStarted')
+
+    // Carrega o anúncio após o diálogo ser aberto
+    await loadAdSenseScript();
+    await nextTick();
+    initializeAd();
 }
 
 // Inicia o contador regressivo
 const startCountdown = () => {
-    countdown.value = 15
-    
+    countdown.value = 30
+
     if (countdownInterval) {
         clearInterval(countdownInterval)
     }
-    
+
     countdownInterval = setInterval(() => {
         countdown.value--
-        
+
         if (countdown.value <= 0 && countdownInterval) {
             clearInterval(countdownInterval)
         }
@@ -85,9 +144,10 @@ const handleDialogUpdate = (isOpen: boolean) => {
             clearInterval(countdownInterval)
             countdownInterval = null
         }
-        
+
         showAdDialog.value = false
         countdown.value = 15
+        adLoaded = false // Reseta o estado do anúncio para carregar um novo na próxima vez
         emit('adClosed')
     } else if (!isOpen && countdown.value > 0) {
         // Se tentar fechar antes da contagem acabar, mantenha aberto
@@ -110,6 +170,14 @@ const handleAdComplete = async () => {
     }
 }
 
+// Carrega o script do AdSense quando o componente for montado
+onMounted(() => {
+    // Pré-carrega o script do AdSense para estar pronto quando o usuário abrir o diálogo
+    loadAdSenseScript().catch(error => {
+        console.error('Failed to load AdSense script:', error)
+    })
+})
+
 // Limpa o intervalo quando o componente for desmontado
 onUnmounted(() => {
     if (countdownInterval) {
@@ -117,6 +185,13 @@ onUnmounted(() => {
         countdownInterval = null
     }
 })
+
+// Declaração para TypeScript reconhecer adsbygoogle
+declare global {
+    interface Window {
+        adsbygoogle: any[];
+    }
+}
 
 // Expor métodos para o componente pai
 defineExpose({
