@@ -275,21 +275,13 @@ const rightNavItems: NavItem[] = [
 
                         <div class="hidden space-x-1 lg:flex">
                             <template v-for="item in rightNavItems" :key="item.title">
-                                <TooltipProvider :delay-duration="0">
-                                    <Tooltip>
-                                        <TooltipTrigger>
-                                            <Button variant="ghost" size="icon" as-child class="group h-9 w-9 cursor-pointer">
-                                                <a :href="item.href" target="_blank" rel="noopener noreferrer">
-                                                    <span class="sr-only">{{ item.title }}</span>
-                                                    <component :is="item.icon" class="size-5 opacity-80 group-hover:opacity-100" />
-                                                </a>
-                                            </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                            <p>{{ item.title }}</p>
-                                        </TooltipContent>
-                                    </Tooltip>
-                                </TooltipProvider>
+                                <!-- Substituindo o Tooltip por um botão simples -->
+                                <Button variant="ghost" size="icon" as-child class="group h-9 w-9 cursor-pointer">
+                                    <a :href="item.href" target="_blank" rel="noopener noreferrer">
+                                        <span class="sr-only">{{ item.title }}</span>
+                                        <component :is="item.icon" class="size-5 opacity-80 group-hover:opacity-100" />
+                                    </a>
+                                </Button>
                             </template>
                         </div>
                     </div>

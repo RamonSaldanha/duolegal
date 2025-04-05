@@ -3,9 +3,7 @@
 
     <AppLayout>
         <div class="container py-8">
-            <div class="max-w-3xl mx-auto mt-8">
-                <!-- <h1 class="text-3xl font-bold mb-6 dark:text-white">Assinatura Premium</h1> -->
-
+            <div class="w-[300px] md:w-full max-w-3xl mx-auto mt-8">
                 <div v-if="hasActiveSubscription" class="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg p-6 mb-8">
                     <div class="flex items-start">
                         <CheckCircle class="text-green-500 dark:text-green-400 w-6 h-6 mr-3 mt-1" />
@@ -15,7 +13,6 @@
                                 Você tem acesso a vidas infinitas! Aproveite para estudar sem limitações.
                             </p>
 
-                            <!-- Mostrar data de término se a assinatura foi cancelada -->
                             <div v-if="props.subscriptionCancelled" class="mt-3 p-3 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-md">
                                 <p class="text-amber-700 dark:text-amber-300 font-medium flex items-center">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-amber-500 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -31,7 +28,6 @@
                                 </p>
                             </div>
 
-                            <!-- Debug info (apenas para administradores) -->
                             <div v-if="props.subscriptionCancelled && isAdmin" class="mt-2 text-xs text-dark-500 dark:text-dark-400 border-l-2 border-dark-300 dark:border-dark-600 pl-2">
                                 <div class="font-semibold">[Debug]</div>
                                 Status: {{ props.subscriptionCancelled ? 'Cancelada' : 'Ativa' }} |
@@ -39,7 +35,6 @@
                             </div>
 
                             <div class="mt-4">
-                                <!-- Botão de cancelar assinatura (desativado se já estiver cancelada) -->
                                 <Button
                                     type="button"
                                     variant="outline"
@@ -56,11 +51,9 @@
                         </div>
                     </div>
                 </div>
-                <div v-else class="rounded-lg shadow-sm p-6 mb-8 container mx-auto md:max-w-4xl">
-                    <!-- Modificando o grid para dar mais espaço à segunda coluna -->
-                    <div class="grid grid-cols-1 md:grid-cols-5 gap-9">
-                        <!-- Coluna da imagem ocupa 2/5 do espaço em desktop -->
-                        <div class="md:col-span-2">
+                <div v-else class=" rounded-lg shadow-sm py-6 px-0 md:p-6 mb-8 container md:mx-auto md:max-w-4xl">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-9">
+                        <div class="flex-1">
                             <div class="relative inline-block">
                                 <div class="absolute -top-[45px] md:-top-[45px] md:-right-10 bg-card dark:bg-gray-800 rounded-lg px-3 py-1 shadow-md text-sm font-medium speech-bubble text-foreground">
                                     Não fique mais travado ✅
@@ -72,8 +65,7 @@
                             </div>
                         </div>
 
-                        <!-- Coluna do formulário ocupa 3/5 do espaço em desktop -->
-                        <div class="md:col-span-3">
+                        <div class="flex-1 w-full md:w-auto min-w-[300px]">
                             <div class="mb-4">
                                 <h2 class="text-2xl font-bold dark:text-white">Plano premium</h2>
                                 <div class="text-lg font-bold dark:text-white">R$ 9,90/mês</div>
@@ -115,7 +107,6 @@ import { Button } from '@/components/ui/button';
 import { CheckCircle, Loader2 } from 'lucide-vue-next';
 import { onMounted, ref, computed } from 'vue';
 
-// Declaração do tipo Stripe para o TypeScript
 declare global {
     interface Window {
         Stripe?: any;
@@ -134,11 +125,8 @@ interface Props {
 const props = defineProps<Props>();
 const page = usePage();
 
-// Verifica se o usuário é administrador
-// Acessa as propriedades de forma segura com verificações
 const isAdmin = computed(() => {
     try {
-        // Acessa as propriedades de forma segura
         const pageProps = page.props as any;
         if (pageProps && pageProps.auth && pageProps.auth.user) {
             return !!pageProps.auth.user.is_admin;
@@ -157,15 +145,12 @@ const cardError = ref<string | null>(null);
 const isProcessing = ref(false);
 
 onMounted(() => {
-    // Carrega o Stripe.js
     if (!props.hasActiveSubscription) {
-        // Verifica se o Stripe já está disponível
         if (typeof window.Stripe !== 'undefined') {
             console.log('Stripe já está disponível, carregando...');
             loadStripe();
         } else {
             console.log('Stripe ainda não está disponível, aguardando carregamento...');
-            // Aguarda o carregamento do Stripe
             const checkStripe = setInterval(() => {
                 if (typeof window.Stripe !== 'undefined') {
                     console.log('Stripe carregado, inicializando...');
@@ -174,7 +159,6 @@ onMounted(() => {
                 }
             }, 100);
 
-            // Timeout após 5 segundos
             setTimeout(() => {
                 clearInterval(checkStripe);
                 if (typeof window.Stripe === 'undefined') {
@@ -189,70 +173,57 @@ onMounted(() => {
 const loadStripe = async () => {
     try {
         console.log('Carregando Stripe.js...');
-        // Obter a chave do Stripe diretamente da variável de ambiente ou usar a chave diretamente
         const stripeKey = import.meta.env.VITE_STRIPE_KEY || 'pk_test_51MbXdpJhFrAxy23koT5CfvObNzBhbm8MzV8Fdm3iFlKkY5spSgCS8M3L2LgKLN9CD2B562DQ1Ubu5iylvzC22Zvf007tmLk05K';
         console.log('Chave do Stripe:', stripeKey.substring(0, 10) + '...');
 
-        // @ts-ignore - Stripe é carregado globalmente
         if (typeof Stripe === 'undefined') {
             throw new Error('Stripe.js não foi carregado. Verifique se o script está sendo carregado corretamente.');
         }
 
-        // Inicializa o Stripe com a chave pública
         stripe.value = Stripe(stripeKey);
         console.log('Stripe.js carregado com sucesso');
 
-        // Verificar se está no modo dark
         const isDarkMode = document.documentElement.classList.contains('dark');
         console.log('Modo dark detectado:', isDarkMode);
 
-        // Cria os elementos do Stripe com estilo customizado para o modo dark
         elements.value = stripe.value.elements({
             appearance: {
                 theme: isDarkMode ? 'night' : 'stripe',
                 variables: {
-                    colorText: isDarkMode ? '#e2e8f0' : '#334155', // slate-200 no dark mode, slate-700 no light mode
+                    colorText: isDarkMode ? '#e2e8f0' : '#334155',
                 },
                 rules: {
                     '.Input': {
-                        color: isDarkMode ? '#e2e8f0' : '#334155', // slate-200 no dark mode, slate-700 no light mode
+                        color: isDarkMode ? '#e2e8f0' : '#334155',
                     },
                     '.Label': {
-                        color: isDarkMode ? '#e2e8f0' : '#334155', // slate-200 no dark mode, slate-700 no light mode
+                        color: isDarkMode ? '#e2e8f0' : '#334155',
                     },
                     '.Error': {
-                        color: '#ef4444', // red-500
+                        color: '#ef4444',
                     }
                 }
             }
         });
 
-        // Cria o elemento de cartão com configurações mínimas
         cardElement.value = elements.value.create('card');
 
-        // Monta o elemento no DOM
         const cardElementContainer = document.getElementById('card-element');
         if (!cardElementContainer) {
             throw new Error('Elemento #card-element não encontrado no DOM');
         }
 
-        // Aplicar estilos diretamente ao container para garantir consistência visual
-
-
         cardElement.value.mount('#card-element');
         console.log('Elemento de cartão montado com sucesso');
 
-        // Adiciona listener para erros
         cardElement.value.on('change', (event: any) => {
             console.log('Evento de mudança do cartão:', event);
             cardError.value = event.error ? event.error.message : null;
         });
 
-        // Adicionar um observer para mudanças no tema (dark/light)
         const darkModeObserver = new MutationObserver((mutations) => {
             mutations.forEach((mutation) => {
                 if (mutation.attributeName === 'class' && document.documentElement.classList.contains('dark') !== isDarkMode) {
-                    // O modo dark mudou, recarregar o elemento Stripe
                     console.log('Tema mudou, recarregando elemento do Stripe...');
                     setTimeout(() => {
                         window.location.reload();
@@ -267,7 +238,6 @@ const loadStripe = async () => {
         console.error('Erro ao carregar Stripe:', error);
         cardError.value = 'Erro ao carregar o formulário de pagamento: ' + (error instanceof Error ? error.message : 'Erro desconhecido');
 
-        // Adiciona um botão para recarregar a página
         setTimeout(() => {
             const cardElementContainer = document.getElementById('card-element');
             if (cardElementContainer) {
@@ -294,22 +264,19 @@ const subscribe = async () => {
     cardError.value = null;
 
     try {
-        // Verifica se o Stripe e o elemento do cartão foram inicializados corretamente
         if (!stripe.value || !cardElement.value) {
             cardError.value = 'Erro ao carregar o formulário de pagamento. Por favor, recarregue a página.';
             isProcessing.value = false;
             return;
         }
 
-        console.log('Criando payment method...'); // Log para depuração
+        console.log('Criando payment method...');
 
-        // Cria um payment method com o cartão
         const { paymentMethod, error } = await stripe.value.createPaymentMethod({
             type: 'card',
             card: cardElement.value,
         });
 
-        // Se houver um erro, exibe a mensagem e retorna
         if (error) {
             console.error('Erro ao criar payment method:', error);
             cardError.value = error.message;
@@ -317,7 +284,6 @@ const subscribe = async () => {
             return;
         }
 
-        // Se não houver payment method, exibe um erro genérico
         if (!paymentMethod || !paymentMethod.id) {
             console.error('Payment method não foi criado corretamente');
             cardError.value = 'Ocorreu um erro ao processar o cartão. Por favor, tente novamente.';
@@ -325,12 +291,10 @@ const subscribe = async () => {
             return;
         }
 
-        // Define o payment_method no formulário
         form.payment_method = paymentMethod.id;
 
-        console.log('Payment Method ID:', paymentMethod.id); // Log para depuração
+        console.log('Payment Method ID:', paymentMethod.id);
 
-        // Envia o payment method para o servidor
         console.log('Enviando payment method para o servidor:', form.payment_method);
 
         try {
@@ -339,12 +303,11 @@ const subscribe = async () => {
                 onSuccess: (response) => {
                     console.log('Assinatura realizada com sucesso:', response);
                     isProcessing.value = false;
-                    // Redireciona para a página de sucesso ou atualiza a página
                     window.location.reload();
                 },
                 onError: (errors) => {
                     isProcessing.value = false;
-                    console.error('Erro na assinatura:', errors); // Log para depuração
+                    console.error('Erro na assinatura:', errors);
 
                     if (errors.message) {
                         cardError.value = errors.message;
@@ -372,7 +335,6 @@ const form = useForm({
 });
 
 const cancelSubscription = () => {
-    // Verifica se a assinatura já está cancelada
     if (props.subscriptionCancelled) {
         console.log('Assinatura já está cancelada');
         return;
@@ -384,21 +346,17 @@ const cancelSubscription = () => {
         console.log('Usuário confirmou o cancelamento');
 
         try {
-            // Criar um novo formulário para o cancelamento
             const cancelForm = useForm({});
             console.log('Formulário criado:', cancelForm);
 
-            // Verificar se a rota existe
             const cancelRoute = route('subscription.cancel');
             console.log('Rota de cancelamento:', cancelRoute);
 
-            // Enviar a solicitação de cancelamento
             console.log('Enviando solicitação de cancelamento...');
             cancelForm.post(cancelRoute, {
                 preserveScroll: true,
                 onSuccess: (response) => {
                     console.log('Cancelamento bem-sucedido:', response);
-                    // Recarregar a página após o cancelamento bem-sucedido
                     window.location.reload();
                 },
                 onError: (errors) => {
@@ -416,14 +374,11 @@ const cancelSubscription = () => {
 };
 </script>
 
-<!-- Adicione estilos específicos para o modo escuro do Stripe -->
 <style>
-/* Estilo global para ajudar a personalizar o iframe do Stripe no modo dark */
 :root.dark .StripeElement iframe {
   filter: invert(0.85) hue-rotate(180deg) !important;
 }
 
-/* Evitar que os cartões mostrados no iframe fiquem invertidos no modo dark */
 :root.dark .StripeElement [data-stripe-type="card-preview"] iframe {
   filter: invert(0) hue-rotate(0deg) !important;
 }

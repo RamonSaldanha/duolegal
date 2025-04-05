@@ -7,7 +7,7 @@
             <div v-if="isPremium" class="max-w-lg mx-auto text-center">
                 <div class="mb-6 flex justify-center">
                     <div class="w-60 h-60 flex items-center justify-center">
-                        <Crown class="w-32 h-32 text-blue-500" />
+                        <Gem class="w-32 h-32 text-blue-500" />
                     </div>
                 </div>
                 <h1 class="text-4xl font-bold mb-4">Você é um assinante Premium!</h1>
