@@ -9,10 +9,6 @@
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />
 
-        <!-- Google AdSense -->
-        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2585274176504938"
-            crossorigin="anonymous"></script>
-
         <!-- Stripe.js - Carregado antes de qualquer outro script -->
         <script src="https://js.stripe.com/v3/" id="stripe-js"></script>
         <script>
@@ -33,6 +29,9 @@
                 }
             });
         </script>
+
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2585274176504938"
+        crossorigin="anonymous"></script>
 
         @routes
         @vite(['resources/js/app.ts'])

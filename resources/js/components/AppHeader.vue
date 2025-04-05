@@ -18,7 +18,7 @@ import UserMenuContent from '@/components/UserMenuContent.vue';
 import { getInitials } from '@/composables/useInitials';
 import type { BreadcrumbItem, NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
-import { BookOpen, Heart, Play, Menu, Lock, Settings2, Crown, Infinity } from 'lucide-vue-next';
+import { BookOpen, Heart, Play, Menu, Lock, Settings2, Gem, Infinity, Bug } from 'lucide-vue-next';
 import { computed, watch } from 'vue';
 
 interface Props {
@@ -233,21 +233,22 @@ const rightNavItems: NavItem[] = [
                                 </span>
                                 <!-- Mostrar símbolo de infinito para usuários premium -->
                                 <span v-else class="font-medium text-blue-500">
-                                    <Infinity />
+                                    <Infinity class="w-5 h-5" />
                                 </span>
                             </div>
 
                             <!-- Badge Premium para usuários premium -->
-                            <Link v-if="hasSubscription" :href="route('subscription.index')" class="ml-2">
+                            <!-- <Link v-if="hasSubscription" :href="route('subscription.index')" class="ml-2">
                                 <div class="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 text-xs font-medium rounded-full hover:bg-blue-200 dark:hover:bg-blue-800/30 transition-colors cursor-pointer">
                                     Premium
                                 </div>
-                            </Link>
+                            </Link> -->
 
                             <!-- Informações de depuração (apenas para administradores) -->
-                            <div v-if="isAdmin" class="ml-2 text-xs text-gray-500 cursor-pointer" @click="showDebugInfo = !showDebugInfo">
-                                [Debug]
+                            <div v-if="isAdmin" class="ml-2 font-medium text-gray-500 cursor-pointer" @click="showDebugInfo = !showDebugInfo">
+                                <Bug class="w-5 h-5" />
                             </div>
+
                             <div v-if="isAdmin && showDebugInfo" class="absolute top-full right-0 mt-2 p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-50 text-xs">
                                 <div><strong>has_infinite_lives:</strong> {{ auth.user?.has_infinite_lives ? 'true' : 'false' }}</div>
                                 <div v-if="auth.user?.debug_info"><strong>has_active_subscription:</strong> {{ auth.user?.debug_info.has_active_subscription ? 'true' : 'false' }}</div>
@@ -262,7 +263,7 @@ const rightNavItems: NavItem[] = [
                                 :href="route('subscription.index')"
                                 class="ml-2 flex items-center gap-1 text-sm text-blue-500 hover:text-blue-600 font-medium"
                             >
-                                <Crown class="w-4 h-4" />
+                                <Gem class="w-5" />
                                 <span class="hidden sm:inline">Premium</span>
                             </Link>
                         </div>

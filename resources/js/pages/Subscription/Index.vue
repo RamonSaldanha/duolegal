@@ -56,7 +56,7 @@
                         </div>
                     </div>
                 </div>
-                <div v-else class="rounded-lg shadow-sm p-6 mb-8 container mx-auto max-w-4xl">
+                <div v-else class="rounded-lg shadow-sm p-6 mb-8 container mx-auto md:max-w-4xl">
                     <!-- Modificando o grid para dar mais espaço à segunda coluna -->
                     <div class="grid grid-cols-1 md:grid-cols-5 gap-9">
                         <!-- Coluna da imagem ocupa 2/5 do espaço em desktop -->
