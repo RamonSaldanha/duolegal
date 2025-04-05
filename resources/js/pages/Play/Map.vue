@@ -321,8 +321,8 @@ const getConnectorSpacing = (index: number) => `${index * (windowWidth.value <= 
                                   'w-16 h-16 rounded-full flex items-center justify-center phase-circle',
                                   phase.is_review && phase.is_blocked ? 'bg-purple-400' : // Revisão bloqueada
                                   phase.is_review ? 'bg-purple-500' : // Revisão não bloqueada
-                                  phase.is_blocked ? 'left-4 bg-gray-400' : // caso seja 7 desafios por fase adicionar left 4
-                                  isPhaseComplete(phase) ? 'left-4 bg-green-500' : // Fase completa
+                                  phase.is_blocked ? 'left-3 bg-gray-400' : // caso seja 7 desafios por fase adicionar left 3
+                                  isPhaseComplete(phase) ? 'left-3 bg-green-500' : // Fase completa
                                   isCurrentPhase(phase, props.phases) ? 'bg-blue-500' : // Fase atual
                                   'bg-gray-400' // Padrão: cinza
                               ]"
