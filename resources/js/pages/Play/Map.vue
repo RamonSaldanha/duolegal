@@ -318,11 +318,11 @@ const getConnectorSpacing = (index: number) => `${index * (windowWidth.value <= 
                           <!-- Bolinha da fase -->
                           <div
                               :class="[
-                                  'left-2 w-16 h-16 rounded-full flex items-center justify-center phase-circle',
-                                  phase.is_review && phase.is_blocked ? '-left-0 bg-purple-400' : // Revisão bloqueada
-                                  phase.is_review ? '-left-0bg-purple-500' : // Revisão não bloqueada
-                                  phase.is_blocked ? 'bg-gray-400' : // Fase bloqueada
-                                  isPhaseComplete(phase) ? 'bg-green-500' : // Fase completa
+                                  'w-16 h-16 rounded-full flex items-center justify-center phase-circle',
+                                  phase.is_review && phase.is_blocked ? 'bg-purple-400' : // Revisão bloqueada
+                                  phase.is_review ? 'bg-purple-500' : // Revisão não bloqueada
+                                  phase.is_blocked ? 'left-4 bg-gray-400' : // Fase bloqueada
+                                  isPhaseComplete(phase) ? 'left-4 bg-green-500' : // Fase completa
                                   isCurrentPhase(phase, props.phases) ? 'bg-blue-500' : // Fase atual
                                   'bg-gray-400' // Padrão: cinza
                               ]"
