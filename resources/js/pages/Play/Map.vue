@@ -264,24 +264,6 @@ const getConnectorSpacing = (index: number) => `${index * (windowWidth.value <= 
                       fill="none"
                     />
                   </svg>
-
-                  <!-- <svg
-                    :width="getConnectorWidth()"
-                    height="108"
-                    :viewBox="`0 0 ${parseInt(getConnectorWidth())} 108`"
-                    :style="{ height: getConnectorHeight(), width: getConnectorWidth() }"
-                  >
-                    <path
-                      :d="index % 2 === 0
-                        ? `M160,0 Q130,25 ${160-25*Math.sin(0.5)},50 T60,108`
-                        : `M60,0 Q90,25 ${60+25*Math.sin(0.5)},50 T160,108`"
-                      :stroke="isPhaseComplete(referenceData.phases[index]) ? '#3B82F6' : 'currentColor'"
-                      stroke-width="2"
-                      :stroke-opacity="isPhaseComplete(referenceData.phases[index]) ? '0.8' : '0.3'"
-                      stroke-dasharray="6,4"
-                      fill="none"
-                    />
-                  </svg> -->
                 </div>
               </div>
 
@@ -321,10 +303,10 @@ const getConnectorSpacing = (index: number) => `${index * (windowWidth.value <= 
                                   'w-16 h-16 rounded-full flex items-center justify-center phase-circle',
                                   phase.is_review && phase.is_blocked ? 'bg-purple-400' : // Revisão bloqueada
                                   phase.is_review ? 'bg-purple-500' : // Revisão não bloqueada
-                                  phase.is_blocked ? 'left-3 bg-gray-400' : // caso seja 7 desafios por fase adicionar left 3
-                                  isPhaseComplete(phase) ? 'left-3 bg-green-500' : // Fase completa
-                                  isCurrentPhase(phase, props.phases) ? 'bg-blue-500' : // Fase atual
-                                  'bg-gray-400' // Padrão: cinza
+                                  phase.is_blocked ? 'left-[8px] bg-gray-400' : // caso seja 7 desafios por fase adicionar left 3
+                                  isPhaseComplete(phase) ? 'left-[8px] bg-green-500' : // Fase completa
+                                  isCurrentPhase(phase, props.phases) ? 'left-[8px] bg-blue-500' : // Fase atual
+                                  'left-[8px] bg-gray-400' // Padrão: cinza
                               ]"
                           >
                               <component
