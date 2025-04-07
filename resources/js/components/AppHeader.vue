@@ -18,7 +18,7 @@ import UserMenuContent from '@/components/UserMenuContent.vue';
 import { getInitials } from '@/composables/useInitials';
 import type { BreadcrumbItem, NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
-import { BookOpen, Heart, Play, Menu, Lock, Settings2, Gem, Infinity, Bug } from 'lucide-vue-next';
+import { BookOpen, Heart, Play, Menu, Lock, Settings2, Gem, Infinity, Bug, Users } from 'lucide-vue-next';
 import { computed, watch } from 'vue';
 
 interface Props {
@@ -92,6 +92,15 @@ const mainNavItems: NavItem[] = [
                 title: 'Legislações',
                 href: '/admin/legislations',
                 icon: BookOpen,
+            },
+        ]
+        : []),
+    ...(isAdmin.value
+        ? [
+            {
+                title: 'Usuários',
+                href: '/admin/users',
+                icon: Users,
             },
         ]
         : []),

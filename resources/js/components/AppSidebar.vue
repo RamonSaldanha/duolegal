@@ -6,7 +6,7 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, Sid
 import { type NavItem } from '@/types';
 import { computed } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
-import { BookOpen, Folder, LayoutGrid, Lock, Play } from 'lucide-vue-next';
+import { BookOpen, Folder, LayoutGrid, Lock, Play, Users } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
 
 
@@ -36,7 +36,16 @@ const mainNavItems: NavItem[] = [
                 icon: BookOpen,
             },
         ]
-        : []),   
+        : []),
+        ...(isAdmin.value
+        ? [
+            {
+                title: 'Usuários',
+                href: '/admin/users',
+                icon: Users,
+            },
+        ]
+        : []),
 ];
 
 const footerNavItems: NavItem[] = [
