@@ -20,7 +20,6 @@
                          data-ad-client="ca-pub-2585274176504938"
                          data-ad-slot="5997106715"
                          data-ad-format="auto"
-                         data-adtest="on"
                          data-full-width-responsive="true"></ins>
                 </div>
 

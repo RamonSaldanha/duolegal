@@ -193,6 +193,15 @@ const getConnectorWidth = () => windowWidth.value <= 640 ? "235px" : "220px";
 const getConnectorHeight = () => windowWidth.value <= 640 ? "90px" : "100px";
 const getConnectorSpacing = (index: number) => `${index * (windowWidth.value <= 640 ? 90 : 100)}px`;
 
+// Converter o objeto de fases em um array para poder acessar o índice
+const referenceGroups = computed(() => {
+  return Object.entries(phasesByReference.value).map(([uuid, data]) => ({
+    uuid,
+    name: data.name,
+    phases: data.phases
+  }));
+});
+
 </script>
 
 <template>
@@ -218,15 +227,15 @@ const getConnectorSpacing = (index: number) => `${index * (windowWidth.value <= 
         </div>
 
         <!-- Mapa de fases -->
-        <div class="space-y-16">
+        <div class="">
           <div
-            v-for="(referenceData, referenceUuid) in phasesByReference"
-            :key="referenceUuid"
+            v-for="(group, index) in referenceGroups"
+            :key="group.uuid"
             class="relative"
           >
             <div class="flex justify-center mb-4">
               <div class="px-5 py-2 bg-primary/10 rounded">
-                <h2 class="text-lg font-bold">{{ referenceData.name }}</h2>
+                <h2 class="text-lg font-bold">{{ group.name }}</h2>
               </div>
             </div>
 
@@ -234,11 +243,11 @@ const getConnectorSpacing = (index: number) => `${index * (windowWidth.value <= 
             <div class="relative trail-container mx-auto">
              <!-- Linhas diagonais conectoras (geradas dinamicamente) -->
               <div
-                v-for="(phase, index) in referenceData.phases.slice(0, -1)"
-                :key="`connector-${index}`"
+                v-for="(_, phaseIndex) in group.phases.slice(0, -1)"
+                :key="`connector-${phaseIndex}`"
                 class="absolute left-0 w-full -z-10"
                 :style="{
-                  top: getConnectorSpacing(index),
+                  top: getConnectorSpacing(phaseIndex),
                 }"
               >
                 <div class="absolute top-[40px] left-0" :style="{ width: getConnectorWidth(), height: getConnectorHeight() }">
@@ -250,16 +259,16 @@ const getConnectorSpacing = (index: number) => `${index * (windowWidth.value <= 
                   >
                     <!-- Linha tracejada que conecta as bolinhas -->
                     <path
-                      :d="index % 2 === 0
+                      :d="phaseIndex % 2 === 0
                         ? `M160,0 C145,10 130,25 ${160-25*Math.sin(0.5)},50 S80,90 60,108`
                         : `M60,0 C75,10 90,25 ${60+25*Math.sin(0.5)},50 S140,90 160,108`"
-                      :stroke="isPhaseComplete(referenceData.phases[index]) ||
-                              (referenceData.phases[index].is_review && referenceData.phases[index].is_complete) ||
-                              referenceData.phases[index].phase_number <= props.currentPhaseNumber ? '#432818' : 'currentColor'"
+                      :stroke="isPhaseComplete(group.phases[phaseIndex]) ||
+                              (group.phases[phaseIndex].is_review && group.phases[phaseIndex].is_complete) ||
+                              group.phases[phaseIndex].phase_number <= props.currentPhaseNumber ? '#432818' : 'currentColor'"
                       stroke-width="3"
-                      :stroke-opacity="isPhaseComplete(referenceData.phases[index]) ||
-                                      (referenceData.phases[index].is_review && referenceData.phases[index].is_complete) ||
-                                      referenceData.phases[index].phase_number <= props.currentPhaseNumber ? '0.8' : '0.3'"
+                      :stroke-opacity="isPhaseComplete(group.phases[phaseIndex]) ||
+                                      (group.phases[phaseIndex].is_review && group.phases[phaseIndex].is_complete) ||
+                                      group.phases[phaseIndex].phase_number <= props.currentPhaseNumber ? '0.8' : '0.3'"
                       stroke-dasharray="8,6"
                       fill="none"
                     />
@@ -270,7 +279,7 @@ const getConnectorSpacing = (index: number) => `${index * (windowWidth.value <= 
               <!-- Fases aproximadas no centro -->
               <div class="space-y-6">
                 <div
-                  v-for="(phase, index) in referenceData.phases"
+                  v-for="(phase, phaseIndex) in group.phases"
                   :key="`phase-${phase.phase_number}`"
                   class="relative phase-item"
                 >
@@ -278,7 +287,7 @@ const getConnectorSpacing = (index: number) => `${index * (windowWidth.value <= 
                   <div class="flex items-center justify-center">
                     <!-- Fases ligeiramente à direita ou esquerda do centro -->
                     <div
-                      :class="`flex ${index % 2 === 0 ? 'justify-end ml-auto me-[10px]' : 'justify-start mr-auto ms-[10px]'}`"
+                      :class="`flex ${phaseIndex % 2 === 0 ? 'justify-end ml-auto me-[10px]' : 'justify-start mr-auto ms-[10px]'}`"
                       style="width: 55%;"
                     >
                       <Link
@@ -295,7 +304,7 @@ const getConnectorSpacing = (index: number) => `${index * (windowWidth.value <= 
                               : (phase.is_review || ((props.user.lives > 0 || props.user.has_infinite_lives) && isCurrentPhase(phase, props.phases)))
                                   ? 'hover:scale-110'
                                   : 'cursor-not-allowed'"
-                          :style="`margin-${index % 2 === 0 ? 'right' : 'left'}: -5px;`"
+                          :style="`margin-${phaseIndex % 2 === 0 ? 'right' : 'left'}: -5px;`"
                       >
                           <!-- Bolinha da fase -->
                           <div
@@ -357,6 +366,25 @@ const getConnectorSpacing = (index: number) => `${index * (windowWidth.value <= 
                     </div>
                   </div>
                 </div>
+              </div>
+            </div>
+
+            <!-- Conector entre grupos (exceto para o último grupo) -->
+            <div v-if="index < referenceGroups.length - 1" class="relative mx-auto mt-0 mb-0 group-connector" style="height: 100px; max-width: 220px;">
+              <div class="absolute w-full h-full -z-10">
+                <svg width="220" height="100" viewBox="0 0 220 100">
+                  <!-- Linha tracejada que conecta o último círculo ao próximo grupo -->
+                  <path
+                    :d="(group.phases.length - 1) % 2 === 0
+                         ? `M160,0 C145,10 130,25 ${160-25*Math.sin(0.5)},50 S80,90 60,108`
+                        : `M60,0 C75,10 90,25 ${60+25*Math.sin(0.5)},50 S140,90 160,108`"
+                    stroke="#432818"
+                    stroke-width="3"
+                    stroke-opacity="0.8"
+                    stroke-dasharray="8,6"
+                    fill="none"
+                  />
+                </svg>
               </div>
             </div>
           </div>
@@ -432,5 +460,13 @@ const getConnectorSpacing = (index: number) => `${index * (windowWidth.value <= 
     transform: none !important;
   }
 
+  /* Ajustes para o conector entre grupos no mobile */
+  .group-connector {
+    height: 25px !important;
+  }
+
+  .group-connector svg {
+    height: 25px !important;
+  }
 }
 </style>
