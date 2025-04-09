@@ -291,7 +291,7 @@ const referenceGroups = computed(() => {
                       style="width: 55%;"
                     >
                       <Link
-                          :href="phase.is_blocked
+                          :href="phase.is_blocked && !isCurrentPhase(phase, props.phases)
                               ? '#'
                               : (phase.is_review
                                   ? route('play.review', [phase.reference_uuid, phase.phase_number])
@@ -299,7 +299,7 @@ const referenceGroups = computed(() => {
                                       ? route('play.phase', [phase.reference_uuid, phase.phase_number])
                                       : '#')"
                           class="relative group transition-transform duration-300"
-                          :class="phase.is_blocked
+                          :class="phase.is_blocked && !isCurrentPhase(phase, props.phases)
                               ? 'cursor-not-allowed'
                               : (phase.is_review || ((props.user.lives > 0 || props.user.has_infinite_lives) && isCurrentPhase(phase, props.phases)))
                                   ? 'hover:scale-110'
@@ -312,9 +312,9 @@ const referenceGroups = computed(() => {
                                   'w-16 h-16 rounded-full flex items-center justify-center phase-circle',
                                   phase.is_review && phase.is_blocked ? 'bg-purple-400' : // Revisão bloqueada
                                   phase.is_review ? 'bg-purple-500' : // Revisão não bloqueada
-                                  phase.is_blocked ? 'left-[8px] bg-gray-400' : // caso seja 7 desafios por fase adicionar left 3
-                                  isPhaseComplete(phase) ? 'left-[8px] bg-green-500' : // Fase completa
                                   isCurrentPhase(phase, props.phases) ? 'left-[8px] bg-blue-500' : // Fase atual
+                                  phase.is_blocked ? 'left-[8px] bg-gray-400' : // Fase bloqueada (quando não é atual)
+                                  isPhaseComplete(phase) ? 'left-[8px] bg-green-500' : // Fase completa
                                   'left-[8px] bg-gray-400' // Padrão: cinza
                               ]"
                           >
@@ -352,7 +352,7 @@ const referenceGroups = computed(() => {
                           </div>
 
                           <!-- Para debug - remover depois -->
-                          <div v-if="false" class="text-xs">
+                          <div v-if="false" class="text-xs position-absolute -top-20 text-right text-muted-foreground">
                             Phase: {{ phase.phase_number }} |
                             Complete: {{ isPhaseComplete(phase) }} |
                             Status: {{ JSON.stringify(phase.progress?.article_status) }} |
