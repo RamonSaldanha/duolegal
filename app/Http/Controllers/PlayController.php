@@ -70,10 +70,17 @@ class PlayController extends Controller
         $phases = [];
         $phaseCount = 0;
         $isLawBlocked = false;
+        $referenceCurrentPhases = []; // Array para armazenar a fase atual de cada referência
 
         $lastPhaseWasReview = false; // Controle para saber se a última fase adicionada foi revisão
 
         foreach ($legalReferences as $referenceIndex => $reference) {
+            // Calcular a fase atual para esta referência específica
+            $currentPhaseForReference = $this->getCurrentPhaseForReference($userId, $reference);
+            
+            // Armazenar a informação para uso posterior
+            $referenceCurrentPhases[$reference->uuid] = $currentPhaseForReference;
+
             // Verifica se a lei anterior está completa
             if ($referenceIndex > 0) {
                 $previousReference = $legalReferences[$referenceIndex - 1];
@@ -122,6 +129,11 @@ class PlayController extends Controller
                 // bloquear esta fase, a menos que ela já esteja completa
                 $isBlockedAfterReview = $lastPhaseWasReview && $hasIncompleteArticlesInThisReference && !$isPhaseComplete;
                 $isBlocked = $isLawBlocked || $isBlockedAfterReview;
+                
+                // Nunca bloquear a fase atual da referência
+                if ($phaseCount == $currentPhaseForReference) {
+                    $isBlocked = false;
+                }
 
                 $phases[] = [
                     'id' => $phaseCount,
@@ -137,6 +149,7 @@ class PlayController extends Controller
                     'is_blocked' => $isBlocked,
                     'is_review' => false,
                     'chunk_index' => $chunkIndex, // Adiciona o índice do chunk para debug
+                    'reference_current_phase' => $currentPhaseForReference, // Adiciona a fase atual desta referência
                 ];
 
                 $lastPhaseWasReview = false;
@@ -146,6 +159,9 @@ class PlayController extends Controller
                     $phaseCount++;
                     // Fase de revisão não mapeia para nenhum chunk específico
                     $phaseMap[$phaseCount] = 'review';
+                    
+                    // Determinar se a fase de revisão está bloqueada
+                    $isReviewBlocked = ($phaseCount != $currentPhaseForReference) || !$hasIncompleteArticlesInThisReference;
 
                     $phases[] = [
                         'id' => $phaseCount,
@@ -163,8 +179,9 @@ class PlayController extends Controller
                             'percentage' => 0,
                             'article_status' => [] // Array vazio para status de artigos
                         ],
-                        'is_blocked' => ($this->getCurrentPhase() != $phaseCount) || !$hasIncompleteArticlesInThisReference,
+                        'is_blocked' => $isReviewBlocked,
                         'is_review' => true,
+                        'reference_current_phase' => $currentPhaseForReference, // Adiciona a fase atual desta referência
                     ];
                     $lastPhaseWasReview = true;
                 }
@@ -172,15 +189,109 @@ class PlayController extends Controller
                 $chunkIndex++;
             }
         }
-
         return Inertia::render('Play/Map', [
             'phases' => $phases,
             'currentPhaseNumber' => $this->getCurrentPhase(),
+            'referenceCurrentPhases' => $referenceCurrentPhases, // Passa o mapa de fases atuais por referência
             'user' => [
                 'lives' => $user->lives,
                 'has_infinite_lives' => $user->hasInfiniteLives()
             ]
         ]);
+    }
+
+    /**
+     * Calcula a fase atual para uma referência legal específica
+     * 
+     * @param int $userId ID do usuário
+     * @param LegalReference $reference Referência legal
+     * @return int Número da fase atual para esta referência
+     */
+    private function getCurrentPhaseForReference($userId, $reference)
+    {
+        // Buscar os IDs dos artigos da referência
+        $referenceArticleIds = $reference->articles->pluck('id');
+        
+        // Contar o total de artigos na referência
+        $totalArticlesInReference = count($referenceArticleIds);
+        
+        // Obter o progresso detalhado de todos os artigos da referência
+        $articlesProgress = UserProgress::where('user_id', $userId)
+            ->whereIn('law_article_id', $referenceArticleIds)
+            ->get();
+        
+        // Contar artigos completados (com progresso registrado)
+        $completedArticlesCount = $articlesProgress->count();
+        
+        // Verificar se todos os artigos da referência estão completos
+        $allArticlesComplete = ($completedArticlesCount >= $totalArticlesInReference);
+        
+        // Agrupar artigos em fases
+        $chunks = $reference->articles->chunk(self::ARTICLES_PER_PHASE);
+        $totalRegularPhases = count($chunks);
+        
+        // Se todos os artigos estiverem completos, calcula a próxima fase após o último artigo
+        if ($allArticlesComplete) {
+            // Calcula o número total de fases incluindo revisões
+            $totalPhases = $totalRegularPhases;
+            
+            // Adiciona as fases de revisão
+            for ($i = 1; $i <= floor($totalRegularPhases / self::REVIEW_PHASE_INTERVAL); $i++) {
+                $totalPhases++;
+            }
+            
+            // Retorna a próxima fase após a última fase regular ou de revisão
+            return $totalPhases + 1;
+        }
+        
+        // Calcula quantas fases regulares foram completadas para esta referência
+        $regularPhasesCompleted = ceil($completedArticlesCount / self::ARTICLES_PER_PHASE);
+        
+        // Limita o número de fases regulares completadas ao total de fases reais
+        $regularPhasesCompleted = min($regularPhasesCompleted, $totalRegularPhases);
+        
+        // Verifica fase por fase para encontrar a primeira incompleta
+        $actualPhaseNumber = 0;
+        $currentPhaseFound = false;
+        
+        foreach ($chunks as $phaseIndex => $articleChunk) {
+            $phaseNumber = $phaseIndex + 1;
+            $actualPhaseNumber++; // Fase regular
+            
+            $phaseArticleIds = $articleChunk->pluck('id');
+            $phaseCompletedArticles = $articlesProgress->whereIn('law_article_id', $phaseArticleIds)->count();
+            
+            // Verifica se esta fase está incompleta (não respondeu todos os artigos da fase)
+            if ($phaseCompletedArticles < count($phaseArticleIds)) {
+                $currentPhaseFound = true;
+                break;
+            }
+            
+            // Adiciona fase de revisão após cada REVIEW_PHASE_INTERVAL fases regulares
+            if ($phaseNumber % self::REVIEW_PHASE_INTERVAL === 0) {
+                $actualPhaseNumber++; // Fase de revisão
+                
+                // Verifica se há artigos incompletos para revisar nesta referência
+                $hasIncompleteArticles = UserProgress::where('user_id', $userId)
+                    ->whereIn('law_article_id', $referenceArticleIds)
+                    ->where('percentage', '<', 100)
+                    ->exists();
+                
+                // Se há artigos para revisar, a fase atual é esta revisão
+                if ($hasIncompleteArticles) {
+                    $currentPhaseFound = true;
+                    break;
+                }
+            }
+        }
+        
+        // Se não encontrou uma fase incompleta, retorna a próxima fase após a última
+        if (!$currentPhaseFound) {
+            $actualPhaseNumber++;
+        }
+        
+        // A fase atual é pelo menos 1
+        return max(1, $actualPhaseNumber);
     }
 
     private function getCurrentPhase() {
@@ -532,6 +643,9 @@ class PlayController extends Controller
             return $status === 'pending';
         });
 
+        // Verifica se todos os artigos da fase foram completados 
+        $isFullyComplete = count($progressRecords) >= $totalArticles;
+
         $completedCount = $totalArticles - count($pendingArticles);
         $progressPercentage = $totalArticles > 0 ? round((($totalArticles - count($pendingArticles)) / $totalArticles) * 100, 2) : 0;
 
@@ -539,7 +653,8 @@ class PlayController extends Controller
             'completed' => $completedCount,
             'total' => $totalArticles,
             'percentage' => $progressPercentage,
-            'article_status' => array_values($articleStatus) // Converter para array indexado
+            'article_status' => array_values($articleStatus), // Converter para array indexado
+            'is_fully_complete' => $isFullyComplete // Indicador extra para fases com número reduzido de artigos
         ];
     }
 

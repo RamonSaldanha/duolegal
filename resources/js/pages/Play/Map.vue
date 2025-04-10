@@ -16,6 +16,7 @@ interface Progress {
     total: number;
     percentage: number;
     article_status?: string[]; // Novo campo para status de cada artigo
+    is_fully_complete?: boolean; // Novo campo para indicar se a fase está totalmente completa
 }
 
 interface Phase {
@@ -31,6 +32,7 @@ interface Phase {
     is_blocked: boolean;
     is_review?: boolean; // Novo campo para indicar se é uma fase de revisão
     is_complete?: boolean; // Novo campo para indicar se a fase está completa
+    reference_current_phase?: number; // Novo campo indicando a fase atual para esta referência
 }
 
 interface ReferenceGroup {
@@ -46,6 +48,7 @@ const props = defineProps<{
     phases: Phase[];
     user: User;
     currentPhaseNumber: number;
+    referenceCurrentPhases: Record<string, number>; // Mapa de fases atuais por referência
 }>();
 
 // Agrupar fases por referência legal
@@ -84,6 +87,11 @@ const isPhaseComplete = (phase: Phase): boolean => {
     if (!phase.progress || !phase.progress.article_status || phase.progress.article_status.length === 0) {
         return false;
     }
+    
+    // Se o backend informa explicitamente que a fase está totalmente completa
+    if (phase.progress.is_fully_complete) {
+        return true;
+    }
 
     // Verificar se existe algum artigo pendente
     const hasPendingArticle = phase.progress.article_status.some(status => status === 'pending');
@@ -92,44 +100,42 @@ const isPhaseComplete = (phase: Phase): boolean => {
     return !hasPendingArticle;
 };
 
-// Verifica se é a fase atual (primeira fase não totalmente tentada em cada referência)
+// Determina a fase atual com base em prioridades entre as referências
+const determineGlobalCurrentPhase = (phases: Phase[]): Phase | null => {
+    // Primeiro, verifica se há alguma fase marcada como atual pela sua referência e não bloqueada
+    const referenceCurrent = phases
+        .filter(p => !p.is_blocked)
+        .filter(p => p.reference_current_phase && p.phase_number === p.reference_current_phase)
+        .sort((a, b) => a.phase_number - b.phase_number)[0];
+    
+    if (referenceCurrent) {
+        return referenceCurrent;
+    }
+    
+    // Se não, busca a primeira fase não bloqueada e não completa
+    return phases
+        .filter(p => !p.is_blocked)
+        .filter(p => !isPhaseComplete(p) || (p.is_review && !p.is_complete))
+        .sort((a, b) => a.phase_number - b.phase_number)[0] || null;
+};
+
+// Cache da fase atual global
+const globalCurrentPhase = computed(() => determineGlobalCurrentPhase(props.phases));
+
+// Verifica se é a fase atual globalmente no jogo
 const isCurrentPhase = (phase: Phase, phases: Phase[]): boolean => {
-    // Se for uma fase de revisão, tem lógica diferente
-    if (phase.is_review) {
-        // Uma fase de revisão é atual se não estiver bloqueada
-        return !phase.is_blocked;
-    }
-
-    // Se a fase estiver completa, não é a atual
-    if (isPhaseComplete(phase)) {
+    // Uma fase bloqueada nunca é atual
+    if (phase.is_blocked) {
         return false;
     }
-
-    // Encontra a primeira fase não totalmente tentada na mesma referência
-    // Considerando apenas fases regulares (não de revisão)
-    const firstIncompletePhase = phases
-        .filter(p => p.reference_uuid === phase.reference_uuid && !p.is_review)
-        .sort((a, b) => a.phase_number - b.phase_number)
-        .find(p => {
-            // Verifica se há artigos pendentes (não tentados) na fase
-            return p.progress && p.progress.article_status &&
-                p.progress.article_status.some(status => status === 'pending');
-        });
-
-    // Se não encontrou nenhuma fase incompleta, a última fase regular é a atual
-    if (!firstIncompletePhase) {
-        const regularPhasesInReference = phases
-            .filter(p => p.reference_uuid === phase.reference_uuid && !p.is_review)
-            .sort((a, b) => a.phase_number - b.phase_number);
-
-        if (regularPhasesInReference.length > 0) {
-            return phase.phase_number === regularPhasesInReference[regularPhasesInReference.length - 1].phase_number;
-        }
-        return false;
+    
+    // Se a fase atual global já foi determinada, compara diretamente
+    if (globalCurrentPhase.value) {
+        return phase.phase_number === globalCurrentPhase.value.phase_number;
     }
-
-    // É a fase atual se for a primeira fase regular não totalmente tentada
-    return firstIncompletePhase.phase_number === phase.phase_number;
+    
+    // Caso não tenha encontrado nenhuma fase atual global (improvável), usa a lógica antiga
+    return phase.phase_number === props.currentPhaseNumber;
 };
 
 // Obtém o status de cada artigo na fase (acerto, erro, não respondido)
@@ -358,7 +364,8 @@ const referenceGroups = computed(() => {
                             Status: {{ JSON.stringify(phase.progress?.article_status) }} |
                             Blocked: {{ phase.is_blocked }} |
                             Review: {{ phase.is_review }} |
-                            Current: {{ isCurrentPhase(phase, props.phases) }}
+                            Current: {{ isCurrentPhase(phase, props.phases) }} |
+                            RefCurrentPhase: {{ referenceCurrentPhases[phase.reference_uuid] }}
                           </div>
 
 
