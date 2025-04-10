@@ -195,7 +195,9 @@ onUnmounted(() => {
 const getConnectorWidth = () => windowWidth.value <= 640 ? "235px" : "220px";
 const getConnectorHeight = () => windowWidth.value <= 640 ? "90px" : "100px";
 const getConnectorSpacing = (index: number) => `${index * (windowWidth.value <= 640 ? 90 : 100)}px`;
-
+// Adicione esta função computada ao seu componente
+const getGroupConnectorHeight = () => windowWidth.value <= 640 ? "30px" : "100px";
+const getGroupConnectorViewBox = () => windowWidth.value <= 640 ? "0 0 220 30" : "0 0 220 100";
 // Converter o objeto de fases em um array para poder acessar o índice
 const referenceGroups = computed(() => {
   return Object.entries(phasesByReference.value).map(([uuid, data]) => ({
@@ -370,9 +372,9 @@ const referenceGroups = computed(() => {
             </div>
 
             <!-- Conector entre grupos (ajustar lógica de cor/opacidade) -->
-            <div v-if="index < referenceGroups.length - 1" class="relative mx-auto mt-0 mb-0 group-connector" style="height: 100px; max-width: 220px;">
-                <div class="absolute w-full h-full -z-10">
-                  <svg width="220" height="100" viewBox="0 0 220 100">
+            <div v-if="index < referenceGroups.length - 1" class="relative mx-auto mt-0 mb-0 group-connector" :style="`height: ${getGroupConnectorHeight()}; max-width: 220px;`">
+              <div class="absolute w-full h-full -z-10">
+                <svg width="220" :height="getGroupConnectorHeight().replace('px', '')" :viewBox="getGroupConnectorViewBox()">
                     <!-- Cor/opacidade baseada se a *primeira fase do próximo grupo* está bloqueada -->
                     <path
                       :d="(group.phases.length - 1) % 2 === 0
@@ -385,6 +387,7 @@ const referenceGroups = computed(() => {
                       fill="none"
                     />
                   </svg>
+                  
                 </div>
               </div>
 
