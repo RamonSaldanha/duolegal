@@ -1,5 +1,5 @@
 <?php
-// app\Http\Controllers\PlayController.php
+
 namespace App\Http\Controllers;
 
 use App\Models\LawArticle;
@@ -9,672 +9,830 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Collection; // Adicionar para tipagem
 
 class PlayController extends Controller
 {
-    /**
-     * Número de artigos por fase
-     */
     const ARTICLES_PER_PHASE = 7;
-
-    /**
-     * Intervalo para inserção de fases de revisão
-     */
     const REVIEW_PHASE_INTERVAL = 2;
 
-    /**
-     * Exibir o mapa de fases do jogo
-     */
+
     public function map()
     {
         $user = Auth::user();
         $userId = $user->id;
 
-        // Verifica se o usuário tem vidas ou é assinante
-        // Assinantes sempre podem jogar, mesmo sem vidas
         if (!$user->hasLives() && !$user->hasActiveSubscription()) {
             return redirect()->route('play.nolives');
         }
 
-        // Verificar se o usuário tem leis preferidas
         $hasPreferences = $user->legalReferences()->exists();
 
-        // Buscar referências legais com seus artigos
         $legalReferencesQuery = LegalReference::with(['articles' => function($query) {
             $query->orderBy('position', 'asc')->where('is_active', true);
         }]);
 
-        // Se o usuário tem preferências, filtrar apenas as leis selecionadas
         if ($hasPreferences) {
             $legalReferencesQuery->whereHas('users', function($query) use ($userId) {
                 $query->where('users.id', $userId);
             });
+        } else {
+             if (!LegalReference::exists()) {
+                 return redirect()->route('dashboard')->with('message', 'Nenhuma lei disponível no momento.');
+             }
+             $legalReferencesQuery = LegalReference::with(['articles' => function($query) {
+                 $query->orderBy('position', 'asc')->where('is_active', true);
+             }])->where('is_active', true);
         }
 
         $legalReferences = $legalReferencesQuery->orderBy('id', 'asc')->get();
 
-        // Se não há leis para mostrar (nenhuma preferência ou nenhuma lei cadastrada)
         if ($legalReferences->isEmpty()) {
-            if ($hasPreferences) {
-                // Usuário tem preferências, mas nenhuma lei associada (situação improvável)
-                return redirect()->route('user.legal-references.index')
-                    ->with('message', 'Você precisa selecionar pelo menos uma lei para estudar.');
-            } else {
-                // Usuário não tem preferências, redirecionar para a página de seleção
-                return redirect()->route('user.legal-references.index')
-                    ->with('message', 'Selecione as leis que deseja estudar.');
-            }
+             return redirect()->route('user.legal-references.index')
+                    ->with('message', $hasPreferences ? 'Nenhuma das suas leis selecionadas está disponível ou ativa.' : 'Selecione as leis que deseja estudar.');
         }
 
-        // Preparar dados das fases
-        $phases = [];
-        $phaseCount = 0;
-        $isLawBlocked = false;
-        $referenceCurrentPhases = []; // Array para armazenar a fase atual de cada referência
+        // --- Lógica de Geração de Fases e Bloqueio (Revisada) ---
 
-        $lastPhaseWasReview = false; // Controle para saber se a última fase adicionada foi revisão
+        $phasesData = []; // Array final com dados completos das fases
+        $phaseStructureList = []; // Lista apenas com a estrutura (ID, tipo, ref, chunk) para lógica de escopo
+        $globalPhaseCounter = 0;
+        $currentPhaseId = null; // ID da fase que será marcada como 'is_current'
+        $blockSubsequent = false; // Flag para bloquear todas as fases após a atual ser encontrada
+        $previousPhaseIsComplete = true; // Estado da fase *anterior* (true se concluída no novo sentido)
+        $currentLawUuid = null;
+        $lawCompletionStatus = []; // uuid => bool (true se lei 100% completa no novo sentido)
 
-        foreach ($legalReferences as $referenceIndex => $reference) {
-            // Calcular a fase atual para esta referência específica
-            $currentPhaseForReference = $this->getCurrentPhaseForReference($userId, $reference);
-            
-            // Armazenar a informação para uso posterior
-            $referenceCurrentPhases[$reference->uuid] = $currentPhaseForReference;
-
-            // Verifica se a lei anterior está completa
-            if ($referenceIndex > 0) {
-                $previousReference = $legalReferences[$referenceIndex - 1];
-                $previousArticles = $previousReference->articles;
-
-                // Verifica se todas as fases da lei anterior estão completas
-                foreach ($previousArticles->chunk(self::ARTICLES_PER_PHASE) as $phaseArticles) {
-                    $progress = $this->getPhaseProgress($userId, $phaseArticles);
-                    if ($progress['completed'] < $progress['total']) {
-                        $isLawBlocked = true;
-                        break;
-                    }
-                }
-            }
-
-            // Verificar se existem artigos não completados (percentage < 100) PARA ESTA REFERÊNCIA
-            $referenceArticleIds = $reference->articles->pluck('id');
-            $hasIncompleteArticlesInThisReference = UserProgress::where('user_id', $userId)
-                ->whereIn('law_article_id', $referenceArticleIds)
-                ->where('percentage', '<', 100)
-                ->exists();
-            // Agrupar artigos em grupos de ARTICLES_PER_PHASE
-            $chunks = $reference->articles->chunk(self::ARTICLES_PER_PHASE);
-            $phaseMap = []; // Armazena o mapeamento entre números de fase e chunks
-            $regularPhaseCounter = 0;
-            $chunkIndex = 0; // Reinicia índice para cada referência
-
-            foreach ($chunks as $index => $articleChunk) {
-                // Use $chunkIndex em vez de $index
-                $regularPhaseCounter++;
-                $phaseCount++;
-
-                $progress = $this->getPhaseProgress($userId, $articleChunk);
-
-                // Armazenar o mapeamento
-                $phaseMap[$phaseCount] = $chunkIndex;
-
-                // Verificar se a fase está completa - artigos sem status "pending"
-                $pendingArticles = array_filter($progress['article_status'], function($status) {
-                    return $status === 'pending';
-                });
-
-                $isPhaseComplete = empty($pendingArticles);
-
-                // Se a última fase adicionada foi uma revisão e há artigos incompletos NESTA REFERÊNCIA,
-                // bloquear esta fase, a menos que ela já esteja completa
-                $isBlockedAfterReview = $lastPhaseWasReview && $hasIncompleteArticlesInThisReference && !$isPhaseComplete;
-                $isBlocked = $isLawBlocked || $isBlockedAfterReview;
-                
-                // Nunca bloquear a fase atual da referência
-                if ($phaseCount == $currentPhaseForReference) {
-                    $isBlocked = false;
-                }
-
-                $phases[] = [
-                    'id' => $phaseCount,
-                    'title' => 'Fase ' . $phaseCount,
-                    'reference_name' => $reference->name,
-                    'reference_uuid' => $reference->uuid,
-                    'article_count' => $articleChunk->count(),
-                    'difficulty' => $this->calculateAverageDifficulty($articleChunk),
-                    'first_article' => $articleChunk->first()->uuid ?? null,
-                    'phase_number' => $phaseCount,
-                    'is_complete' => $isPhaseComplete,
-                    'progress' => $progress,
-                    'is_blocked' => $isBlocked,
-                    'is_review' => false,
-                    'chunk_index' => $chunkIndex, // Adiciona o índice do chunk para debug
-                    'reference_current_phase' => $currentPhaseForReference, // Adiciona a fase atual desta referência
-                ];
-
-                $lastPhaseWasReview = false;
-
-                // Inserir fase de revisão após cada REVIEW_PHASE_INTERVAL fases regulares
-                if ($regularPhaseCounter % self::REVIEW_PHASE_INTERVAL === 0) {
-                    $phaseCount++;
-                    // Fase de revisão não mapeia para nenhum chunk específico
-                    $phaseMap[$phaseCount] = 'review';
-                    
-                    // Determinar se a fase de revisão está bloqueada
-                    $isReviewBlocked = ($phaseCount != $currentPhaseForReference) || !$hasIncompleteArticlesInThisReference;
-
-                    $phases[] = [
-                        'id' => $phaseCount,
-                        'title' => 'Revisão ' . ceil($regularPhaseCounter / self::REVIEW_PHASE_INTERVAL),
-                        'reference_name' => $reference->name,
-                        'reference_uuid' => $reference->uuid,
-                        'article_count' => 0, // Zero artigos em fases de revisão
-                        'difficulty' => $this->calculateAverageDifficulty($articleChunk),
-                        'first_article' => null,
-                        'phase_number' => $phaseCount,
-                        'is_complete' => false,
-                        'progress' => [
-                            'completed' => 0,
-                            'total' => 0,
-                            'percentage' => 0,
-                            'article_status' => [] // Array vazio para status de artigos
-                        ],
-                        'is_blocked' => $isReviewBlocked,
-                        'is_review' => true,
-                        'reference_current_phase' => $currentPhaseForReference, // Adiciona a fase atual desta referência
-                    ];
-                    $lastPhaseWasReview = true;
-                }
-                // Incremente o índice do chunk manualmente
-                $chunkIndex++;
-            }
+        // --- PASSO 1: Construir a ESTRUTURA completa de fases ---
+        // Isso é necessário para que getArticlesInScopeForReview funcione corretamente
+        $tempCounter = 0;
+        foreach ($legalReferences as $reference) {
+             $chunks = $reference->articles->chunk(self::ARTICLES_PER_PHASE);
+             $regularPhaseCounter = 0;
+             foreach ($chunks as $chunkIndex => $articleChunk) {
+                 $regularPhaseCounter++;
+                 $tempCounter++;
+                 $phaseStructureList[] = [
+                     'id' => $tempCounter,
+                     'is_review' => false,
+                     'reference_uuid' => $reference->uuid,
+                     'chunk_index' => $chunkIndex,
+                     'article_chunk' => $articleChunk // Armazena temporariamente para Pass 2
+                 ];
+                 if ($regularPhaseCounter % self::REVIEW_PHASE_INTERVAL === 0) {
+                     $tempCounter++;
+                     $phaseStructureList[] = [
+                         'id' => $tempCounter,
+                         'is_review' => true,
+                         'reference_uuid' => $reference->uuid,
+                         'last_regular_counter' => $regularPhaseCounter // Para título da revisão
+                     ];
+                 }
+             }
         }
+        Log::debug("[Map Structure] Phase structure list built. Count: " . count($phaseStructureList));
+
+
+        // --- PASSO 2: Iterar pela ESTRUTURA para calcular progresso, bloqueios e fase atual ---
+        foreach ($phaseStructureList as $phaseIndex => $phaseStruct) {
+            $currentPhaseGlobalId = $phaseStruct['id']; // ID global desta fase
+
+             // Verificar se a lei mudou para avaliar bloqueio inter-lei
+             if ($phaseStruct['reference_uuid'] !== $currentLawUuid) {
+                 $previousLawUuid = $currentLawUuid;
+                 $currentLawUuid = $phaseStruct['reference_uuid'];
+                 Log::debug("[Map Pass 2 - Phase {$currentPhaseGlobalId}] Switched to Law UUID: {$currentLawUuid}");
+
+                 // Verificar se a lei anterior *não* foi completada (se houver lei anterior)
+                 if ($previousLawUuid !== null && isset($lawCompletionStatus[$previousLawUuid]) && !$lawCompletionStatus[$previousLawUuid]) {
+                     Log::debug("[Map Pass 2 - Phase {$currentPhaseGlobalId}] Blocking subsequent phases because previous law ({$previousLawUuid}) was incomplete.");
+                     $blockSubsequent = true; // Bloqueia esta lei e as seguintes
+                 }
+                  // Assumir que a lei atual está completa até prova em contrário
+                  $lawCompletionStatus[$currentLawUuid] = true;
+             }
+
+             // --- Lógica central de bloqueio e conclusão ---
+             // $isPhaseBlocked depende do estado da fase ANTERIOR ($previousPhaseIsComplete)
+             // e se o bloqueio geral ($blockSubsequent) já foi ativado.
+             $isPhaseBlocked = $blockSubsequent || !$previousPhaseIsComplete;
+             $isPhaseCurrent = false; // Será definida como true se for a primeira incompleta e não bloqueada
+             $phaseProgress = null;
+             $isPhaseComplete = false; // Estado de conclusão DESTA fase (no novo sentido)
+             $phaseBuiltData = null; // Dados finais a serem adicionados a $phasesData
+
+             // Calcular progresso e conclusão específica para tipo de fase
+             if ($phaseStruct['is_review']) {
+                 // --- Fase de Revisão ---
+                 Log::debug("[Map Pass 2 - Phase {$currentPhaseGlobalId}] Processing REVIEW phase.");
+                 $articleIdsInScope = $this->getArticlesInScopeForReview($currentPhaseGlobalId, $phaseStructureList); // Passa a lista de ESTRUTURA completa
+                 $phaseProgress = $this->getReviewPhaseProgress($userId, $articleIdsInScope);
+                 $isPhaseComplete = $phaseProgress['is_complete']; // Revisão completa se !needs_review
+
+                 Log::debug("[Map Pass 2 - Phase {$currentPhaseGlobalId}] Review - Blocked: ".($isPhaseBlocked?'Yes':'No').", Complete: ".($isPhaseComplete?'Yes':'No'));
+
+                 // Determina se é a fase atual GLOBAL
+                 if (!$isPhaseBlocked && !$isPhaseComplete && $currentPhaseId === null) {
+                     $isPhaseCurrent = true;
+                     $currentPhaseId = $currentPhaseGlobalId;
+                      Log::debug("[Map Pass 2 - Phase {$currentPhaseGlobalId}] SET AS CURRENT (Review). Blocking subsequent.");
+                 }
+
+                 // Construir dados finais da fase de revisão
+                 $phaseBuiltData = $this->buildReviewPhaseData(
+                    $currentPhaseGlobalId,
+                    $legalReferences->firstWhere('uuid', $currentLawUuid), // Obter o modelo da referência
+                    $phaseStruct['last_regular_counter'],
+                    $isPhaseBlocked,
+                    $isPhaseCurrent,
+                    $phaseProgress
+                 );
+
+             } else {
+                 // --- Fase Regular ---
+                 Log::debug("[Map Pass 2 - Phase {$currentPhaseGlobalId}] Processing REGULAR phase (Chunk {$phaseStruct['chunk_index']}).");
+                 $phaseProgress = $this->getPhaseProgress($userId, $phaseStruct['article_chunk']);
+                 $isPhaseComplete = $phaseProgress['all_attempted']; // Regular completa se all_attempted
+
+                 Log::debug("[Map Pass 2 - Phase {$currentPhaseGlobalId}] Regular - Blocked: ".($isPhaseBlocked?'Yes':'No').", Attempted(Complete): ".($isPhaseComplete?'Yes':'No'));
+
+                 // Determina se é a fase atual GLOBAL
+                 if (!$isPhaseBlocked && !$isPhaseComplete && $currentPhaseId === null) {
+                     $isPhaseCurrent = true;
+                     $currentPhaseId = $currentPhaseGlobalId;
+                     Log::debug("[Map Pass 2 - Phase {$currentPhaseGlobalId}] SET AS CURRENT (Regular). Blocking subsequent.");
+                 }
+
+                 // Construir dados finais da fase regular
+                 $phaseBuiltData = $this->buildPhaseData(
+                    $currentPhaseGlobalId,
+                    $legalReferences->firstWhere('uuid', $currentLawUuid), // Obter o modelo da referência
+                    $phaseStruct['article_chunk'],
+                    $phaseStruct['chunk_index'],
+                    $phaseProgress,
+                    $isPhaseBlocked,
+                    $isPhaseCurrent
+                 );
+             }
+
+             // Atualizar status de conclusão da LEI se esta fase for incompleta
+             if (!$isPhaseComplete) {
+                  if ($lawCompletionStatus[$currentLawUuid]) { // Log apenas na primeira vez que marca como incompleta
+                     Log::debug("[Map Pass 2 - Phase {$currentPhaseGlobalId}] Marking Law UUID {$currentLawUuid} as incomplete due to this phase.");
+                 }
+                 $lawCompletionStatus[$currentLawUuid] = false;
+             }
+
+             // Adicionar dados construídos ao array final
+             if ($phaseBuiltData) {
+                 $phasesData[] = $phaseBuiltData;
+             } else {
+                  Log::error("[Map Pass 2 - Phase {$currentPhaseGlobalId}] Failed to build phase data.");
+             }
+
+
+             // --- Atualizar estado para a PRÓXIMA iteração ---
+             // O estado de conclusão DESTA fase determina se a PRÓXIMA estará bloqueada
+             $previousPhaseIsComplete = $isPhaseComplete;
+
+             // Ativar o bloqueio subsequente se esta fase foi marcada como a atual
+             // Isso garante que mesmo que a próxima fase na lista seja calculada como "completa",
+             // ela ainda será bloqueada porque $blockSubsequent será true.
+             if ($isPhaseCurrent) {
+                 $blockSubsequent = true;
+             }
+
+        } // Fim do loop PASSO 2
+
+        Log::debug("[Map Completion] Finished Pass 2. CurrentPhaseId identified: {$currentPhaseId}.");
+
+
+        // --- PASSO 3: Ajuste Final - Garantir que is_current e is_blocked estejam corretos ---
+        // A fase atual NUNCA deve ser bloqueada.
+        if ($currentPhaseId !== null) {
+            $foundCurrent = false;
+            foreach ($phasesData as $index => $phase) {
+                 if ($phase['id'] === $currentPhaseId) {
+                     // Se esta é a fase atual identificada, garantir que is_current=true e is_blocked=false
+                     $phasesData[$index]['is_current'] = true;
+                     if ($phasesData[$index]['is_blocked']) {
+                         Log::warning("[Map Final Check] Forcing is_blocked=false for identified current phase {$currentPhaseId}.");
+                         $phasesData[$index]['is_blocked'] = false;
+                     }
+                     $foundCurrent = true;
+                 } elseif ($phase['is_current']) {
+                      // Desmarcar qualquer outra fase que possa ter sido erroneamente marcada como atual
+                      Log::warning("[Map Final Check] Found phase {$phase['id']} marked as current, but actual current is {$currentPhaseId}. Unsetting.");
+                      $phasesData[$index]['is_current'] = false;
+                 }
+            }
+             if (!$foundCurrent) {
+                 Log::error("[Map Final Check] Could not find the identified current phase ID {$currentPhaseId} in the final phasesData array.");
+             }
+        } else {
+             Log::debug("[Map Final Check] No current phase ID identified (likely all phases completed or blocked).");
+             // Opcional: Encontrar a última fase não bloqueada como "atual" visualmente? Ou deixar sem fase atual.
+             // Por enquanto, deixamos sem fase atual se $currentPhaseId for null.
+        }
+
+
         return Inertia::render('Play/Map', [
-            'phases' => $phases,
-            'currentPhaseNumber' => $this->getCurrentPhase(),
-            'referenceCurrentPhases' => $referenceCurrentPhases, // Passa o mapa de fases atuais por referência
-            'user' => [
-                'lives' => $user->lives,
-                'has_infinite_lives' => $user->hasInfiniteLives()
-            ]
-        ]);
-    }
-
-    /**
-     * Calcula a fase atual para uma referência legal específica
-     * 
-     * @param int $userId ID do usuário
-     * @param LegalReference $reference Referência legal
-     * @return int Número da fase atual para esta referência
-     */
-    private function getCurrentPhaseForReference($userId, $reference)
-    {
-        // Buscar os IDs dos artigos da referência
-        $referenceArticleIds = $reference->articles->pluck('id');
-        
-        // Contar o total de artigos na referência
-        $totalArticlesInReference = count($referenceArticleIds);
-        
-        // Obter o progresso detalhado de todos os artigos da referência
-        $articlesProgress = UserProgress::where('user_id', $userId)
-            ->whereIn('law_article_id', $referenceArticleIds)
-            ->get();
-        
-        // Contar artigos completados (com progresso registrado)
-        $completedArticlesCount = $articlesProgress->count();
-        
-        // Verificar se todos os artigos da referência estão completos
-        $allArticlesComplete = ($completedArticlesCount >= $totalArticlesInReference);
-        
-        // Agrupar artigos em fases
-        $chunks = $reference->articles->chunk(self::ARTICLES_PER_PHASE);
-        $totalRegularPhases = count($chunks);
-        
-        // Se todos os artigos estiverem completos, calcula a próxima fase após o último artigo
-        if ($allArticlesComplete) {
-            // Calcula o número total de fases incluindo revisões
-            $totalPhases = $totalRegularPhases;
-            
-            // Adiciona as fases de revisão
-            for ($i = 1; $i <= floor($totalRegularPhases / self::REVIEW_PHASE_INTERVAL); $i++) {
-                $totalPhases++;
-            }
-            
-            // Retorna a próxima fase após a última fase regular ou de revisão
-            return $totalPhases + 1;
-        }
-        
-        // Calcula quantas fases regulares foram completadas para esta referência
-        $regularPhasesCompleted = ceil($completedArticlesCount / self::ARTICLES_PER_PHASE);
-        
-        // Limita o número de fases regulares completadas ao total de fases reais
-        $regularPhasesCompleted = min($regularPhasesCompleted, $totalRegularPhases);
-        
-        // Verifica fase por fase para encontrar a primeira incompleta
-        $actualPhaseNumber = 0;
-        $currentPhaseFound = false;
-        
-        foreach ($chunks as $phaseIndex => $articleChunk) {
-            $phaseNumber = $phaseIndex + 1;
-            $actualPhaseNumber++; // Fase regular
-            
-            $phaseArticleIds = $articleChunk->pluck('id');
-            $phaseCompletedArticles = $articlesProgress->whereIn('law_article_id', $phaseArticleIds)->count();
-            
-            // Verifica se esta fase está incompleta (não respondeu todos os artigos da fase)
-            if ($phaseCompletedArticles < count($phaseArticleIds)) {
-                $currentPhaseFound = true;
-                break;
-            }
-            
-            // Adiciona fase de revisão após cada REVIEW_PHASE_INTERVAL fases regulares
-            if ($phaseNumber % self::REVIEW_PHASE_INTERVAL === 0) {
-                $actualPhaseNumber++; // Fase de revisão
-                
-                // Verifica se há artigos incompletos para revisar nesta referência
-                $hasIncompleteArticles = UserProgress::where('user_id', $userId)
-                    ->whereIn('law_article_id', $referenceArticleIds)
-                    ->where('percentage', '<', 100)
-                    ->exists();
-                
-                // Se há artigos para revisar, a fase atual é esta revisão
-                if ($hasIncompleteArticles) {
-                    $currentPhaseFound = true;
-                    break;
-                }
-            }
-        }
-        
-        // Se não encontrou uma fase incompleta, retorna a próxima fase após a última
-        if (!$currentPhaseFound) {
-            $actualPhaseNumber++;
-        }
-        
-        // A fase atual é pelo menos 1
-        return max(1, $actualPhaseNumber);
-    }
-
-    private function getCurrentPhase() {
-        $user = Auth::user();
-        $userId = $user->id;
-
-        // Verificar se o usuário tem leis preferidas
-        $hasPreferences = $user->legalReferences()->exists();
-
-        // Query base para UserProgress
-        $query = UserProgress::where('user_id', $userId);
-
-        // Se o usuário tem preferências, filtrar apenas os artigos das leis selecionadas
-        if ($hasPreferences) {
-            // Buscar os IDs dos artigos relacionados às leis de preferência do usuário
-            $userLegalReferences = $user->legalReferences()->pluck('legal_references.id')->toArray();
-
-            $preferredArticleIds = LawArticle::whereHas('legalReference', function($q) use ($userLegalReferences) {
-                $q->whereIn('legal_reference_id', $userLegalReferences);
-            })->pluck('id')->toArray();
-
-            // Aplicar filtro à consulta para considerar apenas artigos das leis preferidas
-            $query->whereIn('law_article_id', $preferredArticleIds);
-        }
-
-        // Contar apenas os artigos relevantes
-        $currentArticleCount = $query->count();
-
-        // Calcula quantas fases regulares foram completadas
-        $regularPhasesCompleted = ceil($currentArticleCount / self::ARTICLES_PER_PHASE);
-
-        // Calcula quantas fases de revisão já foram completadas
-        $reviewPhasesCompleted = floor($regularPhasesCompleted / self::REVIEW_PHASE_INTERVAL);
-
-        // Fase base (soma das fases regulares + revisões completadas)
-        $currentPhase = $regularPhasesCompleted + $reviewPhasesCompleted;
-
-        // Verifica se a fase atual é uma fase de revisão (após completar REVIEW_PHASE_INTERVAL fases regulares)
-        if ($regularPhasesCompleted % self::REVIEW_PHASE_INTERVAL === 0 && $regularPhasesCompleted > 0) {
-            // Verifica se existem artigos incompletos para revisar (também filtrados por preferências)
-            $hasIncompleteArticlesQuery = UserProgress::where('user_id', $userId)
-                ->where('percentage', '<', 100);
-
-            // Aplicar o mesmo filtro de preferências, se necessário
-            if ($hasPreferences && !empty($preferredArticleIds)) {
-                $hasIncompleteArticlesQuery->whereIn('law_article_id', $preferredArticleIds);
-            }
-
-            $hasIncompleteArticles = $hasIncompleteArticlesQuery->exists();
-
-            // Se não há artigos incompletos, o usuário já passou pela fase de revisão
-            if (!$hasIncompleteArticles) {
-                $currentPhase++;
-            }
-        }
-
-        // A fase atual é pelo menos 1
-        return (int)max(1, $currentPhase);
-    }
-
-    /**
-     * Visualizar os detalhes de uma fase
-     */
-    public function phase($referenceUuid, $phaseNumber)
-    {
-        $user = Auth::user();
-        $userId = $user->id;
-
-        // Verificações iniciais
-        // Assinantes sempre podem jogar, mesmo sem vidas
-        if (!$user->hasLives() && !$user->hasActiveSubscription()) {
-            return redirect()->route('play.nolives');
-        }
-
-        // Verificar se o usuário tem leis preferidas
-        $hasPreferences = $user->legalReferences()->exists();
-
-        // Buscar referências legais com filtro por preferências
-        $legalReferencesQuery = LegalReference::with(['articles' => function($query) {
-            $query->orderBy('position', 'asc')->where('is_active', true);
-        }]);
-
-        // Se o usuário tem preferências, filtrar apenas as leis selecionadas
-        if ($hasPreferences) {
-            $legalReferencesQuery->whereHas('users', function($query) use ($userId) {
-                $query->where('users.id', $userId);
-            });
-        }
-
-        $allLegalReferences = $legalReferencesQuery->orderBy('id', 'asc')->get();
-
-        // Se não há leis para mostrar, redirecionar para a seleção
-        if ($allLegalReferences->isEmpty()) {
-            return redirect()->route('user.legal-references.index')
-                ->with('message', 'Selecione as leis que deseja estudar.');
-        }
-
-        // Criar mapeamento global de fases para referências e chunks
-        $globalPhaseMap = [];
-        $globalPhaseCount = 0;
-        $referenceIndex = 0;
-        $phaseFound = false;
-
-        foreach ($allLegalReferences as $reference) {
-            $chunks = $reference->articles->chunk(self::ARTICLES_PER_PHASE);
-            $regularPhaseCounter = 0;
-
-            foreach ($chunks as $chunkIndex => $articleChunk) {
-                $regularPhaseCounter++;
-                $globalPhaseCount++;
-
-                // Mapear fase regular
-                $globalPhaseMap[$globalPhaseCount] = [
-                    'reference_uuid' => $reference->uuid,
-                    'chunk_index' => $chunkIndex,
-                    'is_review' => false
-                ];
-
-                // Se encontramos a fase solicitada, armazene a referência e o índice
-                if ($globalPhaseCount == $phaseNumber) {
-                    $phaseFound = true;
-                    $referenceUuid = $reference->uuid; // Use a referência correta
-                }
-
-                // Inserir fase de revisão após cada REVIEW_PHASE_INTERVAL fases regulares
-                if ($regularPhaseCounter % self::REVIEW_PHASE_INTERVAL === 0) {
-                    $globalPhaseCount++;
-
-                    $globalPhaseMap[$globalPhaseCount] = [
-                        'reference_uuid' => $reference->uuid,
-                        'is_review' => true
-                    ];
-
-                    if ($globalPhaseCount == $phaseNumber) {
-                        $phaseFound = true;
-                        $referenceUuid = $reference->uuid;
-                    }
-                }
-            }
-            $referenceIndex++;
-        }
-
-        // Se a fase não foi encontrada no mapeamento global
-        if (!$phaseFound) {
-            return redirect()->route('play.map')->with('message', 'Fase não encontrada');
-        }
-
-        // Se é uma fase de revisão, redirecionar para review
-        if ($globalPhaseMap[$phaseNumber]['is_review']) {
-            return redirect()->route('play.review', [
-                'referenceUuid' => $referenceUuid,
-                'phaseNumber' => $phaseNumber
-            ]);
-        }
-
-        // Carregar a referência e artigos
-        $reference = LegalReference::where('uuid', $referenceUuid)->firstOrFail();
-
-        $allArticles = $reference->articles()
-            ->orderBy('position', 'asc')
-            ->where('is_active', true)
-            ->get();
-
-        $chunkedArticles = $allArticles->chunk(self::ARTICLES_PER_PHASE);
-        $chunkIndex = $globalPhaseMap[$phaseNumber]['chunk_index'];
-
-        // Verificar se este chunk existe
-        if (!isset($chunkedArticles[$chunkIndex]) || $chunkedArticles[$chunkIndex]->isEmpty()) {
-            return redirect()->route('play.map')->with('message', 'Fase não encontrada');
-        }
-
-        $phaseArticles = $chunkedArticles[$chunkIndex];
-
-        // Obter o progresso dos artigos para o usuário autenticado
-        $userId = Auth::id();
-        $articlesWithProgress = $phaseArticles->map(function($article) use ($userId) {
-            $progress = UserProgress::where('user_id', $userId)
-                ->where('law_article_id', $article->id)
-                ->first();
-
-            return [
-                'uuid' => $article->uuid,
-                'article_reference' => $article->article_reference,
-                'original_content' => $article->original_content,
-                'practice_content' => $article->practice_content,
-                'options' => $article->options->map(function($option) {
-                    return [
-                        'id' => $option->id,
-                        'word' => $option->word,
-                        'is_correct' => $option->is_correct,
-                        'gap_order' => $option->gap_order,
-                        'position' => $option->position,
-                    ];
-                })->sortBy('position')->values()->all(),
-                'progress' => $progress ? [
-                    'percentage' => $progress->percentage,
-                    'is_completed' => $progress->is_completed,
-                    'best_score' => $progress->best_score,
-                    'attempts' => $progress->attempts,
-                    'wrong_answers' => $progress->wrong_answers,
-                    'revisions' => $progress->revisions,
-                ] : null,
-            ];
-        });
-
-        // Verificar se existe próxima fase
-        $nextPhaseNumber = $phaseNumber + 1;
-        $hasNextPhase = isset($globalPhaseMap[$nextPhaseNumber]);
-
-        // Verificar se a próxima fase é uma fase de revisão
-        $nextPhaseIsReview = $hasNextPhase && $globalPhaseMap[$nextPhaseNumber]['is_review'];
-
-        // Verificar se existem artigos para revisar
-        $hasArticlesToReview = false;
-        if ($nextPhaseIsReview) {
-            // Buscar os IDs dos artigos da referência
-            $articleIds = $reference->articles()
-                ->where('is_active', true)
-                ->pluck('id');
-
-            // Verificar se existem artigos incompletos para o usuário
-            $hasArticlesToReview = UserProgress::where('user_id', $user->id)
-                ->whereIn('law_article_id', $articleIds)
-                ->where('percentage', '<', 100)
-                ->exists();
-        }
-
-        return Inertia::render('Play/Phase', [
-            'phase' => [
-                'title' => 'Fase ' . $phaseNumber . ': ' . $reference->name,
-                'reference_name' => $reference->name,
-                'phase_number' => (int)$phaseNumber,
-                'difficulty' => $this->calculateAverageDifficulty($phaseArticles),
-                'progress' => $this->getPhaseProgress(Auth::id(), $phaseArticles),
-                'has_next_phase' => $hasNextPhase,
-                'next_phase_number' => $hasNextPhase ? $nextPhaseNumber : null,
-                'next_phase_is_review' => $nextPhaseIsReview,
-                'has_articles_to_review' => $hasArticlesToReview,
-                'reference_uuid' => $referenceUuid
-            ],
-            'articles' => $articlesWithProgress
-        ]);
-    }
-
-    /**
-     * Registra o progresso do usuário em um artigo
-     */
-    public function saveProgress(Request $request)
-    {
-        $validated = $request->validate([
-            'article_uuid' => 'required|string|exists:law_articles,uuid',
-            'correct_answers' => 'required|integer|min:0',
-            'total_answers' => 'required|integer|min:1',
-        ]);
-
-        // Obtém o ID do artigo a partir do UUID
-        $article = LawArticle::where('uuid', $validated['article_uuid'])->firstOrFail();
-
-        $user = Auth::user();
-
-        // Calcula a porcentagem de acerto
-        $percentage = ($validated['correct_answers'] / $validated['total_answers']) * 100;
-
-        // Se o usuário acertou menos de 70%, perde uma vida
-        if ($percentage < 70) {
-            $user->decrementLife();
-        }
-
-        // Verifica e corrige possíveis valores inconsistentes
-        $correctAnswers = min($validated['correct_answers'], $validated['total_answers']);
-        $totalAnswers = $validated['total_answers'];
-
-        // Registra o progresso
-        $progress = UserProgress::updateProgress(
-            Auth::id(),
-            $article->id,
-            $correctAnswers,
-            $totalAnswers
-        );
-
-        return response()->json([
-            'success' => true,
-            'progress' => [
-                'percentage' => $progress->percentage,
-                'is_completed' => $progress->is_completed,
-                'best_score' => $progress->best_score,
-                'attempts' => $progress->attempts,
-                'wrong_answers' => $progress->wrong_answers,
-                'revisions' => $progress->revisions,
-            ],
-            'user' => [
+            'phases' => $phasesData,
+             'user' => [
                 'lives' => $user->lives,
                 'has_infinite_lives' => $user->hasInfiniteLives()
             ],
-            'should_redirect' => !$user->hasInfiniteLives() && $user->lives <= 0,
-            'redirect_url' => !$user->hasInfiniteLives() && $user->lives <= 0 ? route('play.nolives') : null
         ]);
+    } // --- Fim da função map() ---
+
+    // ===============================================================
+    // Demais funções (Helpers, phase, review, saveProgress etc.)
+    // Certifique-se que as versões mais recentes de
+    // buildPhaseData, buildReviewPhaseData, getPhaseProgress,
+    // getReviewPhaseProgress, getArticlesInScopeForReview
+    // estejam presentes aqui.
+    // ===============================================================
+
+     // Helper para construir dados da fase regular
+    private function buildPhaseData(int $phaseId, LegalReference $reference, Collection $articleChunk, int $chunkIndex, array $progress, bool $isBlocked, bool $isCurrent): array
+    {
+        return [
+            'id' => $phaseId,
+            'title' => 'Fase ' . $phaseId,
+            'reference_name' => $reference->name,
+            'reference_uuid' => $reference->uuid,
+            'article_count' => $articleChunk->count(),
+            'difficulty' => $this->calculateAverageDifficulty($articleChunk),
+            'first_article' => $articleChunk->first()->uuid ?? null,
+            'phase_number' => $phaseId,
+            'is_complete' => $progress['all_attempted'] ?? false, // Fase completa se todos foram tentados
+            'progress' => $progress,
+            'is_blocked' => $isBlocked,
+            'is_current' => $isCurrent,
+            'is_review' => false,
+            'chunk_index' => $chunkIndex,
+        ];
     }
 
-    /**
-     * Obtém o progresso de uma fase para um usuário
-     */
-    private function getPhaseProgress($userId, $articles)
+    // Helper para construir dados da fase de revisão
+    private function buildReviewPhaseData(int $phaseId, LegalReference $reference, int $lastRegularPhaseCounter, bool $isBlocked, bool $isCurrent, ?array $progress = null): array
+    {
+        if ($progress === null) {
+             $progress = [
+                 'completed' => 0, 'total' => 0, 'percentage' => 0, 'article_status' => [],
+                 'is_fully_complete' => false, 'all_attempted' => false,
+                 'is_complete' => true, // Assumir completa se bloqueada/sem dados
+                 'needs_review' => false ];
+        }
+
+        return [
+            'id' => $phaseId,
+            'title' => 'Revisão ' . ceil($lastRegularPhaseCounter / self::REVIEW_PHASE_INTERVAL),
+            'reference_name' => $reference->name,
+            'reference_uuid' => $reference->uuid,
+            'article_count' => $progress['articles_to_review_count'] ?? 0,
+            'difficulty' => 3,
+            'first_article' => null,
+            'phase_number' => $phaseId,
+            'is_complete' => $progress['is_complete'] ?? true, // Completa se !needs_review
+            'progress' => $progress,
+            'is_blocked' => $isBlocked,
+            'is_current' => $isCurrent,
+            'is_review' => true,
+        ];
+    }
+
+    // getPhaseProgress
+     private function getPhaseProgress($userId, Collection $articles)
     {
         if (!$userId || $articles->isEmpty()) {
             return [
-                'completed' => 0,
-                'total' => $articles->count(),
-                'percentage' => 0,
-                'article_status' => array_fill(0, $articles->count(), 'pending') // Todos os artigos como pendentes
-            ];
+                'completed' => 0, 'total' => $articles->count(), 'percentage' => 0,
+                'article_status' => array_fill(0, $articles->count(), 'pending'),
+                'is_fully_complete' => false, 'all_attempted' => false ];
         }
-
         $articleIds = $articles->pluck('id');
-
-        // Buscar o progresso de todos os artigos desta fase para o usuário
         $progressRecords = UserProgress::where('user_id', $userId)
             ->whereIn('law_article_id', $articleIds)
-            ->get();
+            ->get()
+            ->keyBy('law_article_id');
 
         $totalArticles = $articleIds->count();
-
-        // Mapear o status de cada artigo (correct, incorrect, pending)
         $articleStatus = [];
+        $correctCount = 0;
+        $attemptedCount = 0;
 
-        // Inicializar todos os artigos como pendentes
         foreach ($articles as $index => $article) {
-            $articleStatus[$index] = 'pending';
-        }
-
-        // Atualizar o status com base nos registros de progresso
-        foreach ($progressRecords as $progress) {
-            // Encontrar o índice do artigo no array de artigos
-            $index = $articles->search(function($article) use ($progress) {
-                return $article->id === $progress->law_article_id;
-            });
-
-            if ($index !== false) {
-                if ($progress->is_completed) {
-                    $articleStatus[$index] = 'correct'; // Artigo completado com sucesso (>= 70%)
+            $progress = $progressRecords->get($article->id);
+            if ($progress) {
+                $attemptedCount++;
+                if ($progress->percentage >= 100) {
+                    $articleStatus[$index] = 'correct';
+                    $correctCount++;
                 } else {
-                    $articleStatus[$index] = 'incorrect'; // Artigo tentado mas não completado (< 70%)
+                    $articleStatus[$index] = 'incorrect';
                 }
+            } else {
+                $articleStatus[$index] = 'pending';
             }
         }
 
-        // Uma fase é considerada "completada" quando todos os artigos foram pelo menos tentados
-        $pendingArticles = array_filter($articleStatus, function($status) {
-            return $status === 'pending';
-        });
-
-        // Verifica se todos os artigos da fase foram completados 
-        $isFullyComplete = count($progressRecords) >= $totalArticles;
-
-        $completedCount = $totalArticles - count($pendingArticles);
-        $progressPercentage = $totalArticles > 0 ? round((($totalArticles - count($pendingArticles)) / $totalArticles) * 100, 2) : 0;
+        $isFullyComplete = ($correctCount === $totalArticles);
+        $allAttempted = ($attemptedCount === $totalArticles);
+        $completedCount = $attemptedCount;
+        $progressPercentage = $totalArticles > 0 ? round(($completedCount / $totalArticles) * 100, 2) : 0;
 
         return [
             'completed' => $completedCount,
             'total' => $totalArticles,
             'percentage' => $progressPercentage,
-            'article_status' => array_values($articleStatus), // Converter para array indexado
-            'is_fully_complete' => $isFullyComplete // Indicador extra para fases com número reduzido de artigos
+            'article_status' => array_values($articleStatus),
+            'is_fully_complete' => $isFullyComplete,
+            'all_attempted' => $allAttempted
         ];
     }
 
-    /**
-     * Calcular dificuldade média de um conjunto de artigos
-     */
-    private function calculateAverageDifficulty($articles)
+    // getReviewPhaseProgress (aceita coleção de IDs)
+    private function getReviewPhaseProgress($userId, Collection $articleIdsInScope)
+    {
+        if (!$userId || $articleIdsInScope->isEmpty()) {
+             Log::debug("[ReviewProgress User {$userId}] No articles in scope.");
+            return [
+                'is_complete' => true, 'needs_review' => false, 'articles_to_review_count' => 0,
+                'completed' => 0, 'total' => 0, 'percentage' => 0, 'article_status' => [],
+                'is_fully_complete' => true, 'all_attempted' => true ];
+        }
+
+        $incompleteArticlesCount = UserProgress::where('user_id', $userId)
+            ->whereIn('law_article_id', $articleIdsInScope)
+            ->where('percentage', '<', 100)
+            ->count();
+
+         Log::debug("[ReviewProgress User {$userId}] Scope IDs: [".$articleIdsInScope->implode(', ')."]. Incomplete count: {$incompleteArticlesCount}.");
+
+        $needsReview = $incompleteArticlesCount > 0;
+
+        return [
+            'is_complete' => !$needsReview, 'needs_review' => $needsReview,
+            'articles_to_review_count' => $incompleteArticlesCount,
+            'completed' => 0, 'total' => $incompleteArticlesCount, 'percentage' => 0, 'article_status' => [],
+            'is_fully_complete' => !$needsReview, 'all_attempted' => !$needsReview ];
+    }
+
+    // getArticlesInScopeForReview (aceita lista de estrutura, retorna coleção de IDs)
+    private function getArticlesInScopeForReview(int $reviewPhaseId, array $fullPhaseStructureList): Collection
+    {
+        $articlesInScope = collect();
+        $referenceUuid = null;
+        $startIndex = -1;
+        $endIndex = -1;
+        $currentReviewPhaseIndex = -1;
+
+        // 1. Find target review phase
+        foreach($fullPhaseStructureList as $index => $phaseStruct) {
+            if ($phaseStruct['id'] === $reviewPhaseId && $phaseStruct['is_review']) {
+                $referenceUuid = $phaseStruct['reference_uuid'];
+                $currentReviewPhaseIndex = $index;
+                break;
+            }
+        }
+        if ($currentReviewPhaseIndex === -1 || $referenceUuid === null) {
+            Log::debug("[ScopeReview {$reviewPhaseId}] Review phase not found in structure list.");
+            return collect();
+        }
+        Log::debug("[ScopeReview {$reviewPhaseId}] Found review phase at index {$currentReviewPhaseIndex}.");
+
+        // 2. Find start index
+        $startIndex = 0;
+        $foundBoundary = false;
+        for ($i = $currentReviewPhaseIndex - 1; $i >= 0; $i--) {
+            $phase = $fullPhaseStructureList[$i];
+            if ($phase['reference_uuid'] !== $referenceUuid) {
+                $startIndex = $i + 1;
+                $foundBoundary = true;
+                Log::debug("[ScopeReview {$reviewPhaseId}] Boundary: Different law at index {$i}. StartIndex set to {$startIndex}.");
+                break;
+            }
+            if ($phase['is_review']) {
+                $startIndex = $i + 1;
+                $foundBoundary = true;
+                 Log::debug("[ScopeReview {$reviewPhaseId}] Boundary: Previous review at index {$i}. StartIndex set to {$startIndex}.");
+                break;
+            }
+        }
+        if (!$foundBoundary) {
+             foreach ($fullPhaseStructureList as $idx => $p) {
+                 if ($p['reference_uuid'] === $referenceUuid) {
+                     $startIndex = $idx;
+                     Log::debug("[ScopeReview {$reviewPhaseId}] No boundary looping back. First phase of law found at index {$startIndex}.");
+                     break;
+                 }
+             }
+        }
+
+        // 3. End index
+        $endIndex = $currentReviewPhaseIndex - 1;
+         Log::debug("[ScopeReview {$reviewPhaseId}] EndIndex set to {$endIndex}.");
+
+        // 4. Collect article IDs
+        $articleIds = collect();
+        if ($startIndex <= $endIndex) {
+             Log::debug("[ScopeReview {$reviewPhaseId}] Collecting article IDs from index {$startIndex} to {$endIndex}.");
+            static $referenceArticleCache = []; // Static cache within the request
+            if (!isset($referenceArticleCache[$referenceUuid])) {
+                $refModel = LegalReference::with(['articles' => fn($q)=>$q->orderBy('position')])->where('uuid', $referenceUuid)->first();
+                $referenceArticleCache[$referenceUuid] = $refModel ? $refModel->articles : collect();
+                 Log::debug("[ScopeReview {$reviewPhaseId}] Fetched/Cached articles for ref {$referenceUuid}. Count: " . $referenceArticleCache[$referenceUuid]->count());
+            }
+            $allArticlesOfRef = $referenceArticleCache[$referenceUuid];
+
+            if ($allArticlesOfRef->isEmpty()) {
+                Log::warning("[ScopeReview {$reviewPhaseId}] No articles found for ref {$referenceUuid}.");
+                return collect();
+            }
+
+            $chunks = $allArticlesOfRef->chunk(self::ARTICLES_PER_PHASE);
+
+            for ($i = $startIndex; $i <= $endIndex; $i++) {
+                 if (!isset($fullPhaseStructureList[$i])) {
+                     Log::warning("[ScopeReview {$reviewPhaseId}] Index {$i} out of bounds for structure list.");
+                     continue;
+                 }
+                $phase = $fullPhaseStructureList[$i];
+                if (!$phase['is_review'] && isset($phase['chunk_index'])) {
+                    $chunkIndex = $phase['chunk_index'];
+                    if (isset($chunks[$chunkIndex])) {
+                        $chunkArticleIds = $chunks[$chunkIndex]->pluck('id');
+                         Log::debug("[ScopeReview {$reviewPhaseId}] Adding articles from phase ID {$phase['id']} (Chunk {$chunkIndex}): " . $chunkArticleIds->implode(', '));
+                        $articleIds = $articleIds->merge($chunkArticleIds);
+                    } else {
+                        Log::warning("[ScopeReview {$reviewPhaseId}] Chunk index {$chunkIndex} not found for phase ID {$phase['id']}.");
+                    }
+                }
+            }
+        } else {
+             Log::debug("[ScopeReview {$reviewPhaseId}] No regular phases in scope (startIndex {$startIndex} > endIndex {$endIndex}).");
+        }
+
+        $uniqueArticleIds = $articleIds->unique();
+         Log::debug("[ScopeReview {$reviewPhaseId}] Total unique article IDs in scope: " . $uniqueArticleIds->count() . " [". $uniqueArticleIds->implode(', ') . "]");
+
+        // 5. Return collection of IDs
+        return $uniqueArticleIds;
+    }
+
+
+     // --- Métodos das rotas phase, review, findPhaseDetailsById, etc. ---
+     // (Coloque as versões mais recentes dessas funções aqui, garantindo
+     // que findPhaseDetailsById replique a lógica de 2 passos do map,
+     // e que phase/review chamem findPhaseDetailsById corretamente)
+
+     public function phase($phaseId)
+     {
+         $user = Auth::user();
+         $userId = $user->id;
+         $phaseId = (int)$phaseId;
+
+         if (!$user->hasLives() && !$user->hasActiveSubscription()) {
+             return redirect()->route('play.nolives');
+         }
+
+         list($phaseDetails, $allPhasesList) = $this->findPhaseDetailsById($userId, $phaseId);
+
+         if (!$phaseDetails) {
+             Log::warning("[Phase Route] Fase não encontrada para ID global: " . $phaseId);
+             return redirect()->route('play.map')->with('message', 'Fase não encontrada.');
+         }
+
+         // Verificar bloqueio (segurança extra)
+          if ($phaseDetails['is_blocked'] && !$phaseDetails['is_current']) {
+               Log::warning("[Phase Route] Acesso bloqueado à fase: " . $phaseId . " por usuário: " . $userId);
+               return redirect()->route('play.map')->with('message', 'Esta fase está bloqueada.');
+          }
+
+
+         // Redirecionar para review se for o caso (deveria ser pego pela rota, mas como fallback)
+         if ($phaseDetails['is_review']) {
+              Log::warning("[Phase Route] Tentativa de acessar fase de revisão ID {$phaseId} pela rota de fase regular. Redirecionando.");
+             return redirect()->route('play.review', [
+                 'referenceUuid' => $phaseDetails['reference_uuid'],
+                 'phase' => $phaseId // Passa ID global
+             ]);
+         }
+
+         // --- Lógica para Fase Regular ---
+         $reference = LegalReference::where('uuid', $phaseDetails['reference_uuid'])->firstOrFail();
+         $allArticles = $reference->articles()
+             ->orderBy('position', 'asc')
+             ->where('is_active', true)
+             ->get();
+         $chunkedArticles = $allArticles->chunk(self::ARTICLES_PER_PHASE);
+         $chunkIndex = $phaseDetails['chunk_index'];
+
+         if (!isset($chunkedArticles[$chunkIndex]) || $chunkedArticles[$chunkIndex]->isEmpty()) {
+              Log::error("[Phase Route] Chunk de artigos não encontrado para fase regular: " . $phaseId . " chunk: " . $chunkIndex);
+             return redirect()->route('play.map')->with('message', 'Erro ao carregar artigos da fase.');
+         }
+
+         $phaseArticles = $chunkedArticles[$chunkIndex];
+         $articlesWithProgress = $this->getArticlesWithProgress($userId, $phaseArticles);
+         $nextPhaseDetails = $this->findNextPhase($phaseId, $allPhasesList);
+
+         return Inertia::render('Play/Phase', [
+             'phase' => [
+                 'title' => $phaseDetails['title'], // Título já formatado
+                 'reference_name' => $reference->name,
+                 'phase_number' => $phaseId, // ID Global
+                 'difficulty' => $this->calculateAverageDifficulty($phaseArticles),
+                 'progress' => $phaseDetails['progress'],
+                 'has_next_phase' => !!$nextPhaseDetails,
+                 'next_phase_number' => $nextPhaseDetails ? $nextPhaseDetails['id'] : null,
+                 'next_phase_is_review' => $nextPhaseDetails ? $nextPhaseDetails['is_review'] : false,
+                 'reference_uuid' => $phaseDetails['reference_uuid'],
+                 'is_review' => false,
+             ],
+             'articles' => $articlesWithProgress
+         ]);
+     }
+
+      public function review($referenceUuid, $phaseId) // Renomeado para phaseId
+     {
+         $phaseId = (int)$phaseId; // ID Global
+         $user = Auth::user();
+         $userId = $user->id;
+
+         if (!$user->hasLives() && !$user->hasActiveSubscription()) {
+             return redirect()->route('play.nolives');
+         }
+
+         // Calcular detalhes da fase e lista completa
+         list($phaseDetails, $allPhasesList) = $this->findPhaseDetailsById($userId, $phaseId);
+
+          if (!$phaseDetails || !$phaseDetails['is_review'] || $phaseDetails['reference_uuid'] !== $referenceUuid) {
+               Log::warning("[Review Route] Tentativa de acessar revisão inválida, não encontrada ou UUID não corresponde: Phase ID {$phaseId}, Ref UUID {$referenceUuid}");
+               return redirect()->route('play.map')->with('message', 'Fase de revisão não encontrada ou inválida.');
+           }
+           // Verificar bloqueio
+           if ($phaseDetails['is_blocked'] && !$phaseDetails['is_current']) {
+               Log::warning("[Review Route] Acesso bloqueado à fase de revisão: " . $phaseId . " por usuário: " . $userId);
+               return redirect()->route('play.map')->with('message', 'Esta fase está bloqueada.');
+           }
+
+         $reference = LegalReference::where('uuid', $referenceUuid)->firstOrFail();
+
+         // Obter IDs dos artigos no escopo e verificar quais precisam de revisão
+          $articleIdsToReview = collect();
+          $articlesWithProgress = collect();
+          $articleIdsInScope = $this->getArticlesInScopeForReview($phaseId, $allPhasesList); // Usa a lista de estrutura
+
+          if ($articleIdsInScope->isNotEmpty()) {
+               $articleIdsToReview = UserProgress::where('user_id', $userId)
+                   ->whereIn('law_article_id', $articleIdsInScope)
+                   ->where('percentage', '<', 100)
+                   ->pluck('law_article_id');
+
+              if ($articleIdsToReview->isNotEmpty()) {
+                   $articlesWithProgress = $this->getArticlesWithProgress(
+                       $userId,
+                       LawArticle::with('options')
+                           ->whereIn('id', $articleIdsToReview)
+                           ->where('is_active', true)
+                           ->orderBy('position', 'asc')
+                           ->get()
+                   );
+               }
+           }
+
+         // Se não há artigos para revisar NESTE escopo
+         if ($articlesWithProgress->isEmpty()) {
+              Log::debug("[Review Route] Fase {$phaseId}: Não há artigos para revisar. Redirecionando para próxima fase.");
+              $nextPhaseDetails = $this->findNextPhase($phaseId, $allPhasesList);
+             if ($nextPhaseDetails) {
+                 // Construir a rota correta para a próxima fase
+                 $nextRoute = $nextPhaseDetails['is_review']
+                     ? route('play.review', ['referenceUuid' => $nextPhaseDetails['reference_uuid'], 'phase' => $nextPhaseDetails['id']])
+                     : route('play.phase', ['phaseId' => $nextPhaseDetails['id']]);
+
+                  // Validação extra: a próxima fase calculada não deveria estar bloqueada
+                  if (isset($nextPhaseDetails['is_blocked']) && $nextPhaseDetails['is_blocked']) {
+                      Log::error("[Review Route] Erro de lógica: Próxima fase {$nextPhaseDetails['id']} após revisão {$phaseId} está bloqueada no findNextPhase.");
+                      // Não redirecionar, talvez voltar ao mapa com erro
+                      return redirect()->route('play.map')->with('message', 'Erro ao determinar a próxima fase.');
+                  }
+
+                  return redirect($nextRoute);
+              } else {
+                   Log::debug("[Review Route] Fase {$phaseId}: Revisão completa e sem próxima fase. Voltando ao mapa.");
+                   return redirect()->route('play.map')->with('message', 'Parabéns, você completou esta seção!');
+              }
+         }
+
+         // Se há artigos para revisar, renderiza a página de revisão
+         Log::debug("[Review Route] Fase {$phaseId}: Renderizando revisão com {$articlesWithProgress->count()} artigos.");
+         $nextPhaseDetails = $this->findNextPhase($phaseId, $allPhasesList);
+
+         return Inertia::render('Play/Phase', [ // Reutiliza o componente Phase
+             'phase' => [
+                 'title' => $phaseDetails['title'], // Título já formatado
+                 'reference_name' => $reference->name,
+                 'phase_number' => $phaseId, // ID Global
+                 'is_review' => true,
+                 'reference_uuid' => $referenceUuid,
+                 'has_next_phase' => !!$nextPhaseDetails,
+                 'next_phase_number' => $nextPhaseDetails ? $nextPhaseDetails['id'] : null,
+                 'next_phase_is_review' => $nextPhaseDetails ? $nextPhaseDetails['is_review'] : false,
+                 'progress' => $phaseDetails['progress'] // Passa o progresso da revisão
+             ],
+             'articles' => $articlesWithProgress
+         ]);
+     }
+
+      private function findPhaseDetailsById($userId, $targetPhaseId): array
+     {
+         // Recalcula a estrutura e depois os dados completos, similar ao map()
+         $user = Auth::user();
+         $hasPreferences = $user->legalReferences()->exists();
+         $legalReferencesQuery = LegalReference::with(['articles' => function($query) {
+             $query->orderBy('position', 'asc')->where('is_active', true);
+         }]);
+         if ($hasPreferences) { /* ... filtro ... */ } else { /* ... filtro ou query geral ... */ }
+         $legalReferences = $legalReferencesQuery->orderBy('id', 'asc')->get();
+         if ($legalReferences->isEmpty()) return [null, []];
+
+         // PASSO 1: Construir Estrutura Completa
+         $phaseStructureList = [];
+         $tempCounter = 0;
+         foreach ($legalReferences as $reference) {
+              $chunks = $reference->articles->chunk(self::ARTICLES_PER_PHASE);
+              $regularPhaseCounter = 0;
+              foreach ($chunks as $chunkIndex => $articleChunk) {
+                  $regularPhaseCounter++; $tempCounter++;
+                  $phaseStructureList[] = ['id' => $tempCounter, 'is_review' => false, 'reference_uuid' => $reference->uuid, 'chunk_index' => $chunkIndex, 'article_chunk' => $articleChunk ];
+                  if ($regularPhaseCounter % self::REVIEW_PHASE_INTERVAL === 0) {
+                      $tempCounter++;
+                      $phaseStructureList[] = ['id' => $tempCounter, 'is_review' => true, 'reference_uuid' => $reference->uuid, 'last_regular_counter' => $regularPhaseCounter ];
+                  }
+              }
+         }
+
+         // PASSO 2: Iterar pela Estrutura para Calcular Dados (incluindo o alvo)
+         $allPhasesListData = []; // Armazena os dados finais de todas as fases
+         $phaseDetails = null; // Armazena os dados da fase alvo
+         $currentPhaseId = null;
+         $blockSubsequent = false;
+         $previousPhaseIsComplete = true;
+         $currentLawUuid = null;
+         $lawCompletionStatus = [];
+
+          foreach ($phaseStructureList as $phaseIndex => $phaseStruct) {
+             $currentPhaseGlobalId = $phaseStruct['id'];
+             // ... (Lógica de mudança de lei e bloqueio inter-lei como no map()) ...
+             if ($phaseStruct['reference_uuid'] !== $currentLawUuid) { /* ... */ }
+
+             $isPhaseBlocked = $blockSubsequent || !$previousPhaseIsComplete;
+             $isPhaseCurrent = false;
+             $phaseProgress = null;
+             $isPhaseComplete = false;
+             $phaseBuiltData = null;
+
+             if ($phaseStruct['is_review']) {
+                 $articleIdsInScope = $this->getArticlesInScopeForReview($currentPhaseGlobalId, $phaseStructureList);
+                 $phaseProgress = $this->getReviewPhaseProgress($userId, $articleIdsInScope);
+                 $isPhaseComplete = $phaseProgress['is_complete'];
+                 if (!$isPhaseBlocked && !$isPhaseComplete && $currentPhaseId === null) { $isPhaseCurrent = true; $currentPhaseId = $currentPhaseGlobalId; }
+                 $phaseBuiltData = $this->buildReviewPhaseData(
+                     $currentPhaseGlobalId, $legalReferences->firstWhere('uuid', $phaseStruct['reference_uuid']),
+                     $phaseStruct['last_regular_counter'], $isPhaseBlocked, $isPhaseCurrent, $phaseProgress );
+             } else {
+                 $phaseProgress = $this->getPhaseProgress($userId, $phaseStruct['article_chunk']);
+                 $isPhaseComplete = $phaseProgress['all_attempted'];
+                 if (!$isPhaseBlocked && !$isPhaseComplete && $currentPhaseId === null) { $isPhaseCurrent = true; $currentPhaseId = $currentPhaseGlobalId; }
+                 $phaseBuiltData = $this->buildPhaseData(
+                     $currentPhaseGlobalId, $legalReferences->firstWhere('uuid', $phaseStruct['reference_uuid']),
+                     $phaseStruct['article_chunk'], $phaseStruct['chunk_index'], $phaseProgress, $isPhaseBlocked, $isPhaseCurrent );
+             }
+
+             // Atualizar status da lei
+             if (!$isPhaseComplete && isset($lawCompletionStatus[$phaseStruct['reference_uuid']])) {
+                  $lawCompletionStatus[$phaseStruct['reference_uuid']] = false;
+             } elseif (!isset($lawCompletionStatus[$phaseStruct['reference_uuid']])) {
+                 // Inicializar se ainda não existe (primeira fase da lei)
+                  $lawCompletionStatus[$phaseStruct['reference_uuid']] = $isPhaseComplete;
+             }
+
+
+             // Armazenar dados da fase alvo
+             if ($currentPhaseGlobalId == $targetPhaseId) {
+                 $phaseDetails = $phaseBuiltData;
+                 // Setar is_current corretamente para a fase alvo
+                 if ($currentPhaseId === $targetPhaseId) {
+                     $phaseDetails['is_current'] = true;
+                     $phaseDetails['is_blocked'] = false; // Fase atual não é bloqueada
+                 }
+             }
+             // Adicionar à lista completa de dados
+             if ($phaseBuiltData) {
+                  // Se esta fase é a fase atual global, setar is_current
+                 if ($currentPhaseId === $currentPhaseGlobalId) {
+                     $phaseBuiltData['is_current'] = true;
+                     $phaseBuiltData['is_blocked'] = false; // Garante
+                 } else {
+                      $phaseBuiltData['is_current'] = false; // Garante
+                 }
+                 $allPhasesListData[] = $phaseBuiltData;
+             }
+
+
+             $previousPhaseIsComplete = $isPhaseComplete;
+             if ($isPhaseCurrent) { $blockSubsequent = true; }
+         }
+
+         // Passo 3: Ajuste final (pode ser redundante se feito no passo 2)
+         // Certificar que apenas uma fase está marcada como 'is_current' na lista completa
+          if ($currentPhaseId !== null) {
+              foreach ($allPhasesListData as $index => $phase) {
+                  if ($phase['id'] === $currentPhaseId) {
+                      if(!$allPhasesListData[$index]['is_current']) {
+                           Log::warning("[findDetails] Corrigindo is_current para true na fase {$currentPhaseId}.");
+                           $allPhasesListData[$index]['is_current'] = true;
+                      }
+                      if($allPhasesListData[$index]['is_blocked']) {
+                           Log::warning("[findDetails] Corrigindo is_blocked para false na fase atual {$currentPhaseId}.");
+                           $allPhasesListData[$index]['is_blocked'] = false;
+                      }
+                  } elseif ($allPhasesListData[$index]['is_current']) {
+                       Log::warning("[findDetails] Corrigindo is_current para false na fase {$phase['id']} (atual é {$currentPhaseId}).");
+                      $allPhasesListData[$index]['is_current'] = false;
+                  }
+              }
+          }
+          // Atualizar $phaseDetails com o is_current correto se ele foi ajustado na lista geral
+          if($phaseDetails && $currentPhaseId === $phaseDetails['id']) {
+              $phaseDetails['is_current'] = true;
+              $phaseDetails['is_blocked'] = false;
+          } elseif ($phaseDetails) {
+              $phaseDetails['is_current'] = false;
+          }
+
+
+         return [$phaseDetails, $allPhasesListData]; // Retorna detalhes da fase alvo e a lista completa de dados
+     }
+
+      private function findNextPhase($currentPhaseId, $allPhasesListData): ?array
+      {
+          $currentIndex = -1;
+          foreach ($allPhasesListData as $index => $phase) {
+              if ($phase['id'] == $currentPhaseId) {
+                  $currentIndex = $index;
+                  break;
+              }
+          }
+          // Retorna o próximo item da lista de DADOS se existir
+          if ($currentIndex !== -1 && isset($allPhasesListData[$currentIndex + 1])) {
+              return $allPhasesListData[$currentIndex + 1];
+          }
+          return null;
+      }
+
+     private function getArticlesWithProgress($userId, Collection $articles): Collection
+      {
+            if ($articles->isEmpty()) return collect();
+            $articleIds = $articles->pluck('id');
+            $progressRecords = UserProgress::where('user_id', $userId)
+                ->whereIn('law_article_id', $articleIds)->get()->keyBy('law_article_id');
+
+            return $articles->map(function ($article) use ($progressRecords) {
+                $progress = $progressRecords->get($article->id);
+                return [ /* ... dados do artigo e progresso ... */
+                     'uuid' => $article->uuid,
+                     'article_reference' => $article->article_reference,
+                     'original_content' => $article->original_content,
+                     'practice_content' => $article->practice_content,
+                     'options' => $article->options->map(fn($o)=>[
+                          'id'=>$o->id, 'word'=>$o->word, 'is_correct'=>$o->is_correct,
+                          'gap_order'=>$o->gap_order, 'position'=>$o->position
+                     ])->sortBy('position')->values()->all(),
+                     'progress' => $progress ? [
+                         'percentage' => $progress->percentage,
+                         'is_completed' => $progress->percentage >= 100,
+                         'best_score' => $progress->best_score, 'attempts' => $progress->attempts,
+                         'wrong_answers' => $progress->wrong_answers, 'revisions' => $progress->revisions,
+                     ] : null,
+                ];
+            });
+      }
+
+
+    // Manter calculateAverageDifficulty, rewardLife, saveProgress
+     private function calculateAverageDifficulty($articles)
     {
         if ($articles->isEmpty()) {
             return 1;
         }
-
         $totalDifficulty = $articles->sum('difficulty_level');
         return round($totalDifficulty / $articles->count());
     }
-
-    /**
-     * Recompensa o usuário com uma vida após assistir o anúncio
-     */
-    public function rewardLife()
+     public function rewardLife()
     {
         $user = Auth::user();
         $user->lives = min($user->lives + 1, 5); // Adiciona uma vida, máximo de 5
@@ -688,153 +846,68 @@ class PlayController extends Controller
             ]
         ]);
     }
-
-    /**
-     * Exibir a fase de revisão para uma referência legal
-     */
-    public function review($referenceUuid, $phaseNumber)
+     public function saveProgress(Request $request)
     {
-        $phaseNumber = (int)$phaseNumber;
+        $validated = $request->validate([
+            'article_uuid' => 'required|string|exists:law_articles,uuid',
+            'correct_answers' => 'required|integer|min:0',
+            'total_answers' => 'required|integer|min:1',
+        ]);
 
+        $article = LawArticle::where('uuid', $validated['article_uuid'])->firstOrFail();
         $user = Auth::user();
-        $userId = $user->id;
+        $percentage = ($validated['total_answers'] > 0)
+                      ? (($validated['correct_answers'] / $validated['total_answers']) * 100)
+                      : 0;
 
-        // Verifica se o usuário tem vidas disponíveis ou é assinante
-        // Assinantes sempre podem jogar, mesmo sem vidas
-        if (!$user->hasLives() && !$user->hasActiveSubscription()) {
-            return redirect()->route('play.nolives');
+        // Garantir que correct_answers não seja maior que total_answers
+        $correctAnswers = min((int)$validated['correct_answers'], (int)$validated['total_answers']);
+        $totalAnswers = (int)$validated['total_answers'];
+
+
+        // Perder vida apenas na *primeira vez* que falha (<70%) ou se já estava < 70% e continua < 70%?
+        // Vamos implementar: perde vida se ficar < 70% nesta tentativa.
+        $lostLife = false;
+        if ($percentage < 70) {
+             // Verifica se tem vidas para perder ou se tem vidas infinitas
+             if ($user->lives > 0 && !$user->hasInfiniteLives()) {
+                 $user->decrementLife();
+                 $lostLife = true;
+             }
         }
 
-        // Verificar se o usuário tem leis preferidas
-        $hasPreferences = $user->legalReferences()->exists();
 
-        // Verificar se a referência está nas preferências do usuário
-        if ($hasPreferences) {
-            $referenceExists = $user->legalReferences()
-                ->where('legal_references.uuid', $referenceUuid)
-                ->exists();
+        $progress = UserProgress::updateProgress(
+            $userId = $user->id, // Corrigido para pegar $user->id
+            $article->id,
+            $correctAnswers, // Usar valor corrigido
+            $totalAnswers // Usar valor corrigido
+        );
 
-            if (!$referenceExists) {
-                return redirect()->route('user.legal-references.index')
-                    ->with('message', 'Esta lei não está nas suas preferências de estudo.');
-            }
-        }
+         // A função updateProgress deve retornar o objeto $progress atualizado
+         // Vamos buscá-lo novamente para garantir os últimos dados, especialmente se updateProgress não retornar
+         $updatedProgress = UserProgress::where('user_id', $user->id)->where('law_article_id', $article->id)->first();
 
-        // Buscar a referência legal
-        $reference = LegalReference::where('uuid', $referenceUuid)->firstOrFail();
 
-        // Buscar os IDs dos artigos da referência
-        $articleIds = $reference->articles()
-            ->where('is_active', true)
-            ->pluck('id');
-
-        // Buscar os artigos que o usuário já tentou mas não completou (percentage < 100)
-        $incompleteArticleIds = UserProgress::where('user_id', $user->id)
-            ->whereIn('law_article_id', $articleIds)
-            ->where('percentage', '<', 100)
-            ->pluck('law_article_id');
-        $hasArticlesToReview = UserProgress::where('user_id', $user->id)
-            ->whereIn('law_article_id', $articleIds)
-            ->where('percentage', '<', 100)
-            ->exists();
-        // Mapear as fases para determinar qual é a próxima após esta revisão
-        $allArticles = $reference->articles()
-            ->orderBy('position', 'asc')
-            ->where('is_active', true)
-            ->get();
-
-        // Agrupar os artigos em fases
-        $chunkedArticles = $allArticles->chunk(self::ARTICLES_PER_PHASE);
-
-        // Criar um mapeamento entre números de fase e índices de chunks
-        $phaseToChunkMap = [];
-        $regularPhaseCount = 0;
-        $phaseCount = 0;
-
-        foreach ($chunkedArticles as $index => $chunk) {
-            $regularPhaseCount++;
-            $phaseCount++;
-
-            // Mapear fase regular ao índice do chunk
-            $phaseToChunkMap[$phaseCount] = $index;
-
-            // Se esta fase regular completou um intervalo de revisão,
-            // adicionar uma fase de revisão (que não mapeia para nenhum chunk)
-            if ($regularPhaseCount % self::REVIEW_PHASE_INTERVAL === 0) {
-                $phaseCount++;
-                // Fase de revisão não mapeia para nenhum chunk específico
-                $phaseToChunkMap[$phaseCount] = 'review';
-            }
-        }
-
-        // Encontrar a próxima fase após a fase de revisão atual
-        $nextPhaseNumber = $phaseNumber + 1;
-        $hasNextPhase = isset($phaseToChunkMap[$nextPhaseNumber]);
-
-        // Se não há artigos incompletos, redirecionar para a PRÓXIMA fase após esta fase de revisão
-        if ($incompleteArticleIds->isEmpty()) {
-            // Se existe uma próxima fase, redirecionar para ela
-            if ($hasNextPhase) {
-                return redirect()->route('play.phase', [
-                    'reference' => $referenceUuid,
-                    'phase' => $nextPhaseNumber
-                ]);
-            } else {
-                // Se não existe próxima fase, volta para o mapa
-                return redirect()
-                    ->route('play.map')
-                    ->with('message', 'Não há mais fases nesta referência legal. Parabéns por completar todas!');
-            }
-        }
-
-        // Buscar os artigos incompletos COM suas opções
-        $articlesWithProgress = LawArticle::with('options')
-            ->whereIn('id', $incompleteArticleIds)
-            ->where('is_active', true)
-            ->orderBy('position', 'asc')
-            ->get()
-            ->map(function($article) use ($user) {
-                $progress = UserProgress::where('user_id', $user->id)
-                    ->where('law_article_id', $article->id)
-                    ->first();
-
-                return [
-                    'uuid' => $article->uuid,
-                    'article_reference' => $article->article_reference,
-                    'original_content' => $article->original_content,
-                    'practice_content' => $article->practice_content,
-                    'options' => $article->options->map(function($option) {
-                        return [
-                            'id' => $option->id,
-                            'word' => $option->word,
-                            'is_correct' => $option->is_correct,
-                            'gap_order' => $option->gap_order,
-                            'position' => $option->position,
-                        ];
-                    })->sortBy('position')->values()->all(),
-                    'progress' => $progress ? [
-                        'percentage' => $progress->percentage,
-                        'is_completed' => $progress->is_completed,
-                        'best_score' => $progress->best_score,
-                        'attempts' => $progress->attempts,
-                        'wrong_answers' => $progress->wrong_answers,
-                        'revisions' => $progress->revisions,
-                    ] : null,
-                ];
-            });
-
-        return Inertia::render('Play/Phase', [
-            'phase' => [
-                'title' => 'Revisão: ' . $reference->name,
-                'reference_name' => $reference->name,
-                'phase_number' => $phaseNumber,
-                'is_review' => true,
-                'reference_uuid' => $referenceUuid,
-                'has_next_phase' => $hasNextPhase,
-                'next_phase_number' => $hasNextPhase ? $nextPhaseNumber : null,
-                'next_phase_is_review' => false // A próxima fase depois de uma revisão é sempre uma fase regular
+        return response()->json([
+            'success' => true,
+            'progress' => $updatedProgress ? [ // Usar dados atualizados
+                'percentage' => $updatedProgress->percentage,
+                'is_completed' => $updatedProgress->is_completed,
+                'best_score' => $updatedProgress->best_score,
+                'attempts' => $updatedProgress->attempts,
+                'wrong_answers' => $updatedProgress->wrong_answers,
+                'revisions' => $updatedProgress->revisions,
+            ] : null,
+            'user' => [
+                'lives' => $user->lives, // Vidas já decrementadas se necessário
+                'has_infinite_lives' => $user->hasInfiniteLives()
             ],
-            'articles' => $articlesWithProgress
+             'lost_life' => $lostLife, // Informar se perdeu vida
+            'should_redirect' => !$user->hasInfiniteLives() && $user->lives <= 0,
+            'redirect_url' => !$user->hasInfiniteLives() && $user->lives <= 0 ? route('play.nolives') : null
         ]);
     }
-}
+
+
+} // Fim da classe

@@ -15,25 +15,32 @@ interface Progress {
     completed: number;
     total: number;
     percentage: number;
-    article_status?: string[]; // Novo campo para status de cada artigo
-    is_fully_complete?: boolean; // Novo campo para indicar se a fase está totalmente completa
+    article_status?: string[];
+    is_fully_complete?: boolean; // Vem do backend (true se 100% em tudo)
+    all_attempted?: boolean;
+    // Para revisão:
+    is_complete?: boolean; // Vem do backend (true se não precisa revisar)
+    needs_review?: boolean; // Vem do backend
+    articles_to_review_count?: number; // Vem do backend
 }
 
 interface Phase {
-    id: number;
+    id: number; // ID Global da Fase
     title: string;
     reference_name: string;
     reference_uuid: string;
     article_count: number;
     difficulty: number;
     first_article: string | null;
-    phase_number: number;
+    phase_number: number; // ID Global (mesmo que id)
     progress: Progress;
-    is_blocked: boolean;
-    is_review?: boolean; // Novo campo para indicar se é uma fase de revisão
-    is_complete?: boolean; // Novo campo para indicar se a fase está completa
-    reference_current_phase?: number; // Novo campo indicando a fase atual para esta referência
+    is_blocked: boolean; // Definido pelo backend
+    is_current: boolean; // Definido pelo backend
+    is_review?: boolean;
+    is_complete?: boolean; // Definido pelo backend (baseado em is_fully_complete ou status da revisão)
+    chunk_index?: number; // Apenas para fases regulares
 }
+
 
 interface ReferenceGroup {
     name: string;
@@ -47,8 +54,6 @@ interface GroupedPhases {
 const props = defineProps<{
     phases: Phase[];
     user: User;
-    currentPhaseNumber: number;
-    referenceCurrentPhases: Record<string, number>; // Mapa de fases atuais por referência
 }>();
 
 // Agrupar fases por referência legal
@@ -76,104 +81,96 @@ const getPhaseIcon = (phaseNumber: number) => {
     return icons[(phaseNumber - 1) % icons.length];
 };
 
-// Verifica se a fase está completa (todos os artigos foram pelo menos tentados)
 const isPhaseComplete = (phase: Phase): boolean => {
-    // Para fase de revisão, usamos o campo is_complete direto do backend
     if (phase.is_review) {
-        return phase.is_complete || false;
+        // Revisão completa significa que não precisa revisar
+        return phase.progress?.is_complete || false;
     }
-
-    // Verificar se há dados de progresso
-    if (!phase.progress || !phase.progress.article_status || phase.progress.article_status.length === 0) {
-        return false;
+    // Fase regular completa significa 100% correto
+    // Usar is_fully_complete se disponível, senão verificar status
+    if(phase.progress?.is_fully_complete !== undefined) {
+        return phase.progress.is_fully_complete;
     }
-    
-    // Se o backend informa explicitamente que a fase está totalmente completa
-    if (phase.progress.is_fully_complete) {
-        return true;
-    }
-
-    // Verificar se existe algum artigo pendente
-    const hasPendingArticle = phase.progress.article_status.some(status => status === 'pending');
-
-    // A fase está completa quando não há artigos pendentes
-    return !hasPendingArticle;
+    // Verificar manualmente se todos os status são 'correct'
+    return phase.progress?.article_status?.every(status => status === 'correct') || false;
 };
 
-// Determina a fase atual com base em prioridades entre as referências
+// Determina a fase atual do jogo de forma mais precisa
 const determineGlobalCurrentPhase = (phases: Phase[]): Phase | null => {
-    // Primeiro, verifica se há alguma fase marcada como atual pela sua referência e não bloqueada
-    const referenceCurrent = phases
-        .filter(p => !p.is_blocked)
-        .filter(p => p.reference_current_phase && p.phase_number === p.reference_current_phase)
-        .sort((a, b) => a.phase_number - b.phase_number)[0];
-    
-    if (referenceCurrent) {
-        return referenceCurrent;
+    // Primeiro, verificar se há uma fase que é explicitamente marcada como atual pelo backend
+    // Isso é determinado pelo campo reference_current_phase
+    const currentPhasesByReference = new Map<string, Phase>();
+
+    // Agrupar fases por referência e encontrar a fase atual para cada referência
+    for (const phase of phases) {
+        if (phase.reference_current_phase === phase.phase_number && !phase.is_blocked) {
+            currentPhasesByReference.set(phase.reference_uuid, phase);
+        }
     }
-    
-    // Se não, busca a primeira fase não bloqueada e não completa
+
+    // Se há apenas uma referência com fase atual, retornar essa fase
+    if (currentPhasesByReference.size === 1) {
+        return Array.from(currentPhasesByReference.values())[0];
+    }
+
+    // Se há múltiplas referências, precisamos determinar qual é a atual
+    // Prioridade: fases de revisão não completas > fases regulares não completas > qualquer fase não bloqueada
+
+    // Verificar todas as fases atuais por referência
+    const currentPhases = Array.from(currentPhasesByReference.values());
+
+    // Prioridade 1: Fases de revisão não completas
+    const reviewPhase = currentPhases
+        .filter(p => p.is_review && !p.is_complete)
+        .sort((a, b) => a.phase_number - b.phase_number)[0];
+
+    if (reviewPhase) {
+        return reviewPhase;
+    }
+
+    // Prioridade 2: Fases regulares não completas
+    const incompletePhase = currentPhases
+        .filter(p => !p.is_review && !isPhaseComplete(p))
+        .sort((a, b) => a.phase_number - b.phase_number)[0];
+
+    if (incompletePhase) {
+        return incompletePhase;
+    }
+
+    // Prioridade 3: Qualquer fase não bloqueada, ordenada por número
+    // Se não encontramos nenhuma fase atual, procurar a primeira fase não bloqueada
     return phases
         .filter(p => !p.is_blocked)
-        .filter(p => !isPhaseComplete(p) || (p.is_review && !p.is_complete))
         .sort((a, b) => a.phase_number - b.phase_number)[0] || null;
 };
 
 // Cache da fase atual global
 const globalCurrentPhase = computed(() => determineGlobalCurrentPhase(props.phases));
 
-// Verifica se é a fase atual globalmente no jogo
-const isCurrentPhase = (phase: Phase, phases: Phase[]): boolean => {
-    // Uma fase bloqueada nunca é atual
-    if (phase.is_blocked) {
-        return false;
-    }
-    
-    // Se a fase atual global já foi determinada, compara diretamente
-    if (globalCurrentPhase.value) {
-        return phase.phase_number === globalCurrentPhase.value.phase_number;
-    }
-    
-    // Caso não tenha encontrado nenhuma fase atual global (improvável), usa a lógica antiga
-    return phase.phase_number === props.currentPhaseNumber;
+// Verifica se é a fase atual (simplificado)
+const isCurrentPhase = (phase: Phase): boolean => {
+    return phase.is_current || false;
 };
-
 // Obtém o status de cada artigo na fase (acerto, erro, não respondido)
 const getArticleStatus = (phase: Phase): string[] => {
-    // Para fases de revisão, retornar um array vazio (não tem indicadores de progresso)
     if (phase.is_review) {
-        return [];
+        return []; // Revisão não tem status por artigo visível no mapa
     }
-
-    // Verifica se o backend forneceu informações detalhadas sobre o status dos artigos
     if (phase.progress && phase.progress.article_status) {
         return phase.progress.article_status;
     }
-
-    // Fallback para o caso de o backend não fornecer as informações detalhadas
-    // (compatibilidade com versões anteriores)
+    // Fallback (pode ser removido se o backend sempre fornecer article_status)
     const status: string[] = [];
+    const total = phase.article_count || 0;
+    const completed = phase.progress?.completed || 0; // 'completed' agora significa tentados
+    const correct = (phase.progress?.article_status?.filter(s => s === 'correct').length) || 0; // Contar corretos se disponível
 
-    // Número de artigos tentados mas não completados (erros)
-    // Vamos assumir que há pelo menos 1 erro se a fase não estiver completa e tiver algum progresso
-    const hasProgress = phase.progress && phase.progress.completed > 0;
-    const isIncomplete = phase.progress && phase.progress.completed < phase.article_count;
-    const errorCount = hasProgress && isIncomplete ? 1 : 0;
-
-    for (let i = 1; i <= phase.article_count; i++) {
-        if (i <= phase.progress.completed) {
-            // Artigos completados são considerados acertos (verde)
-            status.push('correct');
-        } else if (i <= phase.progress.completed + errorCount) {
-            // Artigos tentados mas não completados são considerados erros (vermelho)
-            status.push('incorrect');
-        } else {
-            // Artigos não tentados são considerados não respondidos (cinza)
-            status.push('pending');
-        }
-    }
-
-    return status;
+    // Estimativa se article_status não estiver disponível:
+    // Se is_complete (fully_complete) -> tudo verde
+    if(phase.is_complete) return Array(total).fill('correct');
+    // Se não completo, mas tentado -> alguns vermelhos/amarelos
+    // Melhor confiar que o backend enviará article_status
+    return Array(total).fill('pending'); // Padrão se não houver dados
 };
 
 // Configurações dos conectores
@@ -233,6 +230,7 @@ const referenceGroups = computed(() => {
         </div>
 
         <!-- Mapa de fases -->
+        <!-- Mapa de fases -->
         <div class="">
           <div
             v-for="(group, index) in referenceGroups"
@@ -247,14 +245,12 @@ const referenceGroups = computed(() => {
 
             <!-- Container da trilha -->
             <div class="relative trail-container mx-auto">
-             <!-- Linhas diagonais conectoras (geradas dinamicamente) -->
+            <!-- Linhas conectoras (ajustar lógica de cor/opacidade) -->
               <div
                 v-for="(_, phaseIndex) in group.phases.slice(0, -1)"
                 :key="`connector-${phaseIndex}`"
                 class="absolute left-0 w-full -z-10"
-                :style="{
-                  top: getConnectorSpacing(phaseIndex),
-                }"
+                :style="{ top: getConnectorSpacing(phaseIndex) }"
               >
                 <div class="absolute top-[40px] left-0" :style="{ width: getConnectorWidth(), height: getConnectorHeight() }">
                   <svg
@@ -263,18 +259,13 @@ const referenceGroups = computed(() => {
                     :viewBox="`0 0 ${parseInt(getConnectorWidth())} 108`"
                     :style="{ height: getConnectorHeight(), width: getConnectorWidth() }"
                   >
-                    <!-- Linha tracejada que conecta as bolinhas -->
                     <path
                       :d="phaseIndex % 2 === 0
                         ? `M160,0 C145,10 130,25 ${160-25*Math.sin(0.5)},50 S80,90 60,108`
                         : `M60,0 C75,10 90,25 ${60+25*Math.sin(0.5)},50 S140,90 160,108`"
-                      :stroke="isPhaseComplete(group.phases[phaseIndex]) ||
-                              (group.phases[phaseIndex].is_review && group.phases[phaseIndex].is_complete) ||
-                              group.phases[phaseIndex].phase_number <= props.currentPhaseNumber ? '#432818' : 'currentColor'"
+                      :stroke="!group.phases[phaseIndex + 1].is_blocked ? '#432818' : 'currentColor'"
                       stroke-width="3"
-                      :stroke-opacity="isPhaseComplete(group.phases[phaseIndex]) ||
-                                      (group.phases[phaseIndex].is_review && group.phases[phaseIndex].is_complete) ||
-                                      group.phases[phaseIndex].phase_number <= props.currentPhaseNumber ? '0.8' : '0.3'"
+                      :stroke-opacity="!group.phases[phaseIndex + 1].is_blocked ? '0.8' : '0.3'"
                       stroke-dasharray="8,6"
                       fill="none"
                     />
@@ -282,68 +273,71 @@ const referenceGroups = computed(() => {
                 </div>
               </div>
 
-              <!-- Fases aproximadas no centro -->
+              <!-- Fases -->
               <div class="space-y-6">
                 <div
                   v-for="(phase, phaseIndex) in group.phases"
-                  :key="`phase-${phase.phase_number}`"
+                  :key="`phase-${phase.id}`"
                   class="relative phase-item"
                 >
-                  <!-- Fase com posicionamento levemente alternado -->
                   <div class="flex items-center justify-center">
-                    <!-- Fases ligeiramente à direita ou esquerda do centro -->
                     <div
                       :class="`flex ${phaseIndex % 2 === 0 ? 'justify-end ml-auto me-[10px]' : 'justify-start mr-auto ms-[10px]'}`"
                       style="width: 55%;"
                     >
+                      <!-- :href agora usa phase.id e verifica is_blocked/is_current -->
                       <Link
-                          :href="phase.is_blocked && !isCurrentPhase(phase, props.phases)
-                              ? '#'
-                              : (phase.is_review
-                                  ? route('play.review', [phase.reference_uuid, phase.phase_number])
-                                  : ((props.user.lives > 0 || props.user.has_infinite_lives) && isCurrentPhase(phase, props.phases))
-                                      ? route('play.phase', [phase.reference_uuid, phase.phase_number])
-                                      : '#')"
-                          class="relative group transition-transform duration-300"
-                          :class="phase.is_blocked && !isCurrentPhase(phase, props.phases)
-                              ? 'cursor-not-allowed'
-                              : (phase.is_review || ((props.user.lives > 0 || props.user.has_infinite_lives) && isCurrentPhase(phase, props.phases)))
-                                  ? 'hover:scale-110'
-                                  : 'cursor-not-allowed'"
-                          :style="`margin-${phaseIndex % 2 === 0 ? 'right' : 'left'}: -5px;`"
-                      >
-                          <!-- Bolinha da fase -->
+                        :href="phase.is_blocked
+                            ? '#'
+                            : (phase.is_review
+                                // Rota de revisão ainda usa referenceUuid e phase (ID global)
+                                ? route('play.review', { referenceUuid: phase.reference_uuid, phase: phase.id })
+                                // Rota de fase AGORA usa o nome do parâmetro 'phaseId' e passa phase.id
+                                : route('play.phase', { phaseId: phase.id }))"
+                        class="relative group transition-transform duration-300"
+                        :class="{
+                            'cursor-not-allowed': phase.is_blocked,
+                            'hover:scale-110': !phase.is_blocked,
+                            'cursor-pointer': !phase.is_blocked
+                        }"
+                        :style="`margin-${phaseIndex % 2 === 0 ? 'right' : 'left'}: -5px;`"
+                        @click="phase.is_blocked ? $event.preventDefault() : null"
+                    >
+                          <!-- Bolinha da fase (lógica de cor ajustada) -->
                           <div
                               :class="[
                                   'w-16 h-16 rounded-full flex items-center justify-center phase-circle',
-                                  phase.is_review && phase.is_blocked ? 'bg-purple-400' : // Revisão bloqueada
-                                  phase.is_review ? 'bg-purple-500' : // Revisão não bloqueada
-                                  isCurrentPhase(phase, props.phases) ? 'left-[8px] bg-blue-500' : // Fase atual
-                                  phase.is_blocked ? 'left-[8px] bg-gray-400' : // Fase bloqueada (quando não é atual)
-                                  isPhaseComplete(phase) ? 'left-[8px] bg-green-500' : // Fase completa
-                                  'left-[8px] bg-gray-400' // Padrão: cinza
+                                  phase.is_review && phase.is_blocked ? 'bg-purple-400/50' : // Revisão bloqueada (mais claro)
+                                  phase.is_review && !phase.is_blocked && !phase.is_current ? 'bg-purple-500' : // Revisão disponível mas não atual
+                                  phase.is_review && phase.is_current ? 'bg-purple-600 animate-pulse' : // Revisão ATUAL
+                                  phase.is_current ? 'bg-blue-500 animate-pulse' : // Fase regular ATUAL
+                                  phase.is_blocked ? 'bg-gray-400/50' : // Fase bloqueada (mais claro)
+                                  isPhaseComplete(phase) ? 'bg-green-500' : // Fase completa (verde)
+                                  !phase.is_blocked ? 'bg-yellow-500' : // Fase disponível mas incompleta (amarelo/laranja?)
+                                  'bg-gray-400' // Fallback
                               ]"
+                              :style="phase.is_blocked ? 'opacity: 0.6;' : ''"
                           >
                               <component
                                   :is="phase.is_review
                                       ? Repeat
                                       : (isPhaseComplete(phase)
                                           ? CheckCircle
-                                          : getPhaseIcon(phase.phase_number))"
+                                          : getPhaseIcon(phase.id))"
                                   class="w-6 h-6 text-white"
                               />
                           </div>
 
-                          <!-- Badge com número da fase -->
-                          <Badge class="absolute -top-2 -right-2 bg-primary">
-                              {{ phase.phase_number }}
+                          <!-- Badge com número da fase (ID global) -->
+                          <Badge class="absolute -top-2 -right-2 bg-primary" :class="{'opacity-60': phase.is_blocked}">
+                              {{ phase.id }}
                           </Badge>
 
-                          <!-- Indicador de progresso - mostrado apenas para fases regulares -->
-                          <div v-if="!phase.is_review" class="mt-1 flex justify-center gap-1">
+                          <!-- Indicador de progresso -->
+                          <div v-if="!phase.is_review" class="mt-1 flex justify-center gap-1 h-[10px]" :class="{'opacity-60': phase.is_blocked}">
                             <span
-                              v-for="(status, index) in getArticleStatus(phase)"
-                              :key="index"
+                              v-for="(status, index_status) in getArticleStatus(phase)"
+                              :key="`status-${phase.id}-${index_status}`"
                               class="w-2 h-2 rounded-full transition-colors duration-300"
                               :class="{
                                 'bg-green-500': status === 'correct',
@@ -351,23 +345,22 @@ const referenceGroups = computed(() => {
                                 'bg-muted': status === 'pending'
                               }"
                             ></span>
-
                           </div>
-                          <div class="text-sm text-center text-muted-foreground h-[5px]" v-else>
-                            Revisão
-                          </div>
-
-                          <!-- Para debug - remover depois -->
-                          <div v-if="false" class="text-xs position-absolute -top-20 text-right text-muted-foreground">
-                            Phase: {{ phase.phase_number }} |
-                            Complete: {{ isPhaseComplete(phase) }} |
-                            Status: {{ JSON.stringify(phase.progress?.article_status) }} |
-                            Blocked: {{ phase.is_blocked }} |
-                            Review: {{ phase.is_review }} |
-                            Current: {{ isCurrentPhase(phase, props.phases) }} |
-                            RefCurrentPhase: {{ referenceCurrentPhases[phase.reference_uuid] }}
+                          <div class="text-sm text-center text-muted-foreground h-[10px]" v-else :class="{'opacity-60': phase.is_blocked}">
+                            {{ phase.progress?.needs_review ? `(${phase.progress.articles_to_review_count || 0})` : '' }} Revisão
                           </div>
 
+                          <!-- DEBUG (Ajustar para novos dados) -->
+                          <div v-if="false" class="text-[10px] absolute -bottom-12 w-[200px] text-left text-muted-foreground" :style="phaseIndex % 2 === 0 ? 'right: -10px;' : 'left: -10px;'">
+                            ID: {{ phase.id }} |
+                            Comp: {{ phase.is_complete }} |
+                            Block: {{ phase.is_blocked }} |
+                            Curr: {{ phase.is_current }} |
+                            Rev: {{ phase.is_review }} |
+                            <span v-if="phase.is_review">Needs?: {{ phase.progress?.needs_review }}</span>
+                            <span v-else>Status: {{ JSON.stringify(phase.progress?.article_status) }}</span>
+
+                          </div>
 
                       </Link>
                     </div>
@@ -376,24 +369,25 @@ const referenceGroups = computed(() => {
               </div>
             </div>
 
-            <!-- Conector entre grupos (exceto para o último grupo) -->
+            <!-- Conector entre grupos (ajustar lógica de cor/opacidade) -->
             <div v-if="index < referenceGroups.length - 1" class="relative mx-auto mt-0 mb-0 group-connector" style="height: 100px; max-width: 220px;">
-              <div class="absolute w-full h-full -z-10">
-                <svg width="220" height="100" viewBox="0 0 220 100">
-                  <!-- Linha tracejada que conecta o último círculo ao próximo grupo -->
-                  <path
-                    :d="(group.phases.length - 1) % 2 === 0
-                         ? `M160,0 C145,10 130,25 ${160-25*Math.sin(0.5)},50 S80,90 60,108`
-                        : `M60,0 C75,10 90,25 ${60+25*Math.sin(0.5)},50 S140,90 160,108`"
-                    stroke="#432818"
-                    stroke-width="3"
-                    stroke-opacity="0.8"
-                    stroke-dasharray="8,6"
-                    fill="none"
-                  />
-                </svg>
+                <div class="absolute w-full h-full -z-10">
+                  <svg width="220" height="100" viewBox="0 0 220 100">
+                    <!-- Cor/opacidade baseada se a *primeira fase do próximo grupo* está bloqueada -->
+                    <path
+                      :d="(group.phases.length - 1) % 2 === 0
+                          ? `M160,0 C145,10 130,25 ${160-25*Math.sin(0.5)},50 S80,90 60,108`
+                          : `M60,0 C75,10 90,25 ${60+25*Math.sin(0.5)},50 S140,90 160,108`"
+                      :stroke="!referenceGroups[index+1]?.phases[0]?.is_blocked ? '#432818' : 'currentColor'"
+                      stroke-width="3"
+                      :stroke-opacity="!referenceGroups[index+1]?.phases[0]?.is_blocked ? '0.8' : '0.3'"
+                      stroke-dasharray="8,6"
+                      fill="none"
+                    />
+                  </svg>
+                </div>
               </div>
-            </div>
+
           </div>
         </div>
 

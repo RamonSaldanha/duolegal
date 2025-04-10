@@ -1,5 +1,5 @@
 <?php
-
+// routes\web.php
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\Admin\LawArticleOptionController;
@@ -32,8 +32,15 @@ Route::post('/admin/law-article-options', [LawArticleOptionController::class, 's
         // Rotas de jogo (Play)
         Route::get('/play', [PlayController::class, 'map'])->name('play.map');
         Route::get('/play/no-lives', fn() => Inertia::render('Play/NoLives'))->name('play.nolives');
-        Route::get('/play/{reference}/{phase}', [PlayController::class, 'phase'])->name('play.phase');
-        Route::get('/play/review/{referenceUuid}/{phase}', action: [PlayController::class, 'review'])->name('play.review');
+        // ROTA MODIFICADA: Aceita apenas o ID global da fase
+        Route::get('/play/phase/{phaseId}', [PlayController::class, 'phase'])
+        ->where('phaseId', '[0-9]+') // Garante que phaseId seja numérico
+        ->name('play.phase'); // Manter o nome da rota, se preferir
+
+        // Rota de revisão continua aceitando UUID e phase ID (número global)
+        Route::get('/play/review/{referenceUuid}/{phase}', [PlayController::class, 'review'])
+        ->where('phase', '[0-9]+') // Garante que phase (ID global) seja numérico
+        ->name('play.review');
 
         Route::post('/play/progress', [PlayController::class, 'saveProgress'])->name('play.progress');
         Route::post('/play/reward-life', [PlayController::class, 'rewardLife'])->name('play.reward-life');
