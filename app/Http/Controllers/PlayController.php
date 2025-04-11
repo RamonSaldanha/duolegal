@@ -90,7 +90,7 @@ class PlayController extends Controller
                  }
              }
         }
-        Log::debug("[Map Structure] Phase structure list built. Count: " . count($phaseStructureList));
+        // Log::debug("[Map Structure] Phase structure list built. Count: " . count($phaseStructureList));
 
 
         // --- PASSO 2: Iterar pela ESTRUTURA para calcular progresso, bloqueios e fase atual ---
@@ -101,11 +101,11 @@ class PlayController extends Controller
              if ($phaseStruct['reference_uuid'] !== $currentLawUuid) {
                  $previousLawUuid = $currentLawUuid;
                  $currentLawUuid = $phaseStruct['reference_uuid'];
-                 Log::debug("[Map Pass 2 - Phase {$currentPhaseGlobalId}] Switched to Law UUID: {$currentLawUuid}");
+                 // Log::debug("[Map Pass 2 - Phase {$currentPhaseGlobalId}] Switched to Law UUID: {$currentLawUuid}");
 
                  // Verificar se a lei anterior *não* foi completada (se houver lei anterior)
                  if ($previousLawUuid !== null && isset($lawCompletionStatus[$previousLawUuid]) && !$lawCompletionStatus[$previousLawUuid]) {
-                     Log::debug("[Map Pass 2 - Phase {$currentPhaseGlobalId}] Blocking subsequent phases because previous law ({$previousLawUuid}) was incomplete.");
+                     // Log::debug("[Map Pass 2 - Phase {$currentPhaseGlobalId}] Blocking subsequent phases because previous law ({$previousLawUuid}) was incomplete.");
                      $blockSubsequent = true; // Bloqueia esta lei e as seguintes
                  }
                   // Assumir que a lei atual está completa até prova em contrário
@@ -124,18 +124,18 @@ class PlayController extends Controller
              // Calcular progresso e conclusão específica para tipo de fase
              if ($phaseStruct['is_review']) {
                  // --- Fase de Revisão ---
-                 Log::debug("[Map Pass 2 - Phase {$currentPhaseGlobalId}] Processing REVIEW phase.");
+                 // Log::debug("[Map Pass 2 - Phase {$currentPhaseGlobalId}] Processing REVIEW phase.");
                  $articleIdsInScope = $this->getArticlesInScopeForReview($currentPhaseGlobalId, $phaseStructureList); // Passa a lista de ESTRUTURA completa
                  $phaseProgress = $this->getReviewPhaseProgress($userId, $articleIdsInScope);
                  $isPhaseComplete = $phaseProgress['is_complete']; // Revisão completa se !needs_review
 
-                 Log::debug("[Map Pass 2 - Phase {$currentPhaseGlobalId}] Review - Blocked: ".($isPhaseBlocked?'Yes':'No').", Complete: ".($isPhaseComplete?'Yes':'No'));
+                 // Log::debug("[Map Pass 2 - Phase {$currentPhaseGlobalId}] Review - Blocked: ".($isPhaseBlocked?'Yes':'No').", Complete: ".($isPhaseComplete?'Yes':'No'));
 
                  // Determina se é a fase atual GLOBAL
                  if (!$isPhaseBlocked && !$isPhaseComplete && $currentPhaseId === null) {
                      $isPhaseCurrent = true;
                      $currentPhaseId = $currentPhaseGlobalId;
-                      Log::debug("[Map Pass 2 - Phase {$currentPhaseGlobalId}] SET AS CURRENT (Review). Blocking subsequent.");
+                      // Log::debug("[Map Pass 2 - Phase {$currentPhaseGlobalId}] SET AS CURRENT (Review). Blocking subsequent.");
                  }
 
                  // Construir dados finais da fase de revisão
@@ -177,8 +177,8 @@ class PlayController extends Controller
 
              // Atualizar status de conclusão da LEI se esta fase for incompleta
              if (!$isPhaseComplete) {
-                  if ($lawCompletionStatus[$currentLawUuid]) { Log apenas na primeira vez que marca como incompleta
-                     Log::debug("[Map Pass 2 - Phase {$currentPhaseGlobalId}] Marking Law UUID {$currentLawUuid} as incomplete due to this phase.");
+                  if ($lawCompletionStatus[$currentLawUuid]) { 
+                     // Log::debug("[Map Pass 2 - Phase {$currentPhaseGlobalId}] Marking Law UUID {$currentLawUuid} as incomplete due to this phase.");
                  }
                  $lawCompletionStatus[$currentLawUuid] = false;
              }
@@ -187,7 +187,7 @@ class PlayController extends Controller
              if ($phaseBuiltData) {
                  $phasesData[] = $phaseBuiltData;
              } else {
-                  Log::error("[Map Pass 2 - Phase {$currentPhaseGlobalId}] Failed to build phase data.");
+                  // Log::error("[Map Pass 2 - Phase {$currentPhaseGlobalId}] Failed to build phase data.");
              }
 
 
@@ -356,7 +356,7 @@ class PlayController extends Controller
     private function getReviewPhaseProgress($userId, Collection $articleIdsInScope)
     {
         if (!$userId || $articleIdsInScope->isEmpty()) {
-             Log::debug("[ReviewProgress User {$userId}] No articles in scope.");
+            //  Log::debug("[ReviewProgress User {$userId}] No articles in scope.");
             return [
                 'is_complete' => true, 'needs_review' => false, 'articles_to_review_count' => 0,
                 'completed' => 0, 'total' => 0, 'percentage' => 0, 'article_status' => [],
@@ -368,7 +368,7 @@ class PlayController extends Controller
             ->where('percentage', '<', 100)
             ->count();
 
-         Log::debug("[ReviewProgress User {$userId}] Scope IDs: [".$articleIdsInScope->implode(', ')."]. Incomplete count: {$incompleteArticlesCount}.");
+        //  Log::debug("[ReviewProgress User {$userId}] Scope IDs: [".$articleIdsInScope->implode(', ')."]. Incomplete count: {$incompleteArticlesCount}.");
 
         $needsReview = $incompleteArticlesCount > 0;
 
@@ -397,10 +397,10 @@ class PlayController extends Controller
             }
         }
         if ($currentReviewPhaseIndex === -1 || $referenceUuid === null) {
-            Log::debug("[ScopeReview {$reviewPhaseId}] Review phase not found in structure list.");
+            // Log::debug("[ScopeReview {$reviewPhaseId}] Review phase not found in structure list.");
             return collect();
         }
-        Log::debug("[ScopeReview {$reviewPhaseId}] Found review phase at index {$currentReviewPhaseIndex}.");
+        // Log::debug("[ScopeReview {$reviewPhaseId}] Found review phase at index {$currentReviewPhaseIndex}.");
 
         // 2. Find start index
         $startIndex = 0;
@@ -410,13 +410,13 @@ class PlayController extends Controller
             if ($phase['reference_uuid'] !== $referenceUuid) {
                 $startIndex = $i + 1;
                 $foundBoundary = true;
-                Log::debug("[ScopeReview {$reviewPhaseId}] Boundary: Different law at index {$i}. StartIndex set to {$startIndex}.");
+                // Log::debug("[ScopeReview {$reviewPhaseId}] Boundary: Different law at index {$i}. StartIndex set to {$startIndex}.");
                 break;
             }
             if ($phase['is_review']) {
                 $startIndex = $i + 1;
                 $foundBoundary = true;
-                 Log::debug("[ScopeReview {$reviewPhaseId}] Boundary: Previous review at index {$i}. StartIndex set to {$startIndex}.");
+                //  Log::debug("[ScopeReview {$reviewPhaseId}] Boundary: Previous review at index {$i}. StartIndex set to {$startIndex}.");
                 break;
             }
         }
@@ -424,7 +424,7 @@ class PlayController extends Controller
              foreach ($fullPhaseStructureList as $idx => $p) {
                  if ($p['reference_uuid'] === $referenceUuid) {
                      $startIndex = $idx;
-                     Log::debug("[ScopeReview {$reviewPhaseId}] No boundary looping back. First phase of law found at index {$startIndex}.");
+                    //  Log::debug("[ScopeReview {$reviewPhaseId}] No boundary looping back. First phase of law found at index {$startIndex}.");
                      break;
                  }
              }
@@ -432,17 +432,17 @@ class PlayController extends Controller
 
         // 3. End index
         $endIndex = $currentReviewPhaseIndex - 1;
-         Log::debug("[ScopeReview {$reviewPhaseId}] EndIndex set to {$endIndex}.");
+        //  Log::debug("[ScopeReview {$reviewPhaseId}] EndIndex set to {$endIndex}.");
 
         // 4. Collect article IDs
         $articleIds = collect();
         if ($startIndex <= $endIndex) {
-             Log::debug("[ScopeReview {$reviewPhaseId}] Collecting article IDs from index {$startIndex} to {$endIndex}.");
+            //  Log::debug("[ScopeReview {$reviewPhaseId}] Collecting article IDs from index {$startIndex} to {$endIndex}.");
             static $referenceArticleCache = []; // Static cache within the request
             if (!isset($referenceArticleCache[$referenceUuid])) {
                 $refModel = LegalReference::with(['articles' => fn($q)=>$q->orderBy('position')])->where('uuid', $referenceUuid)->first();
                 $referenceArticleCache[$referenceUuid] = $refModel ? $refModel->articles : collect();
-                 Log::debug("[ScopeReview {$reviewPhaseId}] Fetched/Cached articles for ref {$referenceUuid}. Count: " . $referenceArticleCache[$referenceUuid]->count());
+                //  Log::debug("[ScopeReview {$reviewPhaseId}] Fetched/Cached articles for ref {$referenceUuid}. Count: " . $referenceArticleCache[$referenceUuid]->count());
             }
             $allArticlesOfRef = $referenceArticleCache[$referenceUuid];
 
@@ -455,7 +455,7 @@ class PlayController extends Controller
 
             for ($i = $startIndex; $i <= $endIndex; $i++) {
                  if (!isset($fullPhaseStructureList[$i])) {
-                     Log::warning("[ScopeReview {$reviewPhaseId}] Index {$i} out of bounds for structure list.");
+                    //  Log::warning("[ScopeReview {$reviewPhaseId}] Index {$i} out of bounds for structure list.");
                      continue;
                  }
                 $phase = $fullPhaseStructureList[$i];
@@ -463,19 +463,19 @@ class PlayController extends Controller
                     $chunkIndex = $phase['chunk_index'];
                     if (isset($chunks[$chunkIndex])) {
                         $chunkArticleIds = $chunks[$chunkIndex]->pluck('id');
-                         Log::debug("[ScopeReview {$reviewPhaseId}] Adding articles from phase ID {$phase['id']} (Chunk {$chunkIndex}): " . $chunkArticleIds->implode(', '));
+                        //  Log::debug("[ScopeReview {$reviewPhaseId}] Adding articles from phase ID {$phase['id']} (Chunk {$chunkIndex}): " . $chunkArticleIds->implode(', '));
                         $articleIds = $articleIds->merge($chunkArticleIds);
                     } else {
-                        Log::warning("[ScopeReview {$reviewPhaseId}] Chunk index {$chunkIndex} not found for phase ID {$phase['id']}.");
+                        // Log::warning("[ScopeReview {$reviewPhaseId}] Chunk index {$chunkIndex} not found for phase ID {$phase['id']}.");
                     }
                 }
             }
         } else {
-             Log::debug("[ScopeReview {$reviewPhaseId}] No regular phases in scope (startIndex {$startIndex} > endIndex {$endIndex}).");
+            //  Log::debug("[ScopeReview {$reviewPhaseId}] No regular phases in scope (startIndex {$startIndex} > endIndex {$endIndex}).");
         }
 
         $uniqueArticleIds = $articleIds->unique();
-         Log::debug("[ScopeReview {$reviewPhaseId}] Total unique article IDs in scope: " . $uniqueArticleIds->count() . " [". $uniqueArticleIds->implode(', ') . "]");
+        //  Log::debug("[ScopeReview {$reviewPhaseId}] Total unique article IDs in scope: " . $uniqueArticleIds->count() . " [". $uniqueArticleIds->implode(', ') . "]");
 
         // 5. Return collection of IDs
         return $uniqueArticleIds;
@@ -500,20 +500,20 @@ class PlayController extends Controller
          list($phaseDetails, $allPhasesList) = $this->findPhaseDetailsById($userId, $phaseId);
 
          if (!$phaseDetails) {
-             Log::warning("[Phase Route] Fase não encontrada para ID global: " . $phaseId);
+            //  Log::warning("[Phase Route] Fase não encontrada para ID global: " . $phaseId);
              return redirect()->route('play.map')->with('message', 'Fase não encontrada.');
          }
 
          // Verificar bloqueio (segurança extra)
           if ($phaseDetails['is_blocked'] && !$phaseDetails['is_current']) {
-               Log::warning("[Phase Route] Acesso bloqueado à fase: " . $phaseId . " por usuário: " . $userId);
+            //    Log::warning("[Phase Route] Acesso bloqueado à fase: " . $phaseId . " por usuário: " . $userId);
                return redirect()->route('play.map')->with('message', 'Esta fase está bloqueada.');
           }
 
 
          // Redirecionar para review se for o caso (deveria ser pego pela rota, mas como fallback)
          if ($phaseDetails['is_review']) {
-              Log::warning("[Phase Route] Tentativa de acessar fase de revisão ID {$phaseId} pela rota de fase regular. Redirecionando.");
+            //   Log::warning("[Phase Route] Tentativa de acessar fase de revisão ID {$phaseId} pela rota de fase regular. Redirecionando.");
              return redirect()->route('play.review', [
                  'referenceUuid' => $phaseDetails['reference_uuid'],
                  'phase' => $phaseId // Passa ID global
@@ -530,7 +530,7 @@ class PlayController extends Controller
          $chunkIndex = $phaseDetails['chunk_index'];
 
          if (!isset($chunkedArticles[$chunkIndex]) || $chunkedArticles[$chunkIndex]->isEmpty()) {
-              Log::error("[Phase Route] Chunk de artigos não encontrado para fase regular: " . $phaseId . " chunk: " . $chunkIndex);
+            //   Log::error("[Phase Route] Chunk de artigos não encontrado para fase regular: " . $phaseId . " chunk: " . $chunkIndex);
              return redirect()->route('play.map')->with('message', 'Erro ao carregar artigos da fase.');
          }
 
@@ -569,12 +569,12 @@ class PlayController extends Controller
          list($phaseDetails, $allPhasesList) = $this->findPhaseDetailsById($userId, $phaseId);
 
           if (!$phaseDetails || !$phaseDetails['is_review'] || $phaseDetails['reference_uuid'] !== $referenceUuid) {
-               Log::warning("[Review Route] Tentativa de acessar revisão inválida, não encontrada ou UUID não corresponde: Phase ID {$phaseId}, Ref UUID {$referenceUuid}");
+            //    Log::warning("[Review Route] Tentativa de acessar revisão inválida, não encontrada ou UUID não corresponde: Phase ID {$phaseId}, Ref UUID {$referenceUuid}");
                return redirect()->route('play.map')->with('message', 'Fase de revisão não encontrada ou inválida.');
            }
            // Verificar bloqueio
            if ($phaseDetails['is_blocked'] && !$phaseDetails['is_current']) {
-               Log::warning("[Review Route] Acesso bloqueado à fase de revisão: " . $phaseId . " por usuário: " . $userId);
+            //    Log::warning("[Review Route] Acesso bloqueado à fase de revisão: " . $phaseId . " por usuário: " . $userId);
                return redirect()->route('play.map')->with('message', 'Esta fase está bloqueada.');
            }
 
@@ -622,13 +622,13 @@ class PlayController extends Controller
 
                   return redirect($nextRoute);
               } else {
-                   Log::debug("[Review Route] Fase {$phaseId}: Revisão completa e sem próxima fase. Voltando ao mapa.");
+                   // Log::debug("[Review Route] Fase {$phaseId}: Revisão completa e sem próxima fase. Voltando ao mapa.");
                    return redirect()->route('play.map')->with('message', 'Parabéns, você completou esta seção!');
               }
          }
 
          // Se há artigos para revisar, renderiza a página de revisão
-         Log::debug("[Review Route] Fase {$phaseId}: Renderizando revisão com {$articlesWithProgress->count()} artigos.");
+        //  Log::debug("[Review Route] Fase {$phaseId}: Renderizando revisão com {$articlesWithProgress->count()} artigos.");
          $nextPhaseDetails = $this->findNextPhase($phaseId, $allPhasesList);
 
          return Inertia::render('Play/Phase', [ // Reutiliza o componente Phase
@@ -651,7 +651,7 @@ class PlayController extends Controller
 
     private function findPhaseDetailsById($userId, $targetPhaseId): array
     {
-        Log::info("[findDetails - Start] Finding details for Phase ID: {$targetPhaseId}, User ID: {$userId}");
+        //  Log::info("[findDetails - Start] Finding details for Phase ID: {$targetPhaseId}, User ID: {$userId}");
         $user = Auth::user();
         $hasPreferences = $user->legalReferences()->exists();
 
@@ -671,10 +671,10 @@ class PlayController extends Controller
         }
         $legalReferences = $legalReferencesQuery->orderBy('id', 'asc')->get();
         if ($legalReferences->isEmpty()) {
-            Log::warning("[findDetails] No legal references found based on user preferences/defaults.");
+            // Log::warning("[findDetails] No legal references found based on user preferences/defaults.");
             return [null, []];
         }
-        Log::debug("[findDetails] Found " . $legalReferences->count() . " legal references.");
+        // Log::debug("[findDetails] Found " . $legalReferences->count() . " legal references.");
 
 
         // 2. Recalcular $phaseStructureList (IDÊNTICO ao Passo 1 do map())
@@ -692,12 +692,12 @@ class PlayController extends Controller
                     'article_chunk' => $articleChunk, // Manter chunk para Pass 2
                     'reference_name_debug' => $reference->name // Add for logging
                 ];
-                if ($tempCounter == $targetPhaseId) { Log específico
-                    Log::debug("[findDetails - Struct Gen] Target ID {$targetPhaseId} Structure (Regular): " . json_encode([
-                        'id' => $struct['id'], 'is_review' => $struct['is_review'],
-                        'ref_uuid' => $struct['reference_uuid'], 'chunk' => $struct['chunk_index'],
-                        'ref_name' => $struct['reference_name_debug']
-                    ]));
+                if ($tempCounter == $targetPhaseId) {
+                    // Log::debug("[findDetails - Struct Gen] Target ID {$targetPhaseId} Structure (Regular): " . json_encode([
+                    //     'id' => $struct['id'], 'is_review' => $struct['is_review'],
+                    //     'ref_uuid' => $struct['reference_uuid'], 'chunk' => $struct['chunk_index'],
+                    //     'ref_name' => $struct['reference_name_debug']
+                    // ]));
                 }
                 $phaseStructureList[] = $struct;
 
@@ -709,18 +709,18 @@ class PlayController extends Controller
                         'last_regular_counter' => $regularPhaseCounter,
                         'reference_name_debug' => $reference->name // Add for logging
                     ];
-                    if ($tempCounter == $targetPhaseId) { Log específico
-                        Log::debug("[findDetails - Struct Gen] Target ID {$targetPhaseId} Structure (Review): " . json_encode([
-                            'id' => $struct['id'], 'is_review' => $struct['is_review'],
-                            'ref_uuid' => $struct['reference_uuid'],
-                            'ref_name' => $struct['reference_name_debug']
-                        ]));
+                    if ($tempCounter == $targetPhaseId) { 
+                        // Log::debug("[findDetails - Struct Gen] Target ID {$targetPhaseId} Structure (Review): " . json_encode([
+                        //     'id' => $struct['id'], 'is_review' => $struct['is_review'],
+                        //     'ref_uuid' => $struct['reference_uuid'],
+                        //     'ref_name' => $struct['reference_name_debug']
+                        // ]));
                     }
                     $phaseStructureList[] = $struct;
                 }
             }
         }
-        Log::debug("[findDetails] Recalculated structure list. Count: " . count($phaseStructureList));
+        // Log::debug("[findDetails] Recalculated structure list. Count: " . count($phaseStructureList));
 
         // 3. Iterar pela Estrutura para Calcular Dados (IDÊNTICO ao Passo 2 do map())
         $allPhasesListData = [];
@@ -755,13 +755,12 @@ class PlayController extends Controller
             // Usar firstWhere no início da iteração para garantir a referência correta
             $currentReferenceModel = $legalReferences->firstWhere('uuid', $phaseStruct['reference_uuid']);
             if (!$currentReferenceModel) {
-                Log::error("[findDetails - Pass 2] Cannot find LegalReference model for UUID: {$phaseStruct['reference_uuid']} at Phase ID {$currentPhaseGlobalId}. Skipping.");
+                // Log::error("[findDetails - Pass 2] Cannot find LegalReference model for UUID: {$phaseStruct['reference_uuid']} at Phase ID {$currentPhaseGlobalId}. Skipping.");
                 continue; // Pula esta fase se a referência não for encontrada
             }
 
-            Logging específico para a fase alvo antes de construir
             if ($currentPhaseGlobalId == $targetPhaseId) {
-                Log::debug("[findDetails - Pass 2] Processing Target ID {$targetPhaseId}. Ref Name: {$currentReferenceModel->name}. Blocked: ".($isPhaseBlocked?'Y':'N').". PrevComplete: ".($previousPhaseIsComplete?'Y':'N'));
+                // Log::debug("[findDetails - Pass 2] Processing Target ID {$targetPhaseId}. Ref Name: {$currentReferenceModel->name}. Blocked: ".($isPhaseBlocked?'Y':'N').". PrevComplete: ".($previousPhaseIsComplete?'Y':'N'));
             }
 
 
