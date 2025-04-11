@@ -1,5 +1,5 @@
 <?php
-
+// app\Http\Controllers\PlayController.php
 namespace App\Http\Controllers;
 
 use App\Models\LawArticle;
@@ -235,7 +235,7 @@ class PlayController extends Controller
              // Por enquanto, deixamos sem fase atual se $currentPhaseId for null.
         }
 
-
+        
         return Inertia::render('Play/Map', [
             'phases' => $phasesData,
              'user' => [
@@ -537,7 +537,7 @@ class PlayController extends Controller
          $phaseArticles = $chunkedArticles[$chunkIndex];
          $articlesWithProgress = $this->getArticlesWithProgress($userId, $phaseArticles);
          $nextPhaseDetails = $this->findNextPhase($phaseId, $allPhasesList);
-
+         
          return Inertia::render('Play/Phase', [
              'phase' => [
                  'title' => $phaseDetails['title'], // Título já formatado
@@ -647,136 +647,194 @@ class PlayController extends Controller
          ]);
      }
 
-      private function findPhaseDetailsById($userId, $targetPhaseId): array
-     {
-         // Recalcula a estrutura e depois os dados completos, similar ao map()
-         $user = Auth::user();
-         $hasPreferences = $user->legalReferences()->exists();
-         $legalReferencesQuery = LegalReference::with(['articles' => function($query) {
-             $query->orderBy('position', 'asc')->where('is_active', true);
-         }]);
-         if ($hasPreferences) { /* ... filtro ... */ } else { /* ... filtro ou query geral ... */ }
-         $legalReferences = $legalReferencesQuery->orderBy('id', 'asc')->get();
-         if ($legalReferences->isEmpty()) return [null, []];
+      // PlayController.php
 
-         // PASSO 1: Construir Estrutura Completa
-         $phaseStructureList = [];
-         $tempCounter = 0;
-         foreach ($legalReferences as $reference) {
-              $chunks = $reference->articles->chunk(self::ARTICLES_PER_PHASE);
-              $regularPhaseCounter = 0;
-              foreach ($chunks as $chunkIndex => $articleChunk) {
-                  $regularPhaseCounter++; $tempCounter++;
-                  $phaseStructureList[] = ['id' => $tempCounter, 'is_review' => false, 'reference_uuid' => $reference->uuid, 'chunk_index' => $chunkIndex, 'article_chunk' => $articleChunk ];
-                  if ($regularPhaseCounter % self::REVIEW_PHASE_INTERVAL === 0) {
-                      $tempCounter++;
-                      $phaseStructureList[] = ['id' => $tempCounter, 'is_review' => true, 'reference_uuid' => $reference->uuid, 'last_regular_counter' => $regularPhaseCounter ];
-                  }
-              }
-         }
+    private function findPhaseDetailsById($userId, $targetPhaseId): array
+    {
+        Log::info("[findDetails - Start] Finding details for Phase ID: {$targetPhaseId}, User ID: {$userId}");
+        $user = Auth::user();
+        $hasPreferences = $user->legalReferences()->exists();
 
-         // PASSO 2: Iterar pela Estrutura para Calcular Dados (incluindo o alvo)
-         $allPhasesListData = []; // Armazena os dados finais de todas as fases
-         $phaseDetails = null; // Armazena os dados da fase alvo
-         $currentPhaseId = null;
-         $blockSubsequent = false;
-         $previousPhaseIsComplete = true;
-         $currentLawUuid = null;
-         $lawCompletionStatus = [];
-
-          foreach ($phaseStructureList as $phaseIndex => $phaseStruct) {
-             $currentPhaseGlobalId = $phaseStruct['id'];
-             // ... (Lógica de mudança de lei e bloqueio inter-lei como no map()) ...
-             if ($phaseStruct['reference_uuid'] !== $currentLawUuid) { /* ... */ }
-
-             $isPhaseBlocked = $blockSubsequent || !$previousPhaseIsComplete;
-             $isPhaseCurrent = false;
-             $phaseProgress = null;
-             $isPhaseComplete = false;
-             $phaseBuiltData = null;
-
-             if ($phaseStruct['is_review']) {
-                 $articleIdsInScope = $this->getArticlesInScopeForReview($currentPhaseGlobalId, $phaseStructureList);
-                 $phaseProgress = $this->getReviewPhaseProgress($userId, $articleIdsInScope);
-                 $isPhaseComplete = $phaseProgress['is_complete'];
-                 if (!$isPhaseBlocked && !$isPhaseComplete && $currentPhaseId === null) { $isPhaseCurrent = true; $currentPhaseId = $currentPhaseGlobalId; }
-                 $phaseBuiltData = $this->buildReviewPhaseData(
-                     $currentPhaseGlobalId, $legalReferences->firstWhere('uuid', $phaseStruct['reference_uuid']),
-                     $phaseStruct['last_regular_counter'], $isPhaseBlocked, $isPhaseCurrent, $phaseProgress );
-             } else {
-                 $phaseProgress = $this->getPhaseProgress($userId, $phaseStruct['article_chunk']);
-                 $isPhaseComplete = $phaseProgress['all_attempted'];
-                 if (!$isPhaseBlocked && !$isPhaseComplete && $currentPhaseId === null) { $isPhaseCurrent = true; $currentPhaseId = $currentPhaseGlobalId; }
-                 $phaseBuiltData = $this->buildPhaseData(
-                     $currentPhaseGlobalId, $legalReferences->firstWhere('uuid', $phaseStruct['reference_uuid']),
-                     $phaseStruct['article_chunk'], $phaseStruct['chunk_index'], $phaseProgress, $isPhaseBlocked, $isPhaseCurrent );
-             }
-
-             // Atualizar status da lei
-             if (!$isPhaseComplete && isset($lawCompletionStatus[$phaseStruct['reference_uuid']])) {
-                  $lawCompletionStatus[$phaseStruct['reference_uuid']] = false;
-             } elseif (!isset($lawCompletionStatus[$phaseStruct['reference_uuid']])) {
-                 // Inicializar se ainda não existe (primeira fase da lei)
-                  $lawCompletionStatus[$phaseStruct['reference_uuid']] = $isPhaseComplete;
-             }
+        // 1. Recalcular $legalReferences (Garantir que a query seja IDÊNTICA à do map())
+        $legalReferencesQuery = LegalReference::with(['articles' => function($query) {
+            $query->orderBy('position', 'asc')->where('is_active', true);
+        }]);
+        if ($hasPreferences) {
+            $legalReferencesQuery->whereHas('users', function($query) use ($userId) {
+                $query->where('users.id', $userId);
+            });
+        } else {
+            if (!LegalReference::exists()) return [null, []];
+            $legalReferencesQuery = LegalReference::with(['articles' => function($query) {
+                $query->orderBy('position', 'asc')->where('is_active', true);
+            }])->where('is_active', true);
+        }
+        $legalReferences = $legalReferencesQuery->orderBy('id', 'asc')->get();
+        if ($legalReferences->isEmpty()) {
+            Log::warning("[findDetails] No legal references found based on user preferences/defaults.");
+            return [null, []];
+        }
+        Log::debug("[findDetails] Found " . $legalReferences->count() . " legal references.");
 
 
-             // Armazenar dados da fase alvo
-             if ($currentPhaseGlobalId == $targetPhaseId) {
-                 $phaseDetails = $phaseBuiltData;
-                 // Setar is_current corretamente para a fase alvo
-                 if ($currentPhaseId === $targetPhaseId) {
-                     $phaseDetails['is_current'] = true;
-                     $phaseDetails['is_blocked'] = false; // Fase atual não é bloqueada
-                 }
-             }
-             // Adicionar à lista completa de dados
-             if ($phaseBuiltData) {
-                  // Se esta fase é a fase atual global, setar is_current
-                 if ($currentPhaseId === $currentPhaseGlobalId) {
-                     $phaseBuiltData['is_current'] = true;
-                     $phaseBuiltData['is_blocked'] = false; // Garante
-                 } else {
-                      $phaseBuiltData['is_current'] = false; // Garante
-                 }
-                 $allPhasesListData[] = $phaseBuiltData;
-             }
+        // 2. Recalcular $phaseStructureList (IDÊNTICO ao Passo 1 do map())
+        $phaseStructureList = [];
+        $tempCounter = 0;
+        foreach ($legalReferences as $reference) {
+            $chunks = $reference->articles->chunk(self::ARTICLES_PER_PHASE);
+            $regularPhaseCounter = 0;
+            foreach ($chunks as $chunkIndex => $articleChunk) {
+                $regularPhaseCounter++;
+                $tempCounter++;
+                $struct = [
+                    'id' => $tempCounter, 'is_review' => false,
+                    'reference_uuid' => $reference->uuid, 'chunk_index' => $chunkIndex,
+                    'article_chunk' => $articleChunk, // Manter chunk para Pass 2
+                    'reference_name_debug' => $reference->name // Add for logging
+                ];
+                if ($tempCounter == $targetPhaseId) { // Log específico
+                    Log::debug("[findDetails - Struct Gen] Target ID {$targetPhaseId} Structure (Regular): " . json_encode([
+                        'id' => $struct['id'], 'is_review' => $struct['is_review'],
+                        'ref_uuid' => $struct['reference_uuid'], 'chunk' => $struct['chunk_index'],
+                        'ref_name' => $struct['reference_name_debug']
+                    ]));
+                }
+                $phaseStructureList[] = $struct;
+
+                if ($regularPhaseCounter % self::REVIEW_PHASE_INTERVAL === 0) {
+                    $tempCounter++;
+                    $struct = [
+                        'id' => $tempCounter, 'is_review' => true,
+                        'reference_uuid' => $reference->uuid,
+                        'last_regular_counter' => $regularPhaseCounter,
+                        'reference_name_debug' => $reference->name // Add for logging
+                    ];
+                    if ($tempCounter == $targetPhaseId) { // Log específico
+                        Log::debug("[findDetails - Struct Gen] Target ID {$targetPhaseId} Structure (Review): " . json_encode([
+                            'id' => $struct['id'], 'is_review' => $struct['is_review'],
+                            'ref_uuid' => $struct['reference_uuid'],
+                            'ref_name' => $struct['reference_name_debug']
+                        ]));
+                    }
+                    $phaseStructureList[] = $struct;
+                }
+            }
+        }
+        Log::debug("[findDetails] Recalculated structure list. Count: " . count($phaseStructureList));
+
+        // 3. Iterar pela Estrutura para Calcular Dados (IDÊNTICO ao Passo 2 do map())
+        $allPhasesListData = [];
+        $phaseDetails = null;
+        $currentPhaseId = null; // ID global da fase atual real
+        $blockSubsequent = false;
+        $previousPhaseIsComplete = true;
+        $currentLawUuid_pass2 = null; // Usar variável diferente para evitar conflito
+        $lawCompletionStatus_pass2 = []; // Usar variável diferente
+
+        foreach ($phaseStructureList as $phaseIndex => $phaseStruct) {
+            $currentPhaseGlobalId = $phaseStruct['id'];
+
+            // Lógica de mudança de lei
+            if ($phaseStruct['reference_uuid'] !== $currentLawUuid_pass2) {
+                $previousLawUuid_pass2 = $currentLawUuid_pass2;
+                $currentLawUuid_pass2 = $phaseStruct['reference_uuid'];
+                // Bloqueio inter-lei
+                if ($previousLawUuid_pass2 !== null && isset($lawCompletionStatus_pass2[$previousLawUuid_pass2]) && !$lawCompletionStatus_pass2[$previousLawUuid_pass2]) {
+                    $blockSubsequent = true;
+                }
+                $lawCompletionStatus_pass2[$currentLawUuid_pass2] = true; // Assume completa
+            }
+
+            $isPhaseBlocked = $blockSubsequent || !$previousPhaseIsComplete;
+            $isPhaseCurrent = false; // Reset for each phase
+            $phaseProgress = null;
+            $isPhaseComplete = false;
+            $phaseBuiltData = null;
+
+            // Obter o modelo da referência correspondente a ESTA fase da estrutura
+            // Usar firstWhere no início da iteração para garantir a referência correta
+            $currentReferenceModel = $legalReferences->firstWhere('uuid', $phaseStruct['reference_uuid']);
+            if (!$currentReferenceModel) {
+                Log::error("[findDetails - Pass 2] Cannot find LegalReference model for UUID: {$phaseStruct['reference_uuid']} at Phase ID {$currentPhaseGlobalId}. Skipping.");
+                continue; // Pula esta fase se a referência não for encontrada
+            }
+
+            // Logging específico para a fase alvo antes de construir
+            if ($currentPhaseGlobalId == $targetPhaseId) {
+                Log::debug("[findDetails - Pass 2] Processing Target ID {$targetPhaseId}. Ref Name: {$currentReferenceModel->name}. Blocked: ".($isPhaseBlocked?'Y':'N').". PrevComplete: ".($previousPhaseIsComplete?'Y':'N'));
+            }
 
 
-             $previousPhaseIsComplete = $isPhaseComplete;
-             if ($isPhaseCurrent) { $blockSubsequent = true; }
-         }
+            if ($phaseStruct['is_review']) {
+                $articleIdsInScope = $this->getArticlesInScopeForReview($currentPhaseGlobalId, $phaseStructureList);
+                $phaseProgress = $this->getReviewPhaseProgress($userId, $articleIdsInScope);
+                $isPhaseComplete = $phaseProgress['is_complete'];
+                if (!$isPhaseBlocked && !$isPhaseComplete && $currentPhaseId === null) { $isPhaseCurrent = true; $currentPhaseId = $currentPhaseGlobalId; }
+                $phaseBuiltData = $this->buildReviewPhaseData(
+                    $currentPhaseGlobalId, $currentReferenceModel, // Usa a ref correta
+                    $phaseStruct['last_regular_counter'], $isPhaseBlocked, $isPhaseCurrent, $phaseProgress );
+            } else {
+                // Garante que 'article_chunk' existe na estrutura
+                if (!isset($phaseStruct['article_chunk'])) {
+                    Log::error("[findDetails - Pass 2] Missing 'article_chunk' for Regular Phase ID {$currentPhaseGlobalId}. Skipping.");
+                    continue;
+                }
+                $phaseProgress = $this->getPhaseProgress($userId, $phaseStruct['article_chunk']);
+                $isPhaseComplete = $phaseProgress['all_attempted'];
+                if (!$isPhaseBlocked && !$isPhaseComplete && $currentPhaseId === null) { $isPhaseCurrent = true; $currentPhaseId = $currentPhaseGlobalId; }
+                $phaseBuiltData = $this->buildPhaseData(
+                    $currentPhaseGlobalId, $currentReferenceModel, // Usa a ref correta
+                    $phaseStruct['article_chunk'], $phaseStruct['chunk_index'], $phaseProgress, $isPhaseBlocked, $isPhaseCurrent );
+            }
 
-         // Passo 3: Ajuste final (pode ser redundante se feito no passo 2)
-         // Certificar que apenas uma fase está marcada como 'is_current' na lista completa
-          if ($currentPhaseId !== null) {
-              foreach ($allPhasesListData as $index => $phase) {
-                  if ($phase['id'] === $currentPhaseId) {
-                      if(!$allPhasesListData[$index]['is_current']) {
-                           Log::warning("[findDetails] Corrigindo is_current para true na fase {$currentPhaseId}.");
-                           $allPhasesListData[$index]['is_current'] = true;
-                      }
-                      if($allPhasesListData[$index]['is_blocked']) {
-                           Log::warning("[findDetails] Corrigindo is_blocked para false na fase atual {$currentPhaseId}.");
-                           $allPhasesListData[$index]['is_blocked'] = false;
-                      }
-                  } elseif ($allPhasesListData[$index]['is_current']) {
-                       Log::warning("[findDetails] Corrigindo is_current para false na fase {$phase['id']} (atual é {$currentPhaseId}).");
-                      $allPhasesListData[$index]['is_current'] = false;
-                  }
-              }
-          }
-          // Atualizar $phaseDetails com o is_current correto se ele foi ajustado na lista geral
-          if($phaseDetails && $currentPhaseId === $phaseDetails['id']) {
-              $phaseDetails['is_current'] = true;
-              $phaseDetails['is_blocked'] = false;
-          } elseif ($phaseDetails) {
-              $phaseDetails['is_current'] = false;
-          }
+            // Atualizar status da lei
+            if (!$isPhaseComplete) {
+                $lawCompletionStatus_pass2[$currentLawUuid_pass2] = false;
+            }
+
+            // Armazenar dados da fase alvo
+            if ($currentPhaseGlobalId == $targetPhaseId) {
+                Log::debug("[findDetails - Pass 2] Storing phaseDetails for Target ID {$targetPhaseId}. Data: " . json_encode($phaseBuiltData));
+                $phaseDetails = $phaseBuiltData;
+            }
+            // Adicionar à lista completa de dados
+            if ($phaseBuiltData) {
+                $allPhasesListData[] = $phaseBuiltData;
+            }
+
+            $previousPhaseIsComplete = $isPhaseComplete;
+            if ($isPhaseCurrent) { $blockSubsequent = true; }
+        }
+
+        // 4. Ajuste Final (IDÊNTICO ao Passo 3 do map())
+        if ($currentPhaseId !== null) {
+            // Corrigir is_current / is_blocked na lista completa
+            foreach ($allPhasesListData as $index => $phase) {
+                if ($phase['id'] === $currentPhaseId) {
+                    $allPhasesListData[$index]['is_current'] = true;
+                    $allPhasesListData[$index]['is_blocked'] = false;
+                } elseif ($allPhasesListData[$index]['is_current']) {
+                    $allPhasesListData[$index]['is_current'] = false;
+                }
+            }
+            // Corrigir is_current / is_blocked nos detalhes da fase alvo, se ela for a atual
+            if($phaseDetails && $phaseDetails['id'] === $currentPhaseId) {
+                $phaseDetails['is_current'] = true;
+                $phaseDetails['is_blocked'] = false;
+            } elseif ($phaseDetails) {
+                $phaseDetails['is_current'] = false; // Garante que não seja marcada como atual se não for
+            }
+        }
+
+        if (!$phaseDetails) {
+            Log::error("[findDetails - End] Target Phase ID {$targetPhaseId} was not found or built during Pass 2.");
+        } else {
+            Log::info("[findDetails - End] Returning details for Phase ID {$targetPhaseId}. Ref Name in details: " . $phaseDetails['reference_name']);
+        }
 
 
-         return [$phaseDetails, $allPhasesListData]; // Retorna detalhes da fase alvo e a lista completa de dados
-     }
+        return [$phaseDetails, $allPhasesListData]; // Retorna detalhes da fase alvo e a lista completa de dados
+    }
 
       private function findNextPhase($currentPhaseId, $allPhasesListData): ?array
       {

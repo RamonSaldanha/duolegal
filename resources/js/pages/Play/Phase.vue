@@ -1,4 +1,5 @@
 <template>
+    <!-- resources\js\pages\Play\Phase.vue -->
     <Head :title="`Fase ${phase.phase_number}: ${phase.reference_name}`" />
 
     <AppLayout>
@@ -1255,47 +1256,58 @@ const reviewCompletionPercentage = computed(() => {
 
     // Substituir a função advanceToNextPhase existente por esta versão corrigida:
     const advanceToNextPhase = () => {
+        showCompletionModal.value = false; // Fecha o modal primeiro
+
         if (props.phase.has_next_phase) {
-            const nextPhaseNumber = props.phase.next_phase_number;
-            
-            // Se estamos em uma fase de revisão, verificar se todos os artigos estão 100% completos
+            const nextPhaseNumber = props.phase.next_phase_number; // ID Global da próxima fase
+
+            // Se estamos em uma fase de revisão
             if (props.phase.is_review) {
-                if (hasArticlesToReview.value) {
-                    // Ainda existem artigos para revisar
+                // Verificar se TODOS os artigos desta revisão estão com 100%
+                if (hasArticlesToReview.value) { // hasArticlesToReview verifica se algum está < 100%
+                    console.warn(`Cannot advance from REVIEW Phase ${props.phase.phase_number}. Articles need 100%.`);
+
+                    // --- Exibindo o Toast de Erro ---
                     toast({
-                        variant: "destructive",
-                        title: "Revisão incompleta",
-                        description: `Você precisa acertar 100% em todos os artigos para avançar (${reviewCompletionPercentage.value}% concluído).`,
+                        variant: "destructive", // Estilo de erro
+                        title: "Revisão Incompleta!",
+                        description: `Você precisa acertar 100% em todos os artigos (${reviewCompletionPercentage.value}% concluído) para poder avançar para a próxima fase.`,
+                        duration: 5000, // Exibir por 5 segundos
+                        // A ação para ir para o próximo incompleto já está no seu código original, mantida:
+                        action: props.phase.is_review && hasArticlesToReview.value ? {
+                            label: "Revisar Próximo",
+                            onClick: navigateToNextIncompleteArticle // Chama a função existente
+                        } : undefined,
                     });
-                    
-                    showCompletionModal.value = false; // Fecha o modal se estiver aberto
-                    return;
+                    // ---------------------------------
+
+                    return; // Impede o avanço
                 }
-                
-                // Todos os artigos estão 100% completos, podemos avançar
+
+                // Revisão completa (todos 100%), pode avançar para a próxima fase (que será regular)
+                console.debug(`Advancing from REVIEW Phase ${props.phase.phase_number} to NEXT Phase ID ${nextPhaseNumber}`);
                 router.visit(route('play.phase', {
-                    reference: props.phase.reference_uuid,
-                    phase: nextPhaseNumber
+                    phaseId: nextPhaseNumber
                 }));
                 return;
             }
-            
-            // Determinar qual rota usar com base no tipo da próxima fase
+
+            // Se a fase ATUAL é regular, verificar se a PRÓXIMA é revisão ou regular
             if (props.phase.next_phase_is_review) {
-                // Use a rota de revisão para a próxima fase
+                console.debug(`Advancing from REGULAR Phase ${props.phase.phase_number} to NEXT REVIEW Phase ID ${nextPhaseNumber}`);
                 router.visit(route('play.review', {
                     referenceUuid: props.phase.reference_uuid,
                     phase: nextPhaseNumber
                 }));
             } else {
-                // Se é uma fase regular, use a rota phase
+                console.debug(`Advancing from REGULAR Phase ${props.phase.phase_number} to NEXT REGULAR Phase ID ${nextPhaseNumber}`);
                 router.visit(route('play.phase', {
-                    reference: props.phase.reference_uuid,
-                    phase: nextPhaseNumber
+                    phaseId: nextPhaseNumber
                 }));
             }
         } else {
             // Se não há próxima fase, volta para o mapa
+            console.debug(`No next phase after Phase ${props.phase.phase_number}. Returning to map.`);
             router.visit(route('play.map'));
         }
     };
