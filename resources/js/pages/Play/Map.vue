@@ -353,7 +353,7 @@ const referenceGroups = computed(() => {
                           </div>
 
                           <!-- DEBUG (Ajustar para novos dados) -->
-                          <div v-if="true" class="text-[10px] absolute -bottom-12 w-[200px] text-left text-muted-foreground" :style="phaseIndex % 2 === 0 ? 'right: -10px;' : 'left: -10px;'">
+                          <div v-if="false" class="text-[10px] absolute -bottom-12 w-[200px] text-left text-muted-foreground" :style="phaseIndex % 2 === 0 ? 'right: -10px;' : 'left: -10px;'">
                             ID: {{ phase.id }} |
                             Comp: {{ phase.is_complete }} |
                             Block: {{ phase.is_blocked }} |
