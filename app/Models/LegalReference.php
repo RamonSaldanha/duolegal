@@ -15,7 +15,8 @@ class LegalReference extends Model
         'name',
         'description',
         'type',
-        'uuid'
+        'uuid',
+        'is_active'
     ];
 
     /**

@@ -67,6 +67,7 @@ const articleOptions = computed(() => {
 
   <AppLayout :breadcrumbs="breadcrumbs">
     <div class="container p-8">
+      
       <Card class="mb-6">
         <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
           <div>
