@@ -29,7 +29,7 @@ class PlayController extends Controller
         $hasPreferences = $user->legalReferences()->exists();
 
         $legalReferencesQuery = LegalReference::with(['articles' => function($query) {
-            $query->orderBy('article_reference', 'asc')->where('is_active', true);
+            $query->orderByRaw('CAST(article_reference AS UNSIGNED) ASC')->where('is_active', true);
         }]);
 
         if ($hasPreferences) {
@@ -41,7 +41,7 @@ class PlayController extends Controller
                  return redirect()->route('dashboard')->with('message', 'Nenhuma lei disponível no momento.');
              }
              $legalReferencesQuery = LegalReference::with(['articles' => function($query) {
-                 $query->orderBy('article_reference', 'asc')->where('is_active', true);
+                 $query->orderByRaw('CAST(article_reference AS UNSIGNED) ASC')->where('is_active', true);
              }])->where('is_active', true);
         }
 
@@ -440,7 +440,7 @@ class PlayController extends Controller
             //  Log::debug("[ScopeReview {$reviewPhaseId}] Collecting article IDs from index {$startIndex} to {$endIndex}.");
             static $referenceArticleCache = []; // Static cache within the request
             if (!isset($referenceArticleCache[$referenceUuid])) {
-                $refModel = LegalReference::with(['articles' => fn($q)=>$q->orderBy('article_reference')])->where('uuid', $referenceUuid)->first();
+                $refModel = LegalReference::with(['articles' => fn($q)=>$q->orderByRaw('CAST(article_reference AS UNSIGNED) ASC')])->where('uuid', $referenceUuid)->first();
                 $referenceArticleCache[$referenceUuid] = $refModel ? $refModel->articles : collect();
                 //  Log::debug("[ScopeReview {$reviewPhaseId}] Fetched/Cached articles for ref {$referenceUuid}. Count: " . $referenceArticleCache[$referenceUuid]->count());
             }
@@ -523,7 +523,7 @@ class PlayController extends Controller
          // --- Lógica para Fase Regular ---
          $reference = LegalReference::where('uuid', $phaseDetails['reference_uuid'])->firstOrFail();
          $allArticles = $reference->articles()
-             ->orderBy('article_reference', 'asc')
+             ->orderByRaw('CAST(article_reference AS UNSIGNED) ASC')
              ->where('is_active', true)
              ->get();
          $chunkedArticles = $allArticles->chunk(self::ARTICLES_PER_PHASE);
@@ -597,7 +597,7 @@ class PlayController extends Controller
                        LawArticle::with('options')
                            ->whereIn('id', $articleIdsToReview)
                            ->where('is_active', true)
-                           ->orderBy('article_reference', 'asc')
+                           ->orderByRaw('CAST(article_reference AS UNSIGNED) ASC')
                            ->get()
                    );
                }
@@ -657,7 +657,7 @@ class PlayController extends Controller
 
         // 1. Recalcular $legalReferences (Garantir que a query seja IDÊNTICA à do map())
         $legalReferencesQuery = LegalReference::with(['articles' => function($query) {
-            $query->orderBy('article_reference', 'asc')->where('is_active', true);
+            $query->orderByRaw('CAST(article_reference AS UNSIGNED) ASC')->where('is_active', true);
         }]);
         if ($hasPreferences) {
             $legalReferencesQuery->whereHas('users', function($query) use ($userId) {
@@ -666,7 +666,7 @@ class PlayController extends Controller
         } else {
             if (!LegalReference::exists()) return [null, []];
             $legalReferencesQuery = LegalReference::with(['articles' => function($query) {
-                $query->orderBy('article_reference', 'asc')->where('is_active', true);
+                $query->orderByRaw('CAST(article_reference AS UNSIGNED) ASC')->where('is_active', true);
             }])->where('is_active', true);
         }
         $legalReferences = $legalReferencesQuery->orderBy('id', 'asc')->get();
