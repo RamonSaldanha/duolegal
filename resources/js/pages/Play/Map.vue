@@ -225,14 +225,14 @@ const referenceGroups = computed(() => {
                   <!-- Badge com número da fase -->
                   <Badge 
                     v-if="showProgressIndicators"
-                    class="absolute -top-2 -right-2 bg-primary text-xs h-5 w-5 flex items-center justify-center p-0 min-w-0" 
+                    class="absolute -top-1 -right-1 bg-primary text-xs h-5 w-5 flex items-center justify-center p-0 min-w-0" 
                     :class="{'opacity-60': phase.is_blocked}"
                   >
                     {{ phase.id }}
                   </Badge>
 
                   <!-- Indicador de progresso (pontos menores) -->
-                  <div v-if="!phase.is_review && showProgressIndicators" class="mt-1 flex justify-center gap-[1px] flex-wrap max-w-[48px]" :class="{'opacity-60': phase.is_blocked}">
+                  <div v-if="!phase.is_review && showProgressIndicators" class="mt-1 flex justify-center items-center gap-[1px] flex-wrap max-w-[48px] mx-auto" :class="{'opacity-60': phase.is_blocked}">
                     <span
                       v-for="(status, index_status) in getArticleStatus(phase)"
                       :key="`status-${phase.id}-${index_status}`"
@@ -244,7 +244,7 @@ const referenceGroups = computed(() => {
                       }"
                     ></span>
                   </div>
-                  <div v-if="phase.is_review && showProgressIndicators" class="text-[9px] text-center text-muted-foreground mt-1 leading-tight" :class="{'opacity-60': phase.is_blocked}">
+                  <div v-if="phase.is_review && showProgressIndicators" class="text-[9px] text-center text-muted-foreground mt-1 leading-tight mx-auto" :class="{'opacity-60': phase.is_blocked}">
                     {{ phase.progress?.needs_review ? `(${phase.progress.articles_to_review_count || 0})` : '' }} Revisão
                   </div>
                 </Link>
