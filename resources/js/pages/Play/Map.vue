@@ -240,7 +240,7 @@ const referenceGroups = computed(() => {
                       :class="{
                         'bg-green-500': status === 'correct',
                         'bg-red-500': status === 'incorrect',
-                        'bg-muted': status === 'pending'
+                        'bg-gray-400': status === 'pending'
                       }"
                     ></span>
                   </div>
