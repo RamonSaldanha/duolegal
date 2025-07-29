@@ -56,6 +56,9 @@ const props = defineProps<{
     user: User;
 }>();
 
+// Flag para controlar exibição de indicadores de progresso e legendas
+const showProgressIndicators = ref(true);
+
 // Agrupar fases por referência legal
 const phasesByReference = computed<GroupedPhases>(() => {
     const grouped: GroupedPhases = {};
@@ -171,14 +174,13 @@ const referenceGroups = computed(() => {
             </div>
 
             <!-- Container das fases em trilha diagonal -->
-            <div class="trail-path mx-auto">
+            <div class="trail-path mx-auto flex flex-col gap-4">
               <div
                 v-for="(phase, phaseIndex) in group.phases"
                 :key="`phase-${phase.id}`"
                 class="phase-item"
                 :style="{
-                  transform: `translateX(${getPhaseXPosition(phaseIndex)}px)`,
-                  marginTop: phaseIndex === 0 ? '0' : '-10px'
+                  transform: `translateX(${getPhaseXPosition(phaseIndex)}px)`
                 }"
               >
                 <Link
@@ -222,6 +224,7 @@ const referenceGroups = computed(() => {
 
                   <!-- Badge com número da fase -->
                   <Badge 
+                    v-if="showProgressIndicators"
                     class="absolute -top-2 -right-2 bg-primary text-xs h-5 w-5 flex items-center justify-center p-0 min-w-0" 
                     :class="{'opacity-60': phase.is_blocked}"
                   >
@@ -229,7 +232,7 @@ const referenceGroups = computed(() => {
                   </Badge>
 
                   <!-- Indicador de progresso (pontos menores) -->
-                  <div v-if="!phase.is_review" class="mt-1 flex justify-center gap-[1px] flex-wrap max-w-[48px]" :class="{'opacity-60': phase.is_blocked}">
+                  <div v-if="!phase.is_review && showProgressIndicators" class="mt-1 flex justify-center gap-[1px] flex-wrap max-w-[48px]" :class="{'opacity-60': phase.is_blocked}">
                     <span
                       v-for="(status, index_status) in getArticleStatus(phase)"
                       :key="`status-${phase.id}-${index_status}`"
@@ -241,13 +244,23 @@ const referenceGroups = computed(() => {
                       }"
                     ></span>
                   </div>
-                  <div v-else class="text-[9px] text-center text-muted-foreground mt-1 leading-tight" :class="{'opacity-60': phase.is_blocked}">
+                  <div v-if="phase.is_review && showProgressIndicators" class="text-[9px] text-center text-muted-foreground mt-1 leading-tight" :class="{'opacity-60': phase.is_blocked}">
                     {{ phase.progress?.needs_review ? `(${phase.progress.articles_to_review_count || 0})` : '' }} Revisão
                   </div>
                 </Link>
               </div>
             </div>
           </div>
+        </div>
+
+        <!-- Controles -->
+        <div class="mt-8 flex justify-center">
+          <button 
+            @click="showProgressIndicators = !showProgressIndicators"
+            class="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors text-sm"
+          >
+            {{ showProgressIndicators ? 'Ocultar' : 'Mostrar' }} Indicadores de Progresso
+          </button>
         </div>
 
         <!-- Instruções -->
@@ -281,7 +294,6 @@ const referenceGroups = computed(() => {
 /* Item individual da fase */
 .phase-item {
   position: relative;
-  margin-bottom: 25px;
   transition: transform 0.3s ease;
 }
 
@@ -296,10 +308,7 @@ const referenceGroups = computed(() => {
 @media (max-width: 640px) {
   .trail-path {
     width: 134px; /* Menor no mobile */
-  }
-
-  .phase-item {
-    margin-bottom: 20px;
+    gap: 1rem; /* 16px no mobile */
   }
 
   /* Ajustar posições para mobile */
