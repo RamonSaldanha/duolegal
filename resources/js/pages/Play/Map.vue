@@ -135,9 +135,9 @@ onUnmounted(() => {
 
 // Função para calcular a posição X de cada fase no padrão diagonal
 const getPhaseXPosition = (phaseIndex: number): number => {
-    // Padrão curvado com mudanças mais frequentes: 0, 30, 70, 110, 80, 40, 0, 30, 70, 110...
-    // Cria curvas mais acentuadas com intervalos menores entre pontos de inflexão
-    const pattern = [0, 30, 70, 110, 80, 40]; // 6 posições que se repetem
+    // Padrão EXATO do Duolingo: esquerda, centro, direita, centro (repetindo)
+    // 3 colunas bem definidas como na imagem de referência
+    const pattern = [0, 55, 110, 55]; // 4 posições que se repetem
     return pattern[phaseIndex % pattern.length];
 };
 
@@ -288,7 +288,7 @@ const referenceGroups = computed(() => {
 .trail-path {
   position: relative;
   padding: 20px 0;
-  width: 174px; /* Largura aumentada para acomodar o padrão estendido (110px + 64px da bolinha) */
+  width: 174px; /* Largura para acomodar padrão do Duolingo (110px + 64px da bolinha) */
   margin: 0 auto;
 }
 
@@ -316,25 +316,13 @@ const referenceGroups = computed(() => {
     width: 150px; /* Ajustado para mobile com padrão estendido */
   }
 
-  /* Ajustar posições para mobile - padrão curvado proporcional */
-  .phase-item[style*="translateX(30px)"] {
-    transform: translateX(20px) !important;
-  }
-
-  .phase-item[style*="translateX(70px)"] {
-    transform: translateX(50px) !important;
+  /* Ajustar posições para mobile - padrão DUOLINGO proporcional */
+  .phase-item[style*="translateX(55px)"] {
+    transform: translateX(37px) !important;
   }
 
   .phase-item[style*="translateX(110px)"] {
     transform: translateX(75px) !important;
-  }
-
-  .phase-item[style*="translateX(80px)"] {
-    transform: translateX(55px) !important;
-  }
-
-  .phase-item[style*="translateX(40px)"] {
-    transform: translateX(30px) !important;
   }
 
   .phase-circle {
