@@ -151,6 +151,22 @@ const referenceGroups = computed(() => {
   }));
 });
 
+// Funções para o indicador de progresso circular
+const getSegmentDashArray = (totalSegments: number): string => {
+  const circumference = 2 * Math.PI * 32; // raio = 32 (mais próximo da bolinha)
+  const segmentLength = circumference / totalSegments;
+  const gapLength = Math.max(3, segmentLength * 0.25); // Gap maior - mínimo 3px ou 25% do segmento
+  const strokeLength = segmentLength - gapLength;
+  
+  return `${strokeLength} ${circumference - strokeLength}`;
+};
+
+const getSegmentDashOffset = (totalSegments: number, segmentIndex: number): number => {
+  const circumference = 2 * Math.PI * 32; // raio = 32 (mais próximo da bolinha)
+  const segmentLength = circumference / totalSegments;
+  return circumference - (segmentLength * segmentIndex);
+};
+
 </script>
 
 <template>
@@ -198,53 +214,100 @@ const referenceGroups = computed(() => {
                   }"
                   @click="phase.is_blocked ? $event.preventDefault() : null"
                 >
-                  <!-- Bolinha da fase -->
+                  <!-- Container da bolinha da fase com progresso circular -->
+                  <div class="relative flex items-center justify-center w-18 h-18">
+                    <!-- Indicador de progresso circular (só para fases não-review) -->
+                    <svg 
+                      v-if="!phase.is_review && getArticleStatus(phase).length > 0"
+                      class="absolute w-18 h-18 transform -rotate-90"
+                      viewBox="0 0 72 72"
+                    >
+                      <!-- Círculo de fundo para todos os segmentos (cinza claro) -->
+                      <g>
+                        <circle
+                          v-for="(status, segmentIndex) in getArticleStatus(phase)"
+                          :key="`bg-segment-${phase.id}-${segmentIndex}`"
+                          cx="36"
+                          cy="36"
+                          r="32"
+                          fill="none"
+                          stroke="rgba(200,200,200,0.4)"
+                          stroke-width="3"
+                          stroke-linecap="round"
+                          :stroke-dasharray="getSegmentDashArray(getArticleStatus(phase).length)"
+                          :stroke-dashoffset="getSegmentDashOffset(getArticleStatus(phase).length, segmentIndex)"
+                          :style="phase.is_blocked ? 'opacity: 0.6;' : ''"
+                        />
+                      </g>
+                      <!-- Segmentos de progresso coloridos -->
+                      <g>
+                        <circle
+                          v-for="(status, segmentIndex) in getArticleStatus(phase)"
+                          :key="`segment-${phase.id}-${segmentIndex}`"
+                          cx="36"
+                          cy="36"
+                          r="32"
+                          fill="none"
+                          :stroke="status === 'correct' ? '#22c55e' : status === 'incorrect' ? '#ef4444' : 'transparent'"
+                          stroke-width="3"
+                          stroke-linecap="round"
+                          :stroke-dasharray="getSegmentDashArray(getArticleStatus(phase).length)"
+                          :stroke-dashoffset="getSegmentDashOffset(getArticleStatus(phase).length, segmentIndex)"
+                          :style="phase.is_blocked ? 'opacity: 0.6;' : ''"
+                        />
+                      </g>
+                    </svg>
+
+                    <!-- Bolinha da fase -->
+                    <div
+                      :class="[
+                          'w-16 h-16 rounded-full flex items-center justify-center phase-circle relative z-10',
+                          phase.is_review && phase.is_blocked ? 'bg-purple-400/50' :
+                          phase.is_review && !phase.is_blocked && !phase.is_current ? 'bg-purple-500' :
+                          phase.is_review && phase.is_current ? 'bg-purple-600 animate-pulse' :
+                          phase.is_current ? 'bg-blue-500 animate-pulse' :
+                          phase.is_blocked ? 'bg-gray-400/50' :
+                          isPhaseComplete(phase) ? 'bg-green-500' :
+                          !phase.is_blocked ? 'bg-yellow-500' :
+                          'bg-gray-400'
+                      ]"
+                      :style="phase.is_blocked ? 'opacity: 0.6;' : ''"
+                    >
+                      <component
+                        :is="phase.is_review
+                            ? Repeat
+                            : (isPhaseComplete(phase)
+                                ? CheckCircle
+                                : getPhaseIcon(phase.id))"
+                        class="w-6 h-6 text-white"
+                      />
+                    </div>
+                  </div>
+
+                  <!-- Balão "Começar!" para fase atual -->
                   <div
-                    :class="[
-                        'w-16 h-16 rounded-full flex items-center justify-center phase-circle',
-                        phase.is_review && phase.is_blocked ? 'bg-purple-400/50' :
-                        phase.is_review && !phase.is_blocked && !phase.is_current ? 'bg-purple-500' :
-                        phase.is_review && phase.is_current ? 'bg-purple-600 animate-pulse' :
-                        phase.is_current ? 'bg-blue-500 animate-pulse' :
-                        phase.is_blocked ? 'bg-gray-400/50' :
-                        isPhaseComplete(phase) ? 'bg-green-500' :
-                        !phase.is_blocked ? 'bg-yellow-500' :
-                        'bg-gray-400'
-                    ]"
-                    :style="phase.is_blocked ? 'opacity: 0.6;' : ''"
+                    v-if="phase.is_current && !phase.is_blocked"
+                    class="absolute -top-7 left-1/2 transform -translate-x-1/2 z-30 animate-bounce-slow"
                   >
-                    <component
-                      :is="phase.is_review
-                          ? Repeat
-                          : (isPhaseComplete(phase)
-                              ? CheckCircle
-                              : getPhaseIcon(phase.id))"
-                      class="w-6 h-6 text-white"
-                    />
+                    <!-- Balão de fala -->
+                    <div class="relative bg-white text-gray-600 px-3 py-2 rounded-lg shadow-lg border-1 border-gray-500 font-bold text-sm whitespace-nowrap">
+                      Começar!
+                      <!-- Seta do balão -->
+                      <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-6 border-l-transparent border-r-transparent border-t-green-500"></div>
+                      <div class="absolute top-full left-1/2 transform -translate-x-1/2 mt-[-1px] w-0 h-0 border-l-3 border-r-3 border-t-5 border-l-transparent border-r-transparent border-t-white"></div>
+                    </div>
                   </div>
 
                   <!-- Badge com número da fase -->
                   <Badge 
                     v-if="showProgressIndicators"
-                    class="absolute -top-1 -right-1 bg-primary text-xs h-5 w-5 flex items-center justify-center p-0 min-w-0" 
+                    class="absolute top-1 right-1 bg-primary text-xs h-5 w-5 flex items-center justify-center p-0 min-w-0 z-20" 
                     :class="{'opacity-60': phase.is_blocked}"
                   >
                     {{ phase.id }}
                   </Badge>
 
-                  <!-- Indicador de progresso (pontos menores) -->
-                  <div v-if="!phase.is_review && showProgressIndicators" class="mt-1 flex justify-center items-center gap-[1px] flex-wrap max-w-[48px] mx-auto" :class="{'opacity-60': phase.is_blocked}">
-                    <span
-                      v-for="(status, index_status) in getArticleStatus(phase)"
-                      :key="`status-${phase.id}-${index_status}`"
-                      class="w-1 h-1 rounded-full"
-                      :class="{
-                        'bg-green-500': status === 'correct',
-                        'bg-red-500': status === 'incorrect',
-                        'bg-gray-400': status === 'pending'
-                      }"
-                    ></span>
-                  </div>
+                  <!-- Texto de revisão (apenas para fases de revisão) -->
                   <div v-if="phase.is_review && showProgressIndicators" class="text-[9px] text-center text-muted-foreground mt-1 leading-tight mx-auto" :class="{'opacity-60': phase.is_blocked}">
                     {{ phase.progress?.needs_review ? `(${phase.progress.articles_to_review_count || 0})` : '' }} Revisão
                   </div>
@@ -260,7 +323,7 @@ const referenceGroups = computed(() => {
             @click="showProgressIndicators = !showProgressIndicators"
             class="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors text-sm"
           >
-            {{ showProgressIndicators ? 'Ocultar' : 'Mostrar' }} Indicadores de Progresso
+            {{ showProgressIndicators ? 'Ocultar' : 'Mostrar' }} Números das Fases
           </button>
         </div>
 
@@ -277,6 +340,55 @@ const referenceGroups = computed(() => {
 
 <style scoped>
 
+/* Classes customizadas para tamanho 18 (72px) */
+.w-18 {
+  width: 4.5rem; /* 72px */
+}
+
+.h-18 {
+  height: 4.5rem; /* 72px */
+}
+
+/* Animação de bounce lento */
+@keyframes bounce-slow {
+  0%, 20%, 53%, 80%, 100% {
+    animation-timing-function: cubic-bezier(0.215, 0.610, 0.355, 1.000);
+    transform: translate3d(-50%, 0, 0);
+  }
+  40%, 43% {
+    animation-timing-function: cubic-bezier(0.755, 0.050, 0.855, 0.060);
+    transform: translate3d(-50%, -8px, 0);
+  }
+  70% {
+    animation-timing-function: cubic-bezier(0.755, 0.050, 0.855, 0.060);
+    transform: translate3d(-50%, -4px, 0);
+  }
+  90% {
+    transform: translate3d(-50%, -2px, 0);
+  }
+}
+
+.animate-bounce-slow {
+  animation: bounce-slow 2s infinite;
+}
+
+/* Classes para as setas do balão */
+.border-t-6 {
+  border-top-width: 6px;
+}
+
+.border-t-5 {
+  border-top-width: 5px;
+}
+
+.border-l-3 {
+  border-left-width: 3px;
+}
+
+.border-r-3 {
+  border-right-width: 3px;
+}
+
 /* Estilo para as bolinhas sem degradê branco */
 .phase-circle {
   box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.2), 0 3px 4px rgba(0, 0, 0, 0.1);
@@ -284,6 +396,15 @@ const referenceGroups = computed(() => {
   overflow: hidden;
 }
 
+.phase-circle {
+  width: 3.5rem !important;
+  height: 3.5rem !important;
+}
+
+.phase-circle svg {
+  width: 1.25rem !important;
+  height: 1.25rem !important;
+}
 /* Container da trilha diagonal */
 .trail-path {
   position: relative;
@@ -325,14 +446,5 @@ const referenceGroups = computed(() => {
     transform: translateX(75px) !important;
   }
 
-  .phase-circle {
-    width: 3.5rem !important;
-    height: 3.5rem !important;
-  }
-
-  .phase-circle svg {
-    width: 1.25rem !important;
-    height: 1.25rem !important;
-  }
 }
 </style>
