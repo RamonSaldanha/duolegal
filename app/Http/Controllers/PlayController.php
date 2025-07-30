@@ -14,7 +14,7 @@ use Illuminate\Support\Collection; // Adicionar para tipagem
 class PlayController extends Controller
 {
     const ARTICLES_PER_PHASE = 9;
-    const REVIEW_PHASE_INTERVAL = 2;
+    const REVIEW_PHASE_INTERVAL = 3;
 
 
     public function map()

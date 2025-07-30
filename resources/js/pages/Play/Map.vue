@@ -135,9 +135,9 @@ onUnmounted(() => {
 
 // Função para calcular a posição X de cada fase no padrão diagonal
 const getPhaseXPosition = (phaseIndex: number): number => {
-    // Padrão: 0, 60, 90, 60, 0, 60, 90, 60, 0...
-    // Posições: esquerda (0), centro (60), direita (90), centro (60), esquerda (0)...
-    const pattern = [0, 60, 90, 60]; // 4 posições que se repetem
+    // Padrão curvado com mudanças mais frequentes: 0, 30, 70, 110, 80, 40, 0, 30, 70, 110...
+    // Cria curvas mais acentuadas com intervalos menores entre pontos de inflexão
+    const pattern = [0, 30, 70, 110, 80, 40]; // 6 posições que se repetem
     return pattern[phaseIndex % pattern.length];
 };
 
@@ -174,13 +174,14 @@ const referenceGroups = computed(() => {
             </div>
 
             <!-- Container das fases em trilha diagonal -->
-            <div class="trail-path mx-auto flex flex-col gap-4">
+            <div class="trail-path mx-auto flex flex-col">
               <div
                 v-for="(phase, phaseIndex) in group.phases"
                 :key="`phase-${phase.id}`"
                 class="phase-item"
                 :style="{
-                  transform: `translateX(${getPhaseXPosition(phaseIndex)}px)`
+                  transform: `translateX(${getPhaseXPosition(phaseIndex)}px)`,
+                  marginBottom: '18px'
                 }"
               >
                 <Link
@@ -287,14 +288,19 @@ const referenceGroups = computed(() => {
 .trail-path {
   position: relative;
   padding: 20px 0;
-  width: 154px; /* Largura para acomodar 3 posições com bolinhas maiores (64px + 90px) */
+  width: 174px; /* Largura aumentada para acomodar o padrão estendido (110px + 64px da bolinha) */
   margin: 0 auto;
 }
 
 /* Item individual da fase */
 .phase-item {
   position: relative;
-  transition: transform 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* Última fase sem margem inferior */
+.phase-item:last-child {
+  margin-bottom: 0 !important;
 }
 
 /* Link da fase */
@@ -307,17 +313,28 @@ const referenceGroups = computed(() => {
 /* Responsividade */
 @media (max-width: 640px) {
   .trail-path {
-    width: 134px; /* Menor no mobile */
-    gap: 1rem; /* 16px no mobile */
+    width: 150px; /* Ajustado para mobile com padrão estendido */
   }
 
-  /* Ajustar posições para mobile */
-  .phase-item[style*="translateX(60px)"] {
-    transform: translateX(45px) !important;
+  /* Ajustar posições para mobile - padrão curvado proporcional */
+  .phase-item[style*="translateX(30px)"] {
+    transform: translateX(20px) !important;
   }
 
-  .phase-item[style*="translateX(90px)"] {
-    transform: translateX(70px) !important;
+  .phase-item[style*="translateX(70px)"] {
+    transform: translateX(50px) !important;
+  }
+
+  .phase-item[style*="translateX(110px)"] {
+    transform: translateX(75px) !important;
+  }
+
+  .phase-item[style*="translateX(80px)"] {
+    transform: translateX(55px) !important;
+  }
+
+  .phase-item[style*="translateX(40px)"] {
+    transform: translateX(30px) !important;
   }
 
   .phase-circle {
