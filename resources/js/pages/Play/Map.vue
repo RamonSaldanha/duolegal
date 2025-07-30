@@ -293,8 +293,8 @@ const getSegmentDashOffset = (totalSegments: number, segmentIndex: number): numb
                     <div class="relative bg-white text-gray-600 px-3 py-2 rounded-lg shadow-lg border-1 border-gray-500 font-bold text-sm whitespace-nowrap">
                       Começar!
                       <!-- Seta do balão -->
-                      <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-6 border-l-transparent border-r-transparent border-t-green-500"></div>
-                      <div class="absolute top-full left-1/2 transform -translate-x-1/2 mt-[-1px] w-0 h-0 border-l-3 border-r-3 border-t-5 border-l-transparent border-r-transparent border-t-white"></div>
+                      <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-6 border-r-6 border-t-8 border-l-transparent border-r-transparent border-t-gray-500"></div>
+                      <div class="absolute top-full left-1/2 transform -translate-x-1/2 mt-[-1px] w-0 h-0 border-l-5 border-r-5 border-t-7 border-l-transparent border-r-transparent border-t-white"></div>
                     </div>
                   </div>
 
@@ -373,12 +373,36 @@ const getSegmentDashOffset = (totalSegments: number, segmentIndex: number): numb
 }
 
 /* Classes para as setas do balão */
+.border-t-8 {
+  border-top-width: 8px;
+}
+
+.border-t-7 {
+  border-top-width: 7px;
+}
+
 .border-t-6 {
   border-top-width: 6px;
 }
 
 .border-t-5 {
   border-top-width: 5px;
+}
+
+.border-l-6 {
+  border-left-width: 6px;
+}
+
+.border-r-6 {
+  border-right-width: 6px;
+}
+
+.border-l-5 {
+  border-left-width: 5px;
+}
+
+.border-r-5 {
+  border-right-width: 5px;
 }
 
 .border-l-3 {
