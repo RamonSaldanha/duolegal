@@ -15,6 +15,7 @@ class PlayController extends Controller
 {
     const ARTICLES_PER_PHASE = 9;
     const REVIEW_PHASE_INTERVAL = 3;
+    const PHASES_PER_MODULE_PER_LAW = 6; // Quantas fases de cada lei por módulo
 
 
     public function map()
@@ -236,8 +237,12 @@ class PlayController extends Controller
         }
 
         
+        // Organizar fases em módulos
+        $modulesData = $this->organizePhasesIntoModules($phasesData);
+        
         return Inertia::render('Play/Map', [
             'phases' => $phasesData,
+            'modules' => $modulesData,
              'user' => [
                 'lives' => $user->lives,
                 'has_infinite_lives' => $user->hasInfiniteLives()
@@ -964,6 +969,74 @@ class PlayController extends Controller
             'should_redirect' => !$user->hasInfiniteLives() && $user->lives <= 0,
             'redirect_url' => !$user->hasInfiniteLives() && $user->lives <= 0 ? route('play.nolives') : null
         ]);
+    }
+
+    /**
+     * Organiza as fases em módulos intercalando entre as leis
+     */
+    private function organizePhasesIntoModules(array $phasesData): array
+    {
+        // Agrupar fases por referência legal
+        $phasesByReference = [];
+        foreach ($phasesData as $phase) {
+            $uuid = $phase['reference_uuid'];
+            if (!isset($phasesByReference[$uuid])) {
+                $phasesByReference[$uuid] = [
+                    'name' => $phase['reference_name'],
+                    'uuid' => $uuid,
+                    'phases' => []
+                ];
+            }
+            $phasesByReference[$uuid]['phases'][] = $phase;
+        }
+
+        // Se há apenas uma lei, não precisa de módulos
+        if (count($phasesByReference) <= 1) {
+            return [];
+        }
+
+        $modules = [];
+        $moduleNumber = 1;
+        $maxPhasesPerLaw = max(array_map(function($ref) {
+            return count($ref['phases']);
+        }, $phasesByReference));
+
+        // Dividir em blocos de PHASES_PER_MODULE_PER_LAW
+        $totalBlocks = ceil($maxPhasesPerLaw / self::PHASES_PER_MODULE_PER_LAW);
+
+        for ($blockIndex = 0; $blockIndex < $totalBlocks; $blockIndex++) {
+            $modulePhases = [];
+            $hasAnyPhases = false;
+
+            foreach ($phasesByReference as $reference) {
+                $startIndex = $blockIndex * self::PHASES_PER_MODULE_PER_LAW;
+                $endIndex = min($startIndex + self::PHASES_PER_MODULE_PER_LAW, count($reference['phases']));
+                
+                if ($startIndex < count($reference['phases'])) {
+                    $phasesForThisBlock = array_slice($reference['phases'], $startIndex, $endIndex - $startIndex);
+                    
+                    if (!empty($phasesForThisBlock)) {
+                        $modulePhases[] = [
+                            'reference_name' => $reference['name'],
+                            'reference_uuid' => $reference['uuid'],
+                            'phases' => $phasesForThisBlock
+                        ];
+                        $hasAnyPhases = true;
+                    }
+                }
+            }
+
+            if ($hasAnyPhases) {
+                $modules[] = [
+                    'id' => $moduleNumber,
+                    'title' => "Módulo {$moduleNumber}",
+                    'references' => $modulePhases
+                ];
+                $moduleNumber++;
+            }
+        }
+
+        return $modules;
     }
 
 

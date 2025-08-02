@@ -53,11 +53,14 @@ interface GroupedPhases {
 
 const props = defineProps<{
     phases: Phase[];
+    modules?: any[]; // Dados dos módulos organizados
     user: User;
 }>();
 
 // Flag para controlar exibição de indicadores de progresso e legendas
 const showProgressIndicators = ref(true);
+// Flag para alternar entre visualização tradicional e por módulos (padrão: módulos)
+const showModuleView = ref(true);
 
 // Agrupar fases por referência legal
 const phasesByReference = computed<GroupedPhases>(() => {
@@ -77,6 +80,16 @@ const phasesByReference = computed<GroupedPhases>(() => {
     }
 
     return grouped;
+});
+
+// Verificar se há múltiplas leis (para mostrar opção de módulos)
+const hasMultipleLaws = computed(() => {
+    return Object.keys(phasesByReference.value).length > 1;
+});
+
+// Decidir se usar módulos ou visualização tradicional
+const shouldUseModules = computed(() => {
+    return showModuleView.value && hasMultipleLaws.value && props.modules && props.modules.length > 0;
 });
 
 const getPhaseIcon = (phaseNumber: number) => {
@@ -175,143 +188,321 @@ const getSegmentDashOffset = (totalSegments: number, segmentIndex: number): numb
   <AppLayout>
     <div class="container py-8 px-4">
       <div class="max-w-4xl mx-auto">
+        <!-- Controle de alternância no topo -->
+        <div v-if="hasMultipleLaws && props.modules && props.modules.length > 0" class="flex justify-center mb-6">
+          <button 
+            @click="showModuleView = !showModuleView"
+            class="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full hover:from-blue-600 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-110 active:scale-95"
+            :title="showModuleView ? 'Alternar para Visualização Tradicional' : 'Alternar para Visualização por Módulos'"
+          >
+            <!-- Ícone de binóculos - filled quando módulos ativados, outline quando tradicional -->
+            <svg v-if="showModuleView" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="transition-transform duration-300" viewBox="0 0 16 16">
+              <!-- Binóculos preenchidos (módulos ativados) -->
+              <path d="M4.5 1A1.5 1.5 0 0 0 3 2.5V3h4v-.5A1.5 1.5 0 0 0 5.5 1zM7 4v1h2V4h4v.882a.5.5 0 0 0 .276.447l.895.447A1.5 1.5 0 0 1 15 7.118V13H9v-1.5a.5.5 0 0 1 .146-.354l.854-.853V9.5a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5v.793l.854.853A.5.5 0 0 1 7 11.5V13H1V7.118a1.5 1.5 0 0 1 .83-1.342l.894-.447A.5.5 0 0 0 3 4.882V4zM1 14v.5A1.5 1.5 0 0 0 2.5 16h3A1.5 1.5 0 0 0 7 14.5V14zm8 0v.5a1.5 1.5 0 0 0 1.5 1.5h3a1.5 1.5 0 0 0 1.5-1.5V14zm4-11H9v-.5A1.5 1.5 0 0 1 10.5 1h1A1.5 1.5 0 0 1 13 2.5z"/>
+            </svg>
+            <svg v-else xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="transition-transform duration-300" viewBox="0 0 16 16">
+              <!-- Binóculos outline (visualização tradicional) -->
+              <path d="M3 2.5A1.5 1.5 0 0 1 4.5 1h1A1.5 1.5 0 0 1 7 2.5V5h2V2.5A1.5 1.5 0 0 1 10.5 1h1A1.5 1.5 0 0 1 13 2.5v2.382a.5.5 0 0 0 .276.447l.895.447A1.5 1.5 0 0 1 15 7.118V14.5a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 9 14.5v-3a.5.5 0 0 1 .146-.354l.854-.853V9.5a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5v.793l.854.853A.5.5 0 0 1 7 11.5v3A1.5 1.5 0 0 1 5.5 16h-3A1.5 1.5 0 0 1 1 14.5V7.118a1.5 1.5 0 0 1 .83-1.342l.894-.447A.5.5 0 0 0 3 4.882zM4.5 2a.5.5 0 0 0-.5.5V3h2v-.5a.5.5 0 0 0-.5-.5zM6 4H4v.882a1.5 1.5 0 0 1-.83 1.342l-.894.447A.5.5 0 0 0 2 7.118V13h4v-1.293l-.854-.853A.5.5 0 0 1 5 10.5v-1A1.5 1.5 0 0 1 6.5 8h3A1.5 1.5 0 0 1 11 9.5v1a.5.5 0 0 1-.146.354l-.854.853V13h4V7.118a.5.5 0 0 0-.276-.447l-.895-.447A1.5 1.5 0 0 1 12 4.882V4h-2v1.5a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5zm4-1h2v-.5a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5zm4 11h-4v.5a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5zm-8 0H2v.5a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5z"/>
+            </svg>
+          </button>
+        </div>
+
         <!-- Mapa de fases -->
         <div class="">
-          <div
-            v-for="group in referenceGroups"
-            :key="group.uuid"
-            class="relative mb-8"
-          >
-            <!-- Cabeçalho do grupo -->
-            <div class="flex justify-center mb-6">
-              <div class="px-4 py-2 bg-primary/10 rounded-lg">
-                <h2 class="text-lg font-bold">{{ group.name }}</h2>
+          <!-- Visualização por Módulos -->
+          <div v-if="shouldUseModules">
+            <div
+              v-for="module in props.modules"
+              :key="module.id"
+              class="relative mb-12"
+            >
+              <!-- Título do Módulo -->
+              <div class="flex justify-center mb-8">
+                <div class="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg shadow-md">
+                  <h1 class="text-lg font-bold">{{ module.title }}</h1>
+                </div>
+              </div>
+
+              <!-- Referências dentro do módulo -->
+              <div
+                v-for="reference in module.references"
+                :key="`${module.id}-${reference.reference_uuid}`"
+                class="relative mb-8"
+              >
+                <!-- Cabeçalho da referência -->
+                <div class="flex justify-center mb-6">
+                  <div class="w-full max-w-2xl px-4 py-2 bg-background border border-border rounded-lg shadow-sm">
+                    <h2 class="text-md font-semibold text-foreground text-center">{{ reference.reference_name }}</h2>
+                  </div>
+                </div>
+
+                <!-- Container das fases em trilha diagonal -->
+                <div class="trail-path mx-auto flex flex-col">
+                  <div
+                    v-for="(phase, phaseIndex) in reference.phases"
+                    :key="`phase-${phase.id}`"
+                    class="phase-item"
+                    :style="{
+                      transform: `translateX(${getPhaseXPosition(phaseIndex)}px)`,
+                      marginBottom: '18px'
+                    }"
+                  >
+                    <Link
+                      :href="phase.is_blocked
+                          ? '#'
+                          : (phase.is_review
+                              ? route('play.review', { referenceUuid: phase.reference_uuid, phase: phase.id })
+                              : route('play.phase', { phaseId: phase.id }))"
+                      class="relative group transition-transform duration-300 block phase-link"
+                      :class="{
+                          'cursor-not-allowed': phase.is_blocked,
+                          'hover:scale-110': !phase.is_blocked,
+                          'cursor-pointer': !phase.is_blocked
+                      }"
+                      @click="phase.is_blocked ? $event.preventDefault() : null"
+                    >
+                      <!-- Container da bolinha da fase com progresso circular -->
+                      <div class="relative flex items-center justify-center w-18 h-18">
+                        <!-- Indicador de progresso circular (só para fases não-review) -->
+                        <svg 
+                          v-if="!phase.is_review && getArticleStatus(phase).length > 0"
+                          class="absolute w-18 h-18 transform -rotate-90"
+                          viewBox="0 0 72 72"
+                        >
+                          <!-- Círculo de fundo para todos os segmentos (cinza claro) -->
+                          <g>
+                            <circle
+                              v-for="(status, segmentIndex) in getArticleStatus(phase)"
+                              :key="`bg-segment-${phase.id}-${segmentIndex}`"
+                              cx="36"
+                              cy="36"
+                              r="32"
+                              fill="none"
+                              stroke="rgba(200,200,200,0.4)"
+                              stroke-width="3"
+                              stroke-linecap="round"
+                              :stroke-dasharray="getSegmentDashArray(getArticleStatus(phase).length)"
+                              :stroke-dashoffset="getSegmentDashOffset(getArticleStatus(phase).length, segmentIndex)"
+                              :style="phase.is_blocked ? 'opacity: 0.6;' : ''"
+                            />
+                          </g>
+                          <!-- Segmentos de progresso coloridos -->
+                          <g>
+                            <circle
+                              v-for="(status, segmentIndex) in getArticleStatus(phase)"
+                              :key="`segment-${phase.id}-${segmentIndex}`"
+                              cx="36"
+                              cy="36"
+                              r="32"
+                              fill="none"
+                              :stroke="status === 'correct' ? '#22c55e' : status === 'incorrect' ? '#ef4444' : 'transparent'"
+                              stroke-width="3"
+                              stroke-linecap="round"
+                              :stroke-dasharray="getSegmentDashArray(getArticleStatus(phase).length)"
+                              :stroke-dashoffset="getSegmentDashOffset(getArticleStatus(phase).length, segmentIndex)"
+                              :style="phase.is_blocked ? 'opacity: 0.6;' : ''"
+                            />
+                          </g>
+                        </svg>
+
+                        <!-- Bolinha da fase -->
+                        <div
+                          :class="[
+                              'w-16 h-16 rounded-full flex items-center justify-center phase-circle relative z-10',
+                              phase.is_review && phase.is_blocked ? 'bg-purple-400/50' :
+                              phase.is_review && !phase.is_blocked && !phase.is_current ? 'bg-purple-500' :
+                              phase.is_review && phase.is_current ? 'bg-purple-600 animate-pulse' :
+                              phase.is_current ? 'bg-blue-500 animate-pulse' :
+                              phase.is_blocked ? 'bg-gray-400/50' :
+                              isPhaseComplete(phase) ? 'bg-green-500' :
+                              !phase.is_blocked ? 'bg-yellow-500' :
+                              'bg-gray-400'
+                          ]"
+                          :style="phase.is_blocked ? 'opacity: 0.6;' : ''"
+                        >
+                          <component
+                            :is="phase.is_review
+                                ? Repeat
+                                : (isPhaseComplete(phase)
+                                    ? CheckCircle
+                                    : getPhaseIcon(phase.id))"
+                            class="w-6 h-6 text-white"
+                          />
+                        </div>
+                      </div>
+
+                      <!-- Balão "Começar!" para fase atual -->
+                      <div
+                        v-if="phase.is_current && !phase.is_blocked"
+                        class="absolute -top-7 left-1/2 transform -translate-x-1/2 z-30 animate-bounce-slow"
+                      >
+                        <!-- Balão de fala -->
+                        <div class="relative bg-white text-gray-600 px-3 py-2 rounded-lg shadow-lg border-1 border-gray-500 font-bold text-sm whitespace-nowrap">
+                          Começar!
+                          <!-- Seta do balão -->
+                          <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-6 border-r-6 border-t-8 border-l-transparent border-r-transparent border-t-gray-500"></div>
+                          <div class="absolute top-full left-1/2 transform -translate-x-1/2 mt-[-1px] w-0 h-0 border-l-5 border-r-5 border-t-7 border-l-transparent border-r-transparent border-t-white"></div>
+                        </div>
+                      </div>
+
+                      <!-- Badge com número da fase -->
+                      <Badge 
+                        v-if="showProgressIndicators"
+                        class="absolute top-1 right-1 bg-primary text-xs h-5 w-5 flex items-center justify-center p-0 min-w-0 z-20" 
+                        :class="{'opacity-60': phase.is_blocked}"
+                      >
+                        {{ phase.id }}
+                      </Badge>
+
+                      <!-- Texto de revisão (apenas para fases de revisão) -->
+                      <div v-if="phase.is_review && showProgressIndicators" class="text-[9px] text-center text-muted-foreground mt-1 leading-tight mx-auto" :class="{'opacity-60': phase.is_blocked}">
+                        {{ phase.progress?.needs_review ? `(${phase.progress.articles_to_review_count || 0})` : '' }} Revisão
+                      </div>
+                    </Link>
+                  </div>
+                </div>
               </div>
             </div>
+          </div>
 
-            <!-- Container das fases em trilha diagonal -->
-            <div class="trail-path mx-auto flex flex-col">
-              <div
-                v-for="(phase, phaseIndex) in group.phases"
-                :key="`phase-${phase.id}`"
-                class="phase-item"
-                :style="{
-                  transform: `translateX(${getPhaseXPosition(phaseIndex)}px)`,
-                  marginBottom: '18px'
-                }"
-              >
-                <Link
-                  :href="phase.is_blocked
-                      ? '#'
-                      : (phase.is_review
-                          ? route('play.review', { referenceUuid: phase.reference_uuid, phase: phase.id })
-                          : route('play.phase', { phaseId: phase.id }))"
-                  class="relative group transition-transform duration-300 block phase-link"
-                  :class="{
-                      'cursor-not-allowed': phase.is_blocked,
-                      'hover:scale-110': !phase.is_blocked,
-                      'cursor-pointer': !phase.is_blocked
+          <!-- Visualização Tradicional (por referência legal) -->
+          <div v-else>
+            <div
+              v-for="group in referenceGroups"
+              :key="group.uuid"
+              class="relative mb-8"
+            >
+              <!-- Cabeçalho do grupo -->
+              <div class="flex justify-center mb-6">
+                <div class="w-full max-w-2xl px-4 py-2 bg-background border border-border rounded-lg shadow-sm">
+                  <h2 class="text-md font-semibold text-foreground text-center">{{ group.name }}</h2>
+                </div>
+              </div>
+
+              <!-- Container das fases em trilha diagonal -->
+              <div class="trail-path mx-auto flex flex-col">
+                <div
+                  v-for="(phase, phaseIndex) in group.phases"
+                  :key="`phase-${phase.id}`"
+                  class="phase-item"
+                  :style="{
+                    transform: `translateX(${getPhaseXPosition(phaseIndex)}px)`,
+                    marginBottom: '18px'
                   }"
-                  @click="phase.is_blocked ? $event.preventDefault() : null"
                 >
-                  <!-- Container da bolinha da fase com progresso circular -->
-                  <div class="relative flex items-center justify-center w-18 h-18">
-                    <!-- Indicador de progresso circular (só para fases não-review) -->
-                    <svg 
-                      v-if="!phase.is_review && getArticleStatus(phase).length > 0"
-                      class="absolute w-18 h-18 transform -rotate-90"
-                      viewBox="0 0 72 72"
-                    >
-                      <!-- Círculo de fundo para todos os segmentos (cinza claro) -->
-                      <g>
-                        <circle
-                          v-for="(status, segmentIndex) in getArticleStatus(phase)"
-                          :key="`bg-segment-${phase.id}-${segmentIndex}`"
-                          cx="36"
-                          cy="36"
-                          r="32"
-                          fill="none"
-                          stroke="rgba(200,200,200,0.4)"
-                          stroke-width="3"
-                          stroke-linecap="round"
-                          :stroke-dasharray="getSegmentDashArray(getArticleStatus(phase).length)"
-                          :stroke-dashoffset="getSegmentDashOffset(getArticleStatus(phase).length, segmentIndex)"
-                          :style="phase.is_blocked ? 'opacity: 0.6;' : ''"
-                        />
-                      </g>
-                      <!-- Segmentos de progresso coloridos -->
-                      <g>
-                        <circle
-                          v-for="(status, segmentIndex) in getArticleStatus(phase)"
-                          :key="`segment-${phase.id}-${segmentIndex}`"
-                          cx="36"
-                          cy="36"
-                          r="32"
-                          fill="none"
-                          :stroke="status === 'correct' ? '#22c55e' : status === 'incorrect' ? '#ef4444' : 'transparent'"
-                          stroke-width="3"
-                          stroke-linecap="round"
-                          :stroke-dasharray="getSegmentDashArray(getArticleStatus(phase).length)"
-                          :stroke-dashoffset="getSegmentDashOffset(getArticleStatus(phase).length, segmentIndex)"
-                          :style="phase.is_blocked ? 'opacity: 0.6;' : ''"
-                        />
-                      </g>
-                    </svg>
+                  <Link
+                    :href="phase.is_blocked
+                        ? '#'
+                        : (phase.is_review
+                            ? route('play.review', { referenceUuid: phase.reference_uuid, phase: phase.id })
+                            : route('play.phase', { phaseId: phase.id }))"
+                    class="relative group transition-transform duration-300 block phase-link"
+                    :class="{
+                        'cursor-not-allowed': phase.is_blocked,
+                        'hover:scale-110': !phase.is_blocked,
+                        'cursor-pointer': !phase.is_blocked
+                    }"
+                    @click="phase.is_blocked ? $event.preventDefault() : null"
+                  >
+                    <!-- Container da bolinha da fase com progresso circular -->
+                    <div class="relative flex items-center justify-center w-18 h-18">
+                      <!-- Indicador de progresso circular (só para fases não-review) -->
+                      <svg 
+                        v-if="!phase.is_review && getArticleStatus(phase).length > 0"
+                        class="absolute w-18 h-18 transform -rotate-90"
+                        viewBox="0 0 72 72"
+                      >
+                        <!-- Círculo de fundo para todos os segmentos (cinza claro) -->
+                        <g>
+                          <circle
+                            v-for="(status, segmentIndex) in getArticleStatus(phase)"
+                            :key="`bg-segment-${phase.id}-${segmentIndex}`"
+                            cx="36"
+                            cy="36"
+                            r="32"
+                            fill="none"
+                            stroke="rgba(200,200,200,0.4)"
+                            stroke-width="3"
+                            stroke-linecap="round"
+                            :stroke-dasharray="getSegmentDashArray(getArticleStatus(phase).length)"
+                            :stroke-dashoffset="getSegmentDashOffset(getArticleStatus(phase).length, segmentIndex)"
+                            :style="phase.is_blocked ? 'opacity: 0.6;' : ''"
+                          />
+                        </g>
+                        <!-- Segmentos de progresso coloridos -->
+                        <g>
+                          <circle
+                            v-for="(status, segmentIndex) in getArticleStatus(phase)"
+                            :key="`segment-${phase.id}-${segmentIndex}`"
+                            cx="36"
+                            cy="36"
+                            r="32"
+                            fill="none"
+                            :stroke="status === 'correct' ? '#22c55e' : status === 'incorrect' ? '#ef4444' : 'transparent'"
+                            stroke-width="3"
+                            stroke-linecap="round"
+                            :stroke-dasharray="getSegmentDashArray(getArticleStatus(phase).length)"
+                            :stroke-dashoffset="getSegmentDashOffset(getArticleStatus(phase).length, segmentIndex)"
+                            :style="phase.is_blocked ? 'opacity: 0.6;' : ''"
+                          />
+                        </g>
+                      </svg>
 
-                    <!-- Bolinha da fase -->
+                      <!-- Bolinha da fase -->
+                      <div
+                        :class="[
+                            'w-16 h-16 rounded-full flex items-center justify-center phase-circle relative z-10',
+                            phase.is_review && phase.is_blocked ? 'bg-purple-400/50' :
+                            phase.is_review && !phase.is_blocked && !phase.is_current ? 'bg-purple-500' :
+                            phase.is_review && phase.is_current ? 'bg-purple-600 animate-pulse' :
+                            phase.is_current ? 'bg-blue-500 animate-pulse' :
+                            phase.is_blocked ? 'bg-gray-400/50' :
+                            isPhaseComplete(phase) ? 'bg-green-500' :
+                            !phase.is_blocked ? 'bg-yellow-500' :
+                            'bg-gray-400'
+                        ]"
+                        :style="phase.is_blocked ? 'opacity: 0.6;' : ''"
+                      >
+                        <component
+                          :is="phase.is_review
+                              ? Repeat
+                              : (isPhaseComplete(phase)
+                                  ? CheckCircle
+                                  : getPhaseIcon(phase.id))"
+                          class="w-6 h-6 text-white"
+                        />
+                      </div>
+                    </div>
+
+                    <!-- Balão "Começar!" para fase atual -->
                     <div
-                      :class="[
-                          'w-16 h-16 rounded-full flex items-center justify-center phase-circle relative z-10',
-                          phase.is_review && phase.is_blocked ? 'bg-purple-400/50' :
-                          phase.is_review && !phase.is_blocked && !phase.is_current ? 'bg-purple-500' :
-                          phase.is_review && phase.is_current ? 'bg-purple-600 animate-pulse' :
-                          phase.is_current ? 'bg-blue-500 animate-pulse' :
-                          phase.is_blocked ? 'bg-gray-400/50' :
-                          isPhaseComplete(phase) ? 'bg-green-500' :
-                          !phase.is_blocked ? 'bg-yellow-500' :
-                          'bg-gray-400'
-                      ]"
-                      :style="phase.is_blocked ? 'opacity: 0.6;' : ''"
+                      v-if="phase.is_current && !phase.is_blocked"
+                      class="absolute -top-7 left-1/2 transform -translate-x-1/2 z-30 animate-bounce-slow"
                     >
-                      <component
-                        :is="phase.is_review
-                            ? Repeat
-                            : (isPhaseComplete(phase)
-                                ? CheckCircle
-                                : getPhaseIcon(phase.id))"
-                        class="w-6 h-6 text-white"
-                      />
+                      <!-- Balão de fala -->
+                      <div class="relative bg-white text-gray-600 px-3 py-2 rounded-lg shadow-lg border-1 border-gray-500 font-bold text-sm whitespace-nowrap">
+                        Começar!
+                        <!-- Seta do balão -->
+                        <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-6 border-r-6 border-t-8 border-l-transparent border-r-transparent border-t-gray-500"></div>
+                        <div class="absolute top-full left-1/2 transform -translate-x-1/2 mt-[-1px] w-0 h-0 border-l-5 border-r-5 border-t-7 border-l-transparent border-r-transparent border-t-white"></div>
+                      </div>
                     </div>
-                  </div>
 
-                  <!-- Balão "Começar!" para fase atual -->
-                  <div
-                    v-if="phase.is_current && !phase.is_blocked"
-                    class="absolute -top-7 left-1/2 transform -translate-x-1/2 z-30 animate-bounce-slow"
-                  >
-                    <!-- Balão de fala -->
-                    <div class="relative bg-white text-gray-600 px-3 py-2 rounded-lg shadow-lg border-1 border-gray-500 font-bold text-sm whitespace-nowrap">
-                      Começar!
-                      <!-- Seta do balão -->
-                      <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-6 border-r-6 border-t-8 border-l-transparent border-r-transparent border-t-gray-500"></div>
-                      <div class="absolute top-full left-1/2 transform -translate-x-1/2 mt-[-1px] w-0 h-0 border-l-5 border-r-5 border-t-7 border-l-transparent border-r-transparent border-t-white"></div>
+                    <!-- Badge com número da fase -->
+                    <Badge 
+                      v-if="showProgressIndicators"
+                      class="absolute top-1 right-1 bg-primary text-xs h-5 w-5 flex items-center justify-center p-0 min-w-0 z-20" 
+                      :class="{'opacity-60': phase.is_blocked}"
+                    >
+                      {{ phase.id }}
+                    </Badge>
+
+                    <!-- Texto de revisão (apenas para fases de revisão) -->
+                    <div v-if="phase.is_review && showProgressIndicators" class="text-[9px] text-center text-muted-foreground mt-1 leading-tight mx-auto" :class="{'opacity-60': phase.is_blocked}">
+                      {{ phase.progress?.needs_review ? `(${phase.progress.articles_to_review_count || 0})` : '' }} Revisão
                     </div>
-                  </div>
-
-                  <!-- Badge com número da fase -->
-                  <Badge 
-                    v-if="showProgressIndicators"
-                    class="absolute top-1 right-1 bg-primary text-xs h-5 w-5 flex items-center justify-center p-0 min-w-0 z-20" 
-                    :class="{'opacity-60': phase.is_blocked}"
-                  >
-                    {{ phase.id }}
-                  </Badge>
-
-                  <!-- Texto de revisão (apenas para fases de revisão) -->
-                  <div v-if="phase.is_review && showProgressIndicators" class="text-[9px] text-center text-muted-foreground mt-1 leading-tight mx-auto" :class="{'opacity-60': phase.is_blocked}">
-                    {{ phase.progress?.needs_review ? `(${phase.progress.articles_to_review_count || 0})` : '' }} Revisão
-                  </div>
-                </Link>
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
@@ -332,6 +523,14 @@ const getSegmentDashOffset = (totalSegments: number, segmentIndex: number): numb
           <h3 class="text-xl font-bold mb-2">Como jogar?</h3>
           <p>Siga as fases e complete cada uma para dominar a legislação!</p>
           <p class="mt-2 text-sm text-muted-foreground">Escolha uma fase e pratique os artigos.</p>
+          
+          <div v-if="hasMultipleLaws && props.modules && props.modules.length > 0" class="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <h4 class="font-semibold text-blue-800 mb-2">💡 Nova Funcionalidade: Módulos</h4>
+            <p class="text-sm text-blue-700">
+              Agora você pode alternar entre a visualização tradicional (uma lei por vez) e a visualização por módulos, 
+              que intercala algumas fases de cada lei para um estudo mais variado!
+            </p>
+          </div>
         </div>
       </div>
     </div>
