@@ -3,7 +3,6 @@
 import { Head, Link } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { computed, ref, onMounted, onUnmounted } from 'vue';
-import { Badge } from '@/components/ui/badge';
 import { Book, FileText, Bookmark, CheckCircle, Star, Repeat } from 'lucide-vue-next';
 
 interface User {
@@ -57,8 +56,6 @@ const props = defineProps<{
     user: User;
 }>();
 
-// Flag para controlar exibição de indicadores de progresso e legendas
-const showProgressIndicators = ref(true);
 // Flag para alternar entre visualização tradicional e por módulos (padrão: módulos)
 const showModuleView = ref(true);
 
@@ -345,17 +342,8 @@ const getSegmentDashOffset = (totalSegments: number, segmentIndex: number): numb
                         </div>
                       </div>
 
-                      <!-- Badge com número da fase -->
-                      <Badge 
-                        v-if="showProgressIndicators"
-                        class="absolute top-1 right-1 bg-primary text-xs h-5 w-5 flex items-center justify-center p-0 min-w-0 z-20" 
-                        :class="{'opacity-60': phase.is_blocked}"
-                      >
-                        {{ phase.id }}
-                      </Badge>
-
                       <!-- Texto de revisão (apenas para fases de revisão) -->
-                      <div v-if="phase.is_review && showProgressIndicators" class="text-[9px] text-center text-muted-foreground mt-1 leading-tight mx-auto" :class="{'opacity-60': phase.is_blocked}">
+                      <div v-if="phase.is_review" class="text-[9px] text-center text-muted-foreground mt-1 leading-tight mx-auto" :class="{'opacity-60': phase.is_blocked}">
                         {{ phase.progress?.needs_review ? `(${phase.progress.articles_to_review_count || 0})` : '' }} Revisão
                       </div>
                     </Link>
@@ -488,17 +476,8 @@ const getSegmentDashOffset = (totalSegments: number, segmentIndex: number): numb
                       </div>
                     </div>
 
-                    <!-- Badge com número da fase -->
-                    <Badge 
-                      v-if="showProgressIndicators"
-                      class="absolute top-1 right-1 bg-primary text-xs h-5 w-5 flex items-center justify-center p-0 min-w-0 z-20" 
-                      :class="{'opacity-60': phase.is_blocked}"
-                    >
-                      {{ phase.id }}
-                    </Badge>
-
                     <!-- Texto de revisão (apenas para fases de revisão) -->
-                    <div v-if="phase.is_review && showProgressIndicators" class="text-[9px] text-center text-muted-foreground mt-1 leading-tight mx-auto" :class="{'opacity-60': phase.is_blocked}">
+                    <div v-if="phase.is_review" class="text-[9px] text-center text-muted-foreground mt-1 leading-tight mx-auto" :class="{'opacity-60': phase.is_blocked}">
                       {{ phase.progress?.needs_review ? `(${phase.progress.articles_to_review_count || 0})` : '' }} Revisão
                     </div>
                   </Link>
@@ -508,15 +487,6 @@ const getSegmentDashOffset = (totalSegments: number, segmentIndex: number): numb
           </div>
         </div>
 
-        <!-- Controles -->
-        <div class="mt-8 flex justify-center">
-          <button 
-            @click="showProgressIndicators = !showProgressIndicators"
-            class="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors text-sm"
-          >
-            {{ showProgressIndicators ? 'Ocultar' : 'Mostrar' }} Números das Fases
-          </button>
-        </div>
 
         <!-- Instruções -->
         <div class="mt-12 p-6 bg-muted/50 rounded-lg text-center">
