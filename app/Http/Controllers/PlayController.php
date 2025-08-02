@@ -16,9 +16,10 @@ class PlayController extends Controller
     const ARTICLES_PER_PHASE = 9;
     const REVIEW_PHASE_INTERVAL = 3;
     const PHASES_PER_MODULE_PER_LAW = 6; // Quantas fases de cada lei por módulo
+    const PHASES_PER_JOURNEY = 20; // Máximo de fases por jornada
 
 
-    public function map()
+    public function map(Request $request)
     {
         $user = Auth::user();
         $userId = $user->id;
@@ -28,6 +29,9 @@ class PlayController extends Controller
         }
 
         $hasPreferences = $user->legalReferences()->exists();
+        
+        // Obter jornada atual (padrão: 1)
+        $currentJourney = max(1, (int) $request->get('jornada', 1));
 
         $legalReferencesQuery = LegalReference::with(['articles' => function($query) {
             $query->orderByRaw('CAST(article_reference AS UNSIGNED) ASC')->where('is_active', true);
@@ -236,14 +240,39 @@ class PlayController extends Controller
              // Por enquanto, deixamos sem fase atual se $currentPhaseId for null.
         }
 
+        // --- Sistema de Jornadas ---
+        $totalPhases = count($phasesData);
+        $totalJourneys = ceil($totalPhases / self::PHASES_PER_JOURNEY);
         
-        // Organizar fases em módulos
-        $modulesData = $this->organizePhasesIntoModules($phasesData);
+        // Validar jornada atual
+        if ($currentJourney > $totalJourneys) {
+            $currentJourney = $totalJourneys;
+        }
+        
+        // Filtrar fases para a jornada atual
+        $startIndex = ($currentJourney - 1) * self::PHASES_PER_JOURNEY;
+        $endIndex = min($startIndex + self::PHASES_PER_JOURNEY, $totalPhases);
+        $journeyPhases = array_slice($phasesData, $startIndex, $endIndex - $startIndex);
+        
+        // Organizar fases em módulos (apenas para a jornada atual)
+        $modulesData = $this->organizePhasesIntoModules($journeyPhases);
+        
+        // Informações de navegação entre jornadas
+        $journeyInfo = [
+            'current' => $currentJourney,
+            'total' => $totalJourneys,
+            'has_previous' => $currentJourney > 1,
+            'has_next' => $currentJourney < $totalJourneys,
+            'phases_in_journey' => count($journeyPhases),
+            'total_phases' => $totalPhases,
+            'journey_title' => $totalJourneys > 1 ? "Jornada {$currentJourney} de {$totalJourneys}" : null
+        ];
         
         return Inertia::render('Play/Map', [
-            'phases' => $phasesData,
+            'phases' => $journeyPhases,
             'modules' => $modulesData,
-             'user' => [
+            'journey' => $journeyInfo,
+            'user' => [
                 'lives' => $user->lives,
                 'has_infinite_lives' => $user->hasInfiniteLives()
             ],

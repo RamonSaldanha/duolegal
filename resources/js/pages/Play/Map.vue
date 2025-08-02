@@ -10,6 +10,16 @@ interface User {
     has_infinite_lives?: boolean;
 }
 
+interface JourneyInfo {
+    current: number;
+    total: number;
+    has_previous: boolean;
+    has_next: boolean;
+    phases_in_journey: number;
+    total_phases: number;
+    journey_title: string | null;
+}
+
 interface Progress {
     completed: number;
     total: number;
@@ -53,6 +63,7 @@ interface GroupedPhases {
 const props = defineProps<{
     phases: Phase[];
     modules?: any[]; // Dados dos módulos organizados
+    journey?: JourneyInfo; // Informações da jornada atual
     user: User;
 }>();
 
@@ -185,6 +196,39 @@ const getSegmentDashOffset = (totalSegments: number, segmentIndex: number): numb
   <AppLayout>
     <div class="container py-8 px-4">
       <div class="max-w-4xl mx-auto">
+        <!-- Navegação de Jornadas -->
+        <div v-if="props.journey && props.journey.total > 1" class="flex items-center justify-center mb-6 space-x-4">
+          <!-- Botão Jornada Anterior -->
+          <Link
+            v-if="props.journey.has_previous"
+            :href="route('play.map', { jornada: props.journey.current - 1 })"
+            class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105 active:scale-95"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16" class="mr-2">
+              <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8"/>
+            </svg>
+            Jornada Anterior
+          </Link>
+          
+          <!-- Título da Jornada Atual -->
+          <div class="px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-lg shadow-md">
+            <h1 class="text-lg font-bold text-center">{{ props.journey.journey_title }}</h1>
+            <p class="text-xs text-center opacity-90">{{ props.journey.phases_in_journey }} fases</p>
+          </div>
+          
+          <!-- Botão Próxima Jornada -->
+          <Link
+            v-if="props.journey.has_next"
+            :href="route('play.map', { jornada: props.journey.current + 1 })"
+            class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg hover:from-blue-600 hover:to-indigo-700 transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105 active:scale-95"
+          >
+            Próxima Jornada
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16" class="ml-2">
+              <path fill-rule="evenodd" d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8"/>
+            </svg>
+          </Link>
+        </div>
+
         <!-- Controle de alternância no topo -->
         <div v-if="hasMultipleLaws && props.modules && props.modules.length > 0" class="flex justify-center mb-6">
           <button 
@@ -500,6 +544,18 @@ const getSegmentDashOffset = (totalSegments: number, segmentIndex: number): numb
               Agora você pode alternar entre a visualização tradicional (uma lei por vez) e a visualização por módulos, 
               que intercala algumas fases de cada lei para um estudo mais variado!
             </p>
+          </div>
+          
+          <div v-if="props.journey && props.journey.total > 1" class="mt-4 p-4 bg-amber-50 rounded-lg border border-amber-200">
+            <h4 class="font-semibold text-amber-800 mb-2">🎯 Sistema de Jornadas</h4>
+            <p class="text-sm text-amber-700 mb-2">
+              Para melhorar o desempenho, suas fases foram organizadas em jornadas de até {{ 20 }} fases cada. 
+              Use os botões de navegação acima para explorar diferentes jornadas!
+            </p>
+            <div class="flex items-center justify-center space-x-4 text-xs text-amber-600">
+              <span>📍 Jornada Atual: {{ props.journey.current }}/{{ props.journey.total }}</span>
+              <span>📊 {{ props.journey.phases_in_journey }} fases nesta jornada</span>
+            </div>
           </div>
         </div>
       </div>
