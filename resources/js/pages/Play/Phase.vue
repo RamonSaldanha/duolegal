@@ -453,6 +453,7 @@ const page = usePage<{
     auth: {
         user: {
             lives: number;
+            xp: number;
         }
     }
 }>();
@@ -824,6 +825,14 @@ const reviewCompletionPercentage = computed(() => {
                         page.props.auth.user.lives = response.data.user.lives;
                     }
                     
+                    // Atualizar XP do usuário e mostrar notificação gamificada
+                    if (response.data.user?.xp !== undefined) {
+                        page.props.auth.user.xp = response.data.user.xp;
+                    }
+                    if (response.data.xp_gained && response.data.xp_gained > 0) {
+                        showXpGainedNotification(response.data.xp_gained);
+                    }
+                    
                     // Verificar se todos os artigos foram respondidos, mas NÃO exibe o modal
                     // Se for o último artigo, só marca como pronto para exibir o botão especial
                     if (currentArticleIndex.value === articlesArray.value.length - 1) {
@@ -864,6 +873,54 @@ const reviewCompletionPercentage = computed(() => {
             isTextExpanded.value = false;
             scrollToNextEmptyLacuna();
         }
+        
+        // Integração do sistema de XP: atualização será feita automaticamente via resposta do servidor
+    };
+    
+    // Função para exibir notificação animada de XP ganho
+    const showXpGainedNotification = (xpGained: number) => {
+        // Criar elemento de notificação temporário
+        const notification = document.createElement('div');
+        notification.textContent = `+${xpGained} XP`;
+        notification.className = 'fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-yellow-500 text-white px-4 py-2 rounded-lg font-bold text-lg shadow-lg animate-bounce';
+        notification.style.animation = 'xpGain 2s ease-out forwards';
+        
+        // Adicionar CSS personalizado para a animação
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes xpGain {
+                0% {
+                    opacity: 0;
+                    transform: translate(-50%, 20px) scale(0.8);
+                }
+                30% {
+                    opacity: 1;
+                    transform: translate(-50%, -10px) scale(1.2);
+                }
+                70% {
+                    opacity: 1;
+                    transform: translate(-50%, -20px) scale(1);
+                }
+                100% {
+                    opacity: 0;
+                    transform: translate(-50%, -40px) scale(0.8);
+                }
+            }
+        `;
+        
+        // Adicionar ao DOM
+        document.head.appendChild(style);
+        document.body.appendChild(notification);
+        
+        // Remover após animação
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+            if (style.parentNode) {
+                style.parentNode.removeChild(style);
+            }
+        }, 2000);
     };
     
     const showPhaseCompletionModal = () => {
@@ -1215,6 +1272,14 @@ const reviewCompletionPercentage = computed(() => {
                     // Atualizar as vidas do usuário no estado da página
                     if (response.data.user?.lives !== undefined) {
                         page.props.auth.user.lives = response.data.user.lives;
+                    }
+                    
+                    // Atualizar XP do usuário e mostrar notificação gamificada
+                    if (response.data.user?.xp !== undefined) {
+                        page.props.auth.user.xp = response.data.user.xp;
+                    }
+                    if (response.data.xp_gained && response.data.xp_gained > 0) {
+                        showXpGainedNotification(response.data.xp_gained);
                     }
                     
                     // Verificar se todos os artigos foram respondidos, mas NÃO exibe o modal

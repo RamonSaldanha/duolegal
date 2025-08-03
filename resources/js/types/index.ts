@@ -28,11 +28,19 @@ export interface User {
     name: string;
     email: string;
     avatar?: string;
-    email_verified_at: string | null;
-    created_at: string;
-    updated_at: string;
+    email_verified_at?: string | null;
+    created_at?: string;
+    updated_at?: string;
     lives?: number;
+    xp?: number;
     has_infinite_lives?: boolean;
+    is_admin?: boolean;
+    debug_info?: {
+        has_active_subscription: boolean;
+        on_trial: boolean;
+        subscribed: boolean;
+        trial_ends_at: string | null;
+    };
 }
 
 export type BreadcrumbItemType = BreadcrumbItem;

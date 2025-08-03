@@ -17,7 +17,7 @@ import UserMenuContent from '@/components/UserMenuContent.vue';
 import { getInitials } from '@/composables/useInitials';
 import type { BreadcrumbItem, NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
-import { BookOpen, Heart, Play, Menu, Lock, Settings2, Gem, Infinity, Users } from 'lucide-vue-next';
+import { BookOpen, Heart, Play, Menu, Lock, Settings2, Gem, Infinity, Users, Star } from 'lucide-vue-next';
 import { computed, watch } from 'vue';
 
 interface Props {
@@ -36,6 +36,7 @@ const page = usePage<{
             email: string;
             is_admin: boolean;
             lives: number;
+            xp: number;
             avatar?: string;
             has_infinite_lives?: boolean;
             debug_info?: {
@@ -211,6 +212,11 @@ const rightNavItems: NavItem[] = [
                 </div>
 
                     <div class="ml-auto flex items-center space-x-4">
+                        <!-- XP Counter -->
+                        <div v-if="auth.user?.xp !== undefined" class="flex items-center gap-1">
+                            <Star class="w-5 h-5 text-yellow-500" fill="currentColor" />
+                            <span class="font-medium text-yellow-500">{{ auth.user.xp }}</span>
+                        </div>
                         <!-- Lives Counter -->
                         <div v-if="auth.user?.lives !== undefined" class="flex items-center gap-1">
                             <div class="flex items-center gap-1">

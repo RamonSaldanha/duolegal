@@ -20,6 +20,7 @@ class User extends Authenticatable
         'email',
         'password',
         'lives',
+        'xp',
         'stripe_id',
         'pm_type',
         'pm_last_four',
@@ -46,6 +47,7 @@ class User extends Authenticatable
         'password' => 'hashed',
         'is_admin' => 'boolean',
         'lives' => 'integer',
+        'xp' => 'integer',
         'has_infinite_lives' => 'boolean',
         'trial_ends_at' => 'datetime',
     ];
@@ -145,6 +147,36 @@ class User extends Authenticatable
             \Illuminate\Support\Facades\Log::warning('Erro ao verificar assinatura: ' . $exception->getMessage());
             return false;
         }
+    }
+
+    /**
+     * Adiciona XP ao usuário
+     */
+    public function addXp(int $xp): void
+    {
+        $this->increment('xp', $xp);
+    }
+
+    /**
+     * Define o XP do usuário
+     */
+    public function setXp(int $xp): void
+    {
+        $this->update(['xp' => max(0, $xp)]);
+    }
+
+    /**
+     * Calcula o XP ganho baseado na dificuldade do desafio
+     */
+    public static function calculateXpGain(int $difficultyLevel): int
+    {
+        // Sistema de XP baseado na dificuldade:
+        // Nível 1 (Iniciante): 5 XP
+        // Nível 2 (Básico): 10 XP  
+        // Nível 3 (Intermediário): 15 XP
+        // Nível 4 (Avançado): 20 XP
+        // Nível 5 (Especialista): 25 XP
+        return $difficultyLevel * 5;
     }
 
     // Os métodos activateInfiniteLives e deactivateInfiniteLives foram removidos

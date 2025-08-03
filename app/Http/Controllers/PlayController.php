@@ -998,6 +998,11 @@ class PlayController extends Controller
         $correctAnswers = min((int)$validated['correct_answers'], (int)$validated['total_answers']);
         $totalAnswers = (int)$validated['total_answers'];
 
+        // Verificar se o usuário havia completado este artigo antes
+        $previousProgress = UserProgress::where('user_id', $user->id)
+            ->where('law_article_id', $article->id)
+            ->first();
+        $wasAlreadyCompleted = $previousProgress && $previousProgress->percentage >= 70;
 
         // Perder vida apenas na *primeira vez* que falha (<70%) ou se já estava < 70% e continua < 70%?
         // Vamos implementar: perde vida se ficar < 70% nesta tentativa.
@@ -1010,7 +1015,6 @@ class PlayController extends Controller
              }
         }
 
-
         $progress = UserProgress::updateProgress(
             $userId = $user->id, // Corrigido para pegar $user->id
             $article->id,
@@ -1022,6 +1026,12 @@ class PlayController extends Controller
          // Vamos buscá-lo novamente para garantir os últimos dados, especialmente se updateProgress não retornar
          $updatedProgress = UserProgress::where('user_id', $user->id)->where('law_article_id', $article->id)->first();
 
+        // Calcular XP ganho apenas se o usuário passou (>=70%) e não havia completado antes
+        $xpGained = 0;
+        if ($percentage >= 70 && !$wasAlreadyCompleted) {
+            $xpGained = \App\Models\User::calculateXpGain($article->difficulty_level);
+            $user->addXp($xpGained);
+        }
 
         return response()->json([
             'success' => true,
@@ -1035,8 +1045,10 @@ class PlayController extends Controller
             ] : null,
             'user' => [
                 'lives' => $user->lives, // Vidas já decrementadas se necessário
+                'xp' => $user->xp, // Incluir XP atualizado
                 'has_infinite_lives' => $user->hasInfiniteLives()
             ],
+             'xp_gained' => $xpGained, // XP ganho nesta sessão
              'lost_life' => $lostLife, // Informar se perdeu vida
             'should_redirect' => !$user->hasInfiniteLives() && $user->lives <= 0,
             'redirect_url' => !$user->hasInfiniteLives() && $user->lives <= 0 ? route('play.nolives') : null
