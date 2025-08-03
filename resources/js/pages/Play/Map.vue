@@ -497,9 +497,9 @@ const getSegmentDashOffset = (totalSegments: number, segmentIndex: number): numb
           </Link>
           
           <!-- Título da Jornada Atual -->
-          <div class="px-6 py-3 bg-amber-500 text-white rounded-lg border-4 border-amber-700 shadow-[0_6px_0_theme(colors.amber.700)] font-bold">
-            <h1 class="text-lg font-bold text-center">{{ props.journey.journey_title }}</h1>
-            <p class="text-xs text-center opacity-90">{{ props.journey.phases_in_journey }} fases</p>
+          <div class="px-6 py-2 bg-amber-500 text-white rounded-lg border-4 border-amber-700 shadow-[0_6px_0_theme(colors.amber.700)] font-bold">
+            <h1 class="text-base font-bold text-center leading-tight">{{ props.journey.journey_title }}</h1>
+            <p class="text-xs text-center opacity-90 leading-tight mt-0.5">{{ props.journey.phases_in_journey }} fases</p>
           </div>
           
           <!-- Botão Próxima Jornada -->

@@ -68,32 +68,61 @@ class PlayController extends Controller
         $currentLawUuid = null;
         $lawCompletionStatus = []; // uuid => bool (true se lei 100% completa no novo sentido)
 
-        // --- PASSO 1: Construir a ESTRUTURA completa de fases ---
-        // Isso é necessário para que getArticlesInScopeForReview funcione corretamente
-        $tempCounter = 0;
+        // --- PASSO 1: Construir a ESTRUTURA completa de fases INTERCALADAS ---
+        // Primeiro, preparar chunks de todas as leis
+        $lawChunksData = [];
+        $maxChunks = 0;
+        
         foreach ($legalReferences as $reference) {
-             $chunks = $reference->articles->chunk(self::ARTICLES_PER_PHASE);
-             $regularPhaseCounter = 0;
-             foreach ($chunks as $chunkIndex => $articleChunk) {
-                 $regularPhaseCounter++;
-                 $tempCounter++;
-                 $phaseStructureList[] = [
-                     'id' => $tempCounter,
-                     'is_review' => false,
-                     'reference_uuid' => $reference->uuid,
-                     'chunk_index' => $chunkIndex,
-                     'article_chunk' => $articleChunk // Armazena temporariamente para Pass 2
-                 ];
-                 if ($regularPhaseCounter % self::REVIEW_PHASE_INTERVAL === 0) {
-                     $tempCounter++;
-                     $phaseStructureList[] = [
-                         'id' => $tempCounter,
-                         'is_review' => true,
-                         'reference_uuid' => $reference->uuid,
-                         'last_regular_counter' => $regularPhaseCounter // Para título da revisão
-                     ];
-                 }
-             }
+            $chunks = $reference->articles->chunk(self::ARTICLES_PER_PHASE);
+            $lawChunksData[$reference->uuid] = [
+                'reference' => $reference,
+                'chunks' => $chunks,
+                'total_chunks' => $chunks->count()
+            ];
+            $maxChunks = max($maxChunks, $chunks->count());
+        }
+        
+        // Intercalar as fases seguindo o padrão EXATO: 6 fases de cada lei por módulo
+        $tempCounter = 0;
+        $totalModules = ceil($maxChunks / self::PHASES_PER_MODULE_PER_LAW);
+        
+        for ($module = 0; $module < $totalModules; $module++) {
+            $startChunkIndex = $module * self::PHASES_PER_MODULE_PER_LAW;
+            $endChunkIndex = min($startChunkIndex + self::PHASES_PER_MODULE_PER_LAW, $maxChunks);
+            
+            // Para cada lei no módulo atual, adicionar exatamente PHASES_PER_MODULE_PER_LAW fases
+            foreach ($lawChunksData as $lawUuid => $lawData) {
+                $phasesAddedForThisLawInThisModule = 0;
+                
+                // Adicionar as fases deste módulo para esta lei (máximo PHASES_PER_MODULE_PER_LAW)
+                for ($chunkIndex = $startChunkIndex; $chunkIndex < $endChunkIndex && $phasesAddedForThisLawInThisModule < self::PHASES_PER_MODULE_PER_LAW; $chunkIndex++) {
+                    if ($chunkIndex < $lawData['total_chunks']) {
+                        $tempCounter++;
+                        
+                        $phaseStructureList[] = [
+                            'id' => $tempCounter,
+                            'is_review' => false,
+                            'reference_uuid' => $lawUuid,
+                            'chunk_index' => $chunkIndex,
+                            'article_chunk' => $lawData['chunks'][$chunkIndex] // Armazena temporariamente para Pass 2
+                        ];
+                        
+                        $phasesAddedForThisLawInThisModule++;
+                        
+                        // Adicionar revisão a cada REVIEW_PHASE_INTERVAL fases regulares GLOBAIS desta lei
+                        if (($chunkIndex + 1) % self::REVIEW_PHASE_INTERVAL === 0) {
+                            $tempCounter++;
+                            $phaseStructureList[] = [
+                                'id' => $tempCounter,
+                                'is_review' => true,
+                                'reference_uuid' => $lawUuid,
+                                'last_regular_counter' => $chunkIndex + 1 // Para título da revisão (baseado no índice do chunk + 1)
+                            ];
+                        }
+                    }
+                }
+            }
         }
         // Log::debug("[Map Structure] Phase structure list built. Count: " . count($phaseStructureList));
 
@@ -711,50 +740,64 @@ class PlayController extends Controller
         // Log::debug("[findDetails] Found " . $legalReferences->count() . " legal references.");
 
 
-        // 2. Recalcular $phaseStructureList (IDÊNTICO ao Passo 1 do map())
+        // 2. Recalcular $phaseStructureList (IDÊNTICO ao Passo 1 do map() - INTERCALADO)
         $phaseStructureList = [];
-        $tempCounter = 0;
+        
+        // Primeiro, preparar chunks de todas as leis
+        $lawChunksData = [];
+        $maxChunks = 0;
+        
         foreach ($legalReferences as $reference) {
             $chunks = $reference->articles->chunk(self::ARTICLES_PER_PHASE);
-            $regularPhaseCounter = 0;
-            foreach ($chunks as $chunkIndex => $articleChunk) {
-                $regularPhaseCounter++;
-                $tempCounter++;
-                $struct = [
-                    'id' => $tempCounter, 'is_review' => false,
-                    'reference_uuid' => $reference->uuid, 'chunk_index' => $chunkIndex,
-                    'article_chunk' => $articleChunk, // Manter chunk para Pass 2
-                    'reference_name_debug' => $reference->name // Add for logging
-                ];
-                if ($tempCounter == $targetPhaseId) {
-                    // Log::debug("[findDetails - Struct Gen] Target ID {$targetPhaseId} Structure (Regular): " . json_encode([
-                    //     'id' => $struct['id'], 'is_review' => $struct['is_review'],
-                    //     'ref_uuid' => $struct['reference_uuid'], 'chunk' => $struct['chunk_index'],
-                    //     'ref_name' => $struct['reference_name_debug']
-                    // ]));
-                }
-                $phaseStructureList[] = $struct;
-
-                if ($regularPhaseCounter % self::REVIEW_PHASE_INTERVAL === 0) {
-                    $tempCounter++;
-                    $struct = [
-                        'id' => $tempCounter, 'is_review' => true,
-                        'reference_uuid' => $reference->uuid,
-                        'last_regular_counter' => $regularPhaseCounter,
-                        'reference_name_debug' => $reference->name // Add for logging
-                    ];
-                    if ($tempCounter == $targetPhaseId) { 
-                        // Log::debug("[findDetails - Struct Gen] Target ID {$targetPhaseId} Structure (Review): " . json_encode([
-                        //     'id' => $struct['id'], 'is_review' => $struct['is_review'],
-                        //     'ref_uuid' => $struct['reference_uuid'],
-                        //     'ref_name' => $struct['reference_name_debug']
-                        // ]));
+            $lawChunksData[$reference->uuid] = [
+                'reference' => $reference,
+                'chunks' => $chunks,
+                'total_chunks' => $chunks->count()
+            ];
+            $maxChunks = max($maxChunks, $chunks->count());
+        }
+        
+        // Intercalar as fases seguindo o padrão EXATO: 6 fases de cada lei por módulo
+        $tempCounter = 0;
+        $totalModules = ceil($maxChunks / self::PHASES_PER_MODULE_PER_LAW);
+        
+        for ($module = 0; $module < $totalModules; $module++) {
+            $startChunkIndex = $module * self::PHASES_PER_MODULE_PER_LAW;
+            $endChunkIndex = min($startChunkIndex + self::PHASES_PER_MODULE_PER_LAW, $maxChunks);
+            
+            // Para cada lei no módulo atual, adicionar exatamente PHASES_PER_MODULE_PER_LAW fases
+            foreach ($lawChunksData as $lawUuid => $lawData) {
+                $phasesAddedForThisLawInThisModule = 0;
+                
+                // Adicionar as fases deste módulo para esta lei (máximo PHASES_PER_MODULE_PER_LAW)
+                for ($chunkIndex = $startChunkIndex; $chunkIndex < $endChunkIndex && $phasesAddedForThisLawInThisModule < self::PHASES_PER_MODULE_PER_LAW; $chunkIndex++) {
+                    if ($chunkIndex < $lawData['total_chunks']) {
+                        $tempCounter++;
+                        
+                        $phaseStructureList[] = [
+                            'id' => $tempCounter,
+                            'is_review' => false,
+                            'reference_uuid' => $lawUuid,
+                            'chunk_index' => $chunkIndex,
+                            'article_chunk' => $lawData['chunks'][$chunkIndex] // Armazena temporariamente para Pass 2
+                        ];
+                        
+                        $phasesAddedForThisLawInThisModule++;
+                        
+                        // Adicionar revisão a cada REVIEW_PHASE_INTERVAL fases regulares GLOBAIS desta lei
+                        if (($chunkIndex + 1) % self::REVIEW_PHASE_INTERVAL === 0) {
+                            $tempCounter++;
+                            $phaseStructureList[] = [
+                                'id' => $tempCounter,
+                                'is_review' => true,
+                                'reference_uuid' => $lawUuid,
+                                'last_regular_counter' => $chunkIndex + 1 // Para título da revisão (baseado no índice do chunk + 1)
+                            ];
+                        }
                     }
-                    $phaseStructureList[] = $struct;
                 }
             }
         }
-        // Log::debug("[findDetails] Recalculated structure list. Count: " . count($phaseStructureList));
 
         // 3. Iterar pela Estrutura para Calcular Dados (IDÊNTICO ao Passo 2 do map())
         $allPhasesListData = [];
@@ -1001,71 +1044,80 @@ class PlayController extends Controller
     }
 
     /**
-     * Organiza as fases em módulos intercalando entre as leis
+     * Organiza as fases em módulos (as fases já estão intercaladas)
      */
     private function organizePhasesIntoModules(array $phasesData): array
     {
-        // Agrupar fases por referência legal
-        $phasesByReference = [];
-        foreach ($phasesData as $phase) {
-            $uuid = $phase['reference_uuid'];
-            if (!isset($phasesByReference[$uuid])) {
-                $phasesByReference[$uuid] = [
-                    'name' => $phase['reference_name'],
-                    'uuid' => $uuid,
-                    'phases' => []
-                ];
-            }
-            $phasesByReference[$uuid]['phases'][] = $phase;
-        }
-
-        // Se há apenas uma lei, não precisa de módulos
-        if (count($phasesByReference) <= 1) {
-            return [];
-        }
-
+        // As fases já estão na ordem intercalada correta
+        // Agora precisamos apenas agrupá-las em blocos e identificar as referências
+        
         $modules = [];
         $moduleNumber = 1;
-        $maxPhasesPerLaw = max(array_map(function($ref) {
-            return count($ref['phases']);
-        }, $phasesByReference));
-
-        // Dividir em blocos de PHASES_PER_MODULE_PER_LAW
-        $totalBlocks = ceil($maxPhasesPerLaw / self::PHASES_PER_MODULE_PER_LAW);
-
-        for ($blockIndex = 0; $blockIndex < $totalBlocks; $blockIndex++) {
-            $modulePhases = [];
-            $hasAnyPhases = false;
-
-            foreach ($phasesByReference as $reference) {
-                $startIndex = $blockIndex * self::PHASES_PER_MODULE_PER_LAW;
-                $endIndex = min($startIndex + self::PHASES_PER_MODULE_PER_LAW, count($reference['phases']));
-                
-                if ($startIndex < count($reference['phases'])) {
-                    $phasesForThisBlock = array_slice($reference['phases'], $startIndex, $endIndex - $startIndex);
-                    
-                    if (!empty($phasesForThisBlock)) {
-                        $modulePhases[] = [
-                            'reference_name' => $reference['name'],
-                            'reference_uuid' => $reference['uuid'],
-                            'phases' => $phasesForThisBlock
-                        ];
-                        $hasAnyPhases = true;
-                    }
-                }
+        $phasesPerModule = self::PHASES_PER_MODULE_PER_LAW * count($this->getUniqueLegalReferences($phasesData));
+        $totalPhases = count($phasesData);
+        
+        if ($totalPhases === 0) {
+            return [];
+        }
+        
+        // Se há apenas uma lei, não mostrar módulos
+        $uniqueReferences = $this->getUniqueLegalReferences($phasesData);
+        if (count($uniqueReferences) <= 1) {
+            return [];
+        }
+        
+        // Agrupar fases em módulos
+        for ($startIndex = 0; $startIndex < $totalPhases; $startIndex += $phasesPerModule) {
+            $endIndex = min($startIndex + $phasesPerModule, $totalPhases);
+            $modulePhasesSlice = array_slice($phasesData, $startIndex, $endIndex - $startIndex);
+            
+            if (empty($modulePhasesSlice)) {
+                continue;
             }
-
-            if ($hasAnyPhases) {
+            
+            // Agrupar por referência dentro do módulo
+            $referenceGroups = [];
+            foreach ($modulePhasesSlice as $phase) {
+                $uuid = $phase['reference_uuid'];
+                if (!isset($referenceGroups[$uuid])) {
+                    $referenceGroups[$uuid] = [
+                        'reference_name' => $phase['reference_name'],
+                        'reference_uuid' => $uuid,
+                        'phases' => []
+                    ];
+                }
+                $referenceGroups[$uuid]['phases'][] = $phase;
+            }
+            
+            if (!empty($referenceGroups)) {
                 $modules[] = [
                     'id' => $moduleNumber,
                     'title' => "Módulo {$moduleNumber}",
-                    'references' => $modulePhases
+                    'references' => array_values($referenceGroups)
                 ];
                 $moduleNumber++;
             }
         }
-
+        
         return $modules;
+    }
+    
+    /**
+     * Obtém as referências legais únicas das fases
+     */
+    private function getUniqueLegalReferences(array $phasesData): array
+    {
+        $unique = [];
+        foreach ($phasesData as $phase) {
+            $uuid = $phase['reference_uuid'];
+            if (!isset($unique[$uuid])) {
+                $unique[$uuid] = [
+                    'uuid' => $uuid,
+                    'name' => $phase['reference_name']
+                ];
+            }
+        }
+        return array_values($unique);
     }
 
 
