@@ -6,6 +6,9 @@ use App\Http\Controllers\Admin\LawArticleOptionController;
 use App\Http\Controllers\Admin\UserController;
 use Illuminate\Support\Facades\Route;
 
+Route::post('api/n8n/legal-references', [LegalReferenceController::class, 'storeFromN8n']);
+
+
 Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     // Rotas para referências legais
     Route::get('legal-references', [LegalReferenceController::class, 'index'])->name('admin.legal-references.index');

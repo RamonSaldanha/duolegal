@@ -47,6 +47,43 @@ class LegalReferenceController extends Controller
         return response()->json($reference, 201);
     }
 
+        /**
+     * Criar referência legal via n8n (sem auth)
+     */
+    public function storeFromN8n(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'name' => ['required', 'string', 'max:255', 'unique:legal_references'],
+            'description' => ['nullable', 'string'],
+            'type' => ['nullable', 'string'],
+            'n8n_token' => ['required', 'string'] // Token simples para n8n
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        // Verificar token n8n
+        if ($request->n8n_token !== config('app.n8n_token')) {
+            return response()->json(['error' => 'Token inválido'], 401);
+        }
+
+        $reference = LegalReference::create([
+            'name' => $request->name,
+            'description' => $request->description ?? 'Lei processada via n8n',
+            'type' => $request->type ?? 'law',
+        ]);
+
+        return response()->json([
+            'id' => $reference->id,
+            'name' => $reference->name,
+            'created_at' => $reference->created_at,
+            'status' => 'success'
+        ], 201);
+    }
+
     /**
      * Mostrar uma referência legal específica.
      */
