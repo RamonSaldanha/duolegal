@@ -63,7 +63,7 @@ defineProps<{
                 
                 <!-- Desktop Navigation -->
                 <nav class="hidden md:flex items-center gap-6">
-                    <Link href="#features" class="text-gray-600 hover:text-green-600 font-medium transition-colors">
+                    <Link href="#features" class="text-gray-600 hover:text-[green]-600 font-medium transition-colors">
                         Como funciona
                     </Link>
                     <Link href="#testimonials" class="text-gray-600 hover:text-green-600 font-medium transition-colors">
@@ -188,7 +188,7 @@ defineProps<{
                     <!-- Conteúdo Principal -->
                     <div class="w-full lg:w-1/2 text-center lg:text-left">
                         <h1 class="text-5xl sm:text-6xl lg:text-7xl font-bold heading-font mb-6 text-gray-800">
-                            O <span class="text-green-600">Duolingo</span> para <span class="text-gray-700">Direito</span>
+                            O <span style="color: rgb(246, 196, 2)">Duolingo</span> para <span class="text-gray-700">Direito</span>
                         </h1>
                         
                         <p class="text-xl text-gray-600 mb-8 leading-relaxed max-w-2xl">
@@ -200,7 +200,10 @@ defineProps<{
                             <Link
                                 v-if="!page.props.auth.user"
                                 :href="route('register')"
-                                class="game-button px-8 py-4 bg-green-500 text-white rounded-lg border-4 border-green-700 shadow-[0_6px_0_theme(colors.green.700)] font-bold text-xl hover:transform hover:translate-y-1 hover:shadow-[0_4px_0_theme(colors.green.700)] transition-all flex items-center justify-center gap-2"
+                                class="w-full sm:w-auto px-6 py-2 text-white rounded-lg border-4 font-bold text-xl hover:transform hover:translate-y-1 transition-all flex items-center justify-center gap-2"
+                                style="background-color: rgb(246, 196, 2); border-color: rgb(180, 140, 0); box-shadow: 0 6px 0 rgb(180, 140, 0);"
+                                onmouseover="this.style.boxShadow = '0 4px 0 rgb(180, 140, 0)'"
+                                onmouseout="this.style.boxShadow = '0 6px 0 rgb(180, 140, 0)'"
                             >
                                 <PlayCircle class="h-6 w-6" />
                                 Começar gratuitamente
@@ -208,7 +211,10 @@ defineProps<{
                             <Link
                                 v-else
                                 :href="route('play.map')"
-                                class="game-button px-8 py-4 bg-green-500 text-white rounded-lg border-4 border-green-700 shadow-[0_6px_0_theme(colors.green.700)] font-bold text-xl hover:transform hover:translate-y-1 hover:shadow-[0_4px_0_theme(colors.green.700)] transition-all flex items-center justify-center gap-2"
+                                class="w-full sm:w-auto px-6 py-2 text-white rounded-lg border-4 font-bold text-xl hover:transform hover:translate-y-1 transition-all flex items-center justify-center gap-2"
+                                style="background-color: rgb(246, 196, 2); border-color: rgb(180, 140, 0); box-shadow: 0 6px 0 rgb(180, 140, 0);"
+                                onmouseover="this.style.boxShadow = '0 4px 0 rgb(180, 140, 0)'"
+                                onmouseout="this.style.boxShadow = '0 6px 0 rgb(180, 140, 0)'"
                             >
                                 <PlayCircle class="h-6 w-6" />
                                 Continuar Estudando
