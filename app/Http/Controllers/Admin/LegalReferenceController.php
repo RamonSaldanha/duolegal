@@ -53,7 +53,7 @@ class LegalReferenceController extends Controller
     public function storeFromN8n(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'name' => ['required', 'string', 'max:255', 'unique:legal_references'],
+            'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'type' => ['nullable', 'string'],
         ]);
