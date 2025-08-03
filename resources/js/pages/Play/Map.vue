@@ -483,12 +483,12 @@ const getSegmentDashOffset = (totalSegments: number, segmentIndex: number): numb
 
 
         <!-- Navegação de Jornadas no final -->
-        <div v-if="props.journey && props.journey.total > 1" class="flex items-center justify-center mt-12 space-x-4">
+        <div v-if="props.journey && props.journey.total > 1" class="flex flex-col sm:flex-row items-center justify-center mt-12 space-y-3 sm:space-y-0 sm:space-x-4 w-full">
           <!-- Botão Jornada Anterior -->
           <Link
             v-if="props.journey.has_previous"
             :href="route('play.map', { jornada: props.journey.current - 1 })"
-            class="inline-flex items-center px-3 py-1.5 bg-green-500 text-white rounded-lg border-4 border-green-700 shadow-[0_6px_0_theme(colors.green.700)] hover:shadow-[0_4px_0_theme(colors.green.700)] hover:translate-y-[2px] active:shadow-[0_2px_0_theme(colors.green.700)] active:translate-y-[4px] transition-all duration-150 font-bold text-sm"
+            class="w-full sm:w-auto inline-flex items-center justify-center px-3 py-1.5 bg-green-500 text-white rounded-lg border-4 border-green-700 shadow-[0_6px_0_theme(colors.green.700)] hover:shadow-[0_4px_0_theme(colors.green.700)] hover:translate-y-[2px] active:shadow-[0_2px_0_theme(colors.green.700)] active:translate-y-[4px] transition-all duration-150 font-bold text-sm"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16" class="mr-2">
               <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8"/>
@@ -497,7 +497,7 @@ const getSegmentDashOffset = (totalSegments: number, segmentIndex: number): numb
           </Link>
           
           <!-- Título da Jornada Atual -->
-          <div class="px-6 py-2 bg-amber-500 text-white rounded-lg border-4 border-amber-700 shadow-[0_6px_0_theme(colors.amber.700)] font-bold">
+          <div class="w-full sm:w-auto px-6 py-2 bg-amber-500 text-white rounded-lg border-4 border-amber-700 shadow-[0_6px_0_theme(colors.amber.700)] font-bold">
             <h1 class="text-base font-bold text-center leading-tight">{{ props.journey.journey_title }}</h1>
             <p class="text-xs text-center opacity-90 leading-tight mt-0.5">{{ props.journey.phases_in_journey }} fases</p>
           </div>
@@ -506,7 +506,7 @@ const getSegmentDashOffset = (totalSegments: number, segmentIndex: number): numb
           <Link
             v-if="props.journey.has_next"
             :href="route('play.map', { jornada: props.journey.current + 1 })"
-            class="inline-flex items-center px-3 py-1.5 bg-blue-500 text-white rounded-lg border-4 border-blue-700 shadow-[0_6px_0_theme(colors.blue.700)] hover:shadow-[0_4px_0_theme(colors.blue.700)] hover:translate-y-[2px] active:shadow-[0_2px_0_theme(colors.blue.700)] active:translate-y-[4px] transition-all duration-150 font-bold text-sm"
+            class="w-full sm:w-auto inline-flex items-center justify-center px-3 py-1.5 bg-blue-500 text-white rounded-lg border-4 border-blue-700 shadow-[0_6px_0_theme(colors.blue.700)] hover:shadow-[0_4px_0_theme(colors.blue.700)] hover:translate-y-[2px] active:shadow-[0_2px_0_theme(colors.blue.700)] active:translate-y-[4px] transition-all duration-150 font-bold text-sm"
           >
             Próxima Jornada
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16" class="ml-2">
