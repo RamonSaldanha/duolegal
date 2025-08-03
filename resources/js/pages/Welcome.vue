@@ -1,11 +1,15 @@
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3';
-import { Book, Award, Brain, PlayCircle, 
-         Menu, X, ChevronRight, Star } from 'lucide-vue-next';
+import { Head, Link, usePage } from '@inertiajs/vue3';
+import { Book, PlayCircle, Menu, X, ChevronRight, Target, CheckCircle, Trophy } from 'lucide-vue-next';
 import { ref } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
 
 const mobileMenuOpen = ref(false);
+const page = usePage<{
+    auth: {
+        user: any;
+    }
+}>();
 
 const toggleMobileMenu = () => {
     mobileMenuOpen.value = !mobileMenuOpen.value;
@@ -14,24 +18,42 @@ const toggleMobileMenu = () => {
 const closeMenu = () => {
     mobileMenuOpen.value = false;
 };
+
+// Props para receber dados do backend
+defineProps<{
+    articlesCount: number;
+}>();
 </script>
 
 <style>
 .heading-font {
     font-family: 'Poppins', sans-serif;
 }
+
+.game-button {
+    transition: all 0.2s ease;
+}
+
+.game-button:hover {
+    transform: translateY(2px);
+}
+
+.game-button:active {
+    transform: translateY(4px);
+    box-shadow: none !important;
+}
 </style>
 
 <template>
-    <Head title="Memorize Direito - Aprenda legislação de forma divertida">
+    <Head title="Memorize Direito - O Duolingo para Direito">
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="true">
         <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     </Head>
-    <div class="flex min-h-screen flex-col items-center bg-[#FDFDFC] text-[#1b1b18] dark:bg-[#0a0a0a] dark:text-white">
-        <!-- Header - Simplificado -->
-        <header class="w-full border-b border-[#19140035] dark:border-[#3E3E3A] sticky top-0 bg-[#FDFDFC]/95 dark:bg-[#0a0a0a]/95 backdrop-blur-sm z-50">
+    <div class="flex min-h-screen flex-col items-center bg-white text-gray-800">
+        <!-- Header -->
+        <header class="w-full bg-white border-b border-gray-200 sticky top-0 z-50">
             <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
                 <div class="flex items-center">
                     <Link :href="route('home')" class="flex items-center gap-x-2">
@@ -41,34 +63,40 @@ const closeMenu = () => {
                 
                 <!-- Desktop Navigation -->
                 <nav class="hidden md:flex items-center gap-6">
-                    <Link href="#sobre" class="text-[#706f6c] hover:text-[#f6c402] font-medium transition-colors">
-                        Sobre
+                    <Link href="#features" class="text-gray-600 hover:text-green-600 font-medium transition-colors">
+                        Como funciona
                     </Link>
-                    <Link href="#recursos" class="text-[#706f6c] hover:text-[#f6c402] font-medium transition-colors">
-                        Recursos
+                    <Link href="#testimonials" class="text-gray-600 hover:text-green-600 font-medium transition-colors">
+                        Benefícios
+                    </Link>
+                    <Link href="#research" class="text-gray-600 hover:text-green-600 font-medium transition-colors">
+                        Pesquisa
+                    </Link>
+                    <Link href="#faq" class="text-gray-600 hover:text-green-600 font-medium transition-colors">
+                        FAQ
                     </Link>
                     
-                    <div class="h-5 w-px bg-[#19140035] dark:bg-[#3E3E3A]"></div>
+                    <div class="h-5 w-px bg-gray-300"></div>
                     
                     <Link
-                        v-if="$page.props.auth.user"
+                        v-if="page.props.auth.user"
                         :href="route('play.map')"
-                        class="rounded-full bg-[#f6c402] px-5 py-2 text-base font-medium text-black transition hover:bg-[#c39b01]"
+                        class="game-button px-6 py-2 bg-green-500 text-white rounded-lg border-4 border-green-700 shadow-[0_4px_0_theme(colors.green.700)] font-bold hover:transform hover:translate-y-1 hover:shadow-[0_2px_0_theme(colors.green.700)] transition-all"
                     >
-                        Jogar
+                        Continuar Estudando
                     </Link>
                     <template v-else>
                         <Link
                             :href="route('login')"
-                            class="rounded-full px-5 py-2 text-base font-medium transition hover:bg-[#19140015] dark:hover:bg-[#ffffff15] border border-[#19140035] dark:border-[#ffffff35] "
+                            class="text-gray-600 hover:text-green-600 font-medium transition-colors"
                         >
                             Entrar
                         </Link>
                         <Link
                             :href="route('register')"
-                            class="rounded-full bg-[#f6c402] px-5 py-2 text-base font-medium text-black transition hover:bg-[#c39b01]"
+                            class="game-button px-6 py-2 bg-green-500 text-white rounded-lg border-4 border-green-700 shadow-[0_4px_0_theme(colors.green.700)] font-bold hover:transform hover:translate-y-1 hover:shadow-[0_2px_0_theme(colors.green.700)] transition-all"
                         >
-                            Começar
+                            Começar Grátis
                         </Link>
                     </template>
                 </nav>
@@ -76,7 +104,7 @@ const closeMenu = () => {
                 <!-- Mobile Menu Button -->
                 <button 
                     @click="toggleMobileMenu" 
-                    class="md:hidden flex items-center justify-center h-10 w-10 rounded-full hover:bg-[#19140015] dark:hover:bg-[#ffffff15] transition-colors"
+                    class="md:hidden flex items-center justify-center h-10 w-10 rounded-lg hover:bg-gray-100 transition-colors"
                     aria-label="Menu"
                 >
                     <Menu v-if="!mobileMenuOpen" class="h-6 w-6" />
@@ -87,402 +115,507 @@ const closeMenu = () => {
             <!-- Mobile Navigation -->
             <div 
                 v-if="mobileMenuOpen" 
-                class="md:hidden absolute top-16 inset-x-0 bg-[#FDFDFC] dark:bg-[#0a0a0a] border-b border-[#19140035] dark:border-[#3E3E3A] py-4 px-4 z-50"
+                class="md:hidden absolute top-16 inset-x-0 bg-white border-b border-gray-200 py-4 px-4 z-50"
             >
                 <nav class="flex flex-col gap-3">
                     <Link 
-                        href="#sobre" 
-                        class="flex items-center justify-between py-2 px-4 rounded-lg hover:bg-[#19140015] dark:hover:bg-[#ffffff15]"
+                        href="#features" 
+                        class="flex items-center justify-between py-2 px-4 rounded-lg hover:bg-gray-50"
                         @click="closeMenu"
                     >
-                        <span class="font-medium">Sobre</span>
-                        <ChevronRight class="h-5 w-5 text-[#706f6c]" />
+                        <span class="font-medium">Como funciona</span>
+                        <ChevronRight class="h-5 w-5 text-gray-500" />
                     </Link>
                     <Link 
-                        href="#recursos" 
-                        class="flex items-center justify-between py-2 px-4 rounded-lg hover:bg-[#19140015] dark:hover:bg-[#ffffff15]"
+                        href="#testimonials" 
+                        class="flex items-center justify-between py-2 px-4 rounded-lg hover:bg-gray-50"
                         @click="closeMenu"
                     >
-                        <span class="font-medium">Recursos</span>
-                        <ChevronRight class="h-5 w-5 text-[#706f6c]" />
+                        <span class="font-medium">Benefícios</span>
+                        <ChevronRight class="h-5 w-5 text-gray-500" />
+                    </Link>
+                    <Link 
+                        href="#research" 
+                        class="flex items-center justify-between py-2 px-4 rounded-lg hover:bg-gray-50"
+                        @click="closeMenu"
+                    >
+                        <span class="font-medium">Pesquisa</span>
+                        <ChevronRight class="h-5 w-5 text-gray-500" />
+                    </Link>
+                    <Link 
+                        href="#faq" 
+                        class="flex items-center justify-between py-2 px-4 rounded-lg hover:bg-gray-50"
+                        @click="closeMenu"
+                    >
+                        <span class="font-medium">FAQ</span>
+                        <ChevronRight class="h-5 w-5 text-gray-500" />
                     </Link>
                     
-                    <div class="h-px w-full bg-[#19140035] dark:bg-[#3E3E3A] my-2"></div>
+                    <div class="h-px w-full bg-gray-200 my-2"></div>
                     
                     <Link
-                        v-if="$page.props.auth.user"
+                        v-if="page.props.auth.user"
                         :href="route('play.map')"
-                        class="w-full rounded-lg bg-[#f6c402] px-4 py-3 text-center font-medium text-black transition hover:bg-[#c39b01]"
+                        class="game-button px-4 py-3 bg-green-500 text-white rounded-lg border-4 border-green-700 shadow-[0_4px_0_theme(colors.green.700)] font-bold text-center"
                         @click="closeMenu"
                     >
-                        Dashboard
+                        Continuar Estudando
                     </Link>
                     <template v-else>
                         <Link
                             :href="route('login')"
-                            class="w-full rounded-lg px-4 py-3 text-center font-medium transition hover:bg-[#19140015] dark:hover:bg-[#ffffff15]"
+                            class="px-4 py-2 text-center text-gray-600 font-medium"
                             @click="closeMenu"
                         >
                             Entrar
                         </Link>
                         <Link
                             :href="route('register')"
-                            class="w-full rounded-lg bg-[#f6c402] px-4 py-3 text-center font-medium text-black transition hover:bg-[#c39b01]"
+                            class="game-button px-4 py-3 bg-green-500 text-white rounded-lg border-4 border-green-700 shadow-[0_4px_0_theme(colors.green.700)] font-bold text-center"
                             @click="closeMenu"
                         >
-                            Começar
+                            Começar Grátis
                         </Link>
                     </template>
                 </nav>
             </div>
         </header>
 
-        <!-- Hero Section - Minimalista com Arara Feliz -->
-        <section class="w-full py-0 pt-8 md:pt-16 relative overflow-hidden" id="hero">
-     
-            <div class="mx-auto max-w-7xl px-4 sm:px-6 relative z-10">
-                <div class="flex flex-col md:flex-row items-center gap-8 md:gap-16">
-                    <!-- Conteúdo -->
-                    <div class="w-full md:w-1/2 text-center md:text-left">
-                        <h1 class="mb-6 text-4xl sm:text-5xl font-extrabold leading-tight heading-font">
-                            Aprenda legislação de forma <span class="">divertida</span>
+        <!-- Hero Section -->
+        <section class="w-full py-16 md:py-24" id="hero">
+            <div class="mx-auto max-w-7xl px-4 sm:px-6">
+                <div class="flex flex-col lg:flex-row items-center gap-12 lg:gap-16">
+                    <!-- Conteúdo Principal -->
+                    <div class="w-full lg:w-1/2 text-center lg:text-left">
+                        <h1 class="text-5xl sm:text-6xl lg:text-7xl font-bold heading-font mb-6 text-gray-800">
+                            O <span class="text-green-600">Duolingo</span> para <span class="text-gray-700">Direito</span>
                         </h1>
                         
-                        <p class="mb-8 text-lg text-[#706f6c] dark:text-[#A1A09A] max-w-lg mx-auto md:mx-0">
-                            O Memorize Direito transforma o estudo jurídico em uma experiência gamificada com desafios progressivos e recompensas.
+                        <p class="text-xl text-gray-600 mb-8 leading-relaxed max-w-2xl">
+                            Aprenda legislação brasileira de forma divertida e eficiente. 
+                            Gamificação que transforma o estudo jurídico em uma jornada envolvente.
                         </p>
                         
-                        <div class="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
+                        <div class="flex flex-col sm:flex-row gap-4 mb-12">
                             <Link
+                                v-if="!page.props.auth.user"
                                 :href="route('register')"
-                                class="rounded-xl bg-[#f6c402] px-6 py-3 text-lg font-medium text-black transition hover:bg-[#c39b01] flex items-center justify-center gap-2"
+                                class="game-button px-8 py-4 bg-green-500 text-white rounded-lg border-4 border-green-700 shadow-[0_6px_0_theme(colors.green.700)] font-bold text-xl hover:transform hover:translate-y-1 hover:shadow-[0_4px_0_theme(colors.green.700)] transition-all flex items-center justify-center gap-2"
                             >
-                                <PlayCircle class="h-5 w-5" /> Começar agora
+                                <PlayCircle class="h-6 w-6" />
+                                Começar gratuitamente
                             </Link>
                             <Link
-                                :href="route('login')"
-                                class="rounded-xl border border-[#19140035] dark:border-[#ffffff35] px-6 py-3 text-lg font-medium transition hover:bg-[#19140015] dark:hover:bg-[#ffffff15]"
+                                v-else
+                                :href="route('play.map')"
+                                class="game-button px-8 py-4 bg-green-500 text-white rounded-lg border-4 border-green-700 shadow-[0_6px_0_theme(colors.green.700)] font-bold text-xl hover:transform hover:translate-y-1 hover:shadow-[0_4px_0_theme(colors.green.700)] transition-all flex items-center justify-center gap-2"
                             >
-                                Já tenho conta
+                                <PlayCircle class="h-6 w-6" />
+                                Continuar Estudando
                             </Link>
                         </div>
                         
-                        <div class="mt-8 flex items-center justify-center md:justify-start">
-                            <div class="flex -space-x-2 mr-3">
-                                <img class="h-8 w-8 rounded-full" src="https://i.pravatar.cc/100?img=1" alt="Usuário" />
-                                <img class="h-8 w-8 rounded-full" src="https://i.pravatar.cc/100?img=2" alt="Usuário" />
-                                <img class="h-8 w-8 rounded-full" src="https://i.pravatar.cc/100?img=3" alt="Usuário" />
+                        <!-- Stats -->
+                        <div class="flex flex-wrap gap-8 justify-center lg:justify-start text-sm text-gray-600">
+                            <div class="flex items-center gap-2">
+                                <Book class="h-5 w-5 text-gray-500" />
+                                <span>{{ articlesCount }}+ artigos disponíveis</span>
                             </div>
-                            <span class="text-sm text-[#706f6c] dark:text-[#A1A09A]">+3.500 estudantes</span>
+                            <div class="flex items-center gap-2">
+                                <Trophy class="h-5 w-5 text-gray-500" />
+                                <span>Sistema de XP e níveis</span>
+                            </div>
                         </div>
                     </div>
                     
-                    <!-- Imagem -->
-                    <div class="w-full md:w-1/2">
-                        <img 
-                            src="/img/app-mockup.png" 
-                            alt="Arara Feliz - Mascote do Memorize Direito" 
-                            class="w-full max-w-sm mx-auto"
-                        />
+                    <!-- Ilustração Principal -->
+                    <div class="w-full lg:w-1/2 relative">
+                        <div class="bg-white rounded-3xl p-8 border-4 border-gray-200">
+                            <!-- Personagem ilustrativo -->
+                            <div class="text-center mb-6">
+                                <div class="w-32 h-32 mx-auto bg-gray-200 rounded-full flex items-center justify-center text-6xl mb-4">
+                                    ⚖️
+                                </div>
+                                <h3 class="text-xl font-bold text-gray-700 mb-2">Estudante de Direito</h3>
+                                <p class="text-gray-600">Level 12 • 1.247 XP</p>
+                            </div>
+                            
+                            <!-- Progress bars -->
+                            <div class="space-y-4">
+                                <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                    <div class="flex justify-between items-center mb-2">
+                                        <span class="text-sm font-medium text-gray-700">Constituição Federal</span>
+                                        <span class="text-sm text-gray-600 font-bold">85%</span>
+                                    </div>
+                                    <div class="w-full bg-gray-200 rounded-full h-3">
+                                        <div class="bg-gray-600 h-3 rounded-full" style="width: 85%"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                    <div class="flex justify-between items-center mb-2">
+                                        <span class="text-sm font-medium text-gray-700">Código Civil</span>
+                                        <span class="text-sm text-gray-600 font-bold">42%</span>
+                                    </div>
+                                    <div class="w-full bg-gray-200 rounded-full h-3">
+                                        <div class="bg-gray-600 h-3 rounded-full" style="width: 42%"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                    <div class="flex justify-between items-center mb-2">
+                                        <span class="text-sm font-medium text-gray-700">Código Penal</span>
+                                        <span class="text-sm text-gray-600 font-bold">67%</span>
+                                    </div>
+                                    <div class="w-full bg-gray-200 rounded-full h-3">
+                                        <div class="bg-gray-600 h-3 rounded-full" style="width: 67%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- Degradê do branco/preto para o cinza -->
-        <div class="w-full h-28 relative overflow-hidden">
-            <!-- Degradê para o modo claro -->
-            <div class="absolute inset-0 bg-gradient-to-b from-[#FDFDFC] to-[#f5f5f3] dark:opacity-0"></div>
-            <!-- Degradê para o modo escuro -->
-            <div class="absolute inset-0 bg-gradient-to-b from-[#0a0a0a] to-[#121212] opacity-0 dark:opacity-100"></div>
-        </div>
-
-        <!-- Seção Sobre - Comparativo simplificado -->
-        <section class="w-full py-0  bg-[#f5f5f3] dark:bg-[#121212]" id="sobre">
+        <!-- Seção de Recursos -->
+        <section class="w-full py-16 bg-gray-50" id="features">
             <div class="mx-auto max-w-7xl px-4 sm:px-6">
+                <div class="text-center mb-16">
+                    <h2 class="text-4xl sm:text-5xl font-bold heading-font mb-6 text-gray-800">
+                        Como o <span class="text-green-600">Memorize Direito</span> funciona?
+                    </h2>
+                    <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                        Uma plataforma simples e eficiente para aprender legislação brasileira 
+                        através de exercícios gamificados.
+                    </p>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <!-- Recurso 1 -->
+                    <div class="bg-white rounded-2xl p-8 text-center border border-gray-200">
+                        <div class="w-20 h-20 bg-gray-200 rounded-full mx-auto flex items-center justify-center text-4xl mb-6">
+                            📚
+                        </div>
+                        <h3 class="text-2xl font-bold heading-font mb-4 text-gray-800">Estude por Artigos</h3>
+                        <p class="text-gray-600 leading-relaxed">
+                            Aprenda cada artigo da legislação brasileira de forma estruturada e progressiva.
+                        </p>
+                    </div>
+                    
+                    <!-- Recurso 2 -->
+                    <div class="bg-white rounded-2xl p-8 text-center border border-gray-200">
+                        <div class="w-20 h-20 bg-gray-200 rounded-full mx-auto flex items-center justify-center text-4xl mb-6">
+                            🎮
+                        </div>
+                        <h3 class="text-2xl font-bold heading-font mb-4 text-gray-800">Sistema de XP</h3>
+                        <p class="text-gray-600 leading-relaxed">
+                            Ganhe experiência (XP) a cada resposta correta e suba de nível conforme progride.
+                        </p>
+                    </div>
+                    
+                    <!-- Recurso 3 -->
+                    <div class="bg-white rounded-2xl p-8 text-center border border-gray-200">
+                        <div class="w-20 h-20 bg-gray-200 rounded-full mx-auto flex items-center justify-center text-4xl mb-6">
+                            🏆
+                        </div>
+                        <h3 class="text-2xl font-bold heading-font mb-4 text-gray-800">Progresso Visual</h3>
+                        <p class="text-gray-600 leading-relaxed">
+                            Acompanhe seu aprendizado com mapas de progresso e estatísticas detalhadas.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
 
-            <div class="text-center mb-16">
-                <h2 class="text-2xl sm:text-5xl font-bold heading-font">
-                <span>Diferencial</span> do Memorize Direito
+        <!-- Seção de Depoimentos -->
+        <section class="w-full py-16 bg-white" id="testimonials">
+            <div class="mx-auto max-w-7xl px-4 sm:px-6">
+                <div class="text-center mb-16">
+                    <h2 class="text-4xl sm:text-5xl font-bold heading-font mb-6 text-gray-800">
+                        Aprenda Direito de forma <span class="text-gray-700">eficiente</span>
+                    </h2>
+                    <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                        Transforme o estudo da legislação brasileira em uma jornada engajante 
+                        com nossa metodologia gamificada.
+                    </p>
+                </div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <!-- Benefício 1 -->
+                    <div class="text-center">
+                        <div class="w-20 h-20 bg-gray-200 rounded-full mx-auto flex items-center justify-center text-4xl mb-6">
+                            ⚡
+                        </div>
+                        <h3 class="text-2xl font-bold heading-font mb-4 text-gray-800">Aprendizado Rápido</h3>
+                        <p class="text-gray-600 leading-relaxed">
+                            Sessões curtas e focadas que se encaixam na sua rotina. 
+                            Aprenda um pouco todos os dias.
+                        </p>
+                    </div>
+                    
+                    <!-- Benefício 2 -->
+                    <div class="text-center">
+                        <div class="w-20 h-20 bg-gray-200 rounded-full mx-auto flex items-center justify-center text-4xl mb-6">
+                            🎯
+                        </div>
+                        <h3 class="text-2xl font-bold heading-font mb-4 text-gray-800">Foco na Prática</h3>
+                        <p class="text-gray-600 leading-relaxed">
+                            Exercícios práticos baseados em situações reais do direito brasileiro. 
+                            Aprenda aplicando o conhecimento.
+                        </p>
+                    </div>
+                    
+                    <!-- Benefício 3 -->
+                    <div class="text-center">
+                        <div class="w-20 h-20 bg-gray-200 rounded-full mx-auto flex items-center justify-center text-4xl mb-6">
+                            📈
+                        </div>
+                        <h3 class="text-2xl font-bold heading-font mb-4 text-gray-800">Progresso Contínuo</h3>
+                        <p class="text-gray-600 leading-relaxed">
+                            Acompanhe sua evolução com métricas claras e motivadoras. 
+                            Celebre cada conquista.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Seção da Pesquisa -->
+        <section class="w-full py-16 bg-gray-50" id="research">
+            <div class="mx-auto max-w-6xl px-4 sm:px-6">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl sm:text-4xl font-bold heading-font mb-4 text-gray-800">
+                        Dados que <span class="text-green-600">comprovam</span> a eficácia
+                    </h2>
+                </div>
+                
+                <div class="bg-white rounded-2xl p-8 border border-gray-200">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                        <!-- Lado esquerdo: Estatística -->
+                        <div class="text-center lg:text-left">
+                            <div class="mb-6">
+                                <div class="text-6xl sm:text-7xl font-bold text-green-600 mb-2">120</div>
+                                <div class="text-xl text-gray-600">de 194 juízes aprovados</div>
+                            </div>
+                            <h3 class="text-2xl font-bold text-gray-800 mb-4">
+                                Estudaram legislação <span class="text-green-600">todo dia</span>
+                            </h3>
+                            <p class="text-gray-600 leading-relaxed mb-6">
+                                Pesquisa realizada pela <strong>Magistratura Estadual em Foco</strong> 
+                                comprova que o estudo diário e consistente da legislação é o método 
+                                mais eficaz para aprovação em concursos jurídicos.
+                            </p>
+                            <a 
+                                href="https://magistraturaestadualemfoco.com/pesquisa" 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                class="inline-flex items-center gap-2 text-green-600 hover:text-green-700 font-medium transition-colors"
+                            >
+                                <span>Consultar pesquisa completa</span>
+                                <ChevronRight class="h-4 w-4" />
+                            </a>
+                        </div>
+                        
+                        <!-- Lado direito: Gráfico visual -->
+                        <div class="flex justify-center">
+                            <div class="w-64 h-64 relative">
+                                <!-- Círculo de fundo -->
+                                <div class="w-full h-full bg-gray-200 rounded-full flex items-center justify-center">
+                                    <!-- Círculo de progresso -->
+                                    <div class="w-48 h-48 bg-green-100 rounded-full flex items-center justify-center relative">
+                                        <div class="text-center">
+                                            <div class="text-3xl font-bold text-green-700 mb-1">61.9%</div>
+                                            <div class="text-sm text-green-600 font-medium">Taxa de aprovação</div>
+                                            <div class="text-xs text-gray-500 mt-1">com estudo diário</div>
+                                        </div>
+                                        <!-- SVG para progresso preciso -->
+                                        <svg class="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 200 200">
+                                            <!-- Círculo de fundo -->
+                                            <circle
+                                                cx="100"
+                                                cy="100"
+                                                r="90"
+                                                fill="none"
+                                                stroke="#e5e7eb"
+                                                stroke-width="8"
+                                            />
+                                            <!-- Círculo de progresso (61.9% = 222.84 de 360 graus) -->
+                                            <circle
+                                                cx="100"
+                                                cy="100"
+                                                r="90"
+                                                fill="none"
+                                                stroke="#10b981"
+                                                stroke-width="8"
+                                                stroke-linecap="round"
+                                                stroke-dasharray="565.48"
+                                                stroke-dashoffset="215.24"
+                                                class="transition-all duration-1000 ease-out"
+                                            />
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FAQ Section -->
+        <section class="w-full py-16 bg-white" id="faq">
+            <div class="mx-auto max-w-4xl px-4 sm:px-6">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl sm:text-4xl font-bold heading-font mb-4 text-gray-800">
+                        Perguntas <span class="text-green-600">Frequentes</span>
+                    </h2>
+                    <p class="text-xl text-gray-600">
+                        Tire suas dúvidas sobre a plataforma
+                    </p>
+                </div>
+                
+                <div class="space-y-4">
+                    <!-- FAQ 1 -->
+                    <details class="bg-gray-50 rounded-lg border border-gray-200">
+                        <summary class="p-6 cursor-pointer font-medium text-gray-800 hover:text-green-600 transition-colors">
+                            Como funciona o sistema de gamificação?
+                        </summary>
+                        <div class="px-6 pb-6 text-gray-600">
+                            <p>Você ganha XP (experiência) a cada resposta correta, sobe de nível conforme progride e pode acompanhar seu progresso através de mapas visuais. O sistema é similar ao Duolingo, mas focado na legislação brasileira.</p>
+                        </div>
+                    </details>
+                    
+                    <!-- FAQ 2 -->
+                    <details class="bg-gray-50 rounded-lg border border-gray-200">
+                        <summary class="p-6 cursor-pointer font-medium text-gray-800 hover:text-green-600 transition-colors">
+                            Quais leis estão disponíveis na plataforma?
+                        </summary>
+                        <div class="px-6 pb-6 text-gray-600">
+                            <p>Atualmente oferecemos estudo da Constituição Federal, Código Civil, Código Penal e outras legislações importantes do direito brasileiro. Nosso conteúdo é constantemente atualizado.</p>
+                        </div>
+                    </details>
+                    
+                    <!-- FAQ 3 -->
+                    <details class="bg-gray-50 rounded-lg border border-gray-200">
+                        <summary class="p-6 cursor-pointer font-medium text-gray-800 hover:text-green-600 transition-colors">
+                            É realmente gratuito?
+                        </summary>
+                        <div class="px-6 pb-6 text-gray-600">
+                            <p>Sim! Você pode começar a estudar gratuitamente. Temos planos premium com recursos adicionais, mas o acesso básico à plataforma é sempre gratuito.</p>
+                        </div>
+                    </details>
+                    
+                    <!-- FAQ 4 -->
+                    <details class="bg-gray-50 rounded-lg border border-gray-200">
+                        <summary class="p-6 cursor-pointer font-medium text-gray-800 hover:text-green-600 transition-colors">
+                            Quanto tempo devo estudar por dia?
+                        </summary>
+                        <div class="px-6 pb-6 text-gray-600">
+                            <p>Recomendamos sessões curtas e diárias, entre 15-30 minutos. A consistência é mais importante que a duração. Nossa pesquisa mostra que o estudo diário é fundamental para aprovação em concursos.</p>
+                        </div>
+                    </details>
+                    
+                    <!-- FAQ 5 -->
+                    <details class="bg-gray-50 rounded-lg border border-gray-200">
+                        <summary class="p-6 cursor-pointer font-medium text-gray-800 hover:text-green-600 transition-colors">
+                            Posso usar no celular?
+                        </summary>
+                        <div class="px-6 pb-6 text-gray-600">
+                            <p>Sim! Nossa plataforma é totalmente responsiva e funciona perfeitamente em celulares, tablets e computadores. Você pode estudar onde e quando quiser.</p>
+                        </div>
+                    </details>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA Principal -->
+        <section class="w-full py-16 bg-gray-800 text-white">
+            <div class="mx-auto max-w-4xl px-4 sm:px-6 text-center">
+                <h2 class="text-4xl sm:text-6xl font-bold heading-font mb-6">
+                    Comece a estudar <span class="text-green-400">hoje mesmo!</span>
                 </h2>
-                <p class="text-lg text-[#706f6c] dark:text-[#A1A09A] max-w-2xl mx-auto mt-4">
-                    Conheça as vantagens que tornam nossa <span class="text-[#f6c402] font-bold">plataforma única</span> para o aprendizado jurídico
+                <p class="text-xl mb-8 leading-relaxed opacity-90">
+                    Junte-se aos estudantes que já descobriram uma nova forma 
+                    de aprender legislação brasileira.
                 </p>
-            </div>
-                       
-            <div class="flex flex-col gap-8">
-                <!-- Método Tradicional -->
-                <div class="flex flex-col md:flex-row-reverse items-center gap-10">
-                    <!-- Imagem à direita -->
-                    <div class="w-full md:w-1/2">
-                        <img 
-                        src="/img/arara-exausta.png" 
-                        alt="Arara exausta estudando pelo método tradicional" 
-                        class="w-full rounded-lg max-w-[280px] mx-auto"
-                        />
-                    </div>
-                    
-                    <!-- Conteúdo à esquerda (com largura reduzida) -->
-                    <div class="w-full md:w-1/2 md:max-w-[450px] md:ml-auto">
-                        <h3 class="text-4xl font-bold mb-4 heading-font text-center md:text-left">Método Tradicional</h3>
-                        <p class="text-center md:text-justify text-lg text-[#706f6c] dark:text-[#A1A09A]">
-                            Estudar legislação de <span class="text-[#1c79b2] font-bold">forma tradicional é cansativo e desmotivador</span>. 
-                            Textos densos e memorização forçada tornam o processo ineficiente.
-                        </p>
-                    </div>
-                </div>
                 
-                <!-- Com Memorize Direito -->
-                <div class="flex flex-col md:flex-row items-center gap-10">
-                <!-- Imagem à esquerda -->
-                <div class="w-full md:w-1/2">
-                    <img 
-                    src="/img/arara-feliz.png" 
-                    alt="Arara feliz estudando com o Memorize Direito" 
-                    class="w-full rounded-lg  max-w-[280px] mx-auto"
-                    />
-                </div>
-                
-                <!-- Conteúdo à direita (com largura reduzida) -->
-                <div class="w-full md:w-1/2 md:max-w-[450px]">
-                    <h3 class="text-4xl font-bold mb-4 heading-font text-center md:text-left">Com Memorize Direito</h3>
-                    <p class="text-center md:text-justify text-lg text-[#706f6c] dark:text-[#A1A09A]">
-                    Transformamos o estudo jurídico em uma experiência divertida! 
-                    Nossa plataforma <span class="text-[#1c79b2] font-bold">gamificada mantém você motivado</span> com desafios 
-                    interativos.
-                    </p>
-                    
-                </div>
-                </div>
-            </div>
-            </div>
-        </section>
-
-        <!-- Degradê do cinza para o branco/preto -->
-        <div class="w-full h-28 relative overflow-hidden">
-            <!-- Degradê para modo claro -->
-            <div class="absolute inset-0 bg-gradient-to-b from-[#f5f5f3] to-[#FDFDFC] dark:opacity-0"></div>
-            <!-- Degradê para modo escuro -->
-            <div class="absolute inset-0 bg-gradient-to-b from-[#121212] to-[#0a0a0a] opacity-0 dark:opacity-100"></div>
-        </div>
-
-        <!-- App Preview Section - Simplificado -->
-        <section class="w-full py-0 md:py-8 bg-[#FDFDFC] dark:bg-[#0a0a0a]">
-            <div class="mx-auto max-w-7xl px-4 sm:px-6">
-                <div class="flex flex-col-reverse md:flex-row items-center gap-6">
-                   
-                    <!-- Conteúdo (agora à direita) -->
-                    <div class="w-full md:w-1/2 text-center md:text-left">
-                        <h2 class="text-3xl sm:text-4xl font-bold mb-4 heading-font text-center md:text-end">
-                            Interface <span class="">intuitiva</span>
-                        </h2>
-                        
-                        <p class="text-lg text-center md:text-end text-[#706f6c] dark:text-[#A1A09A] mb-8 md:mx-0">
-                            Uma experiência de estudo fluida e agradável que torna o aprendizado jurídico mais eficiente.
-                        </p>
-                        
-                        <div class="flex justify-center md:justify-end">
-                            <Link
-                                :href="route('register')"
-                                class="rounded-xl bg-[#f6c402] px-6 py-3 text-lg font-medium text-black transition hover:bg-[#c39b01]"
-                            >
-                                Experimentar agora
-                            </Link>
-                        </div>
-                    </div>
-                    <!-- Imagem (agora à esquerda) -->
-                    <div class="w-full md:w-1/2 flex justify-center md:justify-start">
-                        <img 
-                            src="/img/bicho-preguica-feliz.png" 
-                            alt="Memorize Direito App Preview" 
-                            class="w-full max-w-sm rounded-xl"
-                        />
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Degradê do branco/preto para o cinza -->
-        <div class="w-full h-28 relative overflow-hidden">
-            <!-- Degradê para o modo claro -->
-            <div class="absolute inset-0 bg-gradient-to-b from-[#FDFDFC] to-[#f5f5f3] dark:opacity-0"></div>
-            <!-- Degradê para o modo escuro -->
-            <div class="absolute inset-0 bg-gradient-to-b from-[#0a0a0a] to-[#121212] opacity-0 dark:opacity-100"></div>
-        </div>
-
-        <!-- Recursos Section - Simplificado -->
-        <section class="w-full py-0 bg-[#f5f5f3] dark:bg-[#121212]" id="recursos">
-            <div class="mx-auto max-w-7xl px-4 sm:px-6">
-                <div class="text-center mb-8">
-                    <h2 class="text-3xl sm:text-4xl font-bold mb-4 heading-font">Principais <span class="">recursos</span></h2>
-                    <p class="text-lg text-[#706f6c] dark:text-[#A1A09A] max-w-2xl mx-auto mb-12">
-                        Técnicas de aprendizado eficientes com gamificação para tornar o estudo mais envolvente
-                    </p>
-                </div>
-                
-                <div class="flex flex-col md:flex-row items-center gap-12">
-                    <!-- Conteúdo -->
-                    <div class="w-full md:w-1/2">
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                            <!-- Item 1 -->
-                            <div class="bg-white dark:bg-[#1a1a1a] rounded-xl p-4 shadow-md">
-                                <div class="flex items-center mb-2">
-                                    <div class="h-8 w-8 flex items-center justify-center rounded-full bg-[#f6c40220] text-[#f6c402] mr-3">
-                                        <Book class="h-4 w-4" />
-                                    </div>
-                                    <h3 class="font-bold">Biblioteca Jurídica</h3>
-                                </div>
-                                <p class="text-[#706f6c] dark:text-[#A1A09A] text-sm">
-                                    Acesso a códigos e leis organizados por áreas do direito
-                                </p>
-                            </div>
-                            
-                            <!-- Item 2 -->
-                            <div class="bg-white dark:bg-[#1a1a1a] rounded-xl p-4 shadow-md">
-                                <div class="flex items-center mb-2">
-                                    <div class="h-8 w-8 flex items-center justify-center rounded-full bg-[#f6c40220] text-[#f6c402] mr-3">
-                                        <Brain class="h-4 w-4" />
-                                    </div>
-                                    <h3 class="font-bold">Repetição Espaçada</h3>
-                                </div>
-                                <p class="text-[#706f6c] dark:text-[#A1A09A] text-sm">
-                                    Sistema que otimiza suas revisões para retenção de longo prazo
-                                </p>
-                            </div>
-                            
-                            <!-- Item 3 -->
-                            <div class="bg-white dark:bg-[#1a1a1a] rounded-xl p-4 shadow-md">
-                                <div class="flex items-center mb-2">
-                                    <div class="h-8 w-8 flex items-center justify-center rounded-full bg-[#f6c40220] text-[#f6c402] mr-3">
-                                        <Award class="h-4 w-4" />
-                                    </div>
-                                    <h3 class="font-bold">Conquistas</h3>
-                                </div>
-                                <p class="text-[#706f6c] dark:text-[#A1A09A] text-sm">
-                                    Medalhas e troféus para manter sua motivação elevada
-                                </p>
-                            </div>
-                            
-                            <!-- Item 4 -->
-                            <div class="bg-white dark:bg-[#1a1a1a] rounded-xl p-4 shadow-md">
-                                <div class="flex items-center mb-2">
-                                    <div class="h-8 w-8 flex items-center justify-center rounded-full bg-[#f6c40220] text-[#f6c402] mr-3">
-                                        <Star class="h-4 w-4" />
-                                    </div>
-                                    <h3 class="font-bold">Estatísticas</h3>
-                                </div>
-                                <p class="text-[#706f6c] dark:text-[#A1A09A] text-sm">
-                                    Acompanhe seu progresso e identifique áreas para melhorar
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Imagem -->
-                    <div class="w-full md:w-1/2">
-                        <img 
-                            src="/img/bicho-preguica-e-arara-medalha.png" 
-                            alt="Mascotes do Memorize Direito comemorando conquistas" 
-                            class="w-full max-w-sm mx-auto"
-                        />
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Degradê do cinza para o branco/preto -->
-        <div class="w-full h-28 relative overflow-hidden">
-            <!-- Degradê para modo claro -->
-            <div class="absolute inset-0 bg-gradient-to-b from-[#f5f5f3] to-[#FDFDFC] dark:opacity-0"></div>
-            <!-- Degradê para modo escuro -->
-            <div class="absolute inset-0 bg-gradient-to-b from-[#121212] to-[#0a0a0a] opacity-0 dark:opacity-100"></div>
-        </div>
-
-        <!-- CTA Section - Minimalista -->
-        <section class="w-full py-16 bg-[#FDFDFC] dark:bg-[#0a0a0a]">
-            <div class="mx-auto max-w-3xl px-4 sm:px-6 text-center">
-                <h2 class="text-3xl sm:text-4xl font-bold mb-6 heading-font">Pronto para começar?</h2>
-                <p class="text-lg text-[#706f6c] dark:text-[#A1A09A] mb-8">
-                    Junte-se a milhares de estudantes e transforme seu aprendizado jurídico hoje.
-                </p>
-                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <div class="flex flex-col sm:flex-row gap-4 justify-center mb-8">
                     <Link
+                        v-if="!page.props.auth.user"
                         :href="route('register')"
-                        class="rounded-xl bg-[#f6c402] px-8 py-4 text-lg font-medium text-black transition hover:bg-[#c39b01]"
+                        class="game-button px-10 py-4 bg-green-500 text-white rounded-lg border-4 border-green-700 shadow-[0_6px_0_theme(colors.green.700)] font-bold text-xl hover:transform hover:translate-y-1 hover:shadow-[0_4px_0_theme(colors.green.700)] transition-all flex items-center justify-center gap-3"
                     >
+                        <Target class="h-6 w-6" />
                         Começar gratuitamente
                     </Link>
+                    <Link
+                        v-else
+                        :href="route('play.map')"
+                        class="game-button px-10 py-4 bg-green-500 text-white rounded-lg border-4 border-green-700 shadow-[0_6px_0_theme(colors.green.700)] font-bold text-xl hover:transform hover:translate-y-1 hover:shadow-[0_4px_0_theme(colors.green.700)] transition-all flex items-center justify-center gap-3"
+                    >
+                        <Target class="h-6 w-6" />
+                        Continuar estudando
+                    </Link>
+                </div>
+                
+                <div class="flex flex-wrap gap-8 justify-center text-sm opacity-80">
+                    <div class="flex items-center gap-2">
+                        <CheckCircle class="h-5 w-5" />
+                        <span>Acesso gratuito</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <CheckCircle class="h-5 w-5" />
+                        <span>Sem compromisso</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <CheckCircle class="h-5 w-5" />
+                        <span>Comece agora</span>
+                    </div>
                 </div>
             </div>
         </section>
 
-        <!-- Footer - Simplificado -->
-        <footer class="w-full py-8">
+        <!-- Footer -->
+        <footer class="w-full py-12 bg-gray-900 text-white">
             <div class="mx-auto max-w-7xl px-4 sm:px-6">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="flex flex-col md:flex-row justify-between items-center gap-8">
                     <!-- Logo e descrição -->
-                    <div>
-                        <div class="flex items-center gap-x-2 mb-4">
+                    <div class="text-center md:text-left">
+                        <div class="flex items-center gap-2 mb-4 justify-center md:justify-start">
                             <AppLogo />
                         </div>
-                        <p class="text-sm text-[#706f6c] dark:text-[#A1A09A]">
-                            Transformando o estudo jurídico em uma experiência divertida.
-                        </p>
                     </div>
                     
-                    <!-- Links -->
-                    <div class="flex flex-col md:flex-row justify-between md:col-span-2">
-                        <!-- Plataforma -->
-                        <div class="mb-6 md:mb-0">
-                            <h3 class="text-sm font-semibold uppercase tracking-wider mb-4">Plataforma</h3>
-                            <ul class="space-y-2">
-                                <li><a href="#" class="text-[#706f6c] dark:text-[#A1A09A] hover:text-[#f6c402] text-sm">Jogar</a></li>
-                                <li><a href="#" class="text-[#706f6c] dark:text-[#A1A09A] hover:text-[#f6c402] text-sm">Módulos</a></li>
-                                <li><a href="#" class="text-[#706f6c] dark:text-[#A1A09A] hover:text-[#f6c402] text-sm">Estatísticas</a></li>
-                            </ul>
-                        </div>
-                        
-                        <!-- Suporte -->
-                        <div class="mb-6 md:mb-0">
-                            <h3 class="text-sm font-semibold uppercase tracking-wider mb-4">Suporte</h3>
-                            <ul class="space-y-2">
-                                <li><a href="#" class="text-[#706f6c] dark:text-[#A1A09A] hover:text-[#f6c402] text-sm">FAQ</a></li>
-                                <li><a href="#" class="text-[#706f6c] dark:text-[#A1A09A] hover:text-[#f6c402] text-sm">Contato</a></li>
-                                <li><a href="#" class="text-[#706f6c] dark:text-[#A1A09A] hover:text-[#f6c402] text-sm">Termos de Uso</a></li>
-                            </ul>
-                        </div>
-
-                        <!-- Redes Sociais -->
-                        <div>
-                            <h3 class="text-sm font-semibold uppercase tracking-wider mb-4">Redes Sociais</h3>
-                            <div class="flex gap-4">
-                                <a href="#" class="text-[#706f6c] hover:text-[#f6c402]">
-                                    <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                        <path fill-rule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" clip-rule="evenodd" />
-                                    </svg>
-                                </a>
-                                <a href="#" class="text-[#706f6c] hover:text-[#f6c402]">
-                                    <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                        <path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84" />
-                                    </svg>
-                                </a>
-                                <a href="#" class="text-[#706f6c] hover:text-[#f6c402]">
-                                    <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                        <path fill-rule="evenodd" d="M12.315 2c2.43 0 2.784.013 3.808.06 1.064.049 1.791.218 2.427.465a4.902 4.902 0 011.772 1.153 4.902 4.902 0 011.153 1.772c.247.636.416 1.363.465 2.427.048 1.067.06 1.407.06 4.123v.08c0 2.643-.012 2.987-.06 4.043-.049 1.064-.218 1.791-.465 2.427a4.902 4.902 0 01-1.153 1.772 4.902 4.902 0 01-1.772 1.153c-.636.247-1.363.416-2.427.465-1.067.048-1.407.06-4.123.06h-.08c-2.643 0-2.987-.012-4.043-.06-1.064-.049-1.791-.218-2.427-.465a4.902 4.902 0 01-1.772-1.153 4.902 4.902 0 01-1.153-1.772c-.247-.636-.416-1.363-.465-2.427-.047-1.024-.06-1.379-.06-3.808v-.63c0-2.43.013-2.784.06-3.808.049-1.064.218-1.791.465-2.427a4.902 4.902 0 011.153-1.772A4.902 4.902 0 015.45 2.525c.636-.247 1.363-.416 2.427-.465C8.901 2.013 9.256 2 11.685 2h.63zm-.081 1.802h-.468c-2.456 0-2.784.011-3.807.058-.975.045-1.504.207-1.857.344-.467.182-.8.398-1.15.748-.35.35-.566.683-.748 1.15-.137.353-.3.882-.344 1.857-.047 1.023-.058 1.351-.058 3.807v.468c0 2.456.011 2.784.058 3.807.045.975.207 1.504.344 1.857.182.466.399.8.748 1.15.35.35.683.566 1.15.748.353.137.882.3 1.857.344 1.054.048 1.37.058 4.041.058h.08c2.597 0 2.917-.01 3.96-.058.976-.045 1.505-.207 1.858-.344.466-.182.8-.398 1.15-.748.35-.35.566-.683.748-1.15.137-.353.3-.882.344-1.857.048-1.055.058-1.37.058-4.041v-.08c0-2.597-.01-2.917-.058-3.96-.045-.976-.207-1.505-.344-1.858a3.097 3.097 0 00-.748-1.15 3.098 3.098 0 00-1.15-.748c-.353-.137-.882-.3-1.857-.344-1.023-.047-1.351-.058-3.807-.058zM12 6.865a5.135 5.135 0 110 10.27 5.135 5.135 0 010-10.27zm0 1.802a3.333 3.333 0 100 6.666 3.333 3.333 0 000-6.666zm5.338-3.205a1.2 1.2 0 110 2.4 1.2 1.2 0 010-2.4z" clip-rule="evenodd" />
-                                    </svg>
-                                </a>
-                            </div>
-                        </div>
+                    <!-- Links legais -->
+                    <div class="flex flex-col sm:flex-row gap-4 text-sm text-gray-400">
+                        <Link href="#" class="hover:text-white transition-colors">Políticas de Privacidade</Link>
+                        <Link href="#" class="hover:text-white transition-colors">Cookies</Link>
+                        <Link href="#" class="hover:text-white transition-colors">Termos de Uso</Link>
+                    </div>
+                    
+                    <!-- Redes sociais -->
+                    <div class="flex gap-4">
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors" aria-label="Facebook">
+                            <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                            </svg>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors" aria-label="Instagram">
+                            <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12.017 0C5.396 0 .029 5.367.029 11.987c0 6.621 5.367 11.988 11.988 11.988s11.988-5.367 11.988-11.988C24.005 5.367 18.638.001 12.017.001zM8.449 16.988c-2.508 0-4.541-2.033-4.541-4.541s2.033-4.541 4.541-4.541 4.541 2.033 4.541 4.541-2.033 4.541-4.541 4.541zm7.508 0c-2.508 0-4.541-2.033-4.541-4.541s2.033-4.541 4.541-4.541 4.541 2.033 4.541 4.541-2.033 4.541-4.541 4.541z"/>
+                            </svg>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors" aria-label="LinkedIn">
+                            <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                            </svg>
+                        </a>
                     </div>
                 </div>
                 
-                <div class="mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
-                    <p class="text-sm text-[#706f6c] dark:text-[#A1A09A]">© 2025 Memorize Direito. Todos os direitos reservados.</p>
-                    <div class="mt-4 md:mt-0">
-                        <a href="#" class="text-sm text-[#706f6c] dark:text-[#A1A09A] hover:text-[#f6c402]">Política de Privacidade</a>
-                        <span class="mx-2 text-[#706f6c] dark:text-[#A1A09A]">•</span>
-                        <a href="#" class="text-sm text-[#706f6c] dark:text-[#A1A09A] hover:text-[#f6c402]">Termos de Uso</a>
-                    </div>
+                <div class="mt-8 pt-8 border-t border-gray-800 text-center">
+                    <p class="text-gray-400">© 2025 Memorize Direito. Todos os direitos reservados.</p>
                 </div>
             </div>
         </footer>

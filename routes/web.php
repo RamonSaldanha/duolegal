@@ -6,10 +6,9 @@ use App\Http\Controllers\Admin\LawArticleOptionController;
 use App\Http\Controllers\PlayController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\UserLegalReferenceController;
+use App\Http\Controllers\WelcomeController;
 
-Route::get('/', function () {
-    return Inertia::render('Welcome');
-})->name('home');
+Route::get('/', [WelcomeController::class, 'index'])->name('home');
 
 Route::get('dashboard', function () {
     return Inertia::render('Dashboard');
