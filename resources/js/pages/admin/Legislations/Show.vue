@@ -1,22 +1,37 @@
 <!-- filepath: /C:/Users/ramon/Desktop/study/resources/js/pages/admin/Legislations/Show.vue -->
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import { type BreadcrumbItem } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, PenSquare } from 'lucide-vue-next';
+import { ChevronLeft, PenSquare, Trash2 } from 'lucide-vue-next';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ref, computed } from 'vue';
 import { Badge } from '@/components/ui/badge';
 
 // Recebe os dados da legislação específica do backend
-const props = defineProps({
+const props = defineProps<{
   legalReference: {
-    type: Object,
-    required: true
-  }
-});
+    id: number;
+    uuid: string;
+    name: string;
+    description?: string;
+    articles: Array<{
+      id: number;
+      uuid: string;
+      article_reference: string;
+      original_content: string;
+      practice_content: string;
+      options?: Array<{
+        id: number;
+        word: string;
+        is_correct: boolean;
+        position?: number;
+      }>;
+    }>;
+  };
+}>();
 
 // Artigo atualmente selecionado para visualização
 const selectedArticleId = ref(props.legalReference.articles[0]?.id || null);
@@ -43,7 +58,7 @@ const selectedArticle = computed(() => {
 });
 
 // Função para selecionar um artigo
-const selectArticle = (articleId) => {
+const selectArticle = (articleId: number) => {
   selectedArticleId.value = articleId;
 };
 
@@ -60,6 +75,21 @@ const articleOptions = computed(() => {
         
     return { correct, incorrect };
 });
+
+// Função para deletar uma legislação
+const deleteLegislation = () => {
+  if (confirm(`Tem certeza que deseja excluir a legislação "${props.legalReference.name}"?\n\nEsta ação irá deletar todos os artigos, opções e progresso dos usuários relacionados a esta legislação. Esta ação não pode ser desfeita.`)) {
+    router.delete(route('admin.legal-references.destroy', props.legalReference.uuid as any), {
+      onSuccess: () => {
+        router.visit(route('admin.legislations.index'));
+      },
+      onError: (errors) => {
+        console.error('Erro ao deletar legislação:', errors);
+        alert('Erro ao deletar a legislação. Tente novamente.');
+      }
+    });
+  }
+};
 </script>
 
 <template>
@@ -85,12 +115,20 @@ const articleOptions = computed(() => {
               </Button>
             </Link>
             
-            <Link v-if="selectedArticle" :href="route('admin.form.edit', selectedArticle.uuid)">
+            <Link v-if="selectedArticle" :href="route('admin.form.edit', selectedArticle.uuid as any)">
               <Button>
                 <PenSquare class="h-4 w-4 mr-2" />
                 Editar
               </Button>
             </Link>
+            
+            <Button 
+              variant="destructive"
+              @click="deleteLegislation"
+            >
+              <Trash2 class="h-4 w-4 mr-2" />
+              Deletar Legislação
+            </Button>
           </div>
         </CardHeader>
       </Card>
@@ -194,7 +232,7 @@ const articleOptions = computed(() => {
                   </div>
                   
                   <div class="mt-4">
-                      <Link :href="route('admin.form.edit', selectedArticle.id)" class="text-sm text-primary hover:underline">
+                      <Link :href="route('admin.form.edit', selectedArticle.uuid as any)" class="text-sm text-primary hover:underline">
                           Editar este artigo para modificar as opções
                       </Link>
                   </div>

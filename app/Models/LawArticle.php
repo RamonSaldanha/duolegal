@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class LawArticle extends Model
@@ -58,9 +59,16 @@ class LawArticle extends Model
             $model->uuid = $model->uuid ?? (string) Str::uuid();
         });
 
-        // Quando um artigo for excluído, exclua também todas as suas opções
+        // Quando um artigo for excluído, exclua também todas as suas opções e progresso dos usuários
         static::deleting(function ($lawArticle) {
+            // Deletar todas as opções do artigo
             $lawArticle->options()->delete();
+            
+            // Deletar todo o progresso dos usuários relacionado a este artigo
+            // (já é tratado pelo onDelete('cascade') na migration, mas é bom garantir)
+            DB::table('user_progress')
+                ->where('law_article_id', $lawArticle->id)
+                ->delete();
         });
     }
 }

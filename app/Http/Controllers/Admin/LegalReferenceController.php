@@ -82,16 +82,25 @@ class LegalReferenceController extends Controller
      */
     public function destroy(LegalReference $legalReference)
     {
-        // Verificar se há artigos vinculados
-        if ($legalReference->articles()->count() > 0) {
+        try {
+            // A exclusão em cascata é tratada pelas foreign keys e pelos boot methods dos models
+            // Isso irá deletar automaticamente:
+            // - Todos os artigos da legislação (através do boot method do LegalReference)
+            // - Todas as opções dos artigos (através do boot method do LawArticle)
+            // - Todo o progresso dos usuários (através das foreign keys cascade)
+            // - Todas as associações user_legal_references (através das foreign keys cascade)
+            
+            $legalReference->delete();
+            
             return response()->json([
-                'message' => 'Esta referência possui artigos vinculados e não pode ser excluída.'
-            ], 422);
+                'message' => 'Legislação excluída com sucesso.'
+            ], 200);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Erro ao excluir a legislação. Tente novamente.'
+            ], 500);
         }
-        
-        $legalReference->delete();
-        
-        return response()->json(null, 204);
     }
 
     /**

@@ -1,11 +1,11 @@
 <!-- filepath: /C:/Users/ramon/Desktop/study/resources/js/pages/admin/Legislations/Index.vue -->
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import { type BreadcrumbItem } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Eye, Plus } from 'lucide-vue-next';
+import { Eye, Plus, Trash2 } from 'lucide-vue-next';
 import {
   Table,
   TableBody,
@@ -20,8 +20,6 @@ import {
 import {
   Pagination,
   PaginationEllipsis,
-  PaginationFirst,
-  PaginationLast,
   PaginationList,
   PaginationListItem,
   PaginationNext,
@@ -29,12 +27,16 @@ import {
 } from '@/components/ui/pagination';
 
 // Recebe os dados de legislações do backend
-const props = defineProps({
-  legalReferences: {
-    type: Array,
-    default: () => []
-  }
-});
+const props = defineProps<{
+  legalReferences: Array<{
+    id: number;
+    uuid: string;
+    name: string;
+    description?: string;
+    articles_count: number;
+    created_at: string;
+  }>;
+}>();
 
 // Define os breadcrumbs para navegação
 const breadcrumbs: BreadcrumbItem[] = [
@@ -49,9 +51,24 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 // Formatação de data
-const formatDate = (dateString) => {
+const formatDate = (dateString: string) => {
   const date = new Date(dateString);
   return new Intl.DateTimeFormat('pt-BR').format(date);
+};
+
+// Função para deletar uma legislação
+const deleteLegislation = (legislationUuid: string, legislationName: string) => {
+  if (confirm(`Tem certeza que deseja excluir a legislação "${legislationName}"?\n\nEsta ação irá deletar todos os artigos, opções e progresso dos usuários relacionados a esta legislação. Esta ação não pode ser desfeita.`)) {
+    router.delete(route('admin.legal-references.destroy', legislationUuid as any), {
+      onSuccess: () => {
+        router.reload();
+      },
+      onError: (errors) => {
+        console.error('Erro ao deletar legislação:', errors);
+        alert('Erro ao deletar a legislação. Tente novamente.');
+      }
+    });
+  }
 };
 </script>
 
@@ -96,12 +113,24 @@ const formatDate = (dateString) => {
                 <TableCell>{{ legislation.articles_count || 0 }}</TableCell>
                 <TableCell>{{ formatDate(legislation.created_at) }}</TableCell>
                 <TableCell class="text-right">
-                  <Link :href="route('admin.legislations.show', legislation.uuid)">
-                    <Button variant="ghost" size="icon">
-                      <Eye class="h-4 w-4" />
-                      <span class="sr-only">Visualizar</span>
+                  <div class="flex items-center justify-end gap-2">
+                    <Link :href="route('admin.legislations.show', legislation.uuid as any)">
+                      <Button variant="ghost" size="icon">
+                        <Eye class="h-4 w-4" />
+                        <span class="sr-only">Visualizar</span>
+                      </Button>
+                    </Link>
+                    
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      @click="deleteLegislation(legislation.uuid, legislation.name)"
+                      class="text-destructive hover:text-destructive hover:bg-destructive/10"
+                    >
+                      <Trash2 class="h-4 w-4" />
+                      <span class="sr-only">Deletar</span>
                     </Button>
-                  </Link>
+                  </div>
                 </TableCell>
               </TableRow>
               <TableRow v-if="props.legalReferences.length === 0">
