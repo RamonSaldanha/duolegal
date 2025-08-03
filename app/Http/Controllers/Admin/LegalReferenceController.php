@@ -56,18 +56,12 @@ class LegalReferenceController extends Controller
             'name' => ['required', 'string', 'max:255', 'unique:legal_references'],
             'description' => ['nullable', 'string'],
             'type' => ['nullable', 'string'],
-            'n8n_token' => ['required', 'string'] // Token simples para n8n
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'errors' => $validator->errors()
             ], 422);
-        }
-
-        // Verificar token n8n
-        if ($request->n8n_token !== config('app.n8n_token')) {
-            return response()->json(['error' => 'Token inválido'], 401);
         }
 
         $reference = LegalReference::create([
