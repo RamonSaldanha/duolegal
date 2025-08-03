@@ -66,7 +66,6 @@ class LegalReferenceController extends Controller
 
         $reference = LegalReference::create([
             'name' => $request->name,
-            'description' => $request->description ?? 'Lei processada via n8n',
             'type' => $request->type ?? 'law',
         ]);
 
