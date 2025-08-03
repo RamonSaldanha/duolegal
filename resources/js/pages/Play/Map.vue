@@ -196,57 +196,7 @@ const getSegmentDashOffset = (totalSegments: number, segmentIndex: number): numb
   <AppLayout>
     <div class="container py-8 px-4">
       <div class="max-w-4xl mx-auto">
-        <!-- Navegação de Jornadas -->
-        <div v-if="props.journey && props.journey.total > 1" class="flex items-center justify-center mb-6 space-x-4">
-          <!-- Botão Jornada Anterior -->
-          <Link
-            v-if="props.journey.has_previous"
-            :href="route('play.map', { jornada: props.journey.current - 1 })"
-            class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105 active:scale-95"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16" class="mr-2">
-              <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8"/>
-            </svg>
-            Jornada Anterior
-          </Link>
-          
-          <!-- Título da Jornada Atual -->
-          <div class="px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-lg shadow-md">
-            <h1 class="text-lg font-bold text-center">{{ props.journey.journey_title }}</h1>
-            <p class="text-xs text-center opacity-90">{{ props.journey.phases_in_journey }} fases</p>
-          </div>
-          
-          <!-- Botão Próxima Jornada -->
-          <Link
-            v-if="props.journey.has_next"
-            :href="route('play.map', { jornada: props.journey.current + 1 })"
-            class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg hover:from-blue-600 hover:to-indigo-700 transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105 active:scale-95"
-          >
-            Próxima Jornada
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16" class="ml-2">
-              <path fill-rule="evenodd" d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8"/>
-            </svg>
-          </Link>
-        </div>
 
-        <!-- Controle de alternância no topo -->
-        <div v-if="hasMultipleLaws && props.modules && props.modules.length > 0" class="flex justify-center mb-6">
-          <button 
-            @click="showModuleView = !showModuleView"
-            class="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full hover:from-blue-600 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-110 active:scale-95"
-            :title="showModuleView ? 'Alternar para Visualização Tradicional' : 'Alternar para Visualização por Módulos'"
-          >
-            <!-- Ícone de binóculos - filled quando módulos ativados, outline quando tradicional -->
-            <svg v-if="showModuleView" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="transition-transform duration-300" viewBox="0 0 16 16">
-              <!-- Binóculos preenchidos (módulos ativados) -->
-              <path d="M4.5 1A1.5 1.5 0 0 0 3 2.5V3h4v-.5A1.5 1.5 0 0 0 5.5 1zM7 4v1h2V4h4v.882a.5.5 0 0 0 .276.447l.895.447A1.5 1.5 0 0 1 15 7.118V13H9v-1.5a.5.5 0 0 1 .146-.354l.854-.853V9.5a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5v.793l.854.853A.5.5 0 0 1 7 11.5V13H1V7.118a1.5 1.5 0 0 1 .83-1.342l.894-.447A.5.5 0 0 0 3 4.882V4zM1 14v.5A1.5 1.5 0 0 0 2.5 16h3A1.5 1.5 0 0 0 7 14.5V14zm8 0v.5a1.5 1.5 0 0 0 1.5 1.5h3a1.5 1.5 0 0 0 1.5-1.5V14zm4-11H9v-.5A1.5 1.5 0 0 1 10.5 1h1A1.5 1.5 0 0 1 13 2.5z"/>
-            </svg>
-            <svg v-else xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="transition-transform duration-300" viewBox="0 0 16 16">
-              <!-- Binóculos outline (visualização tradicional) -->
-              <path d="M3 2.5A1.5 1.5 0 0 1 4.5 1h1A1.5 1.5 0 0 1 7 2.5V5h2V2.5A1.5 1.5 0 0 1 10.5 1h1A1.5 1.5 0 0 1 13 2.5v2.382a.5.5 0 0 0 .276.447l.895.447A1.5 1.5 0 0 1 15 7.118V14.5a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 9 14.5v-3a.5.5 0 0 1 .146-.354l.854-.853V9.5a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5v.793l.854.853A.5.5 0 0 1 7 11.5v3A1.5 1.5 0 0 1 5.5 16h-3A1.5 1.5 0 0 1 1 14.5V7.118a1.5 1.5 0 0 1 .83-1.342l.894-.447A.5.5 0 0 0 3 4.882zM4.5 2a.5.5 0 0 0-.5.5V3h2v-.5a.5.5 0 0 0-.5-.5zM6 4H4v.882a1.5 1.5 0 0 1-.83 1.342l-.894.447A.5.5 0 0 0 2 7.118V13h4v-1.293l-.854-.853A.5.5 0 0 1 5 10.5v-1A1.5 1.5 0 0 1 6.5 8h3A1.5 1.5 0 0 1 11 9.5v1a.5.5 0 0 1-.146.354l-.854.853V13h4V7.118a.5.5 0 0 0-.276-.447l-.895-.447A1.5 1.5 0 0 1 12 4.882V4h-2v1.5a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5zm4-1h2v-.5a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5zm4 11h-4v.5a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5zm-8 0H2v.5a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5z"/>
-            </svg>
-          </button>
-        </div>
 
         <!-- Mapa de fases -->
         <div class="">
@@ -259,7 +209,7 @@ const getSegmentDashOffset = (totalSegments: number, segmentIndex: number): numb
             >
               <!-- Título do Módulo -->
               <div class="flex justify-center mb-8">
-                <div class="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg shadow-md">
+                <div class="px-4 py-2 bg-purple-500 text-white rounded-lg border-4 border-purple-700 shadow-[0_6px_0_theme(colors.purple.700)] font-bold">
                   <h1 class="text-lg font-bold">{{ module.title }}</h1>
                 </div>
               </div>
@@ -272,8 +222,8 @@ const getSegmentDashOffset = (totalSegments: number, segmentIndex: number): numb
               >
                 <!-- Cabeçalho da referência -->
                 <div class="flex justify-center mb-6">
-                  <div class="w-full max-w-2xl px-4 py-2 bg-background border border-border rounded-lg shadow-sm">
-                    <h2 class="text-md font-semibold text-foreground text-center">{{ reference.reference_name }}</h2>
+                  <div class="w-full max-w-2xl px-4 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg border-4 border-gray-300 dark:border-gray-600 shadow-[0_6px_0_theme(colors.gray.300)] dark:shadow-[0_6px_0_theme(colors.gray.600)] font-bold">
+                    <h2 class="text-md font-semibold text-center">{{ reference.reference_name }}</h2>
                   </div>
                 </div>
 
@@ -406,8 +356,8 @@ const getSegmentDashOffset = (totalSegments: number, segmentIndex: number): numb
             >
               <!-- Cabeçalho do grupo -->
               <div class="flex justify-center mb-6">
-                <div class="w-full max-w-2xl px-4 py-2 bg-background border border-border rounded-lg shadow-sm">
-                  <h2 class="text-md font-semibold text-foreground text-center">{{ group.name }}</h2>
+                <div class="w-full max-w-2xl px-4 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg border-4 border-gray-300 dark:border-gray-600 shadow-[0_6px_0_theme(colors.gray.300)] dark:shadow-[0_6px_0_theme(colors.gray.600)] font-bold">
+                  <h2 class="text-md font-semibold text-center">{{ group.name }}</h2>
                 </div>
               </div>
 
@@ -532,31 +482,37 @@ const getSegmentDashOffset = (totalSegments: number, segmentIndex: number): numb
         </div>
 
 
-        <!-- Instruções -->
-        <div class="mt-12 p-6 bg-muted/50 rounded-lg text-center">
-          <h3 class="text-xl font-bold mb-2">Como jogar?</h3>
-          <p>Siga as fases e complete cada uma para dominar a legislação!</p>
-          <p class="mt-2 text-sm text-muted-foreground">Escolha uma fase e pratique os artigos.</p>
+        <!-- Navegação de Jornadas no final -->
+        <div v-if="props.journey && props.journey.total > 1" class="flex items-center justify-center mt-12 space-x-4">
+          <!-- Botão Jornada Anterior -->
+          <Link
+            v-if="props.journey.has_previous"
+            :href="route('play.map', { jornada: props.journey.current - 1 })"
+            class="inline-flex items-center px-3 py-1.5 bg-green-500 text-white rounded-lg border-4 border-green-700 shadow-[0_6px_0_theme(colors.green.700)] hover:shadow-[0_4px_0_theme(colors.green.700)] hover:translate-y-[2px] active:shadow-[0_2px_0_theme(colors.green.700)] active:translate-y-[4px] transition-all duration-150 font-bold text-sm"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16" class="mr-2">
+              <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8"/>
+            </svg>
+            Jornada Anterior
+          </Link>
           
-          <div v-if="hasMultipleLaws && props.modules && props.modules.length > 0" class="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <h4 class="font-semibold text-blue-800 mb-2">💡 Nova Funcionalidade: Módulos</h4>
-            <p class="text-sm text-blue-700">
-              Agora você pode alternar entre a visualização tradicional (uma lei por vez) e a visualização por módulos, 
-              que intercala algumas fases de cada lei para um estudo mais variado!
-            </p>
+          <!-- Título da Jornada Atual -->
+          <div class="px-6 py-3 bg-amber-500 text-white rounded-lg border-4 border-amber-700 shadow-[0_6px_0_theme(colors.amber.700)] font-bold">
+            <h1 class="text-lg font-bold text-center">{{ props.journey.journey_title }}</h1>
+            <p class="text-xs text-center opacity-90">{{ props.journey.phases_in_journey }} fases</p>
           </div>
           
-          <div v-if="props.journey && props.journey.total > 1" class="mt-4 p-4 bg-amber-50 rounded-lg border border-amber-200">
-            <h4 class="font-semibold text-amber-800 mb-2">🎯 Sistema de Jornadas</h4>
-            <p class="text-sm text-amber-700 mb-2">
-              Para melhorar o desempenho, suas fases foram organizadas em jornadas de até {{ 20 }} fases cada. 
-              Use os botões de navegação acima para explorar diferentes jornadas!
-            </p>
-            <div class="flex items-center justify-center space-x-4 text-xs text-amber-600">
-              <span>📍 Jornada Atual: {{ props.journey.current }}/{{ props.journey.total }}</span>
-              <span>📊 {{ props.journey.phases_in_journey }} fases nesta jornada</span>
-            </div>
-          </div>
+          <!-- Botão Próxima Jornada -->
+          <Link
+            v-if="props.journey.has_next"
+            :href="route('play.map', { jornada: props.journey.current + 1 })"
+            class="inline-flex items-center px-3 py-1.5 bg-blue-500 text-white rounded-lg border-4 border-blue-700 shadow-[0_6px_0_theme(colors.blue.700)] hover:shadow-[0_4px_0_theme(colors.blue.700)] hover:translate-y-[2px] active:shadow-[0_2px_0_theme(colors.blue.700)] active:translate-y-[4px] transition-all duration-150 font-bold text-sm"
+          >
+            Próxima Jornada
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16" class="ml-2">
+              <path fill-rule="evenodd" d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8"/>
+            </svg>
+          </Link>
         </div>
       </div>
     </div>
