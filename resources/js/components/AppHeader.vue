@@ -5,7 +5,6 @@ import Breadcrumbs from '@/components/Breadcrumbs.vue';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { ref } from 'vue';
 import {
     NavigationMenu,
     NavigationMenuItem,
@@ -18,7 +17,7 @@ import UserMenuContent from '@/components/UserMenuContent.vue';
 import { getInitials } from '@/composables/useInitials';
 import type { BreadcrumbItem, NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
-import { BookOpen, Heart, Play, Menu, Lock, Settings2, Gem, Infinity, Bug, Users } from 'lucide-vue-next';
+import { BookOpen, Heart, Play, Menu, Lock, Settings2, Gem, Infinity, Users } from 'lucide-vue-next';
 import { computed, watch } from 'vue';
 
 interface Props {
@@ -57,8 +56,7 @@ const hasSubscription = computed(() => {
     return !!page.props.auth.user?.has_infinite_lives;
 });
 
-// Variável para controlar a exibição das informações de depuração
-const showDebugInfo = ref(false);
+
 
 const isCurrentRoute = computed(() => (url: string) => page.url === url);
 
@@ -252,19 +250,6 @@ const rightNavItems: NavItem[] = [
                                     Premium
                                 </div>
                             </Link> -->
-
-                            <!-- Informações de depuração (apenas para administradores) -->
-                            <div v-if="isAdmin" class="ml-2 font-medium text-gray-500 cursor-pointer" @click="showDebugInfo = !showDebugInfo">
-                                <Bug class="w-5 h-5" />
-                            </div>
-
-                            <div v-if="isAdmin && showDebugInfo" class="absolute top-full right-0 mt-2 p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-50 text-xs">
-                                <div><strong>has_infinite_lives:</strong> {{ auth.user?.has_infinite_lives ? 'true' : 'false' }}</div>
-                                <div v-if="auth.user?.debug_info"><strong>has_active_subscription:</strong> {{ auth.user?.debug_info.has_active_subscription ? 'true' : 'false' }}</div>
-                                <div v-if="auth.user?.debug_info"><strong>on_trial:</strong> {{ auth.user?.debug_info.on_trial ? 'true' : 'false' }}</div>
-                                <div v-if="auth.user?.debug_info"><strong>subscribed:</strong> {{ auth.user?.debug_info.subscribed ? 'true' : 'false' }}</div>
-                                <div v-if="auth.user?.debug_info"><strong>trial_ends_at:</strong> {{ auth.user?.debug_info.trial_ends_at }}</div>
-                            </div>
 
                             <!-- Botão de assinatura para usuários normais -->
                             <Link

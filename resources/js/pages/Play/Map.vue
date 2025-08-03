@@ -1,9 +1,9 @@
 <script setup lang="ts">
 // resources\js\pages\Play\Map.vue
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { computed, ref, onMounted, onUnmounted } from 'vue';
-import { Book, FileText, Bookmark, CheckCircle, Star, Repeat } from 'lucide-vue-next';
+import { Book, FileText, Bookmark, CheckCircle, Star, Repeat, Bug, X } from 'lucide-vue-next';
 
 interface User {
     lives: number;
@@ -66,6 +66,32 @@ const props = defineProps<{
     journey?: JourneyInfo; // Informações da jornada atual
     user: User;
 }>();
+
+// Estado do painel de debug
+const showDebugPanel = ref(false);
+
+// Acesso à página atual para verificar se é admin
+const page = usePage<{
+    auth: {
+        user: {
+            id: number;
+            name: string;
+            email: string;
+            is_admin: boolean;
+            lives?: number;
+            avatar?: string;
+            has_infinite_lives?: boolean;
+            debug_info?: {
+                has_active_subscription: boolean;
+                on_trial: boolean;
+                subscribed: boolean;
+                trial_ends_at: string | null;
+            };
+        } | null;
+    };
+}>();
+
+const isAdmin = computed(() => page.props.auth.user?.is_admin);
 
 // Flag para alternar entre visualização tradicional e por módulos (padrão: módulos)
 const showModuleView = ref(true);
@@ -196,6 +222,214 @@ const getSegmentDashOffset = (totalSegments: number, segmentIndex: number): numb
   <AppLayout>
     <div class="container py-8 px-4">
       <div class="max-w-4xl mx-auto">
+
+        <!-- Botão de Debug (apenas para admins) -->
+        <div v-if="isAdmin" class="fixed top-20 right-4 z-50">
+          <button
+            @click="showDebugPanel = !showDebugPanel"
+            class="flex items-center gap-2 px-3 py-2 bg-red-500 text-white rounded-lg shadow-lg hover:bg-red-600 transition-colors"
+          >
+            <Bug class="w-4 h-4" />
+            <span class="text-sm font-medium">Debug Map</span>
+          </button>
+        </div>
+
+        <!-- Painel de Debug -->
+        <div 
+          v-if="isAdmin && showDebugPanel" 
+          class="fixed inset-4 bg-white dark:bg-gray-900 border-2 border-red-500 rounded-lg shadow-2xl z-40 overflow-hidden flex flex-col"
+        >
+          <!-- Header do painel -->
+          <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-red-50 dark:bg-red-900/20">
+            <h3 class="text-lg font-bold text-red-700 dark:text-red-300 flex items-center gap-2">
+              <Bug class="w-5 h-5" />
+              Debug - Dados do PlayController para Map
+            </h3>
+            <button
+              @click="showDebugPanel = false"
+              class="p-1 hover:bg-red-200 dark:hover:bg-red-800 rounded text-red-600 dark:text-red-400"
+            >
+              <X class="w-5 h-5" />
+            </button>
+          </div>
+          
+          <!-- Conteúdo do painel -->
+          <div class="flex-1 overflow-auto p-4">
+            <div class="space-y-6 text-xs">
+              
+              <!-- Seção: Props recebidas do Controller -->
+              <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+                <h4 class="font-bold text-blue-700 dark:text-blue-300 mb-3 text-sm">📨 Props do PlayController</h4>
+                
+                <!-- Phases -->
+                <div class="mb-4">
+                  <h5 class="font-semibold text-blue-600 dark:text-blue-400 mb-2">Phases ({{ props.phases?.length || 0 }} items)</h5>
+                  <div class="bg-white dark:bg-gray-800 p-3 rounded border max-h-40 overflow-auto">
+                    <pre class="whitespace-pre-wrap text-xs">{{ JSON.stringify(props.phases, null, 2) }}</pre>
+                  </div>
+                </div>
+                
+                <!-- Modules -->
+                <div class="mb-4">
+                  <h5 class="font-semibold text-blue-600 dark:text-blue-400 mb-2">Modules ({{ props.modules?.length || 0 }} items)</h5>
+                  <div class="bg-white dark:bg-gray-800 p-3 rounded border max-h-40 overflow-auto">
+                    <pre class="whitespace-pre-wrap text-xs">{{ JSON.stringify(props.modules, null, 2) }}</pre>
+                  </div>
+                </div>
+                
+                <!-- Journey -->
+                <div class="mb-4">
+                  <h5 class="font-semibold text-blue-600 dark:text-blue-400 mb-2">Journey Info</h5>
+                  <div class="bg-white dark:bg-gray-800 p-3 rounded border">
+                    <pre class="whitespace-pre-wrap text-xs">{{ JSON.stringify(props.journey, null, 2) }}</pre>
+                  </div>
+                </div>
+                
+                <!-- User -->
+                <div class="mb-4">
+                  <h5 class="font-semibold text-blue-600 dark:text-blue-400 mb-2">User Data</h5>
+                  <div class="bg-white dark:bg-gray-800 p-3 rounded border">
+                    <pre class="whitespace-pre-wrap text-xs">{{ JSON.stringify(props.user, null, 2) }}</pre>
+                  </div>
+                </div>
+
+                <!-- Auth User (completo do AppHeader) -->
+                <div class="mb-4">
+                  <h5 class="font-semibold text-blue-600 dark:text-blue-400 mb-2">Auth User (Inertia Page Props)</h5>
+                  <div class="bg-white dark:bg-gray-800 p-3 rounded border">
+                    <pre class="whitespace-pre-wrap text-xs">{{ JSON.stringify(page.props.auth.user, null, 2) }}</pre>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Seção: Dados computados -->
+              <div class="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
+                <h4 class="font-bold text-green-700 dark:text-green-300 mb-3 text-sm">🧮 Dados Computados</h4>
+                
+                <!-- Flags importantes -->
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                  <div class="bg-white dark:bg-gray-800 p-3 rounded border">
+                    <h5 class="font-semibold text-green-600 dark:text-green-400 mb-2">Flags de Estado</h5>
+                    <div class="space-y-1">
+                      <div><strong>hasMultipleLaws:</strong> {{ hasMultipleLaws }}</div>
+                      <div><strong>shouldUseModules:</strong> {{ shouldUseModules }}</div>
+                      <div><strong>showModuleView:</strong> {{ showModuleView }}</div>
+                      <div><strong>windowWidth:</strong> {{ windowWidth }}</div>
+                    </div>
+                  </div>
+                  
+                  <div class="bg-white dark:bg-gray-800 p-3 rounded border">
+                    <h5 class="font-semibold text-green-600 dark:text-green-400 mb-2">Contadores</h5>
+                    <div class="space-y-1">
+                      <div><strong>Total Phases:</strong> {{ props.phases?.length || 0 }}</div>
+                      <div><strong>Total Modules:</strong> {{ props.modules?.length || 0 }}</div>
+                      <div><strong>Reference Groups:</strong> {{ Object.keys(phasesByReference).length }}</div>
+                      <div><strong>Journey Current/Total:</strong> {{ props.journey?.current || 0 }}/{{ props.journey?.total || 0 }}</div>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Phases agrupadas por referência -->
+                <div class="mb-4">
+                  <h5 class="font-semibold text-green-600 dark:text-green-400 mb-2">Phases by Reference</h5>
+                  <div class="bg-white dark:bg-gray-800 p-3 rounded border max-h-40 overflow-auto">
+                    <pre class="whitespace-pre-wrap text-xs">{{ JSON.stringify(phasesByReference, null, 2) }}</pre>
+                  </div>
+                </div>
+                
+                <!-- Reference Groups -->
+                <div class="mb-4">
+                  <h5 class="font-semibold text-green-600 dark:text-green-400 mb-2">Reference Groups</h5>
+                  <div class="bg-white dark:bg-gray-800 p-3 rounded border max-h-40 overflow-auto">
+                    <pre class="whitespace-pre-wrap text-xs">{{ JSON.stringify(referenceGroups, null, 2) }}</pre>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Seção: Informações de Admin e Subscrição (do AppHeader) -->
+              <div class="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-lg">
+                <h4 class="font-bold text-indigo-700 dark:text-indigo-300 mb-3 text-sm">👑 Informações de Admin e Subscrição</h4>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <!-- Status de Admin -->
+                  <div class="bg-white dark:bg-gray-800 p-3 rounded border">
+                    <h5 class="font-semibold text-indigo-600 dark:text-indigo-400 mb-2">Status de Admin</h5>
+                    <div class="space-y-1 text-sm">
+                      <div class="p-2 rounded" :class="isAdmin ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200' : 'bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-200'">
+                        <strong>is_admin:</strong> {{ isAdmin ? 'true' : 'false' }}
+                      </div>
+                      <div><strong>user_id:</strong> {{ page.props.auth.user?.id || 'N/A' }}</div>
+                      <div><strong>user_name:</strong> {{ page.props.auth.user?.name || 'N/A' }}</div>
+                      <div><strong>user_email:</strong> {{ page.props.auth.user?.email || 'N/A' }}</div>
+                    </div>
+                  </div>
+                  
+                  <!-- Informações de Subscrição -->
+                  <div class="bg-white dark:bg-gray-800 p-3 rounded border">
+                    <h5 class="font-semibold text-indigo-600 dark:text-indigo-400 mb-2">Subscrição e Vidas</h5>
+                    <div class="space-y-1 text-sm">
+                      <div class="p-2 rounded" :class="page.props.auth.user?.has_infinite_lives ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200' : 'bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-200'">
+                        <strong>has_infinite_lives:</strong> {{ page.props.auth.user?.has_infinite_lives ? 'true' : 'false' }}
+                      </div>
+                      <div><strong>lives:</strong> {{ page.props.auth.user?.lives || 0 }}</div>
+                      <div v-if="page.props.auth.user?.debug_info">
+                        <strong>has_active_subscription:</strong> {{ page.props.auth.user?.debug_info.has_active_subscription ? 'true' : 'false' }}
+                      </div>
+                      <div v-if="page.props.auth.user?.debug_info">
+                        <strong>on_trial:</strong> {{ page.props.auth.user?.debug_info.on_trial ? 'true' : 'false' }}
+                      </div>
+                      <div v-if="page.props.auth.user?.debug_info">
+                        <strong>subscribed:</strong> {{ page.props.auth.user?.debug_info.subscribed ? 'true' : 'false' }}
+                      </div>
+                      <div v-if="page.props.auth.user?.debug_info">
+                        <strong>trial_ends_at:</strong> {{ page.props.auth.user?.debug_info.trial_ends_at || 'N/A' }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Seção: Análise de possíveis problemas -->
+              <div class="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg">
+                <h4 class="font-bold text-yellow-700 dark:text-yellow-300 mb-3 text-sm">⚠️ Diagnóstico Automático</h4>
+                
+                <div class="space-y-2 text-sm">
+                  <!-- Verificações de sanidade -->
+                  <div class="p-2 rounded" :class="(props.phases && props.phases.length > 0) ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200' : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200'">
+                    ✓ Phases Array: {{ (props.phases && props.phases.length > 0) ? 'OK' : 'VAZIO' }} ({{ props.phases?.length || 0 }} items)
+                  </div>
+                  
+                  <div class="p-2 rounded" :class="(props.modules && props.modules.length > 0) ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200' : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200'">
+                    ✓ Modules Array: {{ (props.modules && props.modules.length > 0) ? 'OK' : 'VAZIO' }} ({{ props.modules?.length || 0 }} items)
+                  </div>
+                  
+                  <div class="p-2 rounded" :class="props.journey ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200' : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200'">
+                    ✓ Journey Info: {{ props.journey ? 'OK' : 'AUSENTE' }}
+                  </div>
+                  
+                  <div class="p-2 rounded" :class="hasMultipleLaws ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200' : 'bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-200'">
+                    📚 Múltiplas Leis: {{ hasMultipleLaws ? 'SIM' : 'NÃO' }} ({{ Object.keys(phasesByReference).length }} referências)
+                  </div>
+                  
+                  <div class="p-2 rounded" :class="shouldUseModules ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200' : 'bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-200'">
+                    🏗️ Usando Módulos: {{ shouldUseModules ? 'SIM' : 'NÃO' }}
+                  </div>
+                  
+                  <!-- Verificar se há fases com is_current -->
+                  <div class="p-2 rounded" :class="(props.phases && props.phases.some(p => p.is_current)) ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200' : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200'">
+                    🎯 Fase Atual Identificada: {{ (props.phases && props.phases.some(p => p.is_current)) ? 'SIM' : 'NÃO' }}
+                  </div>
+                  
+                  <!-- Verificar consistência de IDs -->
+                  <div class="p-2 rounded bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-200">
+                    🔢 IDs de Fases: {{ (props.phases && props.phases.map(p => p.id).join(', ')) || 'N/A' }}
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
 
 
         <!-- Mapa de fases -->
