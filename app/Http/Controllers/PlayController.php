@@ -1048,15 +1048,7 @@ class PlayController extends Controller
      */
     private function organizePhasesIntoModules(array $phasesData): array
     {
-        // As fases já estão na ordem intercalada correta
-        // Agora precisamos apenas agrupá-las em blocos e identificar as referências
-        
-        $modules = [];
-        $moduleNumber = 1;
-        $phasesPerModule = self::PHASES_PER_MODULE_PER_LAW * count($this->getUniqueLegalReferences($phasesData));
-        $totalPhases = count($phasesData);
-        
-        if ($totalPhases === 0) {
+        if (empty($phasesData)) {
             return [];
         }
         
@@ -1066,9 +1058,43 @@ class PlayController extends Controller
             return [];
         }
         
+        // Calcular o número do primeiro módulo baseado na estrutura real das fases
+        $firstPhaseId = $phasesData[0]['id'];
+        
+        // Obter o total de leis selecionadas pelo usuário (não apenas as da jornada atual)
+        $user = Auth::user();
+        $hasPreferences = $user->legalReferences()->exists();
+        
+        $totalLawsQuery = LegalReference::query();
+        if ($hasPreferences) {
+            $totalLawsQuery->whereHas('users', function($query) use ($user) {
+                $query->where('users.id', $user->id);
+            });
+        } else {
+            $totalLawsQuery->where('is_active', true);
+        }
+        $totalSelectedLaws = $totalLawsQuery->count();
+        
+        // Calcular o número aproximado de fases por módulo baseado no total de leis selecionadas
+        $approximatePhasesPerModule = self::PHASES_PER_MODULE_PER_LAW * $totalSelectedLaws;
+        
+        // Adicionar fases de revisão à estimativa (aproximadamente 1 revisão a cada 3 fases regulares por lei)
+        $approximateReviewsPerModule = $totalSelectedLaws * ceil(self::PHASES_PER_MODULE_PER_LAW / self::REVIEW_PHASE_INTERVAL);
+        $approximatePhasesPerModule += $approximateReviewsPerModule;
+        
+        // Calcular qual módulo deveria ser baseado no ID da primeira fase
+        $startingModuleNumber = max(1, ceil($firstPhaseId / $approximatePhasesPerModule));
+        
+        $modules = [];
+        $moduleNumber = $startingModuleNumber;
+        $totalPhases = count($phasesData);
+        
+        // Usar o número aproximado de fases por módulo calculado para agrupar
+        $phasesPerModuleForGrouping = $approximatePhasesPerModule;
+        
         // Agrupar fases em módulos
-        for ($startIndex = 0; $startIndex < $totalPhases; $startIndex += $phasesPerModule) {
-            $endIndex = min($startIndex + $phasesPerModule, $totalPhases);
+        for ($startIndex = 0; $startIndex < $totalPhases; $startIndex += $phasesPerModuleForGrouping) {
+            $endIndex = min($startIndex + $phasesPerModuleForGrouping, $totalPhases);
             $modulePhasesSlice = array_slice($phasesData, $startIndex, $endIndex - $startIndex);
             
             if (empty($modulePhasesSlice)) {
