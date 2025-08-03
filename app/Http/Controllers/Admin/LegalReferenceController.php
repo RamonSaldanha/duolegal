@@ -120,9 +120,9 @@ class LegalReferenceController extends Controller
      */
     public function legislationsShow(LegalReference $legalReference)
     {
-        // Carregar os artigos ordenados por posição e incluir as opções
+        // Carregar os artigos ordenados por referência numérica e incluir as opções
         $legalReference->load(['articles' => function($query) {
-            $query->orderBy('position', 'asc');
+            $query->orderByRaw('CAST(article_reference AS UNSIGNED) ASC');
         }, 'articles.options']);
         
         return Inertia::render('admin/Legislations/Show', [

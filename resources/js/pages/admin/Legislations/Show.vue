@@ -9,6 +9,7 @@ import { ChevronLeft, PenSquare, Trash2 } from 'lucide-vue-next';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ref, computed } from 'vue';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 
 // Recebe os dados da legislação específica do backend
 const props = defineProps<{
@@ -36,6 +37,9 @@ const props = defineProps<{
 // Artigo atualmente selecionado para visualização
 const selectedArticleId = ref(props.legalReference.articles[0]?.id || null);
 
+// Termo de busca para filtrar artigos
+const searchTerm = ref('');
+
 // Define os breadcrumbs para navegação
 const breadcrumbs: BreadcrumbItem[] = [
   {
@@ -51,6 +55,17 @@ const breadcrumbs: BreadcrumbItem[] = [
     href: `/admin/legislations/${props.legalReference.id}`,
   },
 ];
+
+// Artigos filtrados com base no termo de busca
+const filteredArticles = computed(() => {
+  if (!searchTerm.value) {
+    return props.legalReference.articles;
+  }
+  
+  return props.legalReference.articles.filter(article => 
+    article.article_reference.includes(searchTerm.value)
+  );
+});
 
 // Encontra o artigo selecionado
 const selectedArticle = computed(() => {
@@ -140,9 +155,19 @@ const deleteLegislation = () => {
             <CardTitle>Artigos</CardTitle>
           </CardHeader>
           <CardContent>
-            <div class="space-y-2">
+            <!-- Campo de busca -->
+            <div class="mb-4">
+              <Input
+                v-model="searchTerm"
+                placeholder="Buscar artigo pelo número..."
+                class="w-full"
+              />
+            </div>
+            
+            <!-- Lista de artigos com overflow -->
+            <div class="space-y-2 max-h-96 overflow-y-auto pr-2">
               <Button 
-                v-for="article in legalReference.articles" 
+                v-for="article in filteredArticles" 
                 :key="article.id"
                 variant="ghost"
                 :class="{'bg-secondary': article.id === selectedArticleId}"
@@ -152,8 +177,8 @@ const deleteLegislation = () => {
                 Art. {{ article.article_reference }}
               </Button>
               
-              <div v-if="legalReference.articles.length === 0" class="text-center text-muted-foreground py-4">
-                Nenhum artigo encontrado
+              <div v-if="filteredArticles.length === 0" class="text-center text-muted-foreground py-4">
+                {{ searchTerm ? 'Nenhum artigo encontrado para a busca' : 'Nenhum artigo encontrado' }}
               </div>
             </div>
           </CardContent>
