@@ -3,10 +3,16 @@
 use App\Http\Controllers\Api\LawArticleApiController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\LegalReferenceController;
+
 
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
+
+
+Route::post('n8n/legal-references', [LegalReferenceController::class, 'storeFromN8n']);
+
 
 // Rotas da API para artigos de legislação
 Route::prefix('law-articles')->group(function () {

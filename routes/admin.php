@@ -6,7 +6,6 @@ use App\Http\Controllers\Admin\LawArticleOptionController;
 use App\Http\Controllers\Admin\UserController;
 use Illuminate\Support\Facades\Route;
 
-Route::post('api/n8n/legal-references', [LegalReferenceController::class, 'storeFromN8n']);
 
 
 Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
