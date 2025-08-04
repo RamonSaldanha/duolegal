@@ -214,8 +214,8 @@ const rightNavItems: NavItem[] = [
                     <div class="ml-auto flex items-center space-x-4">
                         <!-- XP Counter -->
                         <div v-if="auth.user?.xp !== undefined" class="flex items-center gap-1">
-                            <Star class="w-5 h-5 text-yellow-500" fill="currentColor" />
-                            <span class="font-medium text-yellow-500">{{ auth.user.xp }}</span>
+                            <span class="text-xs font-bold text-purple-500 bg-purple-100 dark:bg-purple-900/30 px-2 py-1 rounded">XP</span>
+                            <span class="font-bold text-purple-500">{{ auth.user.xp }}</span>
                         </div>
                         <!-- Lives Counter -->
                         <div v-if="auth.user?.lives !== undefined" class="flex items-center gap-1">

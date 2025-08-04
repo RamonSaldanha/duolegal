@@ -882,7 +882,7 @@ const reviewCompletionPercentage = computed(() => {
         // Criar elemento de notificação temporário
         const notification = document.createElement('div');
         notification.textContent = `+${xpGained} XP`;
-        notification.className = 'fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-yellow-500 text-white px-4 py-2 rounded-lg font-bold text-lg shadow-lg animate-bounce';
+        notification.className = 'fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-purple-500 text-white px-4 py-2 rounded-lg font-bold text-lg shadow-lg animate-bounce';
         notification.style.animation = 'xpGain 2s ease-out forwards';
         
         // Adicionar CSS personalizado para a animação
