@@ -93,7 +93,7 @@ defineProps<{
                             Entrar
                         </Link>
                         <Link
-                            :href="route('register')"
+                            :href="route('play.map')"
                             class="game-button px-6 py-2 bg-green-500 text-white rounded-lg border-4 border-green-700 shadow-[0_4px_0_theme(colors.green.700)] font-bold hover:transform hover:translate-y-1 hover:shadow-[0_2px_0_theme(colors.green.700)] transition-all"
                         >
                             Começar Grátis
@@ -170,7 +170,7 @@ defineProps<{
                             Entrar
                         </Link>
                         <Link
-                            :href="route('register')"
+                            :href="route('play.map')"
                             class="game-button px-4 py-3 bg-green-500 text-white rounded-lg border-4 border-green-700 shadow-[0_4px_0_theme(colors.green.700)] font-bold text-center"
                             @click="closeMenu"
                         >
@@ -201,7 +201,7 @@ defineProps<{
                             <div class="flex flex-col sm:flex-row gap-4 pt-4">
                                 <Link
                                     v-if="!page.props.auth.user"
-                                    :href="route('register')"
+                                    :href="route('play.map')"
                                     class="w-full sm:w-auto px-8 py-4 text-white rounded-lg border-4 font-bold text-xl hover:transform hover:translate-y-1 transition-all flex items-center justify-center gap-3"
                                     style="background-color: rgb(246, 196, 2); border-color: rgb(180, 140, 0); box-shadow: 0 6px 0 rgb(180, 140, 0);"
                                     onmouseover="this.style.boxShadow = '0 4px 0 rgb(180, 140, 0)'"
@@ -596,7 +596,7 @@ defineProps<{
                 <div class="flex flex-col sm:flex-row gap-4 justify-center mb-8">
                     <Link
                         v-if="!page.props.auth.user"
-                        :href="route('register')"
+                        :href="route('play.map')"
                         class="game-button px-10 py-4 bg-green-500 text-white rounded-lg border-4 border-green-700 shadow-[0_6px_0_theme(colors.green.700)] font-bold text-xl hover:transform hover:translate-y-1 hover:shadow-[0_4px_0_theme(colors.green.700)] transition-all flex items-center justify-center gap-3"
                     >
                         <Target class="h-6 w-6" />
@@ -647,9 +647,9 @@ defineProps<{
                     
                     <!-- Links legais -->
                     <div class="flex flex-col sm:flex-row gap-4 text-sm text-gray-400">
-                        <Link href="#" class="hover:text-white transition-colors">Políticas de Privacidade</Link>
-                        <Link href="#" class="hover:text-white transition-colors">Cookies</Link>
-                        <Link href="#" class="hover:text-white transition-colors">Termos de Uso</Link>
+                        <Link :href="route('privacy-policy')" class="hover:text-white transition-colors">Políticas de Privacidade</Link>
+                        <Link :href="route('cookies')" class="hover:text-white transition-colors">Cookies</Link>
+                        <Link :href="route('terms')" class="hover:text-white transition-colors">Termos de Uso</Link>
                     </div>
                     
                     <!-- Redes sociais -->
