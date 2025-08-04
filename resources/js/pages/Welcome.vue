@@ -182,84 +182,104 @@ defineProps<{
         </header>
 
         <!-- Hero Section -->
-        <section class="w-full py-16 md:py-18" id="hero">
+        <section class="w-full py-20 md:py-24 bg-gradient-to-br from-slate-50 to-gray-100" id="hero">
             <div class="mx-auto max-w-7xl px-4 sm:px-6">
-                <div class="flex flex-col lg:flex-row items-center gap-12 lg:gap-16">
+                <div class="flex flex-col lg:flex-row items-center gap-16 lg:gap-20">
                     <!-- Conteúdo Principal -->
-                    <div class="w-full lg:w-[70%] text-center lg:text-left">
-                        <h1 class="text-5xl sm:text-6xl lg:text-5xl font-bold heading-font mb-6 text-gray-800">
-                            Lei seca gamificada
-                        </h1>
-                        
-                        <p class="text-xl text-gray-600 mb-8 leading-relaxed max-w-2xl">
-                            Aprenda legislação brasileira de forma divertida e eficiente. 
-                            Gamificação que transforma o estudo jurídico em uma jornada envolvente.
-                        </p>
-                        
-                        <div class="flex flex-col sm:flex-row gap-4 mb-12">
-                            <Link
-                                v-if="!page.props.auth.user"
-                                :href="route('register')"
-                                class="w-full sm:w-auto px-6 py-2 text-white rounded-lg border-4 font-bold text-xl hover:transform hover:translate-y-1 transition-all flex items-center justify-center gap-2"
-                                style="background-color: rgb(246, 196, 2); border-color: rgb(180, 140, 0); box-shadow: 0 6px 0 rgb(180, 140, 0);"
-                                onmouseover="this.style.boxShadow = '0 4px 0 rgb(180, 140, 0)'"
-                                onmouseout="this.style.boxShadow = '0 6px 0 rgb(180, 140, 0)'"
-                            >
-                                <PlayCircle class="h-6 w-6" />
-                                Começar gratuitamente
-                            </Link>
-                            <Link
-                                v-else
-                                :href="route('play.map')"
-                                class="w-full sm:w-auto px-6 py-2 text-white rounded-lg border-4 font-bold text-xl hover:transform hover:translate-y-1 transition-all flex items-center justify-center gap-2"
-                                style="background-color: rgb(246, 196, 2); border-color: rgb(180, 140, 0); box-shadow: 0 6px 0 rgb(180, 140, 0);"
-                                onmouseover="this.style.boxShadow = '0 4px 0 rgb(180, 140, 0)'"
-                                onmouseout="this.style.boxShadow = '0 6px 0 rgb(180, 140, 0)'"
-                            >
-                                <PlayCircle class="h-6 w-6" />
-                                Continuar Estudando
-                            </Link>
-                        </div>
-                        
-                        <!-- Stats -->
-                        <div class="flex flex-wrap gap-8 justify-center lg:justify-start text-sm text-gray-600">
-                            <div class="flex items-center gap-2">
-                                <Book class="h-5 w-5 text-gray-500" />
-                                <span>{{ articlesCount }}+ artigos disponíveis</span>
+                    <div class="w-full lg:w-[60%] text-center lg:text-left">
+                        <div class="space-y-6">
+                            <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold heading-font text-gray-900 leading-tight">
+                                Lei seca 
+                                <span class="text-gray-700">gamificada</span>
+                            </h1>
+                            
+                            <p class="text-lg sm:text-xl text-gray-600 leading-relaxed max-w-2xl">
+                                Aprenda legislação brasileira de forma divertida e eficiente. 
+                                Gamificação que transforma o estudo jurídico em uma jornada envolvente.
+                            </p>
+                            
+                            <div class="flex flex-col sm:flex-row gap-4 pt-4">
+                                <Link
+                                    v-if="!page.props.auth.user"
+                                    :href="route('register')"
+                                    class="w-full sm:w-auto px-8 py-4 text-white rounded-lg border-4 font-bold text-xl hover:transform hover:translate-y-1 transition-all flex items-center justify-center gap-3"
+                                    style="background-color: rgb(246, 196, 2); border-color: rgb(180, 140, 0); box-shadow: 0 6px 0 rgb(180, 140, 0);"
+                                    onmouseover="this.style.boxShadow = '0 4px 0 rgb(180, 140, 0)'"
+                                    onmouseout="this.style.boxShadow = '0 6px 0 rgb(180, 140, 0)'"
+                                >
+                                    <PlayCircle class="h-6 w-6" />
+                                    Começar gratuitamente
+                                </Link>
+                                <Link
+                                    v-else
+                                    :href="route('play.map')"
+                                    class="w-full sm:w-auto px-8 py-4 text-white rounded-lg border-4 font-bold text-xl hover:transform hover:translate-y-1 transition-all flex items-center justify-center gap-3"
+                                    style="background-color: rgb(246, 196, 2); border-color: rgb(180, 140, 0); box-shadow: 0 6px 0 rgb(180, 140, 0);"
+                                    onmouseover="this.style.boxShadow = '0 4px 0 rgb(180, 140, 0)'"
+                                    onmouseout="this.style.boxShadow = '0 6px 0 rgb(180, 140, 0)'"
+                                >
+                                    <PlayCircle class="h-6 w-6" />
+                                    Continuar Estudando
+                                </Link>
+                                
+                                <button class="w-full sm:w-auto px-8 py-4 bg-white text-gray-900 font-bold text-xl rounded-lg border-4 border-gray-300 transition-all hover:transform hover:translate-y-1 flex items-center justify-center gap-3"
+                                    style="box-shadow: 0 6px 0 rgb(209, 213, 219);"
+                                    onmouseover="this.style.boxShadow = '0 4px 0 rgb(209, 213, 219)'"
+                                    onmouseout="this.style.boxShadow = '0 6px 0 rgb(209, 213, 219)'"
+                                >
+                                    Ver demonstração
+                                </button>
                             </div>
-                            <div class="flex items-center gap-2">
-                                <Trophy class="h-5 w-5 text-gray-500" />
-                                <span>Sistema de XP e níveis</span>
+                            
+                            <!-- Stats -->
+                            <div class="flex flex-wrap gap-8 justify-center lg:justify-start pt-8">
+                                <div class="flex items-center gap-3 text-gray-600">
+                                    <div class="p-2 bg-gray-200 rounded-lg">
+                                        <Book class="h-5 w-5 text-gray-700" />
+                                    </div>
+                                    <span class="font-medium">{{ articlesCount }}+ artigos disponíveis</span>
+                                </div>
+                                <div class="flex items-center gap-3 text-gray-600">
+                                    <div class="p-2 bg-gray-200 rounded-lg">
+                                        <Trophy class="h-5 w-5 text-gray-700" />
+                                    </div>
+                                    <span class="font-medium">Sistema de XP e níveis</span>
+                                </div>
                             </div>
                         </div>
                     </div>
                     
                     <!-- Ilustração Principal -->
-                    <div class="w-full lg:w-[30%] relative">
-                        <div class="relative">
-                            <!-- Container das imagens empilhadas como cartas -->
-                            <div class="relative min-h-[300px]">
-                                <!-- Imagem de frente (quadradoscreen.png) - Carta de cima -->
-                                <div class="relative z-20 transition-all duration-300">
-                                    <div class="bg-white rounded-3xl border-4 border-gray-200 shadow-xl">
+                    <div class="w-full lg:w-[40%] relative">
+                        <div class="relative max-w-lg mx-auto">
+                            <!-- Container das imagens com melhor layout -->
+                            <div class="relative h-[400px] sm:h-[500px]">
+                                <!-- Imagem de trás (quadradomapa.png) - Posicionada primeiro para ficar atrás -->
+                                <div class="absolute top-8 right-4 w-64 sm:w-80 z-10 transform rotate-3 hover:rotate-6 hover:scale-105 transition-all duration-300 cursor-pointer">
+                                    <div class="bg-white rounded-2xl border border-gray-200 shadow-xl hover:shadow-2xl transition-shadow duration-300 overflow-hidden">
                                         <img 
-                                            src="/img/quadradoscreen.png"
-                                            alt="Tela do sistema" 
-                                            class="w-full rounded-3xl h-auto max-w-md mx-auto cursor-pointer transition-all duration-300"
+                                            src="/img/quadradomapa.png"
+                                            alt="Mapa do sistema" 
+                                            class="w-full h-auto object-cover"
                                         />
                                     </div>
                                 </div>
                                 
-                                <!-- Imagem de trás (quadradomapa.png) - Carta de baixo -->
-                                <div class="absolute top-6 left-6 z-10 transition-all duration-300 hover:z-30 hover:scale-105 hover:-translate-x-2 hover:-translate-y-2 hover:rotate-2">
-                                    <div class="bg-white rounded-3xl border-4 border-gray-200 shadow-lg">
+                                <!-- Imagem de frente (quadradoscreen.png) - Posicionada por último para ficar na frente -->
+                                <div class="absolute top-0 left-0 w-64 sm:w-80 z-20 transform -rotate-2 hover:rotate-0 hover:scale-105 transition-all duration-300 cursor-pointer">
+                                    <div class="bg-white rounded-2xl border border-gray-200 shadow-2xl hover:shadow-3xl transition-shadow duration-300 overflow-hidden">
                                         <img 
-                                            src="/img/quadradomapa.png"
-                                            alt="Mapa do sistema" 
-                                            class="w-full rounded-3xl h-auto max-w-md mx-auto cursor-pointer transition-all duration-300"
+                                            src="/img/quadradoscreen.png"
+                                            alt="Tela do sistema" 
+                                            class="w-full h-auto object-cover"
                                         />
                                     </div>
                                 </div>
+                            </div>
+                            
+                            <!-- Elemento decorativo de fundo -->
+                            <div class="absolute inset-0 -z-10">
+                                <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-br from-gray-200/30 to-gray-300/30 rounded-full blur-3xl"></div>
                             </div>
                         </div>
                     </div>
