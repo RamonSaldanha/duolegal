@@ -73,7 +73,7 @@ import AppLogo from '@/components/AppLogo.vue';
             <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
                 <div class="flex items-center">
                     <Link :href="route('home')" class="flex items-center gap-x-2">
-                        <AppLogo />
+                        <AppLogo theme="light" />
                     </Link>
                 </div>
                 
@@ -396,11 +396,7 @@ import AppLogo from '@/components/AppLogo.vue';
                 <div class="flex flex-col md:flex-row justify-between items-center gap-8">
                     <div class="text-center md:text-left">
                         <div class="flex items-center gap-2 mb-4 justify-center md:justify-start">
-                            <img 
-                                src="/img/logomemorize.svg"
-                                style="height: 80px;"
-                                alt="Logo" 
-                            />
+                            <AppLogo theme="dark" height="80px" />
                         </div>
                     </div>
                     

@@ -51,7 +51,7 @@ import AppLogo from '@/components/AppLogo.vue';
             <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
                 <div class="flex items-center">
                     <Link :href="route('home')" class="flex items-center gap-x-2">
-                        <AppLogo />
+                        <AppLogo theme="light" />
                     </Link>
                 </div>
                 
@@ -113,6 +113,9 @@ import AppLogo from '@/components/AppLogo.vue';
                         <li>Artigos estudados e pontuações obtidas</li>
                         <li>Preferências de estudo</li>
                         <li>Histórico de exercícios realizados</li>
+                        <li>Tipo de plano utilizado (Gratuito com anúncios ou Premium)</li>
+                        <li>Sistema de vidas e seu uso (aplicável ao plano gratuito)</li>
+                        <li>Interações com anúncios (aplicável ao plano gratuito)</li>
                     </ul>
 
                     <h3 class="text-xl font-semibold text-gray-800">Informações Técnicas</h3>
@@ -133,6 +136,8 @@ import AppLogo from '@/components/AppLogo.vue';
                     <ul class="list-disc text-gray-700">
                         <li><strong>Prestação do Serviço:</strong> Fornecer acesso à plataforma de estudos e acompanhar seu progresso educacional</li>
                         <li><strong>Personalização:</strong> Adaptar o conteúdo e exercícios ao seu nível de conhecimento e objetivos</li>
+                        <li><strong>Gestão de Planos:</strong> Administrar seu plano de uso (Gratuito com anúncios ou Premium), incluindo controle de vidas no plano gratuito</li>
+                        <li><strong>Publicidade:</strong> Exibir anúncios personalizados para usuários do plano gratuito</li>
                         <li><strong>Comunicação:</strong> Enviar notificações sobre seu progresso, lembretes de estudo e atualizações importantes</li>
                         <li><strong>Melhoria do Serviço:</strong> Analisar dados de uso para aprimorar nossa plataforma e desenvolver novos recursos</li>
                         <li><strong>Segurança:</strong> Detectar e prevenir atividades fraudulentas ou abusivas</li>
@@ -148,12 +153,43 @@ import AppLogo from '@/components/AppLogo.vue';
                     </p>
                     <ul class="list-disc text-gray-700">
                         <li><strong>Prestadores de Serviço:</strong> Compartilhamos dados com fornecedores que nos ajudam a operar a plataforma (hospedagem, análise de dados, suporte técnico)</li>
+                        <li><strong>Parceiros de Publicidade:</strong> Para usuários do plano gratuito, compartilhamos dados limitados com parceiros de anúncios para personalização de publicidade</li>
                         <li><strong>Cumprimento Legal:</strong> Quando exigido por lei, ordem judicial ou autoridades competentes</li>
                         <li><strong>Proteção de Direitos:</strong> Para proteger nossos direitos, propriedade ou segurança, bem como de nossos usuários</li>
                         <li><strong>Dados Agregados:</strong> Podemos compartilhar informações estatísticas agregadas e anonimizadas para pesquisa e desenvolvimento educacional</li>
                     </ul>
 
-                    <h2 class="text-2xl font-bold heading-font text-gray-800">4. Proteção de Dados</h2>
+                    <h2 class="text-2xl font-bold heading-font text-gray-800">4. Planos de Assinatura e Coleta de Dados</h2>
+                    <p>
+                        O Memorize Direito oferece dois tipos de planos com diferentes formas de coleta e uso de dados:
+                    </p>
+                    
+                    <h3 class="text-xl font-semibold text-gray-800">Plano Gratuito</h3>
+                    <ul class="list-disc text-gray-700">
+                        <li>Inclui exibição de anúncios personalizados</li>
+                        <li>Sistema de vidas limitadas para controle de uso</li>
+                        <li>Coletamos dados de interação com anúncios para personalização</li>
+                        <li>Monitoramos o uso de vidas para gerenciar limitações</li>
+                        <li>Dados comportamentais podem ser compartilhados com parceiros de publicidade (de forma anonimizada)</li>
+                    </ul>
+
+                    <h3 class="text-xl font-semibold text-gray-800">Plano Premium</h3>
+                    <ul class="list-disc text-gray-700">
+                        <li>Sem anúncios e sem limitação de vidas</li>
+                        <li>Não compartilhamos dados com parceiros de publicidade</li>
+                        <li>Coleta de dados focada apenas na melhoria da experiência educacional</li>
+                        <li>Dados de pagamento processados por parceiros seguros (Stripe)</li>
+                    </ul>
+
+                    <h2 class="text-2xl font-bold heading-font text-gray-800">5. Planos e Pagamentos</h2>
+                    
+                    <h3 class="text-xl font-semibold text-gray-800">Planos Oferecidos</h3>
+                    <ul class="list-disc text-gray-700">
+                        <li><strong>Plano Gratuito:</strong> Acesso básico com funcionalidades limitadas</li>
+                        <li><strong>Plano Premium:</strong> Acesso completo a todos os recursos e conteúdos</li>
+                    </ul>
+
+                    <h2 class="text-2xl font-bold heading-font text-gray-800">6. Proteção de Dados</h2>
                     <p>
                         Implementamos medidas de segurança técnicas e administrativas para proteger suas informações:
                     </p>
@@ -165,7 +201,7 @@ import AppLogo from '@/components/AppLogo.vue';
                         <li>Treinamento da equipe em práticas de segurança</li>
                     </ul>
 
-                    <h2 class="text-2xl font-bold heading-font text-gray-800">5. Seus Direitos</h2>
+                    <h2 class="text-2xl font-bold heading-font text-gray-800">7. Seus Direitos</h2>
                     <p>
                         De acordo com a Lei Geral de Proteção de Dados (LGPD), você tem os seguintes direitos:
                     </p>
@@ -178,7 +214,7 @@ import AppLogo from '@/components/AppLogo.vue';
                         <li><strong>Oposição:</strong> Opor-se ao tratamento de dados em certas circunstâncias</li>
                     </ul>
 
-                    <h2 class="text-2xl font-bold heading-font text-gray-800">6. Retenção de Dados</h2>
+                    <h2 class="text-2xl font-bold heading-font text-gray-800">8. Retenção de Dados</h2>
                     <p>
                         Mantemos suas informações pessoais apenas pelo tempo necessário para:
                     </p>
@@ -189,12 +225,12 @@ import AppLogo from '@/components/AppLogo.vue';
                         <li>Após a exclusão da conta, alguns dados podem ser mantidos por até 5 anos para fins legais</li>
                     </ul>
 
-                    <h2 class="text-2xl font-bold heading-font text-gray-800">7. Menores de Idade</h2>
+                    <h2 class="text-2xl font-bold heading-font text-gray-800">9. Menores de Idade</h2>
                     <p>
                         Nossa plataforma não é direcionada a menores de 13 anos. Se você tem entre 13 e 18 anos, precisa do consentimento de seus pais ou responsáveis legais para usar nossos serviços. Se descobrirmos que coletamos informações de menores de 13 anos sem consentimento adequado, excluiremos essas informações imediatamente.
                     </p>
 
-                    <h2 class="text-2xl font-bold heading-font text-gray-800">8. Alterações nesta Política</h2>
+                    <h2 class="text-2xl font-bold heading-font text-gray-800">10. Alterações nesta Política</h2>
                     <p>
                         Podemos atualizar esta Política de Privacidade periodicamente. Quando fizermos alterações significativas, notificaremos você através de:
                     </p>
@@ -209,7 +245,7 @@ import AppLogo from '@/components/AppLogo.vue';
 
                     <h2 class="text-2xl font-bold heading-font text-gray-800 flex items-center gap-3">
                         <Mail class="h-6 w-6 text-green-600" />
-                        9. Contato
+                        11. Contato
                     </h2>
                     <p>
                         Se você tiver dúvidas sobre esta Política de Privacidade ou quiser exercer seus direitos, entre em contato conosco:
@@ -252,11 +288,7 @@ import AppLogo from '@/components/AppLogo.vue';
                 <div class="flex flex-col md:flex-row justify-between items-center gap-8">
                     <div class="text-center md:text-left">
                         <div class="flex items-center gap-2 mb-4 justify-center md:justify-start">
-                            <img 
-                                src="/img/logomemorize.svg"
-                                style="height: 80px;"
-                                alt="Logo" 
-                            />
+                            <AppLogo theme="dark" height="80px" />
                         </div>
                     </div>
                     

@@ -51,7 +51,7 @@ import AppLogo from '@/components/AppLogo.vue';
             <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
                 <div class="flex items-center">
                     <Link :href="route('home')" class="flex items-center gap-x-2">
-                        <AppLogo />
+                        <AppLogo theme="light" />
                     </Link>
                 </div>
                 
@@ -197,9 +197,26 @@ import AppLogo from '@/components/AppLogo.vue';
                     
                     <h3 class="text-xl font-semibold text-gray-800">Planos Oferecidos</h3>
                     <ul class="list-disc text-gray-700">
-                        <li><strong>Plano Gratuito:</strong> Acesso básico com funcionalidades limitadas</li>
-                        <li><strong>Plano Premium:</strong> Acesso completo a todos os recursos e conteúdos</li>
-                        <li><strong>Plano Estudante:</strong> Desconto especial para estudantes verificados</li>
+                        <li><strong>Plano Gratuito:</strong> Acesso básico com funcionalidades limitadas, sistema de vidas e anúncios</li>
+                        <li><strong>Plano Premium:</strong> Acesso completo a todos os recursos e conteúdos, sem anúncios e sem limitação de vidas</li>
+                    </ul>
+
+                    <h3 class="text-xl font-semibold text-gray-800">Características dos Planos</h3>
+                    <p><strong>Plano Gratuito inclui:</strong></p>
+                    <ul class="list-disc text-gray-700">
+                        <li>Sistema de vidas limitadas para controle de uso</li>
+                        <li>Exibição de anúncios durante o uso da plataforma</li>
+                        <li>Acesso a conteúdo básico de estudos</li>
+                        <li>Funcionalidades limitadas de acompanhamento de progresso</li>
+                    </ul>
+                    
+                    <p><strong>Plano Premium oferece:</strong></p>
+                    <ul class="list-disc text-gray-700">
+                        <li>Acesso ilimitado sem sistema de vidas</li>
+                        <li>Experiência livre de anúncios</li>
+                        <li>Acesso completo a todo o conteúdo e recursos</li>
+                        <li>Relatórios avançados de progresso e desempenho</li>
+                        <li>Suporte prioritário</li>
                     </ul>
 
                     <h3 class="text-xl font-semibold text-gray-800">Política de Pagamento</h3>
@@ -371,11 +388,7 @@ import AppLogo from '@/components/AppLogo.vue';
                 <div class="flex flex-col md:flex-row justify-between items-center gap-8">
                     <div class="text-center md:text-left">
                         <div class="flex items-center gap-2 mb-4 justify-center md:justify-start">
-                            <img 
-                                src="/img/logomemorize.svg"
-                                style="height: 80px;"
-                                alt="Logo" 
-                            />
+                            <AppLogo theme="dark" height="80px" />
                         </div>
                     </div>
                     

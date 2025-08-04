@@ -9,6 +9,11 @@ defineProps({
   width: {
     type: String,
     default: '110px'
+  },
+  theme: {
+    type: String,
+    default: '',
+    validator: (value: string) => ['', 'light', 'dark'].includes(value)
   }
 });
 </script>
@@ -19,13 +24,23 @@ defineProps({
         <img 
             src="/img/logomemorizeblack.svg"
             :style="{ height, width }"
-            class="mt-[-16px] block dark:hidden" 
+            :class="[
+                'mt-[-16px]',
+                theme === 'dark' ? 'hidden' : 
+                theme === 'light' ? 'block' : 
+                'block dark:hidden'
+            ]"
             alt="Logo" 
         />
         <img 
             src="/img/logomemorize.svg"
             :style="{ height, width }"
-            class="mt-[-16px] hidden dark:block" 
+            :class="[
+                'mt-[-16px]',
+                theme === 'light' ? 'hidden' : 
+                theme === 'dark' ? 'block' : 
+                'hidden dark:block'
+            ]"
             alt="Logo" 
         />
     </div>
