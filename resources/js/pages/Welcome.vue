@@ -222,13 +222,13 @@ defineProps<{
                                     Continuar Estudando
                                 </Link>
                                 
-                                <button class="w-full sm:w-auto px-8 py-4 bg-white text-gray-900 font-bold text-xl rounded-lg border-4 border-gray-300 transition-all hover:transform hover:translate-y-1 flex items-center justify-center gap-3"
+                                <a href="#features" class="w-full sm:w-auto px-8 py-4 bg-white text-gray-900 font-bold text-xl rounded-lg border-4 border-gray-300 transition-all hover:transform hover:translate-y-1 flex items-center justify-center gap-3"
                                     style="box-shadow: 0 6px 0 rgb(209, 213, 219);"
                                     onmouseover="this.style.boxShadow = '0 4px 0 rgb(209, 213, 219)'"
                                     onmouseout="this.style.boxShadow = '0 6px 0 rgb(209, 213, 219)'"
                                 >
-                                    Ver demonstração
-                                </button>
+                                    Entenda mais
+                                </a>
                             </div>
                             
                             <!-- Stats -->
@@ -255,7 +255,7 @@ defineProps<{
                             <!-- Container das imagens com melhor layout -->
                             <div class="relative h-[400px] sm:h-[500px]">
                                 <!-- Imagem de trás (quadradomapa.png) - Posicionada primeiro para ficar atrás -->
-                                <div class="absolute top-8 right-4 w-64 sm:w-80 z-10 transform rotate-3 hover:rotate-6 hover:scale-105 transition-all duration-300 cursor-pointer">
+                                <div class="absolute top-8 right-4 w-64 sm:w-80 z-10 transform rotate-3 hover:rotate-6 hover:scale-105 hover:z-30 transition-all duration-300 cursor-pointer">
                                     <div class="bg-white rounded-2xl border border-gray-200 shadow-xl hover:shadow-2xl transition-shadow duration-300 overflow-hidden">
                                         <img 
                                             src="/img/quadradomapa.png"
@@ -266,7 +266,7 @@ defineProps<{
                                 </div>
                                 
                                 <!-- Imagem de frente (quadradoscreen.png) - Posicionada por último para ficar na frente -->
-                                <div class="absolute top-0 left-0 w-64 sm:w-80 z-20 transform -rotate-2 hover:rotate-0 hover:scale-105 transition-all duration-300 cursor-pointer">
+                                <div class="absolute top-0 left-0 w-64 sm:w-80 z-20 transform -rotate-2 hover:rotate-0 hover:scale-105 hover:z-30 transition-all duration-300 cursor-pointer">
                                     <div class="bg-white rounded-2xl border border-gray-200 shadow-2xl hover:shadow-3xl transition-shadow duration-300 overflow-hidden">
                                         <img 
                                             src="/img/quadradoscreen.png"
@@ -278,8 +278,8 @@ defineProps<{
                             </div>
                             
                             <!-- Elemento decorativo de fundo -->
-                            <div class="absolute inset-0 -z-10">
-                                <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-br from-gray-200/30 to-gray-300/30 rounded-full blur-3xl"></div>
+                            <div class="absolute inset-0 -z-10 overflow-hidden">
+                                <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-72 h-72 sm:w-96 sm:h-96 bg-gradient-to-br from-gray-200/30 to-gray-300/30 rounded-full blur-3xl"></div>
                             </div>
                         </div>
                     </div>
@@ -334,6 +334,17 @@ defineProps<{
                         </p>
                     </div>
                 </div>
+                
+                <!-- Botão para próxima seção -->
+                <div class="text-center mt-12">
+                    <a href="#testimonials" class="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white text-gray-900 font-bold rounded-lg border-4 border-gray-300 transition-all hover:transform hover:translate-y-1" 
+                       style="box-shadow: 0 6px 0 rgb(209, 213, 219);"
+                       onmouseover="this.style.boxShadow = '0 4px 0 rgb(209, 213, 219)'"
+                       onmouseout="this.style.boxShadow = '0 6px 0 rgb(209, 213, 219)'">
+                        <span>Ver Benefícios</span>
+                        <ChevronRight class="h-5 w-5" />
+                    </a>
+                </div>
             </div>
         </section>
 
@@ -386,6 +397,17 @@ defineProps<{
                             Celebre cada conquista.
                         </p>
                     </div>
+                </div>
+                
+                <!-- Botão para próxima seção -->
+                <div class="text-center mt-12">
+                    <a href="#research" class="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white text-gray-900 font-bold rounded-lg border-4 border-gray-300 transition-all hover:transform hover:translate-y-1" 
+                       style="box-shadow: 0 6px 0 rgb(209, 213, 219);"
+                       onmouseover="this.style.boxShadow = '0 4px 0 rgb(209, 213, 219)'"
+                       onmouseout="this.style.boxShadow = '0 6px 0 rgb(209, 213, 219)'">
+                        <span>Sinta o Impacto</span>
+                        <ChevronRight class="h-5 w-5" />
+                    </a>
                 </div>
             </div>
         </section>
@@ -469,6 +491,17 @@ defineProps<{
                         </div>
                     </div>
                 </div>
+                
+                <!-- Botão para próxima seção -->
+                <div class="text-center mt-12">
+                    <a href="#faq" class="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white text-gray-900 font-bold rounded-lg border-4 border-gray-300 transition-all hover:transform hover:translate-y-1" 
+                       style="box-shadow: 0 6px 0 rgb(209, 213, 219);"
+                       onmouseover="this.style.boxShadow = '0 4px 0 rgb(209, 213, 219)'"
+                       onmouseout="this.style.boxShadow = '0 6px 0 rgb(209, 213, 219)'">
+                        <span>Dúvidas Frequentes</span>
+                        <ChevronRight class="h-5 w-5" />
+                    </a>
+                </div>
             </div>
         </section>
 
@@ -535,11 +568,22 @@ defineProps<{
                         </div>
                     </details>
                 </div>
+                
+                <!-- Botão para próxima seção -->
+                <div class="text-center mt-12">
+                    <a href="#cta" class="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gray-800 text-white font-bold rounded-lg border-4 border-gray-900 transition-all hover:transform hover:translate-y-1" 
+                       style="box-shadow: 0 6px 0 rgb(31, 41, 55);"
+                       onmouseover="this.style.boxShadow = '0 4px 0 rgb(31, 41, 55)'"
+                       onmouseout="this.style.boxShadow = '0 6px 0 rgb(31, 41, 55)'">
+                        <span>Começar Agora</span>
+                        <ChevronRight class="h-5 w-5" />
+                    </a>
+                </div>
             </div>
         </section>
 
         <!-- CTA Principal -->
-        <section class="w-full py-16 bg-gray-800 text-white">
+        <section class="w-full py-16 bg-gray-800 text-white" id="cta">
             <div class="mx-auto max-w-4xl px-4 sm:px-6 text-center">
                 <h2 class="text-4xl sm:text-6xl font-bold heading-font mb-6">
                     Comece a estudar <span class="text-green-400">hoje mesmo!</span>
@@ -592,7 +636,12 @@ defineProps<{
                     <!-- Logo e descrição -->
                     <div class="text-center md:text-left">
                         <div class="flex items-center gap-2 mb-4 justify-center md:justify-start">
-                            <AppLogo />
+                            <img 
+                                src="/img/logomemorize.svg"
+                                style="height: 80px;"
+                                class="" 
+                                alt="Logo" 
+                            />
                         </div>
                     </div>
                     
