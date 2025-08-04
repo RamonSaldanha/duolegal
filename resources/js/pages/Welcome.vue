@@ -182,13 +182,13 @@ defineProps<{
         </header>
 
         <!-- Hero Section -->
-        <section class="w-full py-16 md:py-24" id="hero">
+        <section class="w-full py-16 md:py-18" id="hero">
             <div class="mx-auto max-w-7xl px-4 sm:px-6">
                 <div class="flex flex-col lg:flex-row items-center gap-12 lg:gap-16">
                     <!-- Conteúdo Principal -->
-                    <div class="w-full lg:w-1/2 text-center lg:text-left">
-                        <h1 class="text-5xl sm:text-6xl lg:text-7xl font-bold heading-font mb-6 text-gray-800">
-                            O <span style="color: rgb(246, 196, 2)">Duolingo</span> para <span class="text-gray-700">Direito</span>
+                    <div class="w-full lg:w-[70%] text-center lg:text-left">
+                        <h1 class="text-5xl sm:text-6xl lg:text-5xl font-bold heading-font mb-6 text-gray-800">
+                            Lei seca gamificada
                         </h1>
                         
                         <p class="text-xl text-gray-600 mb-8 leading-relaxed max-w-2xl">
@@ -235,46 +235,29 @@ defineProps<{
                     </div>
                     
                     <!-- Ilustração Principal -->
-                    <div class="w-full lg:w-1/2 relative">
-                        <div class="bg-white rounded-3xl p-8 border-4 border-gray-200">
-                            <!-- Personagem ilustrativo -->
-                            <div class="text-center mb-6">
-                                <div class="w-32 h-32 mx-auto bg-gray-200 rounded-full flex items-center justify-center text-6xl mb-4">
-                                    ⚖️
-                                </div>
-                                <h3 class="text-xl font-bold text-gray-700 mb-2">Estudante de Direito</h3>
-                                <p class="text-gray-600">Level 12 • 1.247 XP</p>
-                            </div>
-                            
-                            <!-- Progress bars -->
-                            <div class="space-y-4">
-                                <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                                    <div class="flex justify-between items-center mb-2">
-                                        <span class="text-sm font-medium text-gray-700">Constituição Federal</span>
-                                        <span class="text-sm text-gray-600 font-bold">85%</span>
-                                    </div>
-                                    <div class="w-full bg-gray-200 rounded-full h-3">
-                                        <div class="bg-gray-600 h-3 rounded-full" style="width: 85%"></div>
+                    <div class="w-full lg:w-[30%] relative">
+                        <div class="relative">
+                            <!-- Container das imagens empilhadas como cartas -->
+                            <div class="relative min-h-[300px]">
+                                <!-- Imagem de frente (quadradoscreen.png) - Carta de cima -->
+                                <div class="relative z-20 transition-all duration-300">
+                                    <div class="bg-white rounded-3xl border-4 border-gray-200 shadow-xl">
+                                        <img 
+                                            src="/img/quadradoscreen.png"
+                                            alt="Tela do sistema" 
+                                            class="w-full rounded-3xl h-auto max-w-md mx-auto cursor-pointer transition-all duration-300"
+                                        />
                                     </div>
                                 </div>
                                 
-                                <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                                    <div class="flex justify-between items-center mb-2">
-                                        <span class="text-sm font-medium text-gray-700">Código Civil</span>
-                                        <span class="text-sm text-gray-600 font-bold">42%</span>
-                                    </div>
-                                    <div class="w-full bg-gray-200 rounded-full h-3">
-                                        <div class="bg-gray-600 h-3 rounded-full" style="width: 42%"></div>
-                                    </div>
-                                </div>
-                                
-                                <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                                    <div class="flex justify-between items-center mb-2">
-                                        <span class="text-sm font-medium text-gray-700">Código Penal</span>
-                                        <span class="text-sm text-gray-600 font-bold">67%</span>
-                                    </div>
-                                    <div class="w-full bg-gray-200 rounded-full h-3">
-                                        <div class="bg-gray-600 h-3 rounded-full" style="width: 67%"></div>
+                                <!-- Imagem de trás (quadradomapa.png) - Carta de baixo -->
+                                <div class="absolute top-6 left-6 z-10 transition-all duration-300 hover:z-30 hover:scale-105 hover:-translate-x-2 hover:-translate-y-2 hover:rotate-2">
+                                    <div class="bg-white rounded-3xl border-4 border-gray-200 shadow-lg">
+                                        <img 
+                                            src="/img/quadradomapa.png"
+                                            alt="Mapa do sistema" 
+                                            class="w-full rounded-3xl h-auto max-w-md mx-auto cursor-pointer transition-all duration-300"
+                                        />
                                     </div>
                                 </div>
                             </div>
