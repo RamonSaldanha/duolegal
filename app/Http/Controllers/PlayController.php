@@ -19,12 +19,7 @@ class PlayController extends Controller
     // RECOMENDAÇÃO: 6-10 artigos por fase para equilibrio entre sessão de estudo e progresso
     
     const REVIEW_PHASE_INTERVAL = 3; // A cada quantas fases regulares gerar uma revisão
-    // IMPORTANTE: Este valor determina a frequência de revisões
-    // - Valor 3: Revisão após cada 3 fases regulares (recomendado para retenção)
-    // - Valor 2: Mais revisões (bom para conteúdo difícil)
-    // - Valor 4+: Menos revisões (pode prejudicar retenção)
-    // RECOMENDAÇÃO: Manter em 3 para equilibrio entre estudo e revisão
-    
+
     const PHASES_PER_MODULE_PER_LAW = 3; // Máximo de fases REGULARES por lei por módulo
     // CRÍTICO: Este valor controla a intercalação entre leis
     // - Valor 3: Cada lei terá 3 fases regulares + 1 revisão por módulo (4 fases total)
