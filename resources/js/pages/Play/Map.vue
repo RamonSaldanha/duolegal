@@ -24,9 +24,9 @@ interface Progress {
     completed: number;
     total: number;
     percentage: number;
-    article_status?: string[];
     is_fully_complete?: boolean; // Vem do backend (true se 100% em tudo)
     all_attempted?: boolean;
+    has_errors?: boolean; // Novo campo otimizado em vez de article_status array
     // Para revisão:
     is_complete?: boolean; // Vem do backend (true se não precisa revisar)
     needs_review?: boolean; // Vem do backend
@@ -56,13 +56,25 @@ interface ReferenceGroup {
     phases: Phase[];
 }
 
+interface OptimizedReferenceGroup {
+    reference_name: string;
+    reference_uuid: string;
+    phase_ids: number[]; // Apenas IDs das fases, não dados completos
+}
+
+interface OptimizedModule {
+    id: number;
+    title: string;
+    references: OptimizedReferenceGroup[];
+}
+
 interface GroupedPhases {
     [key: string]: ReferenceGroup;
 }
 
 const props = defineProps<{
     phases: Phase[];
-    modules?: any[]; // Dados dos módulos organizados
+    modules?: OptimizedModule[]; // Dados dos módulos organizados (otimizados)
     journey?: JourneyInfo; // Informações da jornada atual
     user: User;
 }>();
@@ -126,6 +138,28 @@ const shouldUseModules = computed(() => {
     return showModuleView.value && hasMultipleLaws.value && props.modules && props.modules.length > 0;
 });
 
+// Função para recuperar fases pelos IDs (para módulos otimizados)
+const getPhasesByIds = (phaseIds: number[]): Phase[] => {
+    if (!props.phases) return [];
+    
+    const phaseMap = new Map(props.phases.map(phase => [phase.id, phase]));
+    return phaseIds.map(id => phaseMap.get(id)).filter(Boolean) as Phase[];
+};
+
+// Expandir módulos otimizados com dados completos das fases (apenas quando necessário)
+const expandedModules = computed(() => {
+    if (!shouldUseModules.value || !props.modules) return [];
+    
+    return props.modules.map(module => ({
+        ...module,
+        references: module.references.map(ref => ({
+            reference_name: ref.reference_name,
+            reference_uuid: ref.reference_uuid,
+            phases: getPhasesByIds(ref.phase_ids)
+        }))
+    }));
+});
+
 const getPhaseIcon = (phaseNumber: number) => {
     const icons = [Book, FileText, Bookmark, Star, CheckCircle];
     return icons[(phaseNumber - 1) % icons.length];
@@ -136,27 +170,49 @@ const isPhaseComplete = (phase: Phase): boolean => {
         // Revisão completa significa que não precisa revisar
         return phase.progress?.is_complete || false;
     }
-    // Fase regular completa significa 100% correto
-    // Usar is_fully_complete se disponível, senão verificar status
-    if(phase.progress?.is_fully_complete !== undefined) {
+    
+    // Fase regular completa - usar dados otimizados
+    // Prioridade 1: Verificar is_fully_complete (dados do backend)
+    if (phase.progress?.is_fully_complete !== undefined) {
         return phase.progress.is_fully_complete;
     }
-    // Verificar manualmente se todos os status são 'correct'
-    return phase.progress?.article_status?.every(status => status === 'correct') || false;
+    
+    // Prioridade 2: Verificar is_complete da fase (fallback)
+    if (phase.is_complete !== undefined) {
+        return phase.is_complete;
+    }
+    
+    // Prioridade 3: Verificar se completed === total (último fallback)
+    if (phase.progress?.completed !== undefined && phase.progress?.total !== undefined) {
+        return phase.progress.completed === phase.progress.total && phase.progress.total > 0;
+    }
+    
+    return false;
 };
 // Obtém o status de cada artigo na fase (acerto, erro, não respondido)
 const getArticleStatus = (phase: Phase): string[] => {
     if (phase.is_review) {
         return []; // Revisão não tem status por artigo visível no mapa
     }
-    if (phase.progress && phase.progress.article_status) {
-        return phase.progress.article_status;
-    }
-    // Fallback se o backend não fornecer article_status
+    
     const total = phase.article_count || 0;
+    const completed = phase.progress?.completed || 0;
+    const hasErrors = phase.progress?.has_errors || false;
     
     // Se is_complete (fully_complete) -> tudo verde
-    if(phase.is_complete) return Array(total).fill('correct');
+    if (phase.is_complete && phase.progress?.is_fully_complete) {
+        return Array(total).fill('correct');
+    }
+    
+    // Se há progresso mas com erros
+    if (completed > 0) {
+        const result = Array(total).fill('pending');
+        // Marcar artigos respondidos
+        for (let i = 0; i < completed; i++) {
+            result[i] = hasErrors ? 'incorrect' : 'correct';
+        }
+        return result;
+    }
     
     // Padrão se não houver dados
     return Array(total).fill('pending');
@@ -212,6 +268,111 @@ const getSegmentDashOffset = (totalSegments: number, segmentIndex: number): numb
   const circumference = 2 * Math.PI * 32; // raio = 32 (mais próximo da bolinha)
   const segmentLength = circumference / totalSegments;
   return circumference - (segmentLength * segmentIndex);
+};
+
+// Função para copiar informações de debug
+const copyDebugInfo = async (): Promise<void> => {
+  try {
+    const debugData = {
+      timestamp: new Date().toISOString(),
+      user: props.user,
+      journey: props.journey,
+      phases_count: props.phases?.length || 0,
+      modules_count: props.modules?.length || 0,
+      phases: props.phases?.map(phase => ({
+        id: phase.id,
+        title: phase.title,
+        backend_data: {
+          is_complete: phase.is_complete,
+          is_fully_complete: phase.progress?.is_fully_complete,
+          all_attempted: phase.progress?.all_attempted,
+          is_blocked: phase.is_blocked,
+          is_current: phase.is_current,
+          completed: phase.progress?.completed,
+          total: phase.progress?.total
+        },
+        frontend_computed: {
+          isPhaseComplete: isPhaseComplete(phase),
+          should_be_green: isPhaseComplete(phase),
+          css_class: isPhaseComplete(phase) ? 'bg-green-500' : (phase.is_current ? 'bg-blue-500' : (phase.is_blocked ? 'bg-gray-400' : 'bg-gray-300'))
+        }
+      })),
+      modules: props.modules?.map(module => ({
+        title: module.title,
+        references: module.references?.map(ref => ({
+          reference_name: ref.reference_name,
+          reference_uuid: ref.reference_uuid,
+          phase_ids: ref.phase_ids,
+          phases_count: ref.phase_ids?.length || 0
+        }))
+      }))
+    };
+
+    const debugText = `=== DEBUG INFO - Memorize Direito Map ===
+Timestamp: ${debugData.timestamp}
+
+USER INFO:
+- ID: ${debugData.user?.id}
+- Name: ${debugData.user?.name}
+- XP: ${debugData.user?.xp}
+
+JOURNEY INFO:
+- ID: ${debugData.journey?.id}
+- Title: ${debugData.journey?.title}
+
+GENERAL STATS:
+- Total Phases: ${debugData.phases_count}
+- Total Modules: ${debugData.modules_count}
+
+PHASES ANALYSIS (first 10):
+${debugData.phases?.slice(0, 10).map(phase => `
+Phase ${phase.id} - ${phase.title}
+Backend Data:
+  • is_complete: ${phase.backend_data.is_complete}
+  • is_fully_complete: ${phase.backend_data.is_fully_complete}
+  • all_attempted: ${phase.backend_data.all_attempted}
+  • is_blocked: ${phase.backend_data.is_blocked}
+  • is_current: ${phase.backend_data.is_current}
+  • completed/total: ${phase.backend_data.completed}/${phase.backend_data.total}
+Frontend Computed:
+  • isPhaseComplete(): ${phase.frontend_computed.isPhaseComplete}
+  • Should be GREEN: ${phase.frontend_computed.should_be_green ? 'YES' : 'NO'}
+  • CSS Class: ${phase.frontend_computed.css_class}
+`).join('\n') || 'No phases data'}
+
+MODULES INFO:
+${debugData.modules?.map(module => `
+Module: ${module.title}
+References: ${module.references?.map(ref => `
+  • ${ref.reference_name} (${ref.phases_count} fases): IDs ${ref.phase_ids?.join(', ') || 'None'}`).join('') || 'None'}
+`).join('\n') || 'No modules data'}
+
+=== END DEBUG INFO ===`;
+
+    await navigator.clipboard.writeText(debugText);
+    
+    // Show success feedback
+    alert('Debug info copiado para a área de transferência!');
+    
+  } catch (error) {
+    console.error('Erro ao copiar debug info:', error);
+    
+    // Fallback: create a textarea and select text
+    const textarea = document.createElement('textarea');
+    textarea.value = JSON.stringify({
+      error: 'Failed to copy to clipboard',
+      user: props.user,
+      journey: props.journey,
+      phases_count: props.phases?.length,
+      modules_count: props.modules?.length
+    }, null, 2);
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+    
+    alert('Debug info básico copiado para a área de transferência (fallback)');
+  }
 };
 
 </script>
@@ -427,6 +588,47 @@ const getSegmentDashOffset = (totalSegments: number, segmentIndex: number): numb
                 </div>
               </div>
 
+              <!-- Seção: Análise específica do problema de cores -->
+              <div class="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg">
+                <h4 class="font-bold text-red-700 dark:text-red-300 mb-3 text-sm">🎨 Análise de Cores das Fases</h4>
+                
+                <div class="space-y-2 text-xs max-h-60 overflow-auto">
+                  <div v-for="phase in props.phases?.slice(0, 10)" :key="phase.id" class="p-2 rounded border">
+                    <div class="font-semibold">Fase {{ phase.id }} - {{ phase.title }}</div>
+                    <div class="grid grid-cols-2 gap-2 mt-1">
+                      <div>
+                        <strong>Backend Data:</strong><br>
+                        • is_complete: {{ phase.is_complete }}<br>
+                        • is_fully_complete: {{ phase.progress?.is_fully_complete }}<br>
+                        • all_attempted: {{ phase.progress?.all_attempted }}<br>
+                        • is_blocked: {{ phase.is_blocked }}<br>
+                        • is_current: {{ phase.is_current }}
+                      </div>
+                      <div>
+                        <strong>Frontend Computed:</strong><br>
+                        • isPhaseComplete(): {{ isPhaseComplete(phase) }}<br>
+                        • Should be GREEN: {{ isPhaseComplete(phase) ? 'YES' : 'NO' }}<br>
+                        • CSS Class: {{ isPhaseComplete(phase) ? 'bg-green-500' : (phase.is_current ? 'bg-blue-500' : (phase.is_blocked ? 'bg-gray-400' : 'bg-gray-300')) }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Botão para copiar debug info -->
+              <div class="flex justify-center mt-4">
+                <button
+                  @click="copyDebugInfo"
+                  class="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"/>
+                    <path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"/>
+                  </svg>
+                  Copiar Debug Info
+                </button>
+              </div>
+
             </div>
           </div>
         </div>
@@ -437,7 +639,7 @@ const getSegmentDashOffset = (totalSegments: number, segmentIndex: number): numb
           <!-- Visualização por Módulos -->
           <div v-if="shouldUseModules">
             <div
-              v-for="module in props.modules"
+              v-for="module in expandedModules"
               :key="module.id"
               class="relative mb-12"
             >
@@ -534,14 +736,14 @@ const getSegmentDashOffset = (totalSegments: number, segmentIndex: number): numb
                         <div
                           :class="[
                               'w-16 h-16 rounded-full flex items-center justify-center phase-circle relative z-10',
-                              phase.is_review && phase.is_blocked ? 'bg-purple-400/50' :
-                              phase.is_review && !phase.is_blocked && !phase.is_current ? 'bg-purple-500' :
+                              phase.is_review && isPhaseComplete(phase) ? 'bg-purple-500' :
                               phase.is_review && phase.is_current ? 'bg-purple-600 animate-pulse' :
+                              phase.is_review && phase.is_blocked ? 'bg-purple-400/50' :
+                              phase.is_review ? 'bg-purple-400' :
+                              isPhaseComplete(phase) ? 'bg-green-500' :
                               phase.is_current ? 'bg-blue-500 animate-pulse' :
                               phase.is_blocked ? 'bg-gray-400/50' :
-                              isPhaseComplete(phase) ? 'bg-green-500' :
-                              !phase.is_blocked ? 'bg-yellow-500' :
-                              'bg-gray-400'
+                              'bg-yellow-500'
                           ]"
                           :style="phase.is_blocked ? 'opacity: 0.6;' : ''"
                         >
@@ -668,14 +870,14 @@ const getSegmentDashOffset = (totalSegments: number, segmentIndex: number): numb
                       <div
                         :class="[
                             'w-16 h-16 rounded-full flex items-center justify-center phase-circle relative z-10',
-                            phase.is_review && phase.is_blocked ? 'bg-purple-400/50' :
-                            phase.is_review && !phase.is_blocked && !phase.is_current ? 'bg-purple-500' :
+                            phase.is_review && isPhaseComplete(phase) ? 'bg-purple-500' :
                             phase.is_review && phase.is_current ? 'bg-purple-600 animate-pulse' :
+                            phase.is_review && phase.is_blocked ? 'bg-purple-400/50' :
+                            phase.is_review ? 'bg-purple-400' :
+                            isPhaseComplete(phase) ? 'bg-green-500' :
                             phase.is_current ? 'bg-blue-500 animate-pulse' :
                             phase.is_blocked ? 'bg-gray-400/50' :
-                            isPhaseComplete(phase) ? 'bg-green-500' :
-                            !phase.is_blocked ? 'bg-yellow-500' :
-                            'bg-gray-400'
+                            'bg-yellow-500'
                         ]"
                         :style="phase.is_blocked ? 'opacity: 0.6;' : ''"
                       >

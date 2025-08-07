@@ -13,10 +13,32 @@ use Illuminate\Support\Collection; // Adicionar para tipagem
 
 class PlayController extends Controller
 {
-    const ARTICLES_PER_PHASE = 9;
-    const REVIEW_PHASE_INTERVAL = 3;
-    const PHASES_PER_MODULE_PER_LAW = 6; // Quantas fases de cada lei por módulo
+    // === CONFIGURAÇÕES DE GERAÇÃO DE FASES ===
+    
+    const ARTICLES_PER_PHASE = 8; // Quantos artigos por fase regular
+    // RECOMENDAÇÃO: 6-10 artigos por fase para equilibrio entre sessão de estudo e progresso
+    
+    const REVIEW_PHASE_INTERVAL = 3; // A cada quantas fases regulares gerar uma revisão
+    // IMPORTANTE: Este valor determina a frequência de revisões
+    // - Valor 3: Revisão após cada 3 fases regulares (recomendado para retenção)
+    // - Valor 2: Mais revisões (bom para conteúdo difícil)
+    // - Valor 4+: Menos revisões (pode prejudicar retenção)
+    // RECOMENDAÇÃO: Manter em 3 para equilibrio entre estudo e revisão
+    
+    const PHASES_PER_MODULE_PER_LAW = 3; // Máximo de fases REGULARES por lei por módulo
+    // CRÍTICO: Este valor controla a intercalação entre leis
+    // - Valor 3: Cada lei terá 3 fases regulares + 1 revisão por módulo (4 fases total)
+    // - Se uma lei tem 10 chunks: Módulo 1 (chunks 0,1,2) + Módulo 2 (chunks 3,4,5) + etc.
+    // - Garante que o usuário alterne entre leis a cada 3-4 fases
+    // IMPORTANTE: Valor muito baixo (1-2) = muita alternação, pode confundir
+    // IMPORTANTE: Valor muito alto (5+) = pouca intercalação, pode ficar monótono
+    // RECOMENDAÇÃO: Manter entre 2-4 para boa experiência de intercalação
+    
     const PHASES_PER_JOURNEY = 20; // Máximo de fases por jornada
+    // FUNÇÃO: Divide o conteúdo em "jornadas" menores para não sobrecarregar
+    // - Determina quando mostrar "Jornada 1 de X", "Jornada 2 de X"
+    // - Influencia a navegação e sensação de progresso
+    // RECOMENDAÇÃO: 15-25 fases por jornada para boa experiência de usuário
 
 
     public function map(Request $request)
@@ -68,7 +90,7 @@ class PlayController extends Controller
         $currentLawUuid = null;
         $lawCompletionStatus = []; // uuid => bool (true se lei 100% completa no novo sentido)
 
-        // --- PASSO 1: Construir a ESTRUTURA completa de fases INTERCALADAS ---
+        // --- PASSO 1: Construir a ESTRUTURA completa de fases INTERCALADAS (NOVA LÓGICA) ---
         // Primeiro, preparar chunks de todas as leis
         $lawChunksData = [];
         $maxChunks = 0;
@@ -83,20 +105,22 @@ class PlayController extends Controller
             $maxChunks = max($maxChunks, $chunks->count());
         }
         
-        // Intercalar as fases seguindo o padrão EXATO: 6 fases de cada lei por módulo
+        // NOVA LÓGICA: Intercalar de forma mais rigorosa
         $tempCounter = 0;
         $totalModules = ceil($maxChunks / self::PHASES_PER_MODULE_PER_LAW);
         
-        for ($module = 0; $module < $totalModules; $module++) {
-            $startChunkIndex = $module * self::PHASES_PER_MODULE_PER_LAW;
-            $endChunkIndex = min($startChunkIndex + self::PHASES_PER_MODULE_PER_LAW, $maxChunks);
+        // Para cada módulo, distribuir fases de forma equilibrada
+        for ($moduleIndex = 0; $moduleIndex < $totalModules; $moduleIndex++) {
+            $startChunkIndex = $moduleIndex * self::PHASES_PER_MODULE_PER_LAW;
+            $endChunkIndex = $startChunkIndex + self::PHASES_PER_MODULE_PER_LAW;
             
-            // Para cada lei no módulo atual, adicionar exatamente PHASES_PER_MODULE_PER_LAW fases
+            // Para cada lei, adicionar suas fases deste módulo (se ainda tiver chunks)
             foreach ($lawChunksData as $lawUuid => $lawData) {
-                $phasesAddedForThisLawInThisModule = 0;
+                $phasesAddedForThisLaw = 0;
                 
-                // Adicionar as fases deste módulo para esta lei (máximo PHASES_PER_MODULE_PER_LAW)
-                for ($chunkIndex = $startChunkIndex; $chunkIndex < $endChunkIndex && $phasesAddedForThisLawInThisModule < self::PHASES_PER_MODULE_PER_LAW; $chunkIndex++) {
+                // Adicionar fases regulares desta lei para este módulo
+                for ($chunkIndex = $startChunkIndex; $chunkIndex < $endChunkIndex && $phasesAddedForThisLaw < self::PHASES_PER_MODULE_PER_LAW; $chunkIndex++) {
+                    // Só adicionar se esta lei ainda tem chunks para este índice
                     if ($chunkIndex < $lawData['total_chunks']) {
                         $tempCounter++;
                         
@@ -105,21 +129,27 @@ class PlayController extends Controller
                             'is_review' => false,
                             'reference_uuid' => $lawUuid,
                             'chunk_index' => $chunkIndex,
-                            'article_chunk' => $lawData['chunks'][$chunkIndex] // Armazena temporariamente para Pass 2
+                            'article_chunk' => $lawData['chunks'][$chunkIndex]
                         ];
                         
-                        $phasesAddedForThisLawInThisModule++;
-                        
-                        // Adicionar revisão a cada REVIEW_PHASE_INTERVAL fases regulares GLOBAIS desta lei
-                        if (($chunkIndex + 1) % self::REVIEW_PHASE_INTERVAL === 0) {
-                            $tempCounter++;
-                            $phaseStructureList[] = [
-                                'id' => $tempCounter,
-                                'is_review' => true,
-                                'reference_uuid' => $lawUuid,
-                                'last_regular_counter' => $chunkIndex + 1 // Para título da revisão (baseado no índice do chunk + 1)
-                            ];
-                        }
+                        $phasesAddedForThisLaw++;
+                    }
+                }
+                
+                // Adicionar revisão se esta lei adicionou exatamente PHASES_PER_MODULE_PER_LAW fases neste módulo
+                // E se o número total de fases regulares desta lei até agora é múltiplo de REVIEW_PHASE_INTERVAL
+                if ($phasesAddedForThisLaw > 0) {
+                    $totalRegularPhasesOfThisLaw = min($endChunkIndex, $lawData['total_chunks']);
+                    
+                    // Verificar se deve adicionar revisão (a cada REVIEW_PHASE_INTERVAL fases regulares)
+                    if ($totalRegularPhasesOfThisLaw % self::REVIEW_PHASE_INTERVAL === 0) {
+                        $tempCounter++;
+                        $phaseStructureList[] = [
+                            'id' => $tempCounter,
+                            'is_review' => true,
+                            'reference_uuid' => $lawUuid,
+                            'last_regular_counter' => $totalRegularPhasesOfThisLaw
+                        ];
                     }
                 }
             }
@@ -283,8 +313,8 @@ class PlayController extends Controller
         $endIndex = min($startIndex + self::PHASES_PER_JOURNEY, $totalPhases);
         $journeyPhases = array_slice($phasesData, $startIndex, $endIndex - $startIndex);
         
-        // Organizar fases em módulos (apenas para a jornada atual)
-        $modulesData = $this->organizePhasesIntoModules($journeyPhases);
+        // Organizar fases em módulos (apenas para a jornada atual) - OTIMIZADO
+        $modulesData = $this->organizePhasesIntoModulesOptimized($journeyPhases);
         
         // Informações de navegação entre jornadas
         $journeyInfo = [
@@ -316,7 +346,7 @@ class PlayController extends Controller
     // estejam presentes aqui.
     // ===============================================================
 
-     // Helper para construir dados da fase regular
+     // Helper para construir dados da fase regular (otimizado)
     private function buildPhaseData(int $phaseId, LegalReference $reference, Collection $articleChunk, int $chunkIndex, array $progress, bool $isBlocked, bool $isCurrent): array
     {
         return [
@@ -328,24 +358,34 @@ class PlayController extends Controller
             'difficulty' => $this->calculateAverageDifficulty($articleChunk),
             'first_article' => $articleChunk->first()->uuid ?? null,
             'phase_number' => $phaseId,
-            'is_complete' => $progress['all_attempted'] ?? false, // Fase completa se todos foram tentados
-            'progress' => $progress,
+            'chunk_index' => $chunkIndex, // Incluir chunk_index para fases regulares
+            'is_complete' => $progress['all_attempted'] ?? false,
+            // Progresso otimizado - apenas dados essenciais
+            'progress' => [
+                'completed' => $progress['completed'] ?? 0,
+                'total' => $progress['total'] ?? 0,
+                'percentage' => $progress['percentage'] ?? 0,
+                'is_fully_complete' => $progress['is_fully_complete'] ?? false,
+                'all_attempted' => $progress['all_attempted'] ?? false,
+                // Remover article_status detalhado para melhorar performance
+                'has_errors' => isset($progress['article_status']) ? 
+                    in_array('incorrect', $progress['article_status']) : false
+            ],
             'is_blocked' => $isBlocked,
             'is_current' => $isCurrent,
             'is_review' => false,
-            'chunk_index' => $chunkIndex,
         ];
     }
 
-    // Helper para construir dados da fase de revisão
+    // Helper para construir dados da fase de revisão (otimizado)
     private function buildReviewPhaseData(int $phaseId, LegalReference $reference, int $lastRegularPhaseCounter, bool $isBlocked, bool $isCurrent, ?array $progress = null): array
     {
         if ($progress === null) {
              $progress = [
-                 'completed' => 0, 'total' => 0, 'percentage' => 0, 'article_status' => [],
-                 'is_fully_complete' => false, 'all_attempted' => false,
-                 'is_complete' => true, // Assumir completa se bloqueada/sem dados
-                 'needs_review' => false ];
+                 'is_complete' => true,
+                 'needs_review' => false,
+                 'articles_to_review_count' => 0,
+             ];
         }
 
         return [
@@ -357,8 +397,18 @@ class PlayController extends Controller
             'difficulty' => 3,
             'first_article' => null,
             'phase_number' => $phaseId,
-            'is_complete' => $progress['is_complete'] ?? true, // Completa se !needs_review
-            'progress' => $progress,
+            'is_complete' => $progress['is_complete'] ?? true,
+            // Progresso otimizado para revisões
+            'progress' => [
+                'is_complete' => $progress['is_complete'] ?? true,
+                'needs_review' => $progress['needs_review'] ?? false,
+                'articles_to_review_count' => $progress['articles_to_review_count'] ?? 0,
+                'completed' => 0,
+                'total' => 0,
+                'percentage' => 0,
+                'is_fully_complete' => $progress['is_complete'] ?? true,
+                'all_attempted' => $progress['is_complete'] ?? true,
+            ],
             'is_blocked' => $isBlocked,
             'is_current' => $isCurrent,
             'is_review' => true,
@@ -576,7 +626,7 @@ class PlayController extends Controller
 
          // Redirecionar para review se for o caso (deveria ser pego pela rota, mas como fallback)
          if ($phaseDetails['is_review']) {
-            //   Log::warning("[Phase Route] Tentativa de acessar fase de revisão ID {$phaseId} pela rota de fase regular. Redirecionando.");
+           //   Log::warning("[Phase Route] Tentativa de acessar fase de revisão ID {$phaseId} pela rota de fase regular. Redirecionando.");
              return redirect()->route('play.review', [
                  'referenceUuid' => $phaseDetails['reference_uuid'],
                  'phase' => $phaseId // Passa ID global
@@ -584,15 +634,19 @@ class PlayController extends Controller
          }
 
          // --- Lógica para Fase Regular ---
+         // Verificar se é uma fase regular válida (deve ter chunk_index)
+         if (!isset($phaseDetails['chunk_index'])) {
+             Log::error("[Phase Route] Fase regular ID {$phaseId} não possui chunk_index válido.");
+             return redirect()->route('play.map')->with('message', 'Erro na estrutura da fase.');
+         }
+
          $reference = LegalReference::where('uuid', $phaseDetails['reference_uuid'])->firstOrFail();
          $allArticles = $reference->articles()
              ->orderByRaw('CAST(article_reference AS UNSIGNED) ASC')
              ->where('is_active', true)
              ->get();
          $chunkedArticles = $allArticles->chunk(self::ARTICLES_PER_PHASE);
-         $chunkIndex = $phaseDetails['chunk_index'];
-
-         if (!isset($chunkedArticles[$chunkIndex]) || $chunkedArticles[$chunkIndex]->isEmpty()) {
+         $chunkIndex = $phaseDetails['chunk_index'];         if (!isset($chunkedArticles[$chunkIndex]) || $chunkedArticles[$chunkIndex]->isEmpty()) {
             //   Log::error("[Phase Route] Chunk de artigos não encontrado para fase regular: " . $phaseId . " chunk: " . $chunkIndex);
              return redirect()->route('play.map')->with('message', 'Erro ao carregar artigos da fase.');
          }
@@ -740,7 +794,7 @@ class PlayController extends Controller
         // Log::debug("[findDetails] Found " . $legalReferences->count() . " legal references.");
 
 
-        // 2. Recalcular $phaseStructureList (IDÊNTICO ao Passo 1 do map() - INTERCALADO)
+        // 2. Recalcular $phaseStructureList (IDÊNTICO ao Passo 1 do map() - NOVA LÓGICA)
         $phaseStructureList = [];
         
         // Primeiro, preparar chunks de todas as leis
@@ -757,20 +811,22 @@ class PlayController extends Controller
             $maxChunks = max($maxChunks, $chunks->count());
         }
         
-        // Intercalar as fases seguindo o padrão EXATO: 6 fases de cada lei por módulo
+        // NOVA LÓGICA: Intercalar de forma mais rigorosa (IDÊNTICA ao map())
         $tempCounter = 0;
         $totalModules = ceil($maxChunks / self::PHASES_PER_MODULE_PER_LAW);
         
-        for ($module = 0; $module < $totalModules; $module++) {
-            $startChunkIndex = $module * self::PHASES_PER_MODULE_PER_LAW;
-            $endChunkIndex = min($startChunkIndex + self::PHASES_PER_MODULE_PER_LAW, $maxChunks);
+        // Para cada módulo, distribuir fases de forma equilibrada
+        for ($moduleIndex = 0; $moduleIndex < $totalModules; $moduleIndex++) {
+            $startChunkIndex = $moduleIndex * self::PHASES_PER_MODULE_PER_LAW;
+            $endChunkIndex = $startChunkIndex + self::PHASES_PER_MODULE_PER_LAW;
             
-            // Para cada lei no módulo atual, adicionar exatamente PHASES_PER_MODULE_PER_LAW fases
+            // Para cada lei, adicionar suas fases deste módulo (se ainda tiver chunks)
             foreach ($lawChunksData as $lawUuid => $lawData) {
-                $phasesAddedForThisLawInThisModule = 0;
+                $phasesAddedForThisLaw = 0;
                 
-                // Adicionar as fases deste módulo para esta lei (máximo PHASES_PER_MODULE_PER_LAW)
-                for ($chunkIndex = $startChunkIndex; $chunkIndex < $endChunkIndex && $phasesAddedForThisLawInThisModule < self::PHASES_PER_MODULE_PER_LAW; $chunkIndex++) {
+                // Adicionar fases regulares desta lei para este módulo
+                for ($chunkIndex = $startChunkIndex; $chunkIndex < $endChunkIndex && $phasesAddedForThisLaw < self::PHASES_PER_MODULE_PER_LAW; $chunkIndex++) {
+                    // Só adicionar se esta lei ainda tem chunks para este índice
                     if ($chunkIndex < $lawData['total_chunks']) {
                         $tempCounter++;
                         
@@ -779,21 +835,27 @@ class PlayController extends Controller
                             'is_review' => false,
                             'reference_uuid' => $lawUuid,
                             'chunk_index' => $chunkIndex,
-                            'article_chunk' => $lawData['chunks'][$chunkIndex] // Armazena temporariamente para Pass 2
+                            'article_chunk' => $lawData['chunks'][$chunkIndex]
                         ];
                         
-                        $phasesAddedForThisLawInThisModule++;
-                        
-                        // Adicionar revisão a cada REVIEW_PHASE_INTERVAL fases regulares GLOBAIS desta lei
-                        if (($chunkIndex + 1) % self::REVIEW_PHASE_INTERVAL === 0) {
-                            $tempCounter++;
-                            $phaseStructureList[] = [
-                                'id' => $tempCounter,
-                                'is_review' => true,
-                                'reference_uuid' => $lawUuid,
-                                'last_regular_counter' => $chunkIndex + 1 // Para título da revisão (baseado no índice do chunk + 1)
-                            ];
-                        }
+                        $phasesAddedForThisLaw++;
+                    }
+                }
+                
+                // Adicionar revisão se esta lei adicionou fases neste módulo
+                // E se o número total de fases regulares desta lei até agora é múltiplo de REVIEW_PHASE_INTERVAL
+                if ($phasesAddedForThisLaw > 0) {
+                    $totalRegularPhasesOfThisLaw = min($endChunkIndex, $lawData['total_chunks']);
+                    
+                    // Verificar se deve adicionar revisão (a cada REVIEW_PHASE_INTERVAL fases regulares)
+                    if ($totalRegularPhasesOfThisLaw % self::REVIEW_PHASE_INTERVAL === 0) {
+                        $tempCounter++;
+                        $phaseStructureList[] = [
+                            'id' => $tempCounter,
+                            'is_review' => true,
+                            'reference_uuid' => $lawUuid,
+                            'last_regular_counter' => $totalRegularPhasesOfThisLaw
+                        ];
                     }
                 }
             }
@@ -1053,6 +1115,91 @@ class PlayController extends Controller
             'should_redirect' => !$user->hasInfiniteLives() && $user->lives <= 0,
             'redirect_url' => !$user->hasInfiniteLives() && $user->lives <= 0 ? route('play.nolives') : null
         ]);
+    }
+
+    /**
+     * Organiza as fases em módulos (versão otimizada - apenas referências)
+     */
+    private function organizePhasesIntoModulesOptimized(array $phasesData): array
+    {
+        if (empty($phasesData)) {
+            return [];
+        }
+        
+        // Se há apenas uma lei, não mostrar módulos
+        $uniqueReferences = $this->getUniqueLegalReferences($phasesData);
+        if (count($uniqueReferences) <= 1) {
+            return [];
+        }
+        
+        // Calcular o número do primeiro módulo baseado na estrutura real das fases
+        $firstPhaseId = $phasesData[0]['id'];
+        
+        // Obter o total de leis selecionadas pelo usuário (não apenas as da jornada atual)
+        $user = Auth::user();
+        $hasPreferences = $user->legalReferences()->exists();
+        
+        $totalLawsQuery = LegalReference::query();
+        if ($hasPreferences) {
+            $totalLawsQuery->whereHas('users', function($query) use ($user) {
+                $query->where('users.id', $user->id);
+            });
+        } else {
+            $totalLawsQuery->where('is_active', true);
+        }
+        $totalSelectedLaws = $totalLawsQuery->count();
+        
+        // Calcular o número aproximado de fases por módulo baseado no total de leis selecionadas
+        $approximatePhasesPerModule = self::PHASES_PER_MODULE_PER_LAW * $totalSelectedLaws;
+        
+        // Adicionar fases de revisão à estimativa (aproximadamente 1 revisão a cada 3 fases regulares por lei)
+        $approximateReviewsPerModule = $totalSelectedLaws * ceil(self::PHASES_PER_MODULE_PER_LAW / self::REVIEW_PHASE_INTERVAL);
+        $approximatePhasesPerModule += $approximateReviewsPerModule;
+        
+        // Calcular qual módulo deveria ser baseado no ID da primeira fase
+        $startingModuleNumber = max(1, ceil($firstPhaseId / $approximatePhasesPerModule));
+        
+        $modules = [];
+        $moduleNumber = $startingModuleNumber;
+        $totalPhases = count($phasesData);
+        
+        // Usar o número aproximado de fases por módulo calculado para agrupar
+        $phasesPerModuleForGrouping = $approximatePhasesPerModule;
+        
+        // Agrupar fases em módulos - APENAS REFERÊNCIAS (sem duplicar dados completos)
+        for ($startIndex = 0; $startIndex < $totalPhases; $startIndex += $phasesPerModuleForGrouping) {
+            $endIndex = min($startIndex + $phasesPerModuleForGrouping, $totalPhases);
+            $modulePhasesSlice = array_slice($phasesData, $startIndex, $endIndex - $startIndex);
+            
+            if (empty($modulePhasesSlice)) {
+                continue;
+            }
+            
+            // Agrupar por referência dentro do módulo - OTIMIZADO
+            $referenceGroups = [];
+            foreach ($modulePhasesSlice as $phase) {
+                $uuid = $phase['reference_uuid'];
+                if (!isset($referenceGroups[$uuid])) {
+                    $referenceGroups[$uuid] = [
+                        'reference_name' => $phase['reference_name'],
+                        'reference_uuid' => $uuid,
+                        'phase_ids' => [] // Apenas IDs, não dados completos
+                    ];
+                }
+                $referenceGroups[$uuid]['phase_ids'][] = $phase['id'];
+            }
+            
+            if (!empty($referenceGroups)) {
+                $modules[] = [
+                    'id' => $moduleNumber,
+                    'title' => "Módulo {$moduleNumber}",
+                    'references' => array_values($referenceGroups)
+                ];
+                $moduleNumber++;
+            }
+        }
+        
+        return $modules;
     }
 
     /**
