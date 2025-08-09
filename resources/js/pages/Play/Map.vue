@@ -7,11 +7,18 @@ import { Book, FileText, Bookmark, CheckCircle, Star, Repeat, Bug, X } from 'luc
 import DebugPanel from './DebugPanel.vue';
 
 interface User {
+  // Campos mínimos usados na UI de vidas
     lives: number;
     has_infinite_lives?: boolean;
+  // Campos opcionais usados em debug
+  id?: number;
+  name?: string;
+  email?: string;
+  xp?: number;
 }
 
 interface JourneyInfo {
+  // Índices de navegação da jornada
     current: number;
     total: number;
     has_previous: boolean;
@@ -19,6 +26,9 @@ interface JourneyInfo {
     phases_in_journey: number;
     total_phases: number;
     journey_title: string | null;
+  // Campos opcionais para debug
+  id?: number;
+  title?: string | null;
 }
 
 interface Progress {
@@ -27,7 +37,11 @@ interface Progress {
     percentage: number;
     is_fully_complete?: boolean; // Vem do backend (true se 100% em tudo)
     all_attempted?: boolean;
-    has_errors?: boolean; // Novo campo otimizado em vez de article_status array
+  has_errors?: boolean; // Novo campo otimizado em vez de article_status array
+  // Se o backend enviar, usamos diretamente o status por artigo
+  article_status?: Array<'correct' | 'incorrect' | 'pending'>;
+  // Quantidade opcional de erros entre os concluídos
+  errors_count?: number;
     // Para revisão:
     is_complete?: boolean; // Vem do backend (true se não precisa revisar)
     needs_review?: boolean; // Vem do backend
@@ -191,29 +205,46 @@ const isPhaseComplete = (phase: Phase): boolean => {
     return false;
 };
 // Obtém o status de cada artigo na fase (acerto, erro, não respondido)
-const getArticleStatus = (phase: Phase): string[] => {
+const getArticleStatus = (phase: Phase): Array<'correct' | 'incorrect' | 'pending'> => {
     if (phase.is_review) {
         return []; // Revisão não tem status por artigo visível no mapa
     }
     
-    const total = phase.article_count || 0;
-    const completed = phase.progress?.completed || 0;
-    const hasErrors = phase.progress?.has_errors || false;
+  const total = phase.article_count || phase.progress?.total || 0;
+  const completed = phase.progress?.completed || 0;
+  const hasErrors = phase.progress?.has_errors || false;
+    
+  // 1) Preferir dados por-artigo do backend, se existirem
+  const statuses = phase.progress?.article_status;
+  if (statuses && statuses.length > 0) {
+    const trimmed = statuses.slice(0, total);
+    return trimmed.length < total
+      ? [...trimmed, ...Array(total - trimmed.length).fill('pending')]
+      : trimmed;
+  }
+    
+  // 2) Se a fase estiver 100% completa (e marcada pelo backend), tudo verde
     
     // Se is_complete (fully_complete) -> tudo verde
     if (phase.is_complete && phase.progress?.is_fully_complete) {
         return Array(total).fill('correct');
     }
     
-    // Se há progresso mas com erros
-    if (completed > 0) {
-        const result = Array(total).fill('pending');
-        // Marcar artigos respondidos
-        for (let i = 0; i < completed; i++) {
-            result[i] = hasErrors ? 'incorrect' : 'correct';
-        }
-        return result;
-    }
+  // 3) Fallback quando há progresso parcial
+  if (completed > 0) {
+    const result: Array<'correct' | 'incorrect' | 'pending'> = Array(total).fill('pending');
+    // Se soubermos quantos erros tivemos, respeitar. Caso contrário, assumir 1 erro quando has_errors = true
+    const errorsCountRaw = phase.progress?.errors_count;
+    const assumedErrors = hasErrors ? 1 : 0;
+    const errorsCount = Math.max(0, Math.min(completed, errorsCountRaw ?? assumedErrors));
+
+    const correctCount = Math.max(0, Math.min(completed, completed - errorsCount));
+    // Preencher acertos em verde
+    for (let i = 0; i < correctCount; i++) result[i] = 'correct';
+    // Preencher erros em vermelho (logo após os acertos)
+    for (let i = correctCount; i < correctCount + errorsCount; i++) result[i] = 'incorrect';
+    return result;
+  }
     
     // Padrão se não houver dados
     return Array(total).fill('pending');
