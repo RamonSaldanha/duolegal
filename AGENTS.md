@@ -38,3 +38,12 @@ Ex.: controlador `app/Http/Controllers/UserController.php` + rota em `routes/web
 - Nunca versione `.env`; mantenha `.env.example` atualizado. `APP_DEBUG=false` em produção.
 - Após deploy: `php artisan config:cache` e `route:cache`.
 - Valide uploads, sanitize entrada e cuide das permissões de `storage/` e `bootstrap/cache`.
+
+## Play Debug Panel
+- Local: `resources/js/pages/Play/DebugPanel.vue` (importado em `resources/js/pages/Play/Map.vue`).
+- Uso: renderize `\<DebugPanel :phases="phases" :modules="modules" :journey="journey" />` dentro do Map.
+- Acesso: visível apenas para admins (`page.props.auth.user?.is_admin`).
+- Cópia: botão “Copiar Debug Completo” gera um bloco único com JSON legível (indentado) com todos os dados; usa `navigator.clipboard.writeText` e fallback via `textarea + document.execCommand('copy')`.
+- Payload: inclui `app`, `timestamp`, `context` (ex.: `hasMultipleLaws`), `user` (id, name, email, is_admin, lives, has_infinite_lives, `debug_info`), `journey`, contagens (`phases`, `modules`), `phases`, `modules` e `expandedModules`.
+- `debug_info` do usuário (quando presente) vem de `page.props.auth.user.debug_info` com os campos: `has_active_subscription`, `on_trial`, `subscribed`, `trial_ends_at`.
+- Design: componente independente; calcula `expandedModules` e agrupamentos localmente a partir dos props, mantendo `Map.vue` enxuto e sem estado/funções de debug acoplados.
