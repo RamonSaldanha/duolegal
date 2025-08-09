@@ -214,39 +214,72 @@ const getArticleStatus = (phase: Phase): Array<'correct' | 'incorrect' | 'pendin
   const completed = phase.progress?.completed || 0;
   const hasErrors = phase.progress?.has_errors || false;
     
-  // 1) Preferir dados por-artigo do backend, se existirem
-  const statuses = phase.progress?.article_status;
-  if (statuses && statuses.length > 0) {
-    const trimmed = statuses.slice(0, total);
-    return trimmed.length < total
-      ? [...trimmed, ...Array(total - trimmed.length).fill('pending')]
-      : trimmed;
-  }
-    
-  // 2) Se a fase estiver 100% completa (e marcada pelo backend), tudo verde
+    // 1) Preferir dados por-artigo do backend, se existirem
+    // IDEAL: O backend deveria enviar algo como:
+    // "article_status": ["correct", "incorrect", "correct", "correct", "pending", "pending"]
+    // onde cada posição corresponde exatamente ao resultado de cada desafio
+    const statuses = phase.progress?.article_status;
+    if (statuses && statuses.length > 0) {
+        const trimmed = statuses.slice(0, total);
+        return trimmed.length < total
+            ? [...trimmed, ...Array(total - trimmed.length).fill('pending')]
+            : trimmed;
+    }  // 2) Se a fase estiver 100% completa (e marcada pelo backend), tudo verde
     
     // Se is_complete (fully_complete) -> tudo verde
     if (phase.is_complete && phase.progress?.is_fully_complete) {
         return Array(total).fill('correct');
     }
     
-  // 3) Fallback quando há progresso parcial
-  if (completed > 0) {
-    const result: Array<'correct' | 'incorrect' | 'pending'> = Array(total).fill('pending');
-    // Se soubermos quantos erros tivemos, respeitar. Caso contrário, assumir 1 erro quando has_errors = true
-    const errorsCountRaw = phase.progress?.errors_count;
-    const assumedErrors = hasErrors ? 1 : 0;
-    const errorsCount = Math.max(0, Math.min(completed, errorsCountRaw ?? assumedErrors));
-
-    const correctCount = Math.max(0, Math.min(completed, completed - errorsCount));
-    // Preencher acertos em verde
-    for (let i = 0; i < correctCount; i++) result[i] = 'correct';
-    // Preencher erros em vermelho (logo após os acertos)
-    for (let i = correctCount; i < correctCount + errorsCount; i++) result[i] = 'incorrect';
-    return result;
-  }
-    
-    // Padrão se não houver dados
+    // 3) Fallback quando há progresso parcial
+    if (completed > 0) {
+        const result: Array<'correct' | 'incorrect' | 'pending'> = Array(total).fill('pending');
+        
+        if (hasErrors) {
+            // Estratégia melhorada: distribuir erros de forma mais realista
+            const errorsCountRaw = phase.progress?.errors_count;
+            const errorsCount = Math.max(1, Math.min(completed, errorsCountRaw ?? 1));
+            const correctCount = completed - errorsCount;
+            
+            // Em vez de agrupar erros no final, distribuir de forma mais natural
+            // Simular padrão mais realista onde erros podem aparecer em qualquer posição
+            
+            // Marcar os corretos primeiro
+            for (let i = 0; i < correctCount; i++) {
+                result[i] = 'correct';
+            }
+            
+            // Distribuir erros entre as posições respondidas
+            // Se há poucos erros, colocar em posições intermediárias/finais
+            if (errorsCount === 1) {
+                // Um erro: colocar em posição intermediária ou próxima ao final
+                const errorPosition = Math.min(completed - 1, Math.floor(completed / 2));
+                // Realocar: mover um 'correct' para frente e colocar erro na posição
+                if (errorPosition < correctCount) {
+                    result[errorPosition] = 'incorrect';
+                    // Mover o último correct para a posição final
+                    if (completed - 1 !== errorPosition) {
+                        result[completed - 1] = 'correct';
+                    }
+                } else {
+                    result[completed - 1] = 'incorrect';
+                }
+            } else {
+                // Múltiplos erros: distribuir nas posições finais
+                for (let i = 0; i < errorsCount; i++) {
+                    const errorPos = correctCount + i;
+                    if (errorPos < completed) {
+                        result[errorPos] = 'incorrect';
+                    }
+                }
+            }
+        } else {
+            // Sem erros, todos os respondidos são corretos
+            for (let i = 0; i < completed; i++) result[i] = 'correct';
+        }
+        
+        return result;
+    }    // Padrão se não houver dados
     return Array(total).fill('pending');
 };
 
