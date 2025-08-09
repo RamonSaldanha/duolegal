@@ -4,6 +4,7 @@ import { Head, Link, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { Book, FileText, Bookmark, CheckCircle, Star, Repeat, Bug, X } from 'lucide-vue-next';
+import DebugPanel from './DebugPanel.vue';
 
 interface User {
     lives: number;
@@ -253,6 +254,74 @@ const referenceGroups = computed(() => {
     phases: data.phases
   }));
 });
+
+// Função para copiar o DEBUG completo (sem cortes), em JSON legível
+const copyFullDebugInfo = async (): Promise<void> => {
+  // Monta um payload simples e serializável (sem proxies do Vue)
+  const safeUser = page.props.auth.user
+    ? {
+        id: page.props.auth.user.id,
+        name: page.props.auth.user.name,
+        email: page.props.auth.user.email,
+        is_admin: page.props.auth.user.is_admin,
+        lives: page.props.auth.user.lives ?? null,
+        has_infinite_lives: page.props.auth.user.has_infinite_lives ?? null,
+        debug_info: page.props.auth.user.debug_info ?? null,
+      }
+    : null;
+
+  const payload = {
+    app: { name: 'Memorize Direito', page: 'Play/Map' },
+    timestamp: new Date().toISOString(),
+    context: {
+      hasMultipleLaws: hasMultipleLaws.value,
+      shouldUseModules: shouldUseModules.value,
+      showModuleView: showModuleView.value,
+    },
+    user: safeUser,
+    journey: props.journey ?? null,
+    counts: {
+      phases: props.phases?.length ?? 0,
+      modules: props.modules?.length ?? 0,
+    },
+    // Dados completos vindos do PlayController/Inertia
+    phases: props.phases ?? [],
+    modules: props.modules ?? [],
+    // Variações derivadas para facilitar análise
+    expandedModules: expandedModules.value ?? [],
+    groupedByReference: referenceGroups.value ?? [],
+  } as const;
+
+  const text = [
+    '=== DEBUG PLAY/MAP ===',
+    `timestamp: ${payload.timestamp}`,
+    '',
+    'payload.json:',
+    JSON.stringify(payload, null, 2),
+    '=== END DEBUG ===',
+  ].join('\n');
+
+  try {
+    await navigator.clipboard.writeText(text);
+    alert('Debug completo copiado para a área de transferência!');
+  } catch (err) {
+    try {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.setAttribute('readonly', '');
+      textarea.style.position = 'absolute';
+      textarea.style.left = '-9999px';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      alert('Debug completo copiado (fallback)');
+    } catch (fallbackErr) {
+      console.error('Falha ao copiar debug:', fallbackErr);
+      alert('Não foi possível copiar o debug. Veja o console.');
+    }
+  }
+};
 
 // Funções para o indicador de progresso circular
 const getSegmentDashArray = (totalSegments: number): string => {
@@ -618,7 +687,7 @@ References: ${module.references?.map(ref => `
               <!-- Botão para copiar debug info -->
               <div class="flex justify-center mt-4">
                 <button
-                  @click="copyDebugInfo"
+                  @click="copyFullDebugInfo"
                   class="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
