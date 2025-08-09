@@ -15,21 +15,21 @@ class PlayController extends Controller
 {
     // === CONFIGURAÇÕES DE GERAÇÃO DE FASES ===
     
-    const ARTICLES_PER_PHASE = 8; // Quantos artigos por fase regular
+    const ARTICLES_PER_PHASE = 6; // Quantos artigos por fase regular
     // RECOMENDAÇÃO: 6-10 artigos por fase para equilibrio entre sessão de estudo e progresso
     
     const REVIEW_PHASE_INTERVAL = 3; // A cada quantas fases regulares gerar uma revisão
 
-    const PHASES_PER_MODULE_PER_LAW = 3; // Máximo de fases REGULARES por lei por módulo
+    const PHASES_PER_MODULE_PER_LAW = 6; // Máximo de fases REGULARES por lei por módulo
     // CRÍTICO: Este valor controla a intercalação entre leis
-    // - Valor 3: Cada lei terá 3 fases regulares + 1 revisão por módulo (4 fases total)
-    // - Se uma lei tem 10 chunks: Módulo 1 (chunks 0,1,2) + Módulo 2 (chunks 3,4,5) + etc.
-    // - Garante que o usuário alterne entre leis a cada 3-4 fases
+    // - Valor 6: Cada lei terá 6 fases regulares + 2 revisões por módulo (8 fases total)
+    // - Se uma lei tem 18 chunks: Módulo 1 (chunks 0,1,2,3,4,5) + Módulo 2 (chunks 6,7,8,9,10,11) + etc.
+    // - Garante que o usuário alterne entre leis a cada 6-8 fases
     // IMPORTANTE: Valor muito baixo (1-2) = muita alternação, pode confundir
     // IMPORTANTE: Valor muito alto (5+) = pouca intercalação, pode ficar monótono
-    // RECOMENDAÇÃO: Manter entre 2-4 para boa experiência de intercalação
+    // RECOMENDAÇÃO: Manter entre 2-6 para boa experiência de intercalação
     
-    const PHASES_PER_JOURNEY = 20; // Máximo de fases por jornada
+    const PHASES_PER_JOURNEY = 24; // Máximo de fases por jornada
     // FUNÇÃO: Divide o conteúdo em "jornadas" menores para não sobrecarregar
     // - Determina quando mostrar "Jornada 1 de X", "Jornada 2 de X"
     // - Influencia a navegação e sensação de progresso

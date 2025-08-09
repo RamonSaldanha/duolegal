@@ -34,6 +34,7 @@
                     <TableHead>Nome</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Vidas</TableHead>
+                    <TableHead>XP</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Admin</TableHead>
                     <TableHead>Data de Cadastro</TableHead>
@@ -50,9 +51,18 @@
                           Ilimitadas
                         </span>
                         <span v-else class="flex items-center">
-                          <Heart class="h-4 w-4 mr-1 text-red-500" />
+                          <Heart 
+                            class="h-4 w-4 mr-1 text-red-500 cursor-pointer hover:scale-110 transition-transform" 
+                            @click="addLives(user)"
+                            :title="'Clique para adicionar vidas a ' + user.name"
+                          />
                           {{ user.lives }}
                         </span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div class="flex items-center">
+                        <span class="text-purple-500 font-medium">{{ user.xp || 0 }} XP</span>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -66,7 +76,7 @@
                     <TableCell>{{ user.created_at }}</TableCell>
                   </TableRow>
                   <TableRow v-if="filteredUsers.length === 0">
-                    <TableCell colspan="6" class="text-center py-4">
+                    <TableCell colspan="7" class="text-center py-4">
                       <div class="text-muted-foreground">
                         <UserSearch class="h-12 w-12 mx-auto mb-3" />
                         <p>Nenhum usuário encontrado para "{{ searchQuery }}"</p>
@@ -86,6 +96,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
+import { router } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import Breadcrumbs from '@/components/Breadcrumbs.vue';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
@@ -101,6 +112,7 @@ interface User {
   name: string;
   email: string;
   lives: number;
+  xp: number;
   is_admin: boolean;
   is_premium: boolean;
   created_at: string;
@@ -145,4 +157,34 @@ const filteredUsers = computed(() => {
     user.email.toLowerCase().includes(query)
   );
 });
+
+// Função para adicionar vidas a um usuário
+const addLives = (user: User) => {
+  if (user.is_premium) {
+    toast({
+      title: "Usuário Premium",
+      description: "Usuários premium já têm vidas ilimitadas.",
+      variant: "default",
+    });
+    return;
+  }
+
+  router.post(`/admin/users/${user.id}/add-lives`, { lives: 1 }, {
+    preserveScroll: true,
+    onSuccess: () => {
+      toast({
+        title: "Vida adicionada!",
+        description: `Vida adicionada com sucesso para ${user.name}`,
+        variant: "default",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erro",
+        description: "Não foi possível adicionar a vida. Tente novamente.",
+        variant: "destructive",
+      });
+    }
+  });
+};
 </script>

@@ -37,4 +37,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
 
     // Rota para visualização de usuários
     Route::get('users', [UserController::class, 'index'])->name('admin.users.index');
+    
+    // Rota para adicionar vidas a um usuário
+    Route::post('users/{user}/add-lives', [UserController::class, 'addLives'])->name('admin.users.add-lives');
 });
