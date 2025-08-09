@@ -3,34 +3,40 @@
         :open="showAdDialog"
         @update:open="handleDialogUpdate"
     >
-        <DialogContent class="sm:max-w-[425px] min-h-[400px] flex flex-col bg-background">
-            <DialogHeader>
+        <DialogContent 
+            :hideClose="false"
+            :square="true"
+            :borderless="true"
+            class="w-screen h-screen max-w-none max-h-none m-0 p-6 flex flex-col bg-background"
+        >
+            <DialogHeader class="relative">
                 <DialogTitle>Assistindo anúncio...</DialogTitle>
                 <DialogDescription>
                     Aguarde a contagem regressiva para ganhar uma vida.
                 </DialogDescription>
+                <!-- Removido botão customizado para evitar X duplicado -->
             </DialogHeader>
 
-            <div class="flex-1 flex items-center justify-center flex-col">
+            <div class="flex-1 flex items-center justify-center flex-col py-8">
                 <!-- Container para o anúncio do AdSense -->
-                <div ref="adContainer" class="w-full mb-4 overflow-hidden min-h-[200px] flex items-center justify-center">
-                    <!-- O anúncio será inserido aqui dinamicamente -->
+                <div ref="adContainer" class="w-full max-w-4xl mb-8 overflow-hidden min-h-[300px] flex items-center justify-center">
+                    <!-- memorize direito -->
                     <ins class="adsbygoogle"
-                         style="display:block; width:100%; height:200px"
+                         style="display:block"
                          data-ad-client="ca-pub-2585274176504938"
-                         data-ad-slot="5997106715"
+                         data-ad-slot="2607402250"
                          data-ad-format="auto"
                          data-full-width-responsive="true"></ins>
                 </div>
 
                 <div class="text-center">
-                    <div v-if="countdown > 0" class="text-xl font-bold mb-4">
+                    <div v-if="countdown > 0" class="text-3xl font-bold mb-6">
                         {{ countdown }}s
                     </div>
                     <Button
                         v-if="countdown <= 0"
                         @click="handleAdComplete"
-                        class="bg-primary hover:bg-primary/90 text-primary-foreground"
+                        class="bg-primary hover:bg-primary/90 text-primary-foreground text-lg px-8 py-3"
                     >
                         Pular anúncio e ganhar vida
                     </Button>
@@ -88,16 +94,24 @@ const initializeAd = async () => {
     if (!adLoaded) {
         try {
             await nextTick();
-            // Verifica se o objeto adsbygoogle está disponível
-            if (window.adsbygoogle) {
-                (window.adsbygoogle = window.adsbygoogle || []).push({});
-                adLoaded = true;
-                console.log('AdSense ad initialized');
-            } else {
-                console.warn('AdSense not available, continuing without ads');
-                // Marca como carregado mesmo sem o AdSense para não bloquear a funcionalidade
-                adLoaded = true;
-            }
+            // Aguarda um pouco para garantir que o elemento está renderizado
+            setTimeout(() => {
+                try {
+                    // Verifica se o objeto adsbygoogle está disponível
+                    if (window.adsbygoogle) {
+                        (window.adsbygoogle = window.adsbygoogle || []).push({});
+                        adLoaded = true;
+                        console.log('AdSense ad initialized');
+                    } else {
+                        console.warn('AdSense not available, continuing without ads');
+                        // Marca como carregado mesmo sem o AdSense para não bloquear a funcionalidade
+                        adLoaded = true;
+                    }
+                } catch (error) {
+                    console.error('Error pushing to adsbygoogle:', error);
+                    adLoaded = true;
+                }
+            }, 100);
         } catch (error) {
             console.error('Error initializing AdSense ad:', error);
             // Marca como carregado mesmo com erro para não bloquear a funcionalidade
@@ -120,7 +134,7 @@ const startAdExperience = async () => {
 
 // Inicia o contador regressivo
 const startCountdown = () => {
-    countdown.value = 30
+    countdown.value = 15
 
     if (countdownInterval) {
         clearInterval(countdownInterval)
@@ -137,20 +151,16 @@ const startCountdown = () => {
 
 // Trata a abertura/fechamento do diálogo
 const handleDialogUpdate = (isOpen: boolean) => {
-    if (!isOpen && countdown.value <= 0) {
-        // Só permitir fechar se a contagem terminou
+    // Permite fechar a qualquer momento; apenas não recompensa
+    if (!isOpen) {
         if (countdownInterval) {
             clearInterval(countdownInterval)
             countdownInterval = null
         }
-
         showAdDialog.value = false
         countdown.value = 15
-        adLoaded = false // Reseta o estado do anúncio para carregar um novo na próxima vez
+        adLoaded = false
         emit('adClosed')
-    } else if (!isOpen && countdown.value > 0) {
-        // Se tentar fechar antes da contagem acabar, mantenha aberto
-        return true
     }
 }
 
