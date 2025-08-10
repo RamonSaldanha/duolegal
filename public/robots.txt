@@ -1,2 +1,17 @@
 User-agent: *
-Disallow:
+Allow: /
+Allow: /leis
+Allow: /buscar
+
+# Permitir páginas públicas importantes para SEO
+Allow: /leis/*
+Allow: /buscar*
+
+# Bloquear arquivos temporários e de sistema
+Disallow: /_ignition
+Disallow: /telescope
+Disallow: /storage
+Disallow: /*.json$
+
+# Sitemap
+Sitemap: /sitemap.xml

@@ -7,8 +7,27 @@ use App\Http\Controllers\PlayController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\UserLegalReferenceController;
 use App\Http\Controllers\WelcomeController;
+use App\Http\Controllers\PublicController;
+use App\Http\Controllers\SitemapController;
 
 Route::get('/', [WelcomeController::class, 'index'])->name('home');
+
+// === ROTAS PÚBLICAS PARA SEO ===
+// Páginas públicas de leis e artigos (sem necessidade de login)
+Route::get('/leis', [PublicController::class, 'index'])->name('public.laws');
+Route::get('/leis/{uuid}', [PublicController::class, 'showLaw'])
+    ->where('uuid', '[0-9a-f-]{36}')
+    ->name('public.law');
+Route::get('/leis/{lawUuid}/artigo/{articleUuid}', [PublicController::class, 'showArticle'])
+    ->where(['lawUuid' => '[0-9a-f-]{36}', 'articleUuid' => '[0-9a-f-]{36}'])
+    ->name('public.article');
+Route::get('/buscar', [PublicController::class, 'search'])->name('public.search');
+
+// === ROTAS DO SITEMAP PARA SEO ===
+Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap.index');
+Route::get('/sitemap-main.xml', [SitemapController::class, 'main'])->name('sitemap.main');
+Route::get('/sitemap-laws.xml', [SitemapController::class, 'laws'])->name('sitemap.laws');
+Route::get('/sitemap-articles.xml', [SitemapController::class, 'articles'])->name('sitemap.articles');
 
 // Rotas das páginas legais
 Route::get('/privacy-policy', function () {

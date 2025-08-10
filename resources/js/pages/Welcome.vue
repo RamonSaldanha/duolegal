@@ -75,6 +75,9 @@ defineProps<{
                     <Link href="#faq" class="text-gray-600 hover:text-green-600 font-medium transition-colors">
                         FAQ
                     </Link>
+                    <Link :href="route('public.laws')" class="text-gray-600 hover:text-green-600 font-medium transition-colors">
+                        Todas as Leis
+                    </Link>
                     
                     <div class="h-5 w-px bg-gray-300"></div>
                     
