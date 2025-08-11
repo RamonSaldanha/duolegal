@@ -124,10 +124,13 @@ class PublicController extends Controller
             })->sortBy('position')->values()->all(),
         ];
 
-        // Buscar artigos relacionados (próximos da mesma lei)
+        // Buscar artigos relacionados (sempre artigos posteriores para melhor SEO)
+        $currentArticleNumber = (int) preg_replace('/[^0-9]/', '', $article->article_reference);
+        
         $relatedArticles = LawArticle::where('legal_reference_id', $article->legal_reference_id)
             ->where('is_active', true)
             ->where('uuid', '!=', $articleUuid)
+            ->whereRaw('CAST(REGEXP_REPLACE(article_reference, "[^0-9]", "") AS UNSIGNED) > ?', [$currentArticleNumber])
             ->orderByRaw('CAST(article_reference AS UNSIGNED) ASC')
             ->take(5)
             ->get()
@@ -142,12 +145,16 @@ class PublicController extends Controller
 
         $difficultyText = $this->getDifficultyText($article->difficulty_level);
 
+        // Criar uma meta description mais rica com trechos do conteúdo original
+        $originalContentPreview = $this->sanitizeString(substr(strip_tags($article->original_content), 0, 120));
+        $metaDescription = $this->sanitizeString("Art. {$article->article_reference} - {$article->legalReference->name}: \"{$originalContentPreview}...\" Pratique este artigo com exercício interativo gratuito. Nível: {$difficultyText}.");
+        
         return Inertia::render('Public/ArticleExercise', [
             'article' => $articleData,
             'relatedArticles' => $relatedArticles,
             'meta' => [
                 'title' => $this->sanitizeString("Art. {$article->article_reference} - {$article->legalReference->name} | Memorize Direito"),
-                'description' => $this->sanitizeString("Pratique o artigo {$article->article_reference} do(a) {$article->legalReference->name}. Exercício interativo gratuito para memorizar este artigo. Nível: {$difficultyText}."),
+                'description' => $metaDescription,
                 'keywords' => $this->sanitizeString("artigo {$article->article_reference}, {$article->legalReference->name}, direito, exercício, {$difficultyText}, memorização, estudo")
             ]
         ]);
