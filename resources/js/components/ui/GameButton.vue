@@ -17,7 +17,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 
 interface Props {
   variant?: 'white' | 'green' | 'purple' | 'red' | 'blue'
@@ -32,6 +32,28 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const isHovered = ref(false)
+const isDark = ref(false)
+
+// Detectar mudanças no tema
+const updateTheme = () => {
+  isDark.value = document.documentElement.classList.contains('dark')
+}
+
+onMounted(() => {
+  updateTheme()
+  
+  // Observer para mudanças na classe dark do html
+  const observer = new MutationObserver(updateTheme)
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['class']
+  })
+  
+  // Cleanup no unmount
+  onUnmounted(() => {
+    observer.disconnect()
+  })
+})
 
 const variantClasses = computed(() => {
   const variants = {
@@ -54,37 +76,23 @@ const sizeClasses = computed(() => {
 })
 
 const buttonStyle = computed(() => {
+  const shadowHeight = isHovered.value ? '2px' : '4px'
+  
+  // Para o botão branco, usar cores diferentes baseado no tema atual
+  if (props.variant === 'white') {
+    const shadowColor = isDark.value ? '#525252' : '#d4d4d4' // gray-600 dark : gray-300 light
+    return {
+      boxShadow: `0 ${shadowHeight} 0 ${shadowColor}`
+    }
+  }
+  
+  // Para outros botões, cores fixas
   const shadowColors = {
-    white: '#d4d4d4', // Gray-300 neutro customizado for light mode  
     green: '#15803d', // green-700
     purple: props.disabled ? '#525252' : '#7c3aed', // gray-600 neutro or purple-700
     red: '#b91c1c', // red-700
     blue: '#1d4ed8' // blue-700
   }
-  
-  // Para o botão branco, precisa usar a mesma cor da borda (gray-300/gray-600)
-  if (props.variant === 'white') {
-    const lightShadowColor = '#d4d4d4' // gray-300 neutro customizado - same as border
-    const darkShadowColor = '#525252' // gray-600 neutro customizado - same as border
-    const shadowHeight = isHovered.value ? '2px' : '4px'
-    
-    return {
-      boxShadow: `0 ${shadowHeight} 0 ${lightShadowColor}`,
-      // Sombra específica para dark mode usando CSS custom properties
-      '--dark-shadow': `0 ${shadowHeight} 0 ${darkShadowColor}`,
-    }
-  }
-  
-  // Para botão purple (Verificar), deve ter sombra sólida sempre
-  if (props.variant === 'purple') {
-    const shadowHeight = isHovered.value ? '2px' : '4px'
-    return {
-      boxShadow: `0 ${shadowHeight} 0 ${shadowColors[props.variant]}`
-    }
-  }
-  
-  // Para outros botões
-  const shadowHeight = isHovered.value ? '2px' : '4px'
   
   return {
     boxShadow: `0 ${shadowHeight} 0 ${shadowColors[props.variant]}`
@@ -114,17 +122,5 @@ const handleMouseOut = (event: MouseEvent) => {
 
 .game-button.disabled {
   transform: none !important;
-}
-
-/* Dark mode support for white variant shadow */
-@media (prefers-color-scheme: dark) {
-  .game-button.dark\:bg-gray-700 {
-    box-shadow: var(--dark-shadow) !important;
-  }
-}
-
-/* Class-based dark mode support (if using Tailwind's dark: prefix) */
-:global(.dark) .game-button.dark\:bg-gray-700 {
-  box-shadow: var(--dark-shadow) !important;
 }
 </style>
