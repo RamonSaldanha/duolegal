@@ -8,12 +8,12 @@
         <link rel="canonical" :href="route('public.law', { uuid: law.uuid })" />
     </Head>
 
-    <div class="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+    <div class="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 dark:from-gray-900 dark:to-black">
         <!-- Navbar -->
         <PublicNavbar />
 
         <!-- Law Info Section -->
-        <section class="py-8 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+        <section class="py-8 bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800">
             <div class="container mx-auto px-4">
                 <div class="max-w-4xl mx-auto">
                     <!-- Back button -->
@@ -68,14 +68,14 @@
                                     type="search"
                                     v-model="searchFilter"
                                     placeholder="Buscar por número do artigo..."
-                                    class="w-full pl-4 pr-10 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-800 dark:text-white"
+                                    class="w-full pl-4 pr-10 py-3 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-900 dark:text-white"
                                 />
                                 <Search class="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
                             </div>
                         </div>
                         <select 
                             v-model="difficultyFilter"
-                            class="px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-800 dark:text-white"
+                            class="px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-900 dark:text-white"
                         >
                             <option value="">Todos os níveis</option>
                             <option value="1">Iniciante</option>
@@ -105,13 +105,13 @@
                         <div 
                             v-for="article in paginatedArticles" 
                             :key="article.uuid"
-                            class="bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 border border-gray-200 dark:border-gray-700"
+                            class="bg-white dark:bg-gray-900 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 border border-gray-200 dark:border-gray-800"
                         >
-                            <div class="p-6">
-                                <div class="flex items-start justify-between">
-                                    <div class="flex-1">
-                                        <div class="flex items-center mb-3">
-                                            <span class="text-lg font-bold text-green-600 dark:text-green-400 mr-3">
+                            <div class="p-4 sm:p-6">
+                                <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex flex-wrap items-center mb-3 gap-2">
+                                            <span class="text-lg font-bold text-green-600 dark:text-green-400">
                                                 Art. {{ article.article_reference }}
                                             </span>
                                             <span 
@@ -120,18 +120,18 @@
                                             >
                                                 {{ getDifficultyText(article.difficulty_level) }}
                                             </span>
-                                            <div v-if="article.has_exercise" class="ml-2 flex items-center text-green-600 dark:text-green-400">
+                                            <div v-if="article.has_exercise" class="flex items-center text-green-600 dark:text-green-400">
                                                 <Zap class="w-4 h-4 mr-1" />
                                                 <span class="text-xs">Exercício</span>
                                             </div>
                                         </div>
                                         
-                                        <p class="text-gray-600 dark:text-gray-300 text-sm mb-4 leading-relaxed">
+                                        <p class="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
                                             {{ article.preview_content }}
                                         </p>
                                     </div>
                                     
-                                    <div class="ml-4 flex flex-col space-y-2">
+                                    <div class="flex justify-end sm:justify-start mt-4 sm:mt-0">
                                         <Link 
                                             :href="route('public.article', { lawUuid: law.uuid, articleUuid: article.uuid })"
                                             class="inline-flex items-center justify-center"
@@ -154,7 +154,7 @@
                             <button
                                 @click="currentPage = Math.max(1, currentPage - 1)"
                                 :disabled="currentPage === 1"
-                                class="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-white"
+                                class="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-800 dark:text-white"
                             >
                                 <ChevronLeft class="w-4 h-4" />
                             </button>
@@ -166,7 +166,7 @@
                             <button
                                 @click="currentPage = Math.min(totalPages, currentPage + 1)"
                                 :disabled="currentPage === totalPages"
-                                class="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-white"
+                                class="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-800 dark:text-white"
                             >
                                 <ChevronRight class="w-4 h-4" />
                             </button>
@@ -177,7 +177,7 @@
         </section>
 
         <!-- CTA Section -->
-        <section class="bg-gray-800 dark:bg-gray-900 py-12">
+        <section class="bg-gray-800 dark:bg-gray-950 py-12">
             <div class="container mx-auto px-4 text-center">
                 <h3 class="text-2xl font-bold text-white mb-4">
                     Pratique de Forma Organizada

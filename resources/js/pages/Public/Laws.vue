@@ -8,7 +8,7 @@
         <link rel="canonical" :href="route('public.laws')" />
     </Head>
 
-    <div class="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+    <div class="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 dark:from-gray-900 dark:to-black">
         <!-- Navbar -->
         <PublicNavbar />
 
@@ -32,7 +32,7 @@
                             v-model="searchQuery"
                             @keyup.enter="performSearch"
                             placeholder="Buscar artigos..."
-                            class="w-full pl-4 pr-12 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-800 dark:text-white shadow-sm"
+                            class="w-full pl-4 pr-12 py-3 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-900 dark:text-white shadow-sm"
                         />
                         <button 
                             @click="performSearch"
@@ -71,21 +71,21 @@
                     <div 
                         v-for="law in legalReferences" 
                         :key="law.uuid"
-                        class="bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-200 dark:border-gray-700"
+                        class="bg-white dark:bg-gray-900 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-200 dark:border-gray-800"
                     >
-                        <div class="p-6">
-                            <div class="flex items-start justify-between mb-4">
-                                <div class="flex-1">
-                                    <h4 class="text-lg font-bold text-gray-900 dark:text-white mb-2 line-clamp-2">
+                        <div class="p-4 sm:p-6">
+                            <div class="mb-4">
+                                <div class="flex items-start justify-between mb-3">
+                                    <h4 class="text-lg font-bold text-gray-900 dark:text-white line-clamp-2 flex-1 pr-2">
                                         {{ law.name }}
                                     </h4>
-                                    <p class="text-sm text-gray-600 dark:text-gray-300 mb-3 line-clamp-2">
-                                        {{ law.description || 'Pratique os artigos desta importante lei brasileira.' }}
-                                    </p>
+                                    <span class="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-1 rounded-full whitespace-nowrap flex-shrink-0">
+                                        {{ law.type || 'Lei' }}
+                                    </span>
                                 </div>
-                                <span class="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-1 rounded-full ml-2 whitespace-nowrap">
-                                    {{ law.type || 'Lei' }}
-                                </span>
+                                <p class="text-sm text-gray-600 dark:text-gray-300 line-clamp-2">
+                                    {{ law.description || 'Pratique os artigos desta importante lei brasileira.' }}
+                                </p>
                             </div>
                             
                             <div class="flex items-center justify-between mb-4">
@@ -118,11 +118,11 @@
                             
                             <Link 
                                 :href="route('public.law', { uuid: law.uuid })"
-                                class="inline-flex items-center justify-center gap-2 w-full"
+                                class="block w-full"
                             >
-                                <GameButton variant="white" class="w-full flex items-center justify-center gap-2">
-                                    <span>Explorar Artigos</span>
-                                    <ChevronRight class="w-4 h-4" />
+                                <GameButton variant="white" class="w-full flex items-center justify-center gap-2 min-w-0">
+                                    <span class="truncate">Explorar Artigos</span>
+                                    <ChevronRight class="w-4 h-4 flex-shrink-0" />
                                 </GameButton>
                             </Link>
                         </div>
@@ -132,7 +132,7 @@
         </section>
 
         <!-- CTA Section -->
-        <section class="bg-gray-800 dark:bg-gray-900 py-16">
+        <section class="bg-gray-800 dark:bg-gray-950 py-16">
             <div class="container mx-auto px-4 text-center">
                 <h3 class="text-3xl font-bold text-white mb-4">
                     Pronto para Acelerar seus Estudos?

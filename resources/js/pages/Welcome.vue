@@ -59,9 +59,9 @@ defineProps<{
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="true">
         <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     </Head>
-    <div class="flex min-h-screen flex-col items-center bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100">
+    <div class="flex min-h-screen flex-col items-center bg-white dark:bg-black text-gray-800 dark:text-gray-100">
         <!-- Header -->
-        <header class="w-full bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
+        <header class="w-full bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 sticky top-0 z-50">
             <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
                 <div class="flex items-center">
                     <Link :href="route('home')" class="flex items-center gap-x-2">
@@ -87,7 +87,7 @@ defineProps<{
                         Todas as Leis
                     </Link>
                     
-                    <div class="h-5 w-px bg-gray-300 dark:bg-gray-600"></div>
+                    <div class="h-5 w-px bg-gray-300 dark:bg-gray-700"></div>
                     
                     <Link
                         v-if="page.props.auth.user"
@@ -119,7 +119,7 @@ defineProps<{
                 <!-- Mobile Menu Button -->
                 <button 
                     @click="toggleMobileMenu" 
-                    class="md:hidden flex items-center justify-center h-10 w-10 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                    class="md:hidden flex items-center justify-center h-10 w-10 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors"
                     aria-label="Menu"
                 >
                     <Menu v-if="!mobileMenuOpen" class="h-6 w-6" />
@@ -130,12 +130,12 @@ defineProps<{
             <!-- Mobile Navigation -->
             <div 
                 v-if="mobileMenuOpen" 
-                class="md:hidden absolute top-16 inset-x-0 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 py-4 px-4 z-50"
+                class="md:hidden absolute top-16 inset-x-0 bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 py-4 px-4 z-50"
             >
                 <nav class="flex flex-col gap-3">
                     <Link 
                         href="#features" 
-                        class="flex items-center justify-between py-2 px-4 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800"
+                        class="flex items-center justify-between py-2 px-4 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900"
                         @click="closeMenu"
                     >
                         <span class="font-medium text-gray-900 dark:text-gray-100">Como funciona</span>
@@ -143,7 +143,7 @@ defineProps<{
                     </Link>
                     <Link 
                         href="#testimonials" 
-                        class="flex items-center justify-between py-2 px-4 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800"
+                        class="flex items-center justify-between py-2 px-4 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900"
                         @click="closeMenu"
                     >
                         <span class="font-medium text-gray-900 dark:text-gray-100">Benefícios</span>
@@ -151,7 +151,7 @@ defineProps<{
                     </Link>
                     <Link 
                         href="#research" 
-                        class="flex items-center justify-between py-2 px-4 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800"
+                        class="flex items-center justify-between py-2 px-4 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900"
                         @click="closeMenu"
                     >
                         <span class="font-medium text-gray-900 dark:text-gray-100">Pesquisa</span>
@@ -159,7 +159,7 @@ defineProps<{
                     </Link>
                     <Link 
                         href="#faq" 
-                        class="flex items-center justify-between py-2 px-4 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800"
+                        class="flex items-center justify-between py-2 px-4 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900"
                         @click="closeMenu"
                     >
                         <span class="font-medium text-gray-900 dark:text-gray-100">FAQ</span>
@@ -167,14 +167,14 @@ defineProps<{
                     </Link>
                     <Link 
                         :href="route('public.laws')" 
-                        class="flex items-center justify-between py-2 px-4 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800"
+                        class="flex items-center justify-between py-2 px-4 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900"
                         @click="closeMenu"
                     >
                         <span class="font-medium text-gray-900 dark:text-gray-100">Todas as Leis</span>
                         <ChevronRight class="h-5 w-5 text-gray-500 dark:text-gray-400" />
                     </Link>
                     
-                    <div class="h-px w-full bg-gray-200 dark:bg-gray-700 my-2"></div>
+                    <div class="h-px w-full bg-gray-200 dark:bg-gray-800 my-2"></div>
                     
                     <Link
                         v-if="page.props.auth.user"
@@ -209,7 +209,7 @@ defineProps<{
         </header>
 
         <!-- Hero Section -->
-        <section class="w-full py-20 md:py-24 bg-gradient-to-br from-slate-50 to-gray-100 dark:from-gray-800 dark:to-gray-700" id="hero">
+        <section class="w-full py-20 md:py-24 bg-gradient-to-br from-slate-50 to-gray-100 dark:from-gray-900 dark:to-black" id="hero">
             <div class="mx-auto max-w-7xl px-4 sm:px-6">
                 <div class="flex flex-col lg:flex-row items-center gap-16 lg:gap-20">
                     <!-- Conteúdo Principal -->
@@ -257,13 +257,13 @@ defineProps<{
                             <!-- Stats -->
                             <div class="flex flex-wrap gap-8 justify-center lg:justify-start pt-8">
                                 <div class="flex items-center gap-3 text-gray-600 dark:text-gray-300">
-                                    <div class="p-2 bg-gray-200 dark:bg-gray-700 rounded-lg">
+                                    <div class="p-2 bg-gray-200 dark:bg-gray-800 rounded-lg">
                                         <Book class="h-5 w-5 text-gray-700 dark:text-gray-300" />
                                     </div>
                                     <span class="font-medium">{{ articlesCount }}+ artigos disponíveis</span>
                                 </div>
                                 <div class="flex items-center gap-3 text-gray-600 dark:text-gray-300">
-                                    <div class="p-2 bg-gray-200 dark:bg-gray-700 rounded-lg">
+                                    <div class="p-2 bg-gray-200 dark:bg-gray-800 rounded-lg">
                                         <Trophy class="h-5 w-5 text-gray-700 dark:text-gray-300" />
                                     </div>
                                     <span class="font-medium">Sistema de XP e níveis</span>
@@ -279,7 +279,7 @@ defineProps<{
                             <div class="relative h-[400px] sm:h-[500px]">
                                 <!-- Imagem de trás (quadradomapa.png) - Posicionada primeiro para ficar atrás -->
                                 <div class="absolute top-8 right-4 w-64 sm:w-80 z-10 transform rotate-3 hover:rotate-6 hover:scale-105 hover:z-30 transition-all duration-300 cursor-pointer">
-                                    <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xl hover:shadow-2xl transition-shadow duration-300 overflow-hidden">
+                                    <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-xl hover:shadow-2xl transition-shadow duration-300 overflow-hidden">
                                         <img 
                                             src="/img/quadradomapa.png"
                                             alt="Mapa do sistema" 
@@ -290,7 +290,7 @@ defineProps<{
                                 
                                 <!-- Imagem de frente (quadradoscreen.png) - Posicionada por último para ficar na frente -->
                                 <div class="absolute top-0 left-0 w-64 sm:w-80 z-20 transform -rotate-2 hover:rotate-0 hover:scale-105 hover:z-30 transition-all duration-300 cursor-pointer">
-                                    <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-2xl hover:shadow-3xl transition-shadow duration-300 overflow-hidden">
+                                    <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-2xl hover:shadow-3xl transition-shadow duration-300 overflow-hidden">
                                         <img 
                                             src="/img/quadradoscreen.png"
                                             alt="Tela do sistema" 
@@ -302,7 +302,7 @@ defineProps<{
                             
                             <!-- Elemento decorativo de fundo -->
                             <div class="absolute inset-0 -z-10 overflow-hidden">
-                                <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-72 h-72 sm:w-96 sm:h-96 bg-gradient-to-br from-gray-200/30 to-gray-300/30 dark:from-gray-600/20 dark:to-gray-700/20 rounded-full blur-3xl"></div>
+                                <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-72 h-72 sm:w-96 sm:h-96 bg-gradient-to-br from-gray-200/30 to-gray-300/30 dark:from-gray-800/20 dark:to-black/20 rounded-full blur-3xl"></div>
                             </div>
                         </div>
                     </div>
@@ -311,7 +311,7 @@ defineProps<{
         </section>
 
         <!-- Seção de Recursos -->
-        <section class="w-full py-16 bg-gray-50 dark:bg-gray-800" id="features">
+        <section class="w-full py-16 bg-gray-50 dark:bg-gray-950" id="features">
             <div class="mx-auto max-w-7xl px-4 sm:px-6">
                 <div class="text-center mb-16">
                     <h2 class="text-4xl sm:text-5xl font-bold heading-font mb-6 text-gray-800 dark:text-white">
@@ -325,8 +325,8 @@ defineProps<{
                 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
                     <!-- Recurso 1 -->
-                    <div class="bg-white dark:bg-gray-700 rounded-2xl p-8 text-center border border-gray-200 dark:border-gray-600">
-                        <div class="w-20 h-20 bg-gray-200 dark:bg-gray-600 rounded-full mx-auto flex items-center justify-center text-4xl mb-6">
+                    <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 text-center border border-gray-200 dark:border-gray-700">
+                        <div class="w-20 h-20 bg-gray-200 dark:bg-gray-700 rounded-full mx-auto flex items-center justify-center text-4xl mb-6">
                             📚
                         </div>
                         <h3 class="text-2xl font-bold heading-font mb-4 text-gray-800 dark:text-white">Estude por Artigos</h3>
@@ -336,8 +336,8 @@ defineProps<{
                     </div>
                     
                     <!-- Recurso 2 -->
-                    <div class="bg-white dark:bg-gray-700 rounded-2xl p-8 text-center border border-gray-200 dark:border-gray-600">
-                        <div class="w-20 h-20 bg-gray-200 dark:bg-gray-600 rounded-full mx-auto flex items-center justify-center text-4xl mb-6">
+                    <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 text-center border border-gray-200 dark:border-gray-700">
+                        <div class="w-20 h-20 bg-gray-200 dark:bg-gray-700 rounded-full mx-auto flex items-center justify-center text-4xl mb-6">
                             🎮
                         </div>
                         <h3 class="text-2xl font-bold heading-font mb-4 text-gray-800 dark:text-white">Sistema de XP</h3>
@@ -347,8 +347,8 @@ defineProps<{
                     </div>
                     
                     <!-- Recurso 3 -->
-                    <div class="bg-white dark:bg-gray-700 rounded-2xl p-8 text-center border border-gray-200 dark:border-gray-600">
-                        <div class="w-20 h-20 bg-gray-200 dark:bg-gray-600 rounded-full mx-auto flex items-center justify-center text-4xl mb-6">
+                    <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 text-center border border-gray-200 dark:border-gray-700">
+                        <div class="w-20 h-20 bg-gray-200 dark:bg-gray-700 rounded-full mx-auto flex items-center justify-center text-4xl mb-6">
                             🏆
                         </div>
                         <h3 class="text-2xl font-bold heading-font mb-4 text-gray-800 dark:text-white">Progresso Visual</h3>
@@ -386,7 +386,7 @@ defineProps<{
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <!-- Benefício 1 -->
                     <div class="text-center">
-                        <div class="w-20 h-20 bg-gray-200 dark:bg-gray-700 rounded-full mx-auto flex items-center justify-center text-4xl mb-6">
+                        <div class="w-20 h-20 bg-gray-200 dark:bg-gray-800 rounded-full mx-auto flex items-center justify-center text-4xl mb-6">
                             ⚡
                         </div>
                         <h3 class="text-2xl font-bold heading-font mb-4 text-gray-800 dark:text-white">Aprendizado Rápido</h3>
@@ -398,7 +398,7 @@ defineProps<{
                     
                     <!-- Benefício 2 -->
                     <div class="text-center">
-                        <div class="w-20 h-20 bg-gray-200 dark:bg-gray-700 rounded-full mx-auto flex items-center justify-center text-4xl mb-6">
+                        <div class="w-20 h-20 bg-gray-200 dark:bg-gray-800 rounded-full mx-auto flex items-center justify-center text-4xl mb-6">
                             🎯
                         </div>
                         <h3 class="text-2xl font-bold heading-font mb-4 text-gray-800 dark:text-white">Foco na Prática</h3>
@@ -410,7 +410,7 @@ defineProps<{
                     
                     <!-- Benefício 3 -->
                     <div class="text-center">
-                        <div class="w-20 h-20 bg-gray-200 dark:bg-gray-700 rounded-full mx-auto flex items-center justify-center text-4xl mb-6">
+                        <div class="w-20 h-20 bg-gray-200 dark:bg-gray-800 rounded-full mx-auto flex items-center justify-center text-4xl mb-6">
                             📈
                         </div>
                         <h3 class="text-2xl font-bold heading-font mb-4 text-gray-800 dark:text-white">Progresso Contínuo</h3>
@@ -434,7 +434,7 @@ defineProps<{
         </section>
 
         <!-- Seção da Pesquisa -->
-        <section class="w-full py-16 bg-gray-50 dark:bg-gray-800" id="research">
+        <section class="w-full py-16 bg-gray-50 dark:bg-gray-950" id="research">
             <div class="mx-auto max-w-6xl px-4 sm:px-6">
                 <div class="text-center mb-12">
                     <h2 class="text-3xl sm:text-4xl font-bold heading-font mb-4 text-gray-800 dark:text-white">
@@ -442,7 +442,7 @@ defineProps<{
                     </h2>
                 </div>
                 
-                <div class="bg-white dark:bg-gray-700 rounded-2xl p-8 border border-gray-200 dark:border-gray-600">
+                <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 border border-gray-200 dark:border-gray-700">
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
                         <!-- Lado esquerdo: Estatística -->
                         <div class="text-center lg:text-left">
@@ -473,7 +473,7 @@ defineProps<{
                         <div class="flex justify-center">
                             <div class="w-64 h-64 relative">
                                 <!-- Círculo de fundo -->
-                                <div class="w-full h-full bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center">
+                                <div class="w-full h-full bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center">
                                     <!-- Círculo de progresso -->
                                     <div class="w-48 h-48 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center relative">
                                         <div class="text-center">
@@ -540,7 +540,7 @@ defineProps<{
                 
                 <div class="space-y-4">
                     <!-- FAQ 1 -->
-                    <details class="bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <details class="bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800">
                         <summary class="p-6 cursor-pointer font-medium text-gray-800 dark:text-white hover:text-green-600 dark:hover:text-green-400 transition-colors">
                             Como funciona o sistema de gamificação?
                         </summary>
@@ -550,7 +550,7 @@ defineProps<{
                     </details>
                     
                     <!-- FAQ 2 -->
-                    <details class="bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <details class="bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800">
                         <summary class="p-6 cursor-pointer font-medium text-gray-800 dark:text-white hover:text-green-600 dark:hover:text-green-400 transition-colors">
                             Quais leis estão disponíveis na plataforma?
                         </summary>
@@ -560,7 +560,7 @@ defineProps<{
                     </details>
                     
                     <!-- FAQ 3 -->
-                    <details class="bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <details class="bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800">
                         <summary class="p-6 cursor-pointer font-medium text-gray-800 dark:text-white hover:text-green-600 dark:hover:text-green-400 transition-colors">
                             É realmente gratuito?
                         </summary>
@@ -570,7 +570,7 @@ defineProps<{
                     </details>
                     
                     <!-- FAQ 4 -->
-                    <details class="bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <details class="bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800">
                         <summary class="p-6 cursor-pointer font-medium text-gray-800 dark:text-white hover:text-green-600 dark:hover:text-green-400 transition-colors">
                             Quanto tempo devo estudar por dia?
                         </summary>
@@ -580,7 +580,7 @@ defineProps<{
                     </details>
                     
                     <!-- FAQ 5 -->
-                    <details class="bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <details class="bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800">
                         <summary class="p-6 cursor-pointer font-medium text-gray-800 dark:text-white hover:text-green-600 dark:hover:text-green-400 transition-colors">
                             Posso usar no celular?
                         </summary>
@@ -713,7 +713,7 @@ defineProps<{
                     </div>
                 </div>
                 
-                <div class="mt-8 pt-8 border-t border-gray-800 dark:border-gray-700 text-center">
+                <div class="mt-8 pt-8 border-t border-gray-800 dark:border-gray-800 text-center">
                     <p class="text-gray-400 dark:text-gray-500">© 2025 Memorize Direito. Todos os direitos reservados.</p>
                 </div>
             </div>

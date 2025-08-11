@@ -55,17 +55,17 @@ const sizeClasses = computed(() => {
 
 const buttonStyle = computed(() => {
   const shadowColors = {
-    white: 'rgb(209, 213, 219)', // Gray-300 for light mode  
+    white: '#d4d4d4', // Gray-300 neutro customizado for light mode  
     green: '#15803d', // green-700
-    purple: props.disabled ? '#4b5563' : '#7c3aed', // gray-600 or purple-700
+    purple: props.disabled ? '#525252' : '#7c3aed', // gray-600 neutro or purple-700
     red: '#b91c1c', // red-700
     blue: '#1d4ed8' // blue-700
   }
   
   // Para o botão branco, precisa usar a mesma cor da borda (gray-300/gray-600)
   if (props.variant === 'white') {
-    const lightShadowColor = 'rgb(209, 213, 219)' // gray-300 - same as border
-    const darkShadowColor = 'rgb(75, 85, 99)' // gray-600 - same as border
+    const lightShadowColor = '#d4d4d4' // gray-300 neutro customizado - same as border
+    const darkShadowColor = '#525252' // gray-600 neutro customizado - same as border
     const shadowHeight = isHovered.value ? '2px' : '4px'
     
     return {
@@ -118,13 +118,13 @@ const handleMouseOut = (event: MouseEvent) => {
 
 /* Dark mode support for white variant shadow */
 @media (prefers-color-scheme: dark) {
-  .game-button:is(.bg-white) {
+  .game-button.dark\:bg-gray-700 {
     box-shadow: var(--dark-shadow) !important;
   }
 }
 
 /* Class-based dark mode support (if using Tailwind's dark: prefix) */
-:global(.dark) .game-button:is(.bg-white) {
+:global(.dark) .game-button.dark\:bg-gray-700 {
   box-shadow: var(--dark-shadow) !important;
 }
 </style>

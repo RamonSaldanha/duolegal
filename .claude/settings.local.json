@@ -4,7 +4,8 @@
       "Bash(php artisan route:list:*)",
       "Bash(php artisan serve:*)",
       "Bash(curl:*)",
-      "Bash(composer run:*)"
+      "Bash(composer run:*)",
+      "Bash(npm run build:*)"
     ],
     "deny": []
   }

@@ -8,7 +8,7 @@
         <link rel="canonical" :href="route('public.article', { lawUuid: article.law_uuid, articleUuid: article.uuid })" />
     </Head>
 
-    <div class="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+    <div class="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 dark:from-gray-900 dark:to-black">
         <!-- Navbar -->
         <PublicNavbar />
         
@@ -74,7 +74,7 @@
                 </div>
 
                 <!-- Artigo atual -->
-                <Card class="mb-6 border-0 p-0 bg-gradient-to-br from-slate-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+                <Card class="mb-6 border-0 p-0 bg-gradient-to-br from-slate-50 to-gray-100 dark:from-gray-900 dark:to-black">
                     <CardHeader class="">
                         <CardTitle>Art. {{ article.article_reference }} - Leia e responda:</CardTitle>
                     </CardHeader>
@@ -134,7 +134,7 @@
                                     
                                     <button 
                                         @click="closeOffcanvas"
-                                        class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                                        class="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
                                     >
                                         <X class="h-4 w-4" />
                                     </button>
@@ -263,7 +263,7 @@
                 </Card>
 
                 <!-- Related Articles -->
-                <div v-if="relatedArticles.length > 0" class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
+                <div v-if="relatedArticles.length > 0" class="bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-800">
                     <div class="p-6">
                         <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">
                             Outros artigos do {{ article.law_name }}
@@ -273,7 +273,7 @@
                                 v-for="relatedArticle in relatedArticles"
                                 :key="relatedArticle.uuid"
                                 :href="relatedArticle.url"
-                                class="block p-4 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors border border-gray-200 dark:border-gray-600"
+                                class="block p-4 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors border border-gray-200 dark:border-gray-700"
                             >
                                 <div class="flex items-start justify-between">
                                     <div class="flex-1">
@@ -550,7 +550,7 @@ const highlightedUserAnswers = computed(() => {
                 ? `<span class="px-1 py-0.5 rounded font-medium bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300">${userAnswer}</span>`
                 : `<span class="px-1 py-0.5 rounded font-medium bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300">${userAnswer}</span>`
         } else {
-            replacement = `<span class="px-1 py-0.5 rounded font-medium bg-gray-100 text-gray-500 dark:bg-gray-800/40 dark:text-gray-400">(...)</span>`
+            replacement = `<span class="px-1 py-0.5 rounded font-medium bg-gray-100 text-gray-500 dark:bg-gray-900/40 dark:text-gray-400">(...)</span>`
         }
         
         text = text.replace(lacuna, replacement)
