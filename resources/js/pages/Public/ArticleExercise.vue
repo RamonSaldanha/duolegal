@@ -8,7 +8,7 @@
         <link rel="canonical" :href="route('public.article', { lawUuid: article.law_uuid, articleUuid: article.uuid })" />
     </Head>
 
-    <div class="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100">
+    <div class="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
         <!-- Navbar -->
         <PublicNavbar />
         
@@ -34,7 +34,7 @@
 
                     <!-- Título e nível apenas no desktop - tamanho reduzido -->
                     <div class="hidden md:block md:mb-4">
-                        <h1 class="text-2xl font-bold">Art. {{ article.article_reference }} - {{ article.law_name }}</h1>
+                        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Art. {{ article.article_reference }} - {{ article.law_name }}</h1>
                         <p class="text-muted-foreground mt-1">
                             Nível:
                             <span
@@ -74,7 +74,7 @@
                 </div>
 
                 <!-- Artigo atual -->
-                <Card class="mb-6 border-0 p-0">
+                <Card class="mb-6 border-0 p-0 bg-gradient-to-br from-slate-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
                     <CardHeader class="">
                         <CardTitle>Art. {{ article.article_reference }} - Leia e responda:</CardTitle>
                     </CardHeader>
@@ -134,7 +134,7 @@
                                     
                                     <button 
                                         @click="closeOffcanvas"
-                                        class="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                        class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                                     >
                                         <X class="h-4 w-4" />
                                     </button>
@@ -181,26 +181,24 @@
                                         </Link>
                                         
                                         <div class="flex gap-3">
-                                            <button 
+                                            <GameButton 
                                                 @click="resetAnswers"
-                                                class="game-button flex-1 bg-white text-gray-900 py-2 px-4 rounded-lg border-4 border-gray-300 font-bold hover:transform hover:translate-y-1 transition-all text-sm flex items-center justify-center gap-2"
-                                                style="box-shadow: 0 3px 0 rgb(209, 213, 219);"
-                                                @mouseover="$event.target.style.boxShadow = '0 1px 0 rgb(209, 213, 219)'"
-                                                @mouseout="$event.target.style.boxShadow = '0 3px 0 rgb(209, 213, 219)'"
+                                                variant="white"
+                                                size="sm"
+                                                class="flex-1 flex items-center justify-center gap-2"
                                             >
                                                 <RefreshCw class="h-4 w-4" />
                                                 Tentar novamente
-                                            </button>
+                                            </GameButton>
                                             
-                                            <Link 
-                                                :href="route('login')"
-                                                class="game-button flex-1 bg-white text-gray-700 text-center py-2 px-4 rounded-lg border-4 border-gray-300 font-bold hover:transform hover:translate-y-1 transition-all text-sm flex items-center justify-center"
-                                                style="box-shadow: 0 3px 0 rgb(209, 213, 219);"
-                                                @mouseover="$event.target.style.boxShadow = '0 1px 0 rgb(209, 213, 219)'"
-                                                @mouseout="$event.target.style.boxShadow = '0 3px 0 rgb(209, 213, 219)'"
+                                            <GameButton 
+                                                @click="router.visit(route('login'))"
+                                                variant="white"
+                                                size="sm"
+                                                class="flex-1 flex items-center justify-center"
                                             >
                                                 Já tenho conta
-                                            </Link>
+                                            </GameButton>
                                         </div>
                                     </div>
                                 </div>
@@ -215,57 +213,51 @@
                         <div v-if="!answered" class="w-full">
                             <div v-if="availableOptions.length > 0">
                                 <div class="flex flex-wrap gap-2 mb-4">
-                                    <button
+                                    <GameButton
                                         v-for="(word, index) in availableOptions"
                                         :key="`word-${index}`"
                                         @click="selectWord(word)"
-                                        class="game-button bg-white text-gray-900 px-3 py-1.5 rounded-lg border-4 border-gray-300 font-bold hover:transform hover:translate-y-1 transition-all"
-                                        style="box-shadow: 0 3px 0 rgb(209, 213, 219);"
-                                        @mouseover="$event.target.style.boxShadow = '0 1px 0 rgb(209, 213, 219)'"
-                                        @mouseout="$event.target.style.boxShadow = '0 3px 0 rgb(209, 213, 219)'"
+                                        variant="white"
+                                        size="sm"
                                     >
                                         {{ word }}
-                                    </button>
+                                    </GameButton>
                                 </div>
                             </div>
                             
                             <!-- Botões de ações -->
                             <div class="flex justify-between mt-6 pt-4 border-t">
-                                <button 
+                                <GameButton 
                                     @click="resetAnswers"
-                                    class="game-button bg-white text-gray-900 px-4 py-2 rounded-lg border-4 border-gray-300 font-bold hover:transform hover:translate-y-1 transition-all flex items-center gap-2"
-                                    style="box-shadow: 0 3px 0 rgb(209, 213, 219);"
-                                    @mouseover="$event.target.style.boxShadow = '0 1px 0 rgb(209, 213, 219)'"
-                                    @mouseout="$event.target.style.boxShadow = '0 3px 0 rgb(209, 213, 219)'"
+                                    variant="white"
+                                    class="flex items-center gap-2"
                                 >
                                     <RefreshCw class="h-4 w-4" />
                                     <span class="hidden md:inline">Limpar</span>
                                     <span class="md:hidden">Limpar</span>
-                                </button>
+                                </GameButton>
 
-                                <button 
+                                <GameButton 
                                     :disabled="!allLacunasFilled" 
                                     @click="checkAnswers"
-                                    class="game-button px-4 py-2 bg-purple-500 hover:bg-purple-600 disabled:bg-gray-400 text-white rounded-lg border-4 border-purple-700 disabled:border-gray-600 shadow-[0_6px_0_theme(colors.purple.700)] disabled:shadow-[0_3px_0_theme(colors.gray.600)] font-bold hover:transform hover:translate-y-1 hover:shadow-[0_3px_0_theme(colors.purple.700)] transition-all disabled:cursor-not-allowed disabled:transform-none"
+                                    variant="purple"
                                 >
                                     Verificar
-                                </button>
+                                </GameButton>
                             </div>
                         </div>
 
                         <!-- Botões após verificação -->
                         <div v-else class="w-full flex justify-between">
-                            <button 
+                            <GameButton 
                                 @click="resetAnswers"
-                                class="game-button bg-white text-gray-900 px-4 py-2 rounded-lg border-4 border-gray-300 font-bold hover:transform hover:translate-y-1 transition-all flex items-center gap-2"
-                                style="box-shadow: 0 3px 0 rgb(209, 213, 219);"
-                                @mouseover="$event.target.style.boxShadow = '0 1px 0 rgb(209, 213, 219)'"
-                                @mouseout="$event.target.style.boxShadow = '0 3px 0 rgb(209, 213, 219)'"
+                                variant="white"
+                                class="flex items-center gap-2"
                             >
                                 <RefreshCw class="h-4 w-4" />
                                 <span class="hidden md:inline">Tentar novamente</span>
                                 <span class="md:hidden">Novamente</span>
-                            </button>
+                            </GameButton>
                         </div>
                     </CardFooter>
                 </Card>
@@ -320,21 +312,18 @@
                         <p class="mb-6">Você perderá todas as respostas que já preencheu neste artigo. Tem certeza?</p>
                         
                         <div class="flex flex-col sm:flex-row gap-3 justify-center">
-                            <button 
+                            <GameButton 
                                 @click="showResetConfirmDialog = false"
-                                class="game-button bg-white text-gray-900 px-4 py-2 rounded-lg border-4 border-gray-300 font-bold hover:transform hover:translate-y-1 transition-all"
-                                style="box-shadow: 0 3px 0 rgb(209, 213, 219);"
-                                @mouseover="$event.target.style.boxShadow = '0 1px 0 rgb(209, 213, 219)'"
-                                @mouseout="$event.target.style.boxShadow = '0 3px 0 rgb(209, 213, 219)'"
+                                variant="white"
                             >
                                 Cancelar
-                            </button>
-                            <button 
+                            </GameButton>
+                            <GameButton 
                                 @click="() => { showResetConfirmDialog = false; resetAnswersConfirmed(); }"
-                                class="game-button bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg border-4 border-red-700 shadow-[0_3px_0_theme(colors.red.700)] font-bold hover:transform hover:translate-y-1 hover:shadow-[0_1px_0_theme(colors.red.700)] transition-all"
+                                variant="red"
                             >
                                 Sim, limpar tudo
-                            </button>
+                            </GameButton>
                         </div>
                     </div>
                 </div>
@@ -344,13 +333,14 @@
 </template>
 
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3'
+import { Head, Link, router } from '@inertiajs/vue3'
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { 
     ChevronLeft, ChevronRight, Check, X, RefreshCw, ChevronDown, ChevronUp, 
     AlertTriangle, UserPlus
 } from 'lucide-vue-next'
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
+import GameButton from '@/components/ui/GameButton.vue'
 import { useWindowSize } from '@vueuse/core'
 import { useToast } from '@/components/ui/toast/use-toast'
 import Toaster from '@/components/ui/toast/Toaster.vue'

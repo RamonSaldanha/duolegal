@@ -8,17 +8,17 @@
         <link rel="canonical" :href="route('public.law', { uuid: law.uuid })" />
     </Head>
 
-    <div class="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100">
+    <div class="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
         <!-- Navbar -->
         <PublicNavbar />
 
         <!-- Law Info Section -->
-        <section class="py-8 bg-white border-b border-gray-200">
+        <section class="py-8 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
             <div class="container mx-auto px-4">
                 <div class="max-w-4xl mx-auto">
                     <!-- Back button -->
                     <div class="mb-6">
-                        <Link :href="route('public.laws')" class="inline-flex items-center text-gray-600 hover:text-green-600 font-medium transition-colors">
+                        <Link :href="route('public.laws')" class="inline-flex items-center text-gray-600 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400 font-medium transition-colors">
                             <ArrowLeft class="w-4 h-4 mr-2" />
                             Voltar para todas as leis
                         </Link>
@@ -26,13 +26,13 @@
                     
                     <div class="flex flex-col md:flex-row items-start justify-between mb-6">
                         <div class="flex-1">
-                            <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+                            <h2 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
                                 {{ law.name }}
                             </h2>
-                            <p v-if="law.description" class="text-lg text-gray-600 mb-4">
+                            <p v-if="law.description" class="text-lg text-gray-600 dark:text-gray-300 mb-4">
                                 {{ law.description }}
                             </p>
-                            <div class="flex items-center space-x-6 text-sm text-gray-500">
+                            <div class="flex items-center space-x-6 text-sm text-gray-500 dark:text-gray-400">
                                 <div class="flex items-center">
                                     <BookOpen class="w-4 h-4 mr-2" />
                                     {{ articles.length }} artigos disponíveis
@@ -49,11 +49,11 @@
                         </div>
                         
                         <div class="mt-6 md:mt-0 md:ml-8">
-                            <div class="bg-green-50 p-4 rounded-lg text-center">
-                                <div class="text-2xl font-bold text-green-600">
+                            <div class="bg-green-50 dark:bg-green-900/30 p-4 rounded-lg text-center">
+                                <div class="text-2xl font-bold text-green-600 dark:text-green-400">
                                     {{ articles.length }}
                                 </div>
-                                <div class="text-sm text-green-600">
+                                <div class="text-sm text-green-600 dark:text-green-300">
                                     Artigos para Praticar
                                 </div>
                             </div>
@@ -68,14 +68,14 @@
                                     type="search"
                                     v-model="searchFilter"
                                     placeholder="Buscar por número do artigo..."
-                                    class="w-full pl-4 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white"
+                                    class="w-full pl-4 pr-10 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-800 dark:text-white"
                                 />
-                                <Search class="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                <Search class="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
                             </div>
                         </div>
                         <select 
                             v-model="difficultyFilter"
-                            class="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white"
+                            class="px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-800 dark:text-white"
                         >
                             <option value="">Todos os níveis</option>
                             <option value="1">Iniciante</option>
@@ -94,7 +94,7 @@
             <div class="container mx-auto px-4">
                 <div class="max-w-4xl mx-auto">
                     <div v-if="filteredArticles.length === 0" class="text-center py-12">
-                        <div class="text-gray-400 mb-4">
+                        <div class="text-gray-400 dark:text-gray-500 mb-4">
                             <Search class="w-12 h-12 mx-auto mb-4" />
                             <p class="text-lg">Nenhum artigo encontrado</p>
                             <p class="text-sm">Tente ajustar os filtros de busca</p>
@@ -105,13 +105,13 @@
                         <div 
                             v-for="article in paginatedArticles" 
                             :key="article.uuid"
-                            class="bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200 border border-gray-200"
+                            class="bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 border border-gray-200 dark:border-gray-700"
                         >
                             <div class="p-6">
                                 <div class="flex items-start justify-between">
                                     <div class="flex-1">
                                         <div class="flex items-center mb-3">
-                                            <span class="text-lg font-bold text-green-600 mr-3">
+                                            <span class="text-lg font-bold text-green-600 dark:text-green-400 mr-3">
                                                 Art. {{ article.article_reference }}
                                             </span>
                                             <span 
@@ -120,13 +120,13 @@
                                             >
                                                 {{ getDifficultyText(article.difficulty_level) }}
                                             </span>
-                                            <div v-if="article.has_exercise" class="ml-2 flex items-center text-green-600">
+                                            <div v-if="article.has_exercise" class="ml-2 flex items-center text-green-600 dark:text-green-400">
                                                 <Zap class="w-4 h-4 mr-1" />
                                                 <span class="text-xs">Exercício</span>
                                             </div>
                                         </div>
                                         
-                                        <p class="text-gray-600 text-sm mb-4 leading-relaxed">
+                                        <p class="text-gray-600 dark:text-gray-300 text-sm mb-4 leading-relaxed">
                                             {{ article.preview_content }}
                                         </p>
                                     </div>
@@ -134,14 +134,13 @@
                                     <div class="ml-4 flex flex-col space-y-2">
                                         <Link 
                                             :href="route('public.article', { lawUuid: law.uuid, articleUuid: article.uuid })"
-                                            class="game-button inline-flex items-center justify-center gap-1 px-4 py-2 bg-white text-gray-900 font-bold rounded-lg border-4 border-gray-300 transition-all hover:transform hover:translate-y-1 text-sm"
-                                            style="box-shadow: 0 3px 0 rgb(209, 213, 219);"
-                                            @mouseover="$event.target.style.boxShadow = '0 1px 0 rgb(209, 213, 219)'"
-                                            @mouseout="$event.target.style.boxShadow = '0 3px 0 rgb(209, 213, 219)'"
+                                            class="inline-flex items-center justify-center"
                                         >
-                                            <span v-if="article.has_exercise">Praticar</span>
-                                            <span v-else>Ver Artigo</span>
-                                            <Play class="w-3 h-3" />
+                                            <GameButton variant="white" size="sm" class="inline-flex items-center gap-1">
+                                                <span v-if="article.has_exercise">Praticar</span>
+                                                <span v-else>Ver Artigo</span>
+                                                <Play class="w-3 h-3" />
+                                            </GameButton>
                                         </Link>
                                     </div>
                                 </div>
@@ -155,19 +154,19 @@
                             <button
                                 @click="currentPage = Math.max(1, currentPage - 1)"
                                 :disabled="currentPage === 1"
-                                class="px-3 py-2 rounded-lg border border-gray-300 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                                class="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-white"
                             >
                                 <ChevronLeft class="w-4 h-4" />
                             </button>
                             
-                            <span class="px-4 py-2 text-sm text-gray-600">
+                            <span class="px-4 py-2 text-sm text-gray-600 dark:text-gray-300">
                                 Página {{ currentPage }} de {{ totalPages }}
                             </span>
                             
                             <button
                                 @click="currentPage = Math.min(totalPages, currentPage + 1)"
                                 :disabled="currentPage === totalPages"
-                                class="px-3 py-2 rounded-lg border border-gray-300 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                                class="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-white"
                             >
                                 <ChevronRight class="w-4 h-4" />
                             </button>
@@ -178,19 +177,21 @@
         </section>
 
         <!-- CTA Section -->
-        <section class="bg-gray-800 py-12">
+        <section class="bg-gray-800 dark:bg-gray-900 py-12">
             <div class="container mx-auto px-4 text-center">
                 <h3 class="text-2xl font-bold text-white mb-4">
                     Pratique de Forma Organizada
                 </h3>
-                <p class="text-gray-300 text-lg mb-6 max-w-2xl mx-auto">
+                <p class="text-gray-300 dark:text-gray-400 text-lg mb-6 max-w-2xl mx-auto">
                     Cadastre-se para ter acesso às fases organizadas, sistema de progresso, XP e muito mais!
                 </p>
                 <Link 
                     :href="route('register')"
-                    class="game-button px-8 py-4 bg-green-500 text-white rounded-lg border-4 border-green-700 shadow-[0_6px_0_theme(colors.green.700)] font-bold hover:transform hover:translate-y-1 hover:shadow-[0_4px_0_theme(colors.green.700)] transition-all inline-flex items-center justify-center gap-2"
+                    class="inline-flex items-center justify-center"
                 >
-                    Começar Agora Gratuitamente
+                    <GameButton variant="green" size="lg" class="px-8 py-4 inline-flex items-center gap-2">
+                        Começar Agora Gratuitamente
+                    </GameButton>
                 </Link>
             </div>
         </section>
@@ -202,6 +203,7 @@ import { Head, Link } from '@inertiajs/vue3'
 import { ref, computed } from 'vue'
 import { ArrowLeft, BookOpen, Zap, Target, Search, Play, ChevronLeft, ChevronRight } from 'lucide-vue-next'
 import PublicNavbar from '@/components/PublicNavbar.vue'
+import GameButton from '@/components/ui/GameButton.vue'
 
 interface Article {
     uuid: string

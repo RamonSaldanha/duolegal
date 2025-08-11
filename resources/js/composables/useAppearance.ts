@@ -1,4 +1,4 @@
-import { onMounted, ref } from 'vue';
+import { onMounted, ref, computed } from 'vue';
 
 type Appearance = 'light' | 'dark' | 'system';
 
@@ -29,6 +29,23 @@ export function initializeTheme() {
 
 export function useAppearance() {
     const appearance = ref<Appearance>('system');
+    const isDark = ref(false);
+
+    // Computed para o tema do AppLogo
+    const logoTheme = computed(() => isDark.value ? 'dark' : 'light');
+
+    // Função para verificar se o tema dark está ativo
+    const checkDarkMode = () => {
+        if (typeof window !== 'undefined') {
+            return document.documentElement.classList.contains('dark');
+        }
+        return false;
+    };
+
+    // Atualiza o estado isDark
+    const updateDarkState = () => {
+        isDark.value = checkDarkMode();
+    };
 
     onMounted(() => {
         initializeTheme();
@@ -38,16 +55,38 @@ export function useAppearance() {
         if (savedAppearance) {
             appearance.value = savedAppearance;
         }
+
+        // Inicializa o estado dark
+        updateDarkState();
+
+        // Observer para mudanças na classe dark do documento
+        const observer = new MutationObserver(() => {
+            updateDarkState();
+        });
+
+        observer.observe(document.documentElement, {
+            attributes: true,
+            attributeFilter: ['class']
+        });
+
+        // Cleanup function será automática quando o componente for desmontado
+        return () => {
+            observer.disconnect();
+        };
     });
 
     function updateAppearance(value: Appearance) {
         appearance.value = value;
         localStorage.setItem('appearance', value);
         updateTheme(value);
+        // Atualiza o estado após mudança de tema
+        setTimeout(updateDarkState, 0);
     }
 
     return {
         appearance,
         updateAppearance,
+        isDark,
+        logoTheme,
     };
 }

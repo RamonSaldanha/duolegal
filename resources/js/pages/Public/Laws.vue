@@ -8,18 +8,18 @@
         <link rel="canonical" :href="route('public.laws')" />
     </Head>
 
-    <div class="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100">
+    <div class="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
         <!-- Navbar -->
         <PublicNavbar />
 
         <!-- Hero Section -->
         <section class="py-12 text-center">
             <div class="container mx-auto px-4">
-                <h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+                <h2 class="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-6">
                     Pratique <span class="text-green-600">Gratuitamente</span><br>
                     Todos os Artigos de Direito
                 </h2>
-                <p class="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+                <p class="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-3xl mx-auto">
                     Explore e pratique artigos de diversas leis brasileiras. Sistema gamificado para memorizar 
                     efetivamente cada artigo. Experimente gratuitamente antes de se cadastrar!
                 </p>
@@ -32,18 +32,18 @@
                             v-model="searchQuery"
                             @keyup.enter="performSearch"
                             placeholder="Buscar artigos..."
-                            class="w-full pl-4 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white shadow-sm"
+                            class="w-full pl-4 pr-12 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-800 dark:text-white shadow-sm"
                         />
                         <button 
                             @click="performSearch"
-                            class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-green-600 p-2"
+                            class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-green-600 dark:hover:text-green-400 p-2"
                         >
                             <Search class="w-5 h-5" />
                         </button>
                     </div>
                 </div>
                 
-                <div class="flex flex-wrap justify-center gap-4 text-sm text-gray-500">
+                <div class="flex flex-wrap justify-center gap-4 text-sm text-gray-500 dark:text-gray-400">
                     <div class="flex items-center">
                         <CheckCircle class="w-4 h-4 text-green-500 mr-1" />
                         <span>{{ totalArticles }}+ artigos</span>
@@ -118,13 +118,12 @@
                             
                             <Link 
                                 :href="route('public.law', { uuid: law.uuid })"
-                                class="game-button inline-flex items-center justify-center gap-2 w-full px-6 py-3 bg-white text-gray-900 font-bold rounded-lg border-4 border-gray-300 transition-all hover:transform hover:translate-y-1"
-                                style="box-shadow: 0 4px 0 rgb(209, 213, 219);"
-                                @mouseover="$event.target.style.boxShadow = '0 2px 0 rgb(209, 213, 219)'"
-                                @mouseout="$event.target.style.boxShadow = '0 4px 0 rgb(209, 213, 219)'"
+                                class="inline-flex items-center justify-center gap-2 w-full"
                             >
-                                <span>Explorar Artigos</span>
-                                <ChevronRight class="w-4 h-4" />
+                                <GameButton variant="white" class="w-full flex items-center justify-center gap-2">
+                                    <span>Explorar Artigos</span>
+                                    <ChevronRight class="w-4 h-4" />
+                                </GameButton>
                             </Link>
                         </div>
                     </div>
@@ -133,30 +132,31 @@
         </section>
 
         <!-- CTA Section -->
-        <section class="bg-gray-800 py-16">
+        <section class="bg-gray-800 dark:bg-gray-900 py-16">
             <div class="container mx-auto px-4 text-center">
                 <h3 class="text-3xl font-bold text-white mb-4">
                     Pronto para Acelerar seus Estudos?
                 </h3>
-                <p class="text-gray-300 text-lg mb-8 max-w-2xl mx-auto">
+                <p class="text-gray-300 dark:text-gray-400 text-lg mb-8 max-w-2xl mx-auto">
                     Cadastre-se gratuitamente e tenha acesso ao sistema completo de progresso, 
                     XP, fases organizadas e muito mais!
                 </p>
                 <div class="flex flex-col sm:flex-row gap-4 justify-center">
                     <Link 
                         :href="route('register')"
-                        class="game-button px-8 py-4 bg-green-500 text-white rounded-lg border-4 border-green-700 shadow-[0_6px_0_theme(colors.green.700)] font-bold hover:transform hover:translate-y-1 hover:shadow-[0_4px_0_theme(colors.green.700)] transition-all flex items-center justify-center gap-2"
+                        class="flex items-center justify-center"
                     >
-                        Cadastrar-se Gratuitamente
+                        <GameButton variant="green" size="lg" class="flex items-center gap-2">
+                            Cadastrar-se Gratuitamente
+                        </GameButton>
                     </Link>
                     <Link 
                         :href="route('login')"
-                        class="game-button px-8 py-4 bg-white text-gray-900 font-bold rounded-lg border-4 border-gray-300 transition-all hover:transform hover:translate-y-1 flex items-center justify-center gap-2"
-                        style="box-shadow: 0 6px 0 rgb(209, 213, 219);"
-                        @mouseover="$event.target.style.boxShadow = '0 4px 0 rgb(209, 213, 219)'"
-                        @mouseout="$event.target.style.boxShadow = '0 6px 0 rgb(209, 213, 219)'"
+                        class="flex items-center justify-center"
                     >
-                        Já tenho conta
+                        <GameButton variant="white" size="lg" class="flex items-center gap-2">
+                            Já tenho conta
+                        </GameButton>
                     </Link>
                 </div>
             </div>
@@ -170,6 +170,7 @@ import { ref, computed } from 'vue'
 import { router } from '@inertiajs/vue3'
 import { BookOpen, Zap, ChevronRight, Search, CheckCircle } from 'lucide-vue-next'
 import PublicNavbar from '@/components/PublicNavbar.vue'
+import GameButton from '@/components/ui/GameButton.vue'
 
 interface SampleArticle {
     uuid: string

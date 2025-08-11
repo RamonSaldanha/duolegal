@@ -107,33 +107,29 @@
 
                 <!-- Navegação entre artigos - apenas desktop -->
                 <div class="flex justify-between items-center mb-4" :class="{'hidden md:flex': !props.phase.is_review}">
-                    <button
+                    <GameButton
                         :disabled="currentArticleIndex === 0"
                         @click="previousArticle"
-                        class="game-button bg-white text-gray-900 px-4 py-2 rounded-lg border-4 border-gray-300 font-bold hover:transform hover:translate-y-1 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                        style="box-shadow: 0 3px 0 rgb(209, 213, 219);"
-                        @mouseover="$event.target.style.boxShadow = currentArticleIndex === 0 ? '0 3px 0 rgb(209, 213, 219)' : '0 1px 0 rgb(209, 213, 219)'"
-                        @mouseout="$event.target.style.boxShadow = '0 3px 0 rgb(209, 213, 219)'"
+                        variant="white"
+                        class="flex items-center gap-2"
                     >
                         <ChevronLeft class="h-4 w-4" />
                         Anterior
-                    </button>
+                    </GameButton>
 
                     <span class="text-sm font-medium">
                         Artigo {{ currentArticleIndex + 1 }} de {{ articlesArray.length }}
                     </span>
 
-                    <button
+                    <GameButton
                         :disabled="currentArticleIndex === articlesArray.length - 1"
                         @click="nextArticle"
-                        class="game-button bg-white text-gray-900 px-4 py-2 rounded-lg border-4 border-gray-300 font-bold hover:transform hover:translate-y-1 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                        style="box-shadow: 0 3px 0 rgb(209, 213, 219);"
-                        @mouseover="$event.target.style.boxShadow = currentArticleIndex === articlesArray.length - 1 ? '0 3px 0 rgb(209, 213, 219)' : '0 1px 0 rgb(209, 213, 219)'"
-                        @mouseout="$event.target.style.boxShadow = '0 3px 0 rgb(209, 213, 219)'"
+                        variant="white"
+                        class="flex items-center gap-2"
                     >
                         Próximo
                         <ChevronRight class="h-4 w-4" />
-                    </button>
+                    </GameButton>
                 </div>
 
                 <!-- Artigo atual -->
@@ -236,38 +232,41 @@
                                     </div>
 
                                     <div class="mt-6 flex justify-between gap-4">
-                                        <button 
+                                        <GameButton 
                                             @click="resetAnswers"
-                                            class="game-button w-full bg-white text-gray-900 py-3 px-4 rounded-lg border-4 border-gray-300 font-bold hover:transform hover:translate-y-1 transition-all flex items-center justify-center gap-2"
-                                            style="box-shadow: 0 3px 0 rgb(209, 213, 219);"
-                                            @mouseover="$event.target.style.boxShadow = '0 1px 0 rgb(209, 213, 219)'"
-                                            @mouseout="$event.target.style.boxShadow = '0 3px 0 rgb(209, 213, 219)'"
+                                            variant="white"
+                                            class="w-full flex items-center justify-center gap-2"
+                                            size="lg"
                                         >
                                             <RefreshCw class="h-4 w-4" />
                                             <!-- Texto diferente para mobile e desktop -->
                                             <span class="hidden md:inline">Tentar novamente</span>
                                             <span class="md:hidden">Novamente</span>
-                                        </button>
+                                        </GameButton>
                                         
                                         <!-- Botão condicional baseado em se é o último artigo e se a fase está completa -->
-                                        <button 
+                                        <GameButton 
                                             v-if="currentArticleIndex < articlesArray.length - 1"
                                             @click="nextArticle"
-                                            class="game-button w-full bg-green-500 hover:bg-green-600 text-white py-3 px-4 rounded-lg border-4 border-green-700 shadow-[0_3px_0_theme(colors.green.700)] font-bold hover:transform hover:translate-y-1 hover:shadow-[0_1px_0_theme(colors.green.700)] transition-all flex items-center justify-center gap-2"
+                                            variant="green"
+                                            class="w-full flex items-center justify-center gap-2"
+                                            size="lg"
                                         >
                                             Próximo
                                             <ChevronRight class="h-4 w-4" />
-                                        </button>
+                                        </GameButton>
                                         
                                         <!-- Botão especial para o último artigo quando a fase estiver completa -->
-                                        <button 
+                                        <GameButton 
                                             v-else-if="isPhaseComplete || (props.phase.is_review && areAllReviewArticlesCompleted)"
                                             @click="showPhaseCompletionModal"
-                                            class="game-button w-full bg-green-500 hover:bg-green-600 text-white py-3 px-4 rounded-lg border-4 border-green-700 shadow-[0_3px_0_theme(colors.green.700)] font-bold hover:transform hover:translate-y-1 hover:shadow-[0_1px_0_theme(colors.green.700)] transition-all flex items-center justify-center gap-2"
+                                            variant="green"
+                                            class="w-full flex items-center justify-center gap-2"
+                                            size="lg"
                                         >
                                             {{ props.phase.has_next_phase ? 'Próxima Fase' : 'Concluir' }}
                                             <ChevronRight class="h-4 w-4" />
-                                        </button>
+                                        </GameButton>
                                     </div>
                                 </div>
                             </div>
@@ -281,77 +280,73 @@
                         <div v-if="!answered" class="w-full">
                             <div v-if="availableOptions.length > 0">
                                 <div class="flex flex-wrap gap-2 mb-4">
-                                    <button
+                                    <GameButton
                                         v-for="(word, index) in availableOptions"
                                         :key="`word-${index}`"
                                         @click="selectWord(word)"
-                                        class="game-button bg-white text-gray-900 px-3 py-1.5 rounded-lg border-4 border-gray-300 font-bold hover:transform hover:translate-y-1 transition-all"
-                                        style="box-shadow: 0 3px 0 rgb(209, 213, 219);"
-                                        @mouseover="$event.target.style.boxShadow = '0 1px 0 rgb(209, 213, 219)'"
-                                        @mouseout="$event.target.style.boxShadow = '0 3px 0 rgb(209, 213, 219)'"
+                                        variant="white"
+                                        size="sm"
                                     >
                                         {{ word }}
-                                    </button>
+                                    </GameButton>
                                 </div>
                             </div>
                             
                             <!-- Botões de ações -->
                             <div class="flex justify-between mt-6 pt-4 border-t">
-                                <button 
+                                <GameButton 
                                     @click="resetAnswers"
-                                    class="game-button bg-white text-gray-900 px-4 py-2 rounded-lg border-4 border-gray-300 font-bold hover:transform hover:translate-y-1 transition-all flex items-center gap-2"
-                                    style="box-shadow: 0 3px 0 rgb(209, 213, 219);"
-                                    @mouseover="$event.target.style.boxShadow = '0 1px 0 rgb(209, 213, 219)'"
-                                    @mouseout="$event.target.style.boxShadow = '0 3px 0 rgb(209, 213, 219)'"
+                                    variant="white"
+                                    class="flex items-center gap-2"
                                 >
                                     <RefreshCw class="h-4 w-4" />
                                     <span class="hidden md:inline">Limpar</span>
                                     <span class="md:hidden">Limpar</span>
-                                </button>
+                                </GameButton>
 
-                                <button 
+                                <GameButton 
                                     :disabled="!allLacunasFilled" 
                                     @click="checkAnswers"
-                                    class="game-button px-4 py-2 bg-purple-500 hover:bg-purple-600 disabled:bg-gray-400 text-white rounded-lg border-4 border-purple-700 disabled:border-gray-600 shadow-[0_6px_0_theme(colors.purple.700)] disabled:shadow-[0_3px_0_theme(colors.gray.600)] font-bold hover:transform hover:translate-y-1 hover:shadow-[0_3px_0_theme(colors.purple.700)] transition-all disabled:cursor-not-allowed disabled:transform-none"
+                                    variant="purple"
                                 >
                                     Verificar
-                                </button>
+                                </GameButton>
                             </div>
                         </div>
 
                         <!-- Botões após verificação -->
                         <div v-else class="w-full flex justify-between">
-                            <button 
+                            <GameButton 
                                 @click="resetAnswers"
-                                class="game-button bg-white text-gray-900 px-4 py-2 rounded-lg border-4 border-gray-300 font-bold hover:transform hover:translate-y-1 transition-all flex items-center gap-2"
-                                style="box-shadow: 0 3px 0 rgb(209, 213, 219);"
-                                @mouseover="$event.target.style.boxShadow = '0 1px 0 rgb(209, 213, 219)'"
-                                @mouseout="$event.target.style.boxShadow = '0 3px 0 rgb(209, 213, 219)'"
+                                variant="white"
+                                class="flex items-center gap-2"
                             >
                                 <RefreshCw class="h-4 w-4" />
                                 <span class="hidden md:inline">Tentar novamente</span>
                                 <span class="md:hidden">Novamente</span>
-                            </button>
+                            </GameButton>
                         
                             <!-- Botão condicional baseado em se é o último artigo e se a fase está completa -->
-                            <button 
+                            <GameButton 
                                 v-if="currentArticleIndex < articlesArray.length - 1" 
                                 @click="nextArticle"
-                                class="game-button bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg border-4 border-green-700 shadow-[0_3px_0_theme(colors.green.700)] font-bold hover:transform hover:translate-y-1 hover:shadow-[0_1px_0_theme(colors.green.700)] transition-all flex items-center gap-2"
+                                variant="green"
+                                class="flex items-center gap-2"
                             >
                                 Próximo
                                 <ChevronRight class="h-4 w-4" />
-                            </button>
+                            </GameButton>
                             
                             <!-- Botão especial para o último artigo quando a fase estiver completa -->
-                            <button 
+                            <GameButton 
                                 v-else-if="isPhaseComplete || (props.phase.is_review && areAllReviewArticlesCompleted)"
                                 @click="showPhaseCompletionModal"
-                                class="game-button bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg border-4 border-green-700 shadow-[0_3px_0_theme(colors.green.700)] font-bold hover:transform hover:translate-y-1 hover:shadow-[0_1px_0_theme(colors.green.700)] transition-all flex items-center gap-2"
+                                variant="green"
+                                class="flex items-center gap-2"
                             >
                                 {{ props.phase.has_next_phase ? 'Próxima Fase' : 'Concluir' }}
                                 <ChevronRight class="h-4 w-4" />
-                            </button>
+                            </GameButton>
                         </div>
                     </CardFooter>
                 </Card>
@@ -377,21 +372,18 @@
                     <p class="mb-6">Você perderá todas as respostas que já preencheu neste artigo. Tem certeza?</p>
                     
                     <div class="flex flex-col sm:flex-row gap-3 justify-center">
-                        <button 
+                        <GameButton 
                             @click="showResetConfirmDialog = false"
-                            class="game-button bg-white text-gray-900 px-4 py-2 rounded-lg border-4 border-gray-300 font-bold hover:transform hover:translate-y-1 transition-all"
-                            style="box-shadow: 0 3px 0 rgb(209, 213, 219);"
-                            @mouseover="$event.target.style.boxShadow = '0 1px 0 rgb(209, 213, 219)'"
-                            @mouseout="$event.target.style.boxShadow = '0 3px 0 rgb(209, 213, 219)'"
+                            variant="white"
                         >
                             Cancelar
-                        </button>
-                        <button 
+                        </GameButton>
+                        <GameButton 
                             @click="() => { showResetConfirmDialog = false; resetAnswersConfirmed(); }"
-                            class="game-button bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg border-4 border-red-700 shadow-[0_3px_0_theme(colors.red.700)] font-bold hover:transform hover:translate-y-1 hover:shadow-[0_1px_0_theme(colors.red.700)] transition-all"
+                            variant="red"
                         >
                             Sim, limpar tudo
-                        </button>
+                        </GameButton>
                     </div>
                 </div>
             </div>
@@ -417,22 +409,20 @@
                     <p class="mb-6">{{ props.phase.is_review ? 'Parabéns! Você revisou todos os artigos desta fase.' : 'Parabéns! Você completou todos os artigos desta fase.' }}</p>
                     
                     <div class="flex flex-col sm:flex-row gap-3 justify-center">
-                        <button 
+                        <GameButton 
                             @click="showCompletionModal = false"
-                            class="game-button bg-white text-gray-900 px-4 py-2 rounded-lg border-4 border-gray-300 font-bold hover:transform hover:translate-y-1 transition-all"
-                            style="box-shadow: 0 3px 0 rgb(209, 213, 219);"
-                            @mouseover="$event.target.style.boxShadow = '0 1px 0 rgb(209, 213, 219)'"
-                            @mouseout="$event.target.style.boxShadow = '0 3px 0 rgb(209, 213, 219)'"
+                            variant="white"
                         >
                             Continuar praticando
-                        </button>
-                        <button 
+                        </GameButton>
+                        <GameButton 
                             @click="advanceToNextPhase"
-                            class="game-button bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg border-4 border-green-700 shadow-[0_3px_0_theme(colors.green.700)] font-bold hover:transform hover:translate-y-1 hover:shadow-[0_1px_0_theme(colors.green.700)] transition-all flex items-center gap-2"
+                            variant="green"
+                            class="flex items-center gap-2"
                         >
                             {{ props.phase.has_next_phase ? 'Avançar para próxima fase' : 'Voltar ao mapa' }}
                             <ChevronRight class="h-4 w-4" />
-                        </button>
+                        </GameButton>
                     </div>
                 </div>
             </div>
@@ -446,6 +436,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { Heart } from 'lucide-vue-next';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import GameButton from '@/components/ui/GameButton.vue';
 import { ChevronLeft, ChevronRight, Check, X, RefreshCw, ChevronDown, ChevronUp, AlertTriangle, AlertCircle } from 'lucide-vue-next';
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 // @ts-expect-error: vue-rewards package does not provide proper type definitions
