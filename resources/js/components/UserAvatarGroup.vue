@@ -34,19 +34,19 @@ const sizeClasses = computed(() => {
       return {
         avatar: 'w-6 h-6',
         text: 'text-xs',
-        overlap: '-ml-2'
+        overlap: '-ml-1' // Reduzir sobreposição para mostrar melhor múltiplos usuários
       };
     case 'lg':
       return {
         avatar: 'w-10 h-10',
         text: 'text-sm',
-        overlap: '-ml-3'
+        overlap: '-ml-2' // Reduzir sobreposição
       };
     default: // md
       return {
         avatar: 'w-8 h-8',
         text: 'text-xs',
-        overlap: '-ml-2'
+        overlap: '-ml-1' // Reduzir sobreposição
       };
   }
 });
@@ -74,9 +74,9 @@ const handleShowAll = () => {
         <div
           :class="[
             sizeClasses.avatar,
-            'rounded-full border-2 border-white dark:border-gray-800 bg-primary text-white flex items-center justify-center font-bold cursor-pointer transition-transform hover:scale-110 hover:z-10 relative shadow-lg'
+            'rounded-full border-2 border-white dark:border-gray-800 bg-blue-600 dark:bg-blue-500 text-white flex items-center justify-center font-bold cursor-pointer transition-all duration-200 hover:scale-110 hover:z-20 relative shadow-lg'
           ]"
-          :style="{ zIndex: visibleUsers.length - index }"
+          :style="{ zIndex: visibleUsers.length - index + 10 }"
         >
           <!-- Iniciais do nome -->
           <span
@@ -91,10 +91,10 @@ const handleShowAll = () => {
           v-if="showTooltip === user.id"
           class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 z-50"
         >
-          <div class="bg-gray-900 text-white px-2 py-1 rounded text-xs whitespace-nowrap shadow-lg">
+          <div class="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 px-2 py-1 rounded text-xs whitespace-nowrap shadow-lg">
             {{ user.name }}
             <!-- Seta do tooltip -->
-            <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-2 border-r-2 border-t-2 border-l-transparent border-r-transparent border-t-gray-900"></div>
+            <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-2 border-r-2 border-t-2 border-l-transparent border-r-transparent border-t-gray-900 dark:border-t-gray-100"></div>
           </div>
         </div>
       </div>
@@ -105,9 +105,9 @@ const handleShowAll = () => {
         :class="[
           sizeClasses.avatar,
           sizeClasses.overlap,
-          'rounded-full border-2 border-white dark:border-gray-800 bg-gray-500 text-white flex items-center justify-center font-bold cursor-pointer transition-transform hover:scale-110 hover:z-10 relative shadow-lg'
+          'rounded-full border-2 border-white dark:border-gray-800 bg-gray-600 dark:bg-gray-500 text-white flex items-center justify-center font-bold cursor-pointer transition-transform hover:scale-110 hover:z-10 relative shadow-lg'
         ]"
-        :style="{ zIndex: 0 }"
+        :style="{ zIndex: 5 }"
         @click="handleShowAll"
         @mouseenter="showTooltip = -1"
         @mouseleave="showTooltip = null"
@@ -119,10 +119,10 @@ const handleShowAll = () => {
           v-if="showTooltip === -1"
           class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 z-50"
         >
-          <div class="bg-gray-900 text-white px-2 py-1 rounded text-xs whitespace-nowrap shadow-lg">
+          <div class="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 px-2 py-1 rounded text-xs whitespace-nowrap shadow-lg">
             Ver todos ({{ props.users.length }})
             <!-- Seta do tooltip -->
-            <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-2 border-r-2 border-t-2 border-l-transparent border-r-transparent border-t-gray-900"></div>
+            <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-2 border-r-2 border-t-2 border-l-transparent border-r-transparent border-t-gray-900 dark:border-t-gray-100"></div>
           </div>
         </div>
       </div>

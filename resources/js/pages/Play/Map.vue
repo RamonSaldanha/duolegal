@@ -582,16 +582,6 @@ References: ${module.references?.map(ref => `
             </div>
           </div>
           
-          <!-- Progress Bar -->
-          <div class="w-full bg-muted rounded-full h-3 mb-2">
-            <div 
-              class="bg-primary rounded-full h-3 transition-all duration-500"
-              :style="{ width: `${(completedPhasesCount / props.phases.length) * 100}%` }"
-            ></div>
-          </div>
-          <div class="text-sm text-center text-muted-foreground">
-            {{ Math.round((completedPhasesCount / props.phases.length) * 100) }}% concluído
-          </div>
         </div>
 
         <!-- Botão de Debug (apenas para admins) -->

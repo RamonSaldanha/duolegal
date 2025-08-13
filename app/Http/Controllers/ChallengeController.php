@@ -1176,34 +1176,64 @@ class ChallengeController extends Controller
                 }
             }
             
-            // Determinar fase atual baseado no progresso sequencial
+            // Determinar fase atual usando a MESMA lógica do map() principal
             $currentPhase = null;
+            $blockSubsequent = false;
+            $previousPhaseIsComplete = true;
+            $currentLawUuid = null;
+            $lawCompletionStatus = [];
             
-            // Percorrer fases em ordem sequencial para encontrar a fase atual
+            // Percorrer fases exatamente como no método map()
             foreach ($phaseStructureList as $phaseStruct) {
                 $phaseId = $phaseStruct['id'];
                 
-                // Pular fases de revisão para simplificar
+                // Lógica de mudança de lei (igual ao map)
+                if ($phaseStruct['reference_uuid'] !== $currentLawUuid) {
+                    $previousLawUuid = $currentLawUuid;
+                    $currentLawUuid = $phaseStruct['reference_uuid'];
+                    
+                    if ($previousLawUuid !== null && isset($lawCompletionStatus[$previousLawUuid]) && !$lawCompletionStatus[$previousLawUuid]) {
+                        $blockSubsequent = true;
+                    }
+                    $lawCompletionStatus[$currentLawUuid] = true;
+                }
+
+                $isPhaseBlocked = $blockSubsequent || !$previousPhaseIsComplete;
+                $isPhaseComplete = false;
+                
                 if ($phaseStruct['is_review']) {
-                    continue;
+                    // Para revisão, verificar se há artigos que precisam revisar
+                    $phaseProgress = $progressByPhase[$phaseId] ?? null;
+                    if ($phaseProgress) {
+                        // Considerar completa se todos os artigos da fase foram tentados com sucesso
+                        $isPhaseComplete = ($phaseProgress['completed_articles'] === $phaseProgress['total_articles']);
+                    } else {
+                        $isPhaseComplete = true; // Sem progresso = não há nada para revisar
+                    }
+                } else {
+                    // Para fase regular, usar EXATAMENTE a mesma lógica do método map()
+                    $phaseProgress = $progressByPhase[$phaseId] ?? null;
+                    if ($phaseProgress) {
+                        // Recalcular usando a mesma função getChallengePhaseProgress
+                        $articleChunk = $phaseStruct['article_chunk'] ?? collect();
+                        $realPhaseProgress = $this->getChallengePhaseProgress($userId, $challenge->id, $articleChunk);
+                        $isPhaseComplete = $realPhaseProgress['all_attempted'];
+                    } else {
+                        $isPhaseComplete = false;
+                    }
                 }
-                
-                $phaseProgress = $progressByPhase[$phaseId] ?? null;
-                
-                if (!$phaseProgress) {
-                    // Usuário não tocou nesta fase ainda - esta é a fase atual
+
+                // Determinar se esta é a fase atual (igual ao map)
+                if (!$isPhaseBlocked && !$isPhaseComplete && $currentPhase === null) {
                     $currentPhase = $phaseId;
-                    break;
-                } else if ($phaseProgress['attempted_articles'] > 0 && $phaseProgress['completed_articles'] < $phaseProgress['total_articles']) {
-                    // Usuário está no meio desta fase - esta é a fase atual
-                    $currentPhase = $phaseId;
-                    break;
-                } else if ($phaseProgress['completed_articles'] < $phaseProgress['total_articles']) {
-                    // Usuário não completou todos os artigos desta fase - esta é a fase atual
-                    $currentPhase = $phaseId;
-                    break;
+                    $blockSubsequent = true;
                 }
-                // Se chegou aqui, o usuário completou toda esta fase, continuar para a próxima
+
+                if (!$isPhaseComplete) {
+                    $lawCompletionStatus[$currentLawUuid] = false;
+                }
+
+                $previousPhaseIsComplete = $isPhaseComplete;
             }
             
             // Se não encontrou fase atual, significa que completou tudo
