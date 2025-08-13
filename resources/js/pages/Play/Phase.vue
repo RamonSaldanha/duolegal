@@ -18,7 +18,7 @@
                 <!-- Cabeçalho da fase - versão responsiva -->
                 <div class="mb-4 md:mb-4">
                     <!-- Mostrar apenas no desktop -->
-                    <Link :href="route('play.map')" class="hidden md:flex text-sm items-center text-primary hover:underline mb-4">
+                    <Link :href="props.is_challenge ? route('challenges.map', props.challenge?.uuid) : route('play.map')" class="hidden md:flex text-sm items-center text-primary hover:underline mb-4">
                         <ChevronLeft class="h-3 w-3 mr-1" />
                         Voltar ao mapa
                     </Link>
@@ -66,7 +66,7 @@
                             
                             <!-- Botão de voltar para o mapa - apenas no mobile -->
                             <Link 
-                                :href="route('play.map')" 
+                                :href="props.is_challenge ? route('challenges.map', props.challenge?.uuid) : route('play.map')" 
                                 class="md:hidden ml-3 rounded-full p-1.5 bg-muted hover:bg-muted/80 transition-colors"
                             >
                                 <X class="h-4 w-4" />
@@ -482,6 +482,12 @@ const props = defineProps<{
         is_review?: boolean;
     };
     articles: Record<string, Article>;
+    is_challenge?: boolean; // Flag para indicar se é uma página de desafio
+    challenge?: {
+        uuid: string;
+        title: string;
+        description?: string;
+    }; // Dados do desafio quando aplicável
 }>();
 
 // Obtém página e tipos
@@ -829,7 +835,7 @@ const reviewCompletionPercentage = computed(() => {
         
         if (score) {
             // Salvar progresso no servidor
-            axios.post(route('play.progress'), {
+            axios.post(getProgressRoute(), {
                 article_uuid: currentArticle.value.uuid,
                 correct_answers: score.correct,
                 total_answers: score.total,
@@ -913,6 +919,14 @@ const reviewCompletionPercentage = computed(() => {
         // Integração do sistema de XP: atualização será feita automaticamente via resposta do servidor
     };
     
+    // Função utilitária para obter a rota de progresso correta
+    const getProgressRoute = () => {
+        if (props.is_challenge && props.challenge) {
+            return route('challenges.progress', props.challenge.uuid);
+        }
+        return route('play.progress');
+    };
+
     // Função para exibir notificação animada de XP ganho
     const showXpGainedNotification = (xpGained: number) => {
         // Criar elemento de notificação temporário
@@ -1278,7 +1292,7 @@ const reviewCompletionPercentage = computed(() => {
         
         if (score) {
             // Salvar progresso no servidor
-            axios.post(route('play.progress'), {
+            axios.post(getProgressRoute(), {
                 article_uuid: currentArticle.value.uuid,
                 correct_answers: score.correct,
                 total_answers: score.total,
@@ -1387,29 +1401,55 @@ const reviewCompletionPercentage = computed(() => {
 
                 // Revisão completa (todos 100%), pode avançar para a próxima fase (que será regular)
                 console.debug(`Advancing from REVIEW Phase ${props.phase.phase_number} to NEXT Phase ID ${nextPhaseNumber}`);
-                router.visit(route('play.phase', {
-                    phaseId: nextPhaseNumber
-                }));
+                if (props.is_challenge && props.challenge) {
+                    router.visit(route('challenges.phase', {
+                        challenge: props.challenge.uuid,
+                        phaseNumber: nextPhaseNumber
+                    }));
+                } else {
+                    router.visit(route('play.phase', {
+                        phaseId: nextPhaseNumber
+                    }));
+                }
                 return;
             }
 
             // Se a fase ATUAL é regular, verificar se a PRÓXIMA é revisão ou regular
             if (props.phase.next_phase_is_review) {
                 console.debug(`Advancing from REGULAR Phase ${props.phase.phase_number} to NEXT REVIEW Phase ID ${nextPhaseNumber}`);
-                router.visit(route('play.review', {
-                    referenceUuid: props.phase.reference_uuid,
-                    phase: nextPhaseNumber
-                }));
+                if (props.is_challenge && props.challenge) {
+                    // Para desafios, não há fases de revisão, então vai para a próxima fase regular
+                    router.visit(route('challenges.phase', {
+                        challenge: props.challenge.uuid,
+                        phaseNumber: nextPhaseNumber
+                    }));
+                } else {
+                    router.visit(route('play.review', {
+                        referenceUuid: props.phase.reference_uuid,
+                        phase: nextPhaseNumber
+                    }));
+                }
             } else {
                 console.debug(`Advancing from REGULAR Phase ${props.phase.phase_number} to NEXT REGULAR Phase ID ${nextPhaseNumber}`);
-                router.visit(route('play.phase', {
-                    phaseId: nextPhaseNumber
-                }));
+                if (props.is_challenge && props.challenge) {
+                    router.visit(route('challenges.phase', {
+                        challenge: props.challenge.uuid,
+                        phaseNumber: nextPhaseNumber
+                    }));
+                } else {
+                    router.visit(route('play.phase', {
+                        phaseId: nextPhaseNumber
+                    }));
+                }
             }
         } else {
             // Se não há próxima fase, volta para o mapa
             console.debug(`No next phase after Phase ${props.phase.phase_number}. Returning to map.`);
-            router.visit(route('play.map'));
+            if (props.is_challenge && props.challenge) {
+                router.visit(route('challenges.map', props.challenge.uuid));
+            } else {
+                router.visit(route('play.map'));
+            }
         }
     };
 

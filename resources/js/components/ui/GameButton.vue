@@ -1,5 +1,22 @@
 <template>
+  <Link
+    v-if="href"
+    :href="href"
+    :class="[
+      'game-button font-bold rounded-lg border-4 transition-all hover:transform hover:translate-y-1 disabled:cursor-not-allowed disabled:transform-none inline-flex items-center justify-center',
+      variantClasses,
+      sizeClasses,
+      disabled && 'disabled:opacity-50'
+    ]"
+    :style="buttonStyle"
+    @mouseover="handleMouseOver"
+    @mouseout="handleMouseOut"
+    v-bind="otherAttrs"
+  >
+    <slot />
+  </Link>
   <button
+    v-else
     :class="[
       'game-button font-bold rounded-lg border-4 transition-all hover:transform hover:translate-y-1 disabled:cursor-not-allowed disabled:transform-none',
       variantClasses,
@@ -10,25 +27,36 @@
     :disabled="disabled"
     @mouseover="handleMouseOver"
     @mouseout="handleMouseOut"
-    v-bind="$attrs"
+    v-bind="otherAttrs"
   >
     <slot />
   </button>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted, onUnmounted } from 'vue'
+import { computed, ref, onMounted, onUnmounted, useAttrs } from 'vue'
+import { Link } from '@inertiajs/vue3'
 
 interface Props {
   variant?: 'white' | 'green' | 'purple' | 'red' | 'blue'
   size?: 'sm' | 'md' | 'lg'
   disabled?: boolean
+  href?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
   variant: 'white',
   size: 'md',
-  disabled: false
+  disabled: false,
+  href: undefined
+})
+
+const attrs = useAttrs()
+
+// Filter out href from attrs when using as Link
+const otherAttrs = computed(() => {
+  const { href: _, ...rest } = attrs as any
+  return rest
 })
 
 const isHovered = ref(false)

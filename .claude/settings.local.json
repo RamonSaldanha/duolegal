@@ -5,7 +5,19 @@
       "Bash(php artisan serve:*)",
       "Bash(curl:*)",
       "Bash(composer run:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(php artisan make:model:*)",
+      "Bash(php artisan make:controller:*)",
+      "Bash(php artisan:*)",
+      "Bash(mkdir:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npm run lint)",
+      "Bash(npm run lint:*)",
+      "Bash(php:*)",
+      "Bash(rm:*)",
+      "Bash(cp:*)",
+      "Bash(composer search:*)",
+      "Bash(composer require:*)"
     ],
     "deny": []
   }

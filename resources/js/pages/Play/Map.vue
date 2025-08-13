@@ -3,8 +3,10 @@
 import { Head, Link, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { computed, ref, onMounted, onUnmounted } from 'vue';
-import { Book, FileText, Bookmark, CheckCircle, Star, Repeat, Bug, X } from 'lucide-vue-next';
+import { Book, FileText, Bookmark, CheckCircle, Star, Repeat, Bug, X, Trophy, ChevronLeft } from 'lucide-vue-next';
 import DebugPanel from './DebugPanel.vue';
+import UserAvatarGroup from '@/components/UserAvatarGroup.vue';
+import PhaseUsersModal from '@/components/PhaseUsersModal.vue';
 
 interface User {
   // Campos mínimos usados na UI de vidas
@@ -87,15 +89,32 @@ interface GroupedPhases {
     [key: string]: ReferenceGroup;
 }
 
+interface PhaseUser {
+    id: number;
+    name: string;
+}
+
 const props = defineProps<{
     phases: Phase[];
     modules?: OptimizedModule[]; // Dados dos módulos organizados (otimizados)
     journey?: JourneyInfo; // Informações da jornada atual
     user: User;
+    is_challenge?: boolean; // Flag para indicar se é uma página de desafio
+    challenge?: {
+        uuid: string;
+        title: string;
+        description?: string;
+    }; // Dados do desafio quando aplicável
+    users_per_phase?: { [phaseId: number]: PhaseUser[] }; // Usuários por fase (apenas para desafios)
 }>();
 
 // Estado do painel de debug
 const showDebugPanel = ref(false);
+
+// Estado do modal de usuários da fase
+const showPhaseUsersModal = ref(false);
+const selectedPhaseUsers = ref<PhaseUser[]>([]);
+const selectedPhaseInfo = ref<{ number: number; title?: string }>({ number: 0 });
 
 // Acesso à página atual para verificar se é admin
 const page = usePage<{
@@ -119,6 +138,12 @@ const page = usePage<{
 }>();
 
 const isAdmin = computed(() => page.props.auth.user?.is_admin);
+
+// Computed property para contar fases completadas (para desafios)
+const completedPhasesCount = computed(() => {
+    if (!props.is_challenge || !props.phases) return 0;
+    return props.phases.filter(phase => phase.is_complete).length;
+});
 
 // Flag para alternar entre visualização tradicional e por módulos (padrão: módulos)
 const showModuleView = ref(true);
@@ -403,6 +428,29 @@ const getSegmentDashOffset = (totalSegments: number, segmentIndex: number): numb
   return circumference - (segmentLength * segmentIndex);
 };
 
+// Função para obter usuários de uma fase específica
+const getPhaseUsers = (phaseId: number): PhaseUser[] => {
+  if (!props.is_challenge || !props.users_per_phase) {
+    return [];
+  }
+  return props.users_per_phase[phaseId] || [];
+};
+
+// Função para exibir modal com todos os usuários da fase
+const handleShowPhaseUsers = (phaseId: number, phaseTitle?: string) => {
+  const users = getPhaseUsers(phaseId);
+  selectedPhaseUsers.value = users;
+  selectedPhaseInfo.value = { number: phaseId, title: phaseTitle };
+  showPhaseUsersModal.value = true;
+};
+
+// Função para fechar o modal
+const handleClosePhaseUsersModal = () => {
+  showPhaseUsersModal.value = false;
+  selectedPhaseUsers.value = [];
+  selectedPhaseInfo.value = { number: 0 };
+};
+
 // Função para copiar informações de debug
 const copyDebugInfo = async (): Promise<void> => {
   try {
@@ -511,11 +559,40 @@ References: ${module.references?.map(ref => `
 </script>
 
 <template>
-  <Head title="Aprender Jogando" />
+  <Head :title="props.is_challenge ? `Desafio: ${props.challenge?.title}` : 'Aprender Jogando'" />
 
   <AppLayout>
     <div class="container py-8 px-4">
       <div class="max-w-4xl mx-auto">
+
+        <!-- Challenge Header (quando é um desafio) -->
+        <div v-if="props.is_challenge && props.challenge" class="mb-8">
+          <Link :href="route('challenges.show', props.challenge.uuid)" class="text-sm text-primary hover:underline mb-4 inline-flex items-center">
+            <ChevronLeft class="w-4 h-4 mr-1" />
+            Voltar ao Desafio
+          </Link>
+          
+          <div class="flex items-center gap-3 mb-4">
+            <Trophy class="w-8 h-8 text-primary" />
+            <div>
+              <h1 class="text-2xl font-bold">{{ props.challenge.title }}</h1>
+              <p class="text-muted-foreground text-sm">
+                {{ completedPhasesCount }} de {{ props.phases.length }} fases completadas
+              </p>
+            </div>
+          </div>
+          
+          <!-- Progress Bar -->
+          <div class="w-full bg-muted rounded-full h-3 mb-2">
+            <div 
+              class="bg-primary rounded-full h-3 transition-all duration-500"
+              :style="{ width: `${(completedPhasesCount / props.phases.length) * 100}%` }"
+            ></div>
+          </div>
+          <div class="text-sm text-center text-muted-foreground">
+            {{ Math.round((completedPhasesCount / props.phases.length) * 100) }}% concluído
+          </div>
+        </div>
 
         <!-- Botão de Debug (apenas para admins) -->
         <div v-if="isAdmin" class="fixed top-20 right-4 z-50">
@@ -810,9 +887,11 @@ References: ${module.references?.map(ref => `
                     <Link
                       :href="phase.is_blocked
                           ? '#'
-                          : (phase.is_review
-                              ? route('play.review', { referenceUuid: phase.reference_uuid, phase: phase.id })
-                              : route('play.phase', { phaseId: phase.id }))"
+                          : (props.is_challenge
+                              ? route('challenges.phase', { challenge: props.challenge?.uuid, phaseNumber: phase.id })
+                              : (phase.is_review
+                                  ? route('play.review', { referenceUuid: phase.reference_uuid, phase: phase.id })
+                                  : route('play.phase', { phaseId: phase.id })))"
                       class="relative group transition-transform duration-300 block phase-link"
                       :class="{
                           'cursor-not-allowed': phase.is_blocked,
@@ -889,6 +968,19 @@ References: ${module.references?.map(ref => `
                             class="w-6 h-6 text-white"
                           />
                         </div>
+
+                        <!-- Avatares dos usuários (apenas para desafios) -->
+                        <div
+                          v-if="props.is_challenge && getPhaseUsers(phase.id).length > 0"
+                          class="absolute -bottom-2 -right-2 z-20"
+                        >
+                          <UserAvatarGroup
+                            :users="getPhaseUsers(phase.id)"
+                            :max-visible="3"
+                            size="sm"
+                            @show-all="() => handleShowPhaseUsers(phase.id, phase.title)"
+                          />
+                        </div>
                       </div>
 
                       <!-- Balão "Começar!" para fase atual -->
@@ -944,9 +1036,11 @@ References: ${module.references?.map(ref => `
                   <Link
                     :href="phase.is_blocked
                         ? '#'
-                        : (phase.is_review
-                            ? route('play.review', { referenceUuid: phase.reference_uuid, phase: phase.id })
-                            : route('play.phase', { phaseId: phase.id }))"
+                        : (props.is_challenge
+                            ? route('challenges.phase', { challenge: props.challenge?.uuid, phaseNumber: phase.id })
+                            : (phase.is_review
+                                ? route('play.review', { referenceUuid: phase.reference_uuid, phase: phase.id })
+                                : route('play.phase', { phaseId: phase.id })))"
                     class="relative group transition-transform duration-300 block phase-link"
                     :class="{
                         'cursor-not-allowed': phase.is_blocked,
@@ -1023,6 +1117,19 @@ References: ${module.references?.map(ref => `
                           class="w-6 h-6 text-white"
                         />
                       </div>
+
+                      <!-- Avatares dos usuários (apenas para desafios) -->
+                      <div
+                        v-if="props.is_challenge && getPhaseUsers(phase.id).length > 0"
+                        class="absolute -bottom-2 -right-2 z-20"
+                      >
+                        <UserAvatarGroup
+                          :users="getPhaseUsers(phase.id)"
+                          :max-visible="3"
+                          size="sm"
+                          @show-all="() => handleShowPhaseUsers(phase.id, phase.title)"
+                        />
+                      </div>
                     </div>
 
                     <!-- Balão "Começar!" para fase atual -->
@@ -1085,6 +1192,15 @@ References: ${module.references?.map(ref => `
         </div>
       </div>
     </div>
+
+    <!-- Modal de usuários da fase -->
+    <PhaseUsersModal
+      :show="showPhaseUsersModal"
+      :users="selectedPhaseUsers"
+      :phase-number="selectedPhaseInfo.number"
+      :phase-title="selectedPhaseInfo.title"
+      @close="handleClosePhaseUsersModal"
+    />
   </AppLayout>
 </template>
 

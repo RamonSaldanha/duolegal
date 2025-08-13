@@ -31,6 +31,8 @@ defineProps<{
         uuid: string;
     }>;
 }>();
+
+// Redirecionamento agora é feito no backend (WelcomeController)
 </script>
 
 <style>

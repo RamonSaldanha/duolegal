@@ -12,7 +12,7 @@ class AdminMiddleware
     public function handle(Request $request, Closure $next): Response
     {
         if (!Auth::check() || !Auth::user()->isAdmin()) {
-            return redirect()->route('dashboard')->with('error', 'Acesso não autorizado.');
+            return redirect()->route('play.map')->with('error', 'Acesso não autorizado.');
         }
 
         return $next($request);

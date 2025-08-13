@@ -60,7 +60,7 @@ class PlayController extends Controller
             });
         } else {
              if (!LegalReference::exists()) {
-                 return redirect()->route('dashboard')->with('message', 'Nenhuma lei disponível no momento.');
+                 return redirect()->route('play.map')->with('message', 'Nenhuma lei disponível no momento.');
              }
              $legalReferencesQuery = LegalReference::with(['articles' => function($query) {
                  $query->orderByRaw('CAST(article_reference AS UNSIGNED) ASC')->where('is_active', true);
@@ -362,9 +362,9 @@ class PlayController extends Controller
                 'percentage' => $progress['percentage'] ?? 0,
                 'is_fully_complete' => $progress['is_fully_complete'] ?? false,
                 'all_attempted' => $progress['all_attempted'] ?? false,
-                // Remover article_status detalhado para melhorar performance
                 'has_errors' => isset($progress['article_status']) ? 
-                    in_array('incorrect', $progress['article_status']) : false
+                    in_array('incorrect', $progress['article_status']) : false,
+                'article_status' => $progress['article_status'] ?? []
             ],
             'is_blocked' => $isBlocked,
             'is_current' => $isCurrent,

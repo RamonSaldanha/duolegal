@@ -9,6 +9,7 @@ use App\Http\Controllers\UserLegalReferenceController;
 use App\Http\Controllers\WelcomeController;
 use App\Http\Controllers\PublicController;
 use App\Http\Controllers\SitemapController;
+use App\Http\Controllers\ChallengeController;
 
 Route::get('/', [WelcomeController::class, 'index'])->name('home');
 
@@ -43,7 +44,7 @@ Route::get('/terms', function () {
 })->name('terms');
 
 Route::get('dashboard', function () {
-    return Inertia::render('Dashboard');
+    return redirect()->route('play.map');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 // Rotas para law-article-options
@@ -75,6 +76,29 @@ Route::post('/admin/law-article-options', [LawArticleOptionController::class, 's
 
         Route::post('/play/progress', [PlayController::class, 'saveProgress'])->name('play.progress');
         Route::post('/play/reward-life', [PlayController::class, 'rewardLife'])->name('play.reward-life');
+
+        // === ROTAS DE DESAFIOS ===
+        // Desafios públicos
+        Route::get('/challenges', [ChallengeController::class, 'index'])->name('challenges.index');
+        Route::get('/challenges/create', [ChallengeController::class, 'create'])->name('challenges.create');
+        Route::post('/challenges', [ChallengeController::class, 'store'])->name('challenges.store');
+        
+        // Meus desafios
+        Route::get('/my-challenges', [ChallengeController::class, 'myIndex'])->name('challenges.my-index');
+        
+        // Detalhes e participação em desafios (usando model binding com uuid)
+        Route::get('/challenges/{challenge:uuid}', [ChallengeController::class, 'show'])->name('challenges.show');
+        Route::get('/challenges/{challenge:uuid}/edit', [ChallengeController::class, 'edit'])->name('challenges.edit');
+        Route::put('/challenges/{challenge:uuid}', [ChallengeController::class, 'update'])->name('challenges.update');
+        Route::delete('/challenges/{challenge:uuid}', [ChallengeController::class, 'destroy'])->name('challenges.destroy');
+        
+        // Participação nos desafios
+        Route::post('/challenges/{challenge:uuid}/join', [ChallengeController::class, 'join'])->name('challenges.join');
+        Route::get('/challenges/{challenge:uuid}/map', [ChallengeController::class, 'map'])->name('challenges.map');
+        Route::get('/challenges/{challenge:uuid}/phase/{phaseNumber}', [ChallengeController::class, 'phase'])
+            ->where('phaseNumber', '[0-9]+')
+            ->name('challenges.phase');
+        Route::post('/challenges/{challenge:uuid}/progress', [ChallengeController::class, 'saveProgress'])->name('challenges.progress');
 
         // Rotas de assinatura
         Route::get('/subscription', [SubscriptionController::class, 'index'])->name('subscription.index');
