@@ -651,7 +651,8 @@ const reviewCompletionPercentage = computed(() => {
             const correctAnswersMap: Map<number, string> = new Map();
             currentArticle.value.options.forEach(option => {
                 if (option.is_correct) {
-                    correctAnswersMap.set(option.gap_order, option.word);
+                    // CORREÇÃO: Converte gap_order para Number para garantir consistência
+                    correctAnswersMap.set(Number(option.gap_order), option.word);
                 }
             });
             
@@ -1270,7 +1271,7 @@ const reviewCompletionPercentage = computed(() => {
         if (!currentArticle.value || !currentArticle.value.options) return '';
         
         const correctOption = currentArticle.value.options.find(
-            option => option.is_correct && option.gap_order === gapOrder
+            option => option.is_correct && Number(option.gap_order) === gapOrder
         );
         
         return correctOption ? correctOption.word : '';
