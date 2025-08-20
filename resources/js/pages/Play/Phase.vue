@@ -700,21 +700,79 @@ const reviewCompletionPercentage = computed(() => {
         let correctCount = 0;
         const answers = userAnswers.value[currentArticleIndex.value] || {};
 
+        // ===== DEBUG COMPLETO - INÍCIO =====
+        console.log('🔍 === DEBUG VERIFICAÇÃO DE LACUNAS ===');
+        console.log('📄 Artigo UUID:', currentArticle.value?.uuid);
+        console.log('📝 practice_content:', currentArticle.value?.practice_content);
+        console.log('🔢 Total lacunas detectadas:', totalLacunas.value);
+        
+        console.log('🎯 Options do artigo (RAW):');
+        currentArticle.value?.options?.forEach((option, index) => {
+            console.log(`  [${index}]:`, {
+                word: option.word,
+                is_correct: option.is_correct,
+                gap_order: option.gap_order,
+                word_length: option.word?.length,
+                word_chars: option.word?.split('').map(c => `${c}(${c.charCodeAt(0)})`).join(''),
+            });
+        });
+        
+        console.log('📋 correctAnswers Map gerado:');
+        articleOptions.value.correctAnswers.forEach((word, gapOrder) => {
+            console.log(`  gap_order ${gapOrder} → "${word}"`);
+        });
+        
+        console.log('👤 Respostas do usuário:');
+        Object.entries(answers).forEach(([lacunaIndex, userAnswer]) => {
+            console.log(`  lacuna[${lacunaIndex}] → "${userAnswer}"`);
+        });
+        
+        console.log('⚖️  Comparações detalhadas:');
+        // ===== DEBUG COMPLETO - FIM =====
+
         Object.entries(answers).forEach(([lacunaIndex, userAnswer]) => {
             const gapNumber = Number(lacunaIndex) + 1; // gap_order é 1-based
             // Obtém a resposta correta para esta lacuna
             const correctAnswer = articleOptions.value.correctAnswers.get(gapNumber);
+            
+            // ===== DEBUG COMPARAÇÃO - INÍCIO =====
+            const isMatch = correctAnswer && userAnswer === correctAnswer;
+            console.log(`  🔍 Lacuna ${lacunaIndex} (gap_order ${gapNumber}):`);
+            console.log(`     👤 Usuário: "${userAnswer}" (length: ${userAnswer?.length})`);
+            console.log(`     ✅ Correto: "${correctAnswer}" (length: ${correctAnswer?.length})`);
+            console.log(`     🎯 Match: ${isMatch}`);
+            
+            if (userAnswer && correctAnswer && userAnswer !== correctAnswer) {
+                console.log(`     🔤 Char comparison:`);
+                const maxLen = Math.max(userAnswer.length, correctAnswer.length);
+                for (let i = 0; i < maxLen; i++) {
+                    const userChar = userAnswer[i] || '(undefined)';
+                    const correctChar = correctAnswer[i] || '(undefined)';
+                    const charCode1 = userAnswer[i]?.charCodeAt(0) || 'N/A';
+                    const charCode2 = correctAnswer[i]?.charCodeAt(0) || 'N/A';
+                    if (userChar !== correctChar) {
+                        console.log(`       [${i}] "${userChar}"(${charCode1}) ≠ "${correctChar}"(${charCode2})`);
+                    }
+                }
+            }
+            // ===== DEBUG COMPARAÇÃO - FIM =====
             
             if (correctAnswer && userAnswer === correctAnswer) {
                 correctCount++;
             }
         });
 
-        return {
+        // ===== DEBUG RESULTADO - INÍCIO =====
+        const result = {
             correct: correctCount,
             total: totalLacunas.value,
             percentage: Math.round((correctCount / totalLacunas.value) * 100)
         };
+        console.log('🏆 Resultado final:', result);
+        console.log('🔍 === FIM DEBUG VERIFICAÇÃO ===\n');
+        // ===== DEBUG RESULTADO - FIM =====
+
+        return result;
     });
 
     // Configure as recompensas
