@@ -434,7 +434,9 @@ const articleOptions = computed(() => {
     props.article.options.forEach(option => {
         allWords.push(option.word)
         if (option.is_correct) {
-            correctAnswers.set(option.gap_order, option.word)
+            // CORREÇÃO: Converte gap_order para Number para garantir consistência
+            const gapOrderNum = Number(option.gap_order)
+            correctAnswers.set(gapOrderNum, option.word)
         }
     })
 
@@ -470,6 +472,7 @@ const processedText = computed(() => {
     
     lacunas.forEach((lacuna, index) => {
         const selectedWord = userAnswers.value[index]
+        // CORREÇÃO: gap_order é 1-based, index é 0-based
         const correctAnswer = articleOptions.value.correctAnswers.get(index + 1)
         
         const replacement = answered.value 
@@ -501,6 +504,7 @@ const articleScore = computed(() => {
     
     let correctCount = 0
     Object.entries(userAnswers.value).forEach(([lacunaIndex, userAnswer]) => {
+        // CORREÇÃO: Converte gap_order para Number para garantir consistência nas respostas
         const gapNumber = Number(lacunaIndex) + 1
         const correctAnswer = articleOptions.value.correctAnswers.get(gapNumber)
         if (correctAnswer && userAnswer === correctAnswer) {
@@ -541,6 +545,7 @@ const highlightedUserAnswers = computed(() => {
     
     lacunas.forEach((lacuna, index) => {
         const userAnswer = userAnswers.value[index]
+        // CORREÇÃO: gap_order é 1-based, index é 0-based
         const correctAnswer = articleOptions.value.correctAnswers.get(index + 1)
         
         let replacement
