@@ -1,11 +1,35 @@
 <template>
     <Head :title="meta.title">
-        <meta name="description" :content="meta.description" />
+        <meta name="description" :content="seoDescription" />
         <meta name="keywords" :content="meta.keywords" />
+        
+        <!-- Open Graph tags -->
         <meta property="og:title" :content="meta.title" />
-        <meta property="og:description" :content="meta.description" />
+        <meta property="og:description" :content="seoDescription" />
         <meta property="og:type" content="article" />
+        <meta property="og:url" :content="route('public.article', { lawUuid: article.law_uuid, articleUuid: article.uuid })" />
+        <meta property="og:site_name" content="Memorize Direito" />
+        
+        <!-- Twitter Cards -->
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" :content="meta.title" />
+        <meta name="twitter:description" :content="seoDescription" />
+        
+        <!-- Additional SEO -->
+        <meta name="author" content="Memorize Direito" />
+        <meta name="robots" content="index, follow" />
+        <meta name="googlebot" content="index, follow" />
+        <meta name="article:section" content="Direito" />
+        <meta name="article:tag" :content="`Artigo ${article.article_reference}`" />
+        <meta name="article:tag" :content="article.law_name" />
+        <meta name="topic" content="Direito" />
+        <meta name="subject" :content="article.law_name" />
+        <meta name="classification" content="Education" />
+        <meta name="coverage" content="Brasil" />
+        <meta name="distribution" content="Global" />
+        <meta name="rating" content="General" />
         <link rel="canonical" :href="route('public.article', { lawUuid: article.law_uuid, articleUuid: article.uuid })" />
+        
     </Head>
 
     <div class="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 dark:from-gray-900 dark:to-black">
@@ -42,9 +66,6 @@
                             >
                                 {{ getDifficultyText(article.difficulty_level) }}
                             </span>
-                            <span class="ml-3 text-sm bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 px-2 py-1 rounded-full">
-                                Exercício Público - Sem Login
-                            </span>
                         </p>
                     </div>
 
@@ -66,10 +87,6 @@
                             </Link>
                         </div>
                         
-                        <!-- Texto de progresso apenas no desktop -->
-                        <div class="mt-2 text-sm text-center text-muted-foreground hidden md:block">
-                            Exercício público - Cadastre-se para acompanhar seu progresso
-                        </div>
                     </div>
                 </div>
 
@@ -141,13 +158,6 @@
                                 </div>
 
                                 <div v-if="articleScore">
-                                    <!-- Mensagem especial para exercício público -->
-                                    <div class="bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 p-3 rounded-lg text-center mb-4">
-                                        <p class="text-sm font-medium mb-1">✨ Exercício Público Concluído!</p>
-                                        <p class="text-xs">
-                                            Cadastre-se gratuitamente para salvar seu progresso, ganhar XP e acessar o sistema completo!
-                                        </p>
-                                    </div>
 
                                     <div class="text-lg font-medium mb-2">
                                         Você acertou {{ articleScore.correct }} de {{ articleScore.total }} lacunas ({{ articleScore.percentage }}%)
@@ -387,6 +397,121 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+
+// SEO computed properties
+const seoDescription = computed(() => {
+    // Usar original_content como description, limitando a 160 caracteres
+    const content = props.article.original_content
+    if (content.length <= 160) {
+        return content
+    }
+    return content.substring(0, 157) + '...'
+})
+
+const structuredData = computed(() => {
+    return JSON.stringify([
+        {
+            "@context": "https://schema.org",
+            "@type": "Article",
+            "headline": `Art. ${props.article.article_reference} da ${props.article.law_name}`,
+            "description": seoDescription.value,
+            "text": props.article.original_content,
+            "author": {
+                "@type": "Organization",
+                "name": "Memorize Direito",
+                "url": "https://www.memorizedireito.com"
+            },
+            "publisher": {
+                "@type": "Organization",
+                "name": "Memorize Direito",
+                "url": "https://www.memorizedireito.com",
+                "logo": {
+                    "@type": "ImageObject",
+                    "url": "https://www.memorizedireito.com/favicon.ico"
+                }
+            },
+            "mainEntityOfPage": {
+                "@type": "WebPage",
+                "@id": route('public.article', { lawUuid: props.article.law_uuid, articleUuid: props.article.uuid })
+            },
+            "about": [
+                {
+                    "@type": "Thing",
+                    "name": props.article.law_name,
+                    "description": `Legislação brasileira - ${props.article.law_name}`
+                },
+                {
+                    "@type": "Thing",
+                    "name": "Direito Brasileiro",
+                    "description": "Sistema jurídico do Brasil"
+                }
+            ],
+            "articleSection": "Direito",
+            "inLanguage": "pt-BR",
+            "isAccessibleForFree": true,
+            "educationalUse": ["study", "practice"],
+            "learningResourceType": "exercise",
+            "audience": {
+                "@type": "EducationalAudience",
+                "educationalRole": ["student", "teacher"]
+            },
+            "keywords": [
+                `Artigo ${props.article.article_reference}`,
+                props.article.law_name,
+                "Direito",
+                "Lei",
+                "Exercício",
+                "Estudo"
+            ]
+        },
+        {
+            "@context": "https://schema.org",
+            "@type": "LegalDocument", 
+            "name": `Artigo ${props.article.article_reference}`,
+            "text": props.article.original_content,
+            "legislationType": "Lei",
+            "jurisdiction": {
+                "@type": "Country",
+                "name": "Brasil"
+            },
+            "inLanguage": "pt-BR",
+            "isPartOf": {
+                "@type": "Legislation",
+                "name": props.article.law_name
+            }
+        },
+        {
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+                {
+                    "@type": "ListItem",
+                    "position": 1,
+                    "name": "Memorize Direito",
+                    "item": "https://www.memorizedireito.com"
+                },
+                {
+                    "@type": "ListItem", 
+                    "position": 2,
+                    "name": "Leis",
+                    "item": "https://www.memorizedireito.com/leis"
+                },
+                {
+                    "@type": "ListItem",
+                    "position": 3,
+                    "name": props.article.law_name,
+                    "item": route('public.law', { uuid: props.article.law_uuid })
+                },
+                {
+                    "@type": "ListItem",
+                    "position": 4,
+                    "name": `Artigo ${props.article.article_reference}`,
+                    "item": route('public.article', { lawUuid: props.article.law_uuid, articleUuid: props.article.uuid })
+                }
+            ]
+        }
+    ])
+})
 
 // State
 const textContainerRef = ref<HTMLElement | null>(null)
@@ -766,11 +891,24 @@ onMounted(() => {
             scrollToNextEmptyLacuna()
         }
     }
+    
+    // Injetar structured data JSON-LD no head
+    const script = document.createElement('script')
+    script.type = 'application/ld+json'
+    script.textContent = structuredData.value
+    script.id = 'structured-data-script'
+    document.head.appendChild(script)
 })
 
 onUnmounted(() => {
     if (textContainerRef.value) {
         textContainerRef.value.removeEventListener('click', handleLacunaClick)
+    }
+    
+    // Remover structured data JSON-LD do head
+    const existingScript = document.getElementById('structured-data-script')
+    if (existingScript) {
+        document.head.removeChild(existingScript)
     }
 })
 </script>

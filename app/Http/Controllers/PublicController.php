@@ -153,7 +153,7 @@ class PublicController extends Controller
             'article' => $articleData,
             'relatedArticles' => $relatedArticles,
             'meta' => [
-                'title' => $this->sanitizeString("Art. {$article->article_reference} - {$article->legalReference->name} | Memorize Direito"),
+                'title' => $this->sanitizeString("Art. {$article->article_reference} da {$article->legalReference->name}"),
                 'description' => $metaDescription,
                 'keywords' => $this->sanitizeString("artigo {$article->article_reference}, {$article->legalReference->name}, direito, exercício, {$difficultyText}, memorização, estudo")
             ]
