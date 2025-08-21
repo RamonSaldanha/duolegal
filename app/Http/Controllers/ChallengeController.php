@@ -372,12 +372,20 @@ class ChallengeController extends Controller
         $userId = $user->id;
         $phaseNumber = (int) $phaseNumber;
 
+        // Obter informações sobre a fase (se é revisão ou não)
+        $phaseInfo = $this->getChallengePhaseInfo($challenge, $phaseNumber);
+        
+        if (!$phaseInfo) {
+            return redirect()->route('challenges.map', $challenge->uuid)
+                           ->with('error', 'Fase não encontrada.');
+        }
+
         // Obter todos os artigos da fase usando a mesma lógica do mapa
         $phaseArticles = $this->getChallengePhaseArticles($challenge, $phaseNumber);
         
         if ($phaseArticles->isEmpty()) {
             return redirect()->route('challenges.map', $challenge->uuid)
-                           ->with('error', 'Fase não encontrada.');
+                           ->with('error', 'Nenhum artigo encontrado para esta fase.');
         }
 
         // Obter primeira referência legal para o título
@@ -418,15 +426,18 @@ class ChallengeController extends Controller
         $hasNextPhase = $this->hasNextChallengePhase($challenge, $phaseNumber);
         $nextPhaseNumber = $hasNextPhase ? $this->getNextChallengePhaseNumber($challenge, $phaseNumber) : null;
         
+        // Determinar o título baseado se é fase de revisão ou não
+        $phaseTitle = $phaseInfo['is_review'] ? 'Fase ' . $phaseNumber . ' - Revisão' : 'Fase ' . $phaseNumber;
+        
         return Inertia::render('Play/Phase', [ // USAR O MESMO COMPONENTE!
             'phase' => [
-                'title' => 'Fase ' . $phaseNumber,
+                'title' => $phaseTitle,
                 'reference_name' => $reference->name,
                 'phase_number' => $phaseNumber,
                 'difficulty' => $this->calculateAverageDifficulty($phaseArticles),
                 'has_next_phase' => $hasNextPhase,
                 'next_phase_number' => $nextPhaseNumber,
-                'is_review' => false,
+                'is_review' => $phaseInfo['is_review'],
                 'reference_uuid' => $reference->uuid,
             ],
             'articles' => $articlesWithProgress,
@@ -1020,21 +1031,148 @@ class ChallengeController extends Controller
             }
         }
 
-        // Encontrar a fase específica e retornar seus artigos
+        // Encontrar a fase específica e retornar informações sobre ela
         foreach ($phaseStructureList as $phaseStruct) {
-            if ($phaseStruct['id'] === $phaseNumber && !$phaseStruct['is_review']) {
-                return $phaseStruct['article_chunk'];
+            if ($phaseStruct['id'] === $phaseNumber) {
+                if ($phaseStruct['is_review']) {
+                    // Para fases de revisão, retornar apenas artigos que precisam de revisão
+                    $articleIdsInScope = $this->getChallengeArticlesInScopeForReview($phaseNumber, $phaseStructureList, $challenge->id);
+                    
+                    // Converter para array se for Collection
+                    if (is_object($articleIdsInScope) && method_exists($articleIdsInScope, 'toArray')) {
+                        $articleIdsInScope = $articleIdsInScope->toArray();
+                    }
+                    
+                    // Filtrar apenas artigos que precisam de revisão (< 100% OU nunca tentados)
+                    $userId = Auth::id();
+                    
+                    // Buscar artigos com progresso < 100%
+                    $articlesNeedingReview = ChallengeProgress::where('user_id', $userId)
+                        ->where('challenge_id', $challenge->id)
+                        ->whereIn('law_article_id', $articleIdsInScope)
+                        ->where('percentage', '<', 100)
+                        ->pluck('law_article_id');
+                    
+                    // Buscar artigos nunca tentados (sem progresso)
+                    $articlesNeverAttempted = collect($articleIdsInScope)->diff(
+                        ChallengeProgress::where('user_id', $userId)
+                            ->where('challenge_id', $challenge->id)
+                            ->whereIn('law_article_id', $articleIdsInScope)
+                            ->pluck('law_article_id')
+                    );
+                    
+                    // Unir os dois grupos
+                    $allArticlesToReview = $articlesNeedingReview->concat($articlesNeverAttempted)->unique();
+                    
+                    return collect($challengeArticles)->filter(function($article) use ($allArticlesToReview) {
+                        return $allArticlesToReview->contains($article->id);
+                    });
+                } else {
+                    // Para fases regulares, retornar o chunk de artigos
+                    return $phaseStruct['article_chunk'];
+                }
             }
         }
 
         return collect(); // Retorna collection vazia se não encontrar
     }
 
+    private function getChallengePhaseInfo($challenge, $phaseNumber)
+    {
+        // Usar as mesmas constantes do PlayController
+        $ARTICLES_PER_PHASE = 6;
+        $REVIEW_PHASE_INTERVAL = 3;
+        $PHASES_PER_MODULE_PER_LAW = 6;
+
+        // Obter artigos do desafio
+        $challengeArticles = $challenge->getSelectedArticles();
+        
+        // Agrupar artigos por referência legal (mesmo que no map)
+        $legalReferencesData = [];
+        foreach ($challengeArticles as $article) {
+            $refUuid = $article->legalReference->uuid;
+            if (!isset($legalReferencesData[$refUuid])) {
+                $legalReferencesData[$refUuid] = [
+                    'reference' => $article->legalReference,
+                    'articles' => collect()
+                ];
+            }
+            $legalReferencesData[$refUuid]['articles']->push($article);
+        }
+
+        // Construir estrutura de fases (mesmo que no map)
+        $phaseStructureList = [];
+        $lawChunksData = [];
+        $maxChunks = 0;
+        
+        foreach ($legalReferencesData as $refUuid => $refData) {
+            $chunks = $refData['articles']->chunk($ARTICLES_PER_PHASE);
+            $lawChunksData[$refUuid] = [
+                'reference' => $refData['reference'],
+                'chunks' => $chunks,
+                'total_chunks' => $chunks->count()
+            ];
+            $maxChunks = max($maxChunks, $chunks->count());
+        }
+        
+        // Intercalar fases por módulo (mesmo que no map)
+        $tempCounter = 0;
+        $totalModules = ceil($maxChunks / $PHASES_PER_MODULE_PER_LAW);
+        
+        for ($moduleIndex = 0; $moduleIndex < $totalModules; $moduleIndex++) {
+            $startChunkIndex = $moduleIndex * $PHASES_PER_MODULE_PER_LAW;
+            $endChunkIndex = $startChunkIndex + $PHASES_PER_MODULE_PER_LAW;
+            
+            foreach ($lawChunksData as $lawUuid => $lawData) {
+                $phasesAddedForThisLaw = 0;
+                
+                for ($chunkIndex = $startChunkIndex; $chunkIndex < $endChunkIndex && $phasesAddedForThisLaw < $PHASES_PER_MODULE_PER_LAW; $chunkIndex++) {
+                    if ($chunkIndex < $lawData['total_chunks']) {
+                        $tempCounter++;
+                        
+                        $phaseStructureList[] = [
+                            'id' => $tempCounter,
+                            'is_review' => false,
+                            'reference_uuid' => $lawUuid,
+                            'chunk_index' => $chunkIndex,
+                            'article_chunk' => $lawData['chunks'][$chunkIndex]
+                        ];
+                        
+                        $phasesAddedForThisLaw++;
+                    }
+                }
+                
+                if ($phasesAddedForThisLaw > 0) {
+                    $totalRegularPhasesOfThisLaw = min($endChunkIndex, $lawData['total_chunks']);
+                    
+                    if ($totalRegularPhasesOfThisLaw % $REVIEW_PHASE_INTERVAL === 0) {
+                        $tempCounter++;
+                        $phaseStructureList[] = [
+                            'id' => $tempCounter,
+                            'is_review' => true,
+                            'reference_uuid' => $lawUuid,
+                            'last_regular_counter' => $totalRegularPhasesOfThisLaw
+                        ];
+                    }
+                }
+            }
+        }
+
+        // Encontrar a fase específica e retornar suas informações
+        foreach ($phaseStructureList as $phaseStruct) {
+            if ($phaseStruct['id'] === $phaseNumber) {
+                return $phaseStruct;
+            }
+        }
+
+        return null; // Retorna null se não encontrar
+    }
+
     private function hasNextChallengePhase($challenge, $currentPhaseNumber)
     {
-        // Verificar se existe uma fase posterior
-        $phaseArticles = $this->getChallengePhaseArticles($challenge, $currentPhaseNumber + 1);
-        return !$phaseArticles->isEmpty();
+        // Verificar se existe uma fase posterior usando getChallengePhaseInfo
+        $phaseInfo = $this->getChallengePhaseInfo($challenge, $currentPhaseNumber + 1);
+        return $phaseInfo !== null;
     }
 
     private function getNextChallengePhaseNumber($challenge, $currentPhaseNumber)
