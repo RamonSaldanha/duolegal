@@ -556,39 +556,6 @@ References: ${module.references?.map(ref => `
   }
 };
 
-// Função para debugging de cliques nas fases
-const handlePhaseClick = (phase: Phase, event: MouseEvent) => {
-  console.log('=== PHASE CLICK DEBUG ===');
-  console.log('Phase clicked:', phase);
-  console.log('Phase ID:', phase.id);
-  console.log('Phase Title:', phase.title);
-  console.log('Is Review:', phase.is_review);
-  console.log('Is Blocked:', phase.is_blocked);
-  console.log('Is Current:', phase.is_current);
-  console.log('Reference UUID:', phase.reference_uuid);
-  
-  if (phase.is_blocked) {
-    console.log('Phase is blocked, preventing default action');
-    event.preventDefault();
-    return;
-  }
-  
-  if (phase.is_review) {
-    console.log('This is a review phase');
-    const reviewUrl = route('play.review', { 
-      referenceUuid: phase.reference_uuid, 
-      phase: phase.id 
-    });
-    console.log('Review URL that should be navigated to:', reviewUrl);
-  } else {
-    console.log('This is a regular phase');
-    const regularUrl = route('play.phase', { phaseId: phase.id });
-    console.log('Regular phase URL that should be navigated to:', regularUrl);
-  }
-  
-  console.log('=== END PHASE CLICK DEBUG ===');
-};
-
 </script>
 
 <template>
@@ -921,7 +888,7 @@ const handlePhaseClick = (phase: Phase, event: MouseEvent) => {
                           'hover:scale-110': !phase.is_blocked,
                           'cursor-pointer': !phase.is_blocked
                       }"
-                      @click="handlePhaseClick(phase, $event)"
+                      @click="phase.is_blocked ? $event.preventDefault() : null"
                     >
                       <!-- Container da bolinha da fase com progresso circular -->
                       <div class="relative flex items-center justify-center w-18 h-18">
@@ -1070,7 +1037,7 @@ const handlePhaseClick = (phase: Phase, event: MouseEvent) => {
                         'hover:scale-110': !phase.is_blocked,
                         'cursor-pointer': !phase.is_blocked
                     }"
-                    @click="handlePhaseClick(phase, $event)"
+                    @click="phase.is_blocked ? $event.preventDefault() : null"
                   >
                     <!-- Container da bolinha da fase com progresso circular -->
                     <div class="relative flex items-center justify-center w-18 h-18">

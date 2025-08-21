@@ -673,93 +673,61 @@ class PlayController extends Controller
          $user = Auth::user();
          $userId = $user->id;
 
-         // ===== DEBUG DETALHADO PARA FASE DE REVISÃO =====
-         Log::info("=== REVIEW ROUTE DEBUG START ===");
-         Log::info("[Review Debug] User ID: {$userId}");
-         Log::info("[Review Debug] Phase ID: {$phaseId}");
-         Log::info("[Review Debug] Reference UUID: {$referenceUuid}");
-
          if (!$user->hasLives() && !$user->hasActiveSubscription()) {
-             Log::info("[Review Debug] User has no lives and no subscription, redirecting to nolives");
              return redirect()->route('play.nolives');
          }
 
          // Calcular detalhes da fase e lista completa
          list($phaseDetails, $allPhasesList) = $this->findPhaseDetailsById($userId, $phaseId);
 
-         Log::info("[Review Debug] Phase details found: " . json_encode($phaseDetails));
-         
           if (!$phaseDetails || !$phaseDetails['is_review'] || $phaseDetails['reference_uuid'] !== $referenceUuid) {
-               Log::warning("[Review Debug] Invalid review phase access");
-               Log::warning("[Review Debug] - Phase Details: " . json_encode($phaseDetails));
-               Log::warning("[Review Debug] - Expected UUID: {$referenceUuid}");
-               Log::warning("[Review Debug] - Phase ID: {$phaseId}");
                return redirect()->route('play.map')->with('message', 'Fase de revisão não encontrada ou inválida.');
            }
            
            // Verificar bloqueio
            if ($phaseDetails['is_blocked'] && !$phaseDetails['is_current']) {
-               Log::warning("[Review Debug] Review phase is blocked for user {$userId}, phase {$phaseId}");
                return redirect()->route('play.map')->with('message', 'Esta fase está bloqueada.');
            }
 
          $reference = LegalReference::where('uuid', $referenceUuid)->firstOrFail();
-         Log::info("[Review Debug] Legal reference found: {$reference->name}");
 
          // Obter IDs dos artigos no escopo e verificar quais precisam de revisão
           $articleIdsToReview = collect();
           $articlesWithProgress = collect();
-          $articleIdsInScope = $this->getArticlesInScopeForReview($phaseId, $allPhasesList); // Usa a lista de estrutura
-
-          Log::info("[Review Debug] Articles in scope: " . $articleIdsInScope->count() . " articles");
-          Log::info("[Review Debug] Article IDs in scope: " . $articleIdsInScope->toJson());
+          $articleIdsInScope = $this->getArticlesInScopeForReview($phaseId, $allPhasesList);
 
           if ($articleIdsInScope->isNotEmpty()) {
-               // Primeiro, vamos ver todos os progressos dos artigos em escopo
-               $allProgressInScope = UserProgress::where('user_id', $userId)
-                   ->whereIn('law_article_id', $articleIdsInScope)
-                   ->get();
-               
-               Log::info("[Review Debug] All progress records in scope: " . $allProgressInScope->count());
-               foreach($allProgressInScope as $progress) {
-                   Log::info("[Review Debug] - Article {$progress->law_article_id}: {$progress->percentage}% (completed: " . ($progress->is_completed ? 'yes' : 'no') . ")");
-               }
-               
+               // CORREÇÃO: Buscar artigos que precisam revisão OU que nunca foram tentados
                $articleIdsToReview = UserProgress::where('user_id', $userId)
                    ->whereIn('law_article_id', $articleIdsInScope)
                    ->where('percentage', '<', 100)
                    ->pluck('law_article_id');
 
-               Log::info("[Review Debug] Articles needing review (< 100%): " . $articleIdsToReview->count());
-               Log::info("[Review Debug] Article IDs needing review: " . $articleIdsToReview->toJson());
+               // CORREÇÃO: Incluir também artigos que nunca foram tentados (sem progresso)
+               $articlesWithoutProgress = LawArticle::whereIn('id', $articleIdsInScope)
+                   ->whereNotIn('id', UserProgress::where('user_id', $userId)
+                       ->whereIn('law_article_id', $articleIdsInScope)
+                       ->pluck('law_article_id'))
+                   ->where('is_active', true)
+                   ->pluck('id');
 
-              if ($articleIdsToReview->isNotEmpty()) {
-                  Log::info("[Review Debug] Found articles to review, loading articles with progress...");
+               $allArticlesToReview = $articleIdsToReview->concat($articlesWithoutProgress)->unique();
+
+              if ($allArticlesToReview->isNotEmpty()) {
                    $articlesWithProgress = $this->getArticlesWithProgress(
                        $userId,
                        LawArticle::with('options')
-                           ->whereIn('id', $articleIdsToReview)
+                           ->whereIn('id', $allArticlesToReview)
                            ->where('is_active', true)
                            ->orderByRaw('CAST(article_reference AS UNSIGNED) ASC')
                            ->get()
                    );
-                   Log::info("[Review Debug] Articles with progress loaded: " . $articlesWithProgress->count());
-               } else {
-                   Log::info("[Review Debug] No articles need review (all are 100%)");
                }
-           } else {
-               Log::warning("[Review Debug] No articles in scope for this review phase!");
            }
 
          // Se não há artigos para revisar NESTE escopo
          if ($articlesWithProgress->isEmpty()) {
-              Log::warning("[Review Debug] No articles to review found, redirecting...");
-              Log::warning("[Review Debug] - Articles in scope: " . $articleIdsInScope->count());
-              Log::warning("[Review Debug] - Articles needing review: " . $articleIdsToReview->count());
-              Log::warning("[Review Debug] - Articles with progress: " . $articlesWithProgress->count());
-              
               $nextPhaseDetails = $this->findNextPhase($phaseId, $allPhasesList);
-              Log::info("[Review Debug] Next phase details: " . json_encode($nextPhaseDetails));
               
              if ($nextPhaseDetails) {
                  // Construir a rota correta para a próxima fase
@@ -767,45 +735,32 @@ class PlayController extends Controller
                      ? route('play.review', ['referenceUuid' => $nextPhaseDetails['reference_uuid'], 'phase' => $nextPhaseDetails['id']])
                      : route('play.phase', ['phaseId' => $nextPhaseDetails['id']]);
 
-                 Log::info("[Review Debug] Redirecting to next phase: {$nextRoute}");
-
                   // Validação extra: a próxima fase calculada não deveria estar bloqueada
                   if (isset($nextPhaseDetails['is_blocked']) && $nextPhaseDetails['is_blocked']) {
-                      Log::error("[Review Debug] Next phase is blocked, returning to map");
                       return redirect()->route('play.map')->with('message', 'Erro ao determinar a próxima fase.');
                   }
 
                   return redirect($nextRoute);
               } else {
-                   Log::info("[Review Debug] No next phase, returning to map with success message");
                    return redirect()->route('play.map')->with('message', 'Parabéns, você completou esta seção!');
               }
          }
 
          // Se há artigos para revisar, renderiza a página de revisão
-         Log::info("[Review Debug] SUCCESS! Found articles to review, rendering Phase view");
-         Log::info("[Review Debug] Articles with progress count: " . $articlesWithProgress->count());
-         
          $nextPhaseDetails = $this->findNextPhase($phaseId, $allPhasesList);
 
-         $phaseData = [
-             'title' => $phaseDetails['title'], // Título já formatado
-             'reference_name' => $reference->name,
-             'phase_number' => $phaseId, // ID Global
-             'is_review' => true,
-             'reference_uuid' => $referenceUuid,
-             'has_next_phase' => !!$nextPhaseDetails,
-             'next_phase_number' => $nextPhaseDetails ? $nextPhaseDetails['id'] : null,
-             'next_phase_is_review' => $nextPhaseDetails ? $nextPhaseDetails['is_review'] : false,
-             'progress' => $phaseDetails['progress'] // Passa o progresso da revisão
-         ];
-         
-         Log::info("[Review Debug] Phase data being sent to frontend: " . json_encode($phaseData));
-         Log::info("[Review Debug] Articles array keys: " . json_encode(array_keys($articlesWithProgress->toArray())));
-         Log::info("=== REVIEW ROUTE DEBUG END ===");
-
          return Inertia::render('Play/Phase', [ // Reutiliza o componente Phase
-             'phase' => $phaseData,
+             'phase' => [
+                 'title' => $phaseDetails['title'], // Título já formatado
+                 'reference_name' => $reference->name,
+                 'phase_number' => $phaseId, // ID Global
+                 'is_review' => true,
+                 'reference_uuid' => $referenceUuid,
+                 'has_next_phase' => !!$nextPhaseDetails,
+                 'next_phase_number' => $nextPhaseDetails ? $nextPhaseDetails['id'] : null,
+                 'next_phase_is_review' => $nextPhaseDetails ? $nextPhaseDetails['is_review'] : false,
+                 'progress' => $phaseDetails['progress'] // Passa o progresso da revisão
+             ],
              'articles' => $articlesWithProgress
          ]);
      }
