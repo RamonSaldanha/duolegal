@@ -47,8 +47,9 @@ class PlayController extends Controller
 
         $hasPreferences = $user->legalReferences()->exists();
         
-        // Obter jornada atual (padrão: 1)
-        $currentJourney = max(1, (int) $request->get('jornada', 1));
+        // Obter jornada atual (padrão: detectar automaticamente)
+        $requestedJourney = $request->get('jornada');
+        $currentJourney = 1; // Será atualizado depois se necessário
 
         $legalReferencesQuery = LegalReference::with(['articles' => function($query) {
             $query->orderByRaw('CAST(article_reference AS UNSIGNED) ASC')->where('is_active', true);
@@ -265,6 +266,31 @@ class PlayController extends Controller
 
         Log::debug("[Map Completion] Finished Pass 2. CurrentPhaseId identified: {$currentPhaseId}.");
 
+        // --- AUTO-DETECÇÃO DA JORNADA ATUAL ---
+        // Se não foi especificada uma jornada, detectar automaticamente baseado na fase atual
+        if ($requestedJourney === null && $currentPhaseId !== null) {
+            // Encontrar em qual jornada está a fase atual
+            $totalPhases = count($phasesData);
+            $currentPhaseIndex = -1;
+            
+            // Encontrar o índice da fase atual no array de dados
+            foreach ($phasesData as $index => $phase) {
+                if ($phase['id'] === $currentPhaseId) {
+                    $currentPhaseIndex = $index;
+                    break;
+                }
+            }
+            
+            if ($currentPhaseIndex !== -1) {
+                // Calcular qual jornada contém esta fase
+                $detectedJourney = floor($currentPhaseIndex / self::PHASES_PER_JOURNEY) + 1;
+                $currentJourney = $detectedJourney;
+                Log::debug("[Map Auto-Detection] Current phase at index {$currentPhaseIndex}, detected journey: {$detectedJourney}");
+            }
+        } else if ($requestedJourney !== null) {
+            // Usar jornada especificada
+            $currentJourney = max(1, (int) $requestedJourney);
+        }
 
         // --- PASSO 3: Ajuste Final - Garantir que is_current e is_blocked estejam corretos ---
         // A fase atual NUNCA deve ser bloqueada.
@@ -319,7 +345,9 @@ class PlayController extends Controller
             'has_next' => $currentJourney < $totalJourneys,
             'phases_in_journey' => count($journeyPhases),
             'total_phases' => $totalPhases,
-            'journey_title' => $totalJourneys > 1 ? "Jornada {$currentJourney} de {$totalJourneys}" : null
+            'journey_title' => $totalJourneys > 1 ? "Jornada {$currentJourney} de {$totalJourneys}" : null,
+            'current_phase_id' => $currentPhaseId, // Adicionar ID da fase atual para scroll automático
+            'was_auto_detected' => $requestedJourney === null // Flag para indicar se foi detectado automaticamente
         ];
         
         return Inertia::render('Play/Map', [

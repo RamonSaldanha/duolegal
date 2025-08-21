@@ -28,6 +28,8 @@ interface JourneyInfo {
     phases_in_journey: number;
     total_phases: number;
     journey_title: string | null;
+    current_phase_id?: number; // ID da fase atual para scroll automático
+    was_auto_detected?: boolean; // Se a jornada foi detectada automaticamente
   // Campos opcionais para debug
   id?: number;
   title?: string | null;
@@ -317,6 +319,19 @@ const updateWindowWidth = () => {
 // Adicionar event listener ao montar o componente
 onMounted(() => {
   window.addEventListener('resize', updateWindowWidth);
+  
+  // Scroll automático para a fase atual após carregar a página
+  if (props.journey?.was_auto_detected && hasCurrentPhaseInView.value) {
+    // Aguardar um pouco para garantir que o DOM foi renderizado
+    setTimeout(() => {
+      scrollToCurrentPhase();
+    }, 500);
+  }
+  
+  // Mostrar botão de scroll se necessário
+  if (!hasCurrentPhaseInView.value && props.journey?.current_phase_id) {
+    showScrollToCurrentButton.value = true;
+  }
 });
 
 // Remover event listener ao desmontar o componente
@@ -382,6 +397,71 @@ const handleClosePhaseUsersModal = () => {
   selectedPhaseInfo.value = { number: 0 };
 };
 
+// =============== SISTEMA DE SCROLL AUTOMÁTICO ===============
+
+// Função para rolar para a fase atual
+const scrollToCurrentPhase = () => {
+  if (!props.journey?.current_phase_id) {
+    console.warn('Nenhuma fase atual identificada para scroll');
+    return;
+  }
+
+  const currentPhaseId = props.journey.current_phase_id;
+  const phaseElement = document.querySelector(`[data-phase-id="${currentPhaseId}"]`);
+  
+  if (phaseElement) {
+    // Scroll suave para a fase atual
+    phaseElement.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center',
+      inline: 'center'
+    });
+    
+    // O balão "Começar!" já indica visualmente a fase atual, 
+    // não precisamos de efeito adicional
+    
+    console.log(`Scroll automático para fase ${currentPhaseId}`);
+  } else {
+    console.warn(`Elemento da fase ${currentPhaseId} não encontrado para scroll`);
+  }
+};
+
+// Função para detectar se existe fase atual na página atual
+const hasCurrentPhaseInView = computed(() => {
+  if (!props.journey?.current_phase_id || !props.phases) return false;
+  
+  return props.phases.some(phase => 
+    phase.id === props.journey?.current_phase_id && phase.is_current
+  );
+});
+
+// Estado para controlar a exibição do botão de scroll
+const showScrollToCurrentButton = ref(false);
+
+// Verificar se deve mostrar o botão de "Ir para fase atual"
+const shouldShowScrollButton = computed(() => {
+  // Mostrar apenas se:
+  // 1. Há uma fase atual identificada
+  // 2. A fase atual NÃO está na jornada/página atual
+  // 3. Ou se está na página mas o usuário não fez scroll automático ainda
+  return props.journey?.current_phase_id && 
+         ((!hasCurrentPhaseInView.value) || showScrollToCurrentButton.value);
+});
+
+// Função para navegar para a jornada que contém a fase atual
+const goToCurrentPhase = () => {
+  if (!props.journey?.current_phase_id) return;
+  
+  if (hasCurrentPhaseInView.value) {
+    // Se a fase atual está na página atual, apenas fazer scroll
+    scrollToCurrentPhase();
+  } else {
+    // Se a fase atual está em outra jornada, navegar para lá
+    // O backend detectará automaticamente a jornada correta
+    window.location.href = route('play.map');
+  }
+};
+
 
 </script>
 
@@ -424,6 +504,23 @@ const handleClosePhaseUsersModal = () => {
           />
         </div>
 
+        <!-- Botão flutuante "Ir para fase atual" -->
+        <div 
+          v-if="shouldShowScrollButton" 
+          class="fixed bottom-20 left-4 z-50"
+        >
+          <button
+            @click="goToCurrentPhase"
+            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-full shadow-lg transition-all duration-200 hover:scale-105 flex items-center gap-2 font-medium text-sm"
+            title="Ir para a fase atual"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+            </svg>
+            <span v-if="hasCurrentPhaseInView">Ir para minha fase</span>
+            <span v-else>Fase atual</span>
+          </button>
+        </div>
 
         <!-- Mapa de fases -->
         <div class="">
@@ -459,6 +556,7 @@ const handleClosePhaseUsersModal = () => {
                   <div
                     v-for="(phase, phaseIndex) in reference.phases"
                     :key="`phase-${phase.id}`"
+                    :data-phase-id="phase.id"
                     class="phase-item"
                     :style="{
                       transform: `translateX(${getPhaseXPosition(phaseIndex)}px)`,
@@ -608,6 +706,7 @@ const handleClosePhaseUsersModal = () => {
                 <div
                   v-for="(phase, phaseIndex) in group.phases"
                   :key="`phase-${phase.id}`"
+                  :data-phase-id="phase.id"
                   class="phase-item"
                   :style="{
                     transform: `translateX(${getPhaseXPosition(phaseIndex)}px)`,
@@ -916,6 +1015,19 @@ const handleClosePhaseUsersModal = () => {
   .phase-item[style*="translateX(110px)"] {
     transform: translateX(75px) !important;
   }
+}
 
+/* CSS para efeito de highlight removido - 
+   o balão "Começar!" já indica a fase atual */
+
+/* Estilo para o botão flutuante */
+.fixed.bottom-20.left-4 button {
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.fixed.bottom-20.left-4 button:hover {
+  backdrop-filter: blur(15px);
+  box-shadow: 0 10px 25px rgba(37, 99, 235, 0.3);
 }
 </style>

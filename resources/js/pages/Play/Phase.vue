@@ -12,6 +12,40 @@
         <span id="confetti-canvas" class="fixed top-1/2 left-1/2 z-[100] pointer-events-none"></span>
         <span id="emoji-canvas" class="fixed top-1/2 left-1/2 z-[100] pointer-events-none"></span>
         
+        <!-- Botão de Debug para Administradores (flutuante) -->
+        <div v-if="isAdmin" class="fixed bottom-4 right-4 z-50">
+            <div class="flex flex-col gap-2">
+                <!-- Botão principal: Resolver Artigo (combo) -->
+                <button
+                    @click="debugSolveArticle"
+                    class="bg-purple-600 hover:bg-purple-700 text-white p-3 rounded-full shadow-lg transition-all duration-200 hover:scale-110 group"
+                    title="🔧 Debug: Resolver artigo automaticamente"
+                >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                    </svg>
+                </button>
+                
+                <!-- Submenu com botões individuais (exibido no hover) -->
+                <div class="debug-submenu opacity-0 pointer-events-none transition-all duration-200 flex flex-col gap-1">
+                    <button
+                        @click="autofillCorrectAnswers"
+                        class="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-full shadow-lg text-xs"
+                        title="🔧 Debug: Apenas preencher lacunas"
+                    >
+                        📝
+                    </button>
+                    <button
+                        @click="quickCheckAnswers"
+                        class="bg-green-600 hover:bg-green-700 text-white p-2 rounded-full shadow-lg text-xs"
+                        title="🔧 Debug: Apenas verificar respostas"
+                    >
+                        ✓
+                    </button>
+                </div>
+            </div>
+        </div>
+        
         <div class="container py-4 md:py-8 px-3 md:px-4">
 
             <div class="w-full sm:w-[95%] lg:w-[50rem] mx-auto">
@@ -496,9 +530,13 @@ const page = usePage<{
         user: {
             lives: number;
             xp: number;
+            is_admin?: boolean;
         }
     }
 }>();
+
+// Computed property para verificar se o usuário é admin
+const isAdmin = computed(() => page.props.auth.user?.is_admin);
 
 // Usar props para inicializar articlesArray
 const articlesArray = ref(Object.values(props.articles));
@@ -1504,6 +1542,102 @@ const reviewCompletionPercentage = computed(() => {
             });
         }
     };
+
+    // ============ FUNÇÕES DE DEBUG PARA ADMINISTRADOR ============
+    
+    // Função para autopreencher todas as lacunas com as respostas corretas (ADMIN ONLY)
+    const autofillCorrectAnswers = () => {
+        if (!isAdmin.value) {
+            console.warn('Debug: Acesso negado - apenas administradores podem usar esta funcionalidade');
+            return;
+        }
+        
+        if (!currentArticle.value) {
+            console.warn('Debug: Nenhum artigo atual disponível');
+            return;
+        }
+        
+        if (answered.value) {
+            console.warn('Debug: Artigo já foi respondido. Resetando primeiro...');
+            resetAnswersConfirmed();
+            // Aguardar um pouco para o reset tomar efeito
+            setTimeout(() => autofillCorrectAnswers(), 100);
+            return;
+        }
+        
+        // Limpar respostas existentes
+        if (!userAnswers.value[currentArticleIndex.value]) {
+            userAnswers.value[currentArticleIndex.value] = {};
+        }
+        
+        // Mapear gap_order para lacuna_index e preencher automaticamente
+        const correctAnswersMap = new Map<number, string>();
+        
+        currentArticle.value.options.forEach(option => {
+            if (option.is_correct && option.gap_order !== undefined) {
+                // gap_order é 1-based, lacuna_index é 0-based
+                const lacunaIndex = Number(option.gap_order) - 1;
+                correctAnswersMap.set(lacunaIndex, option.word);
+            }
+        });
+        
+        console.log('Debug: Preenchendo automaticamente:', correctAnswersMap);
+        
+        // Preencher cada lacuna com a resposta correta
+        correctAnswersMap.forEach((word, lacunaIndex) => {
+            userAnswers.value[currentArticleIndex.value][lacunaIndex] = word;
+        });
+        
+        // Forçar reatividade
+        userAnswers.value = { ...userAnswers.value };
+        
+        // Feedback visual para o admin
+        toast({
+            title: "🔧 Debug - Admin",
+            description: `Lacunas preenchidas automaticamente para Art. ${currentArticle.value.article_reference}`,
+            duration: 3000,
+        });
+        
+        console.log('Debug: Preenchimento automático concluído', userAnswers.value[currentArticleIndex.value]);
+    };
+    
+    // Função para verificar imediatamente as respostas preenchidas (ADMIN ONLY)
+    const quickCheckAnswers = () => {
+        if (!isAdmin.value) {
+            console.warn('Debug: Acesso negado - apenas administradores podem usar esta funcionalidade');
+            return;
+        }
+        
+        if (!allLacunasFilled.value) {
+            toast({
+                variant: "destructive",
+                title: "🔧 Debug - Admin",
+                description: "Nem todas as lacunas estão preenchidas. Use 'Autopreencher' primeiro.",
+                duration: 3000,
+            });
+            return;
+        }
+        
+        checkAnswers();
+        
+        toast({
+            title: "🔧 Debug - Admin",
+            description: "Respostas verificadas automaticamente",
+            duration: 2000,
+        });
+    };
+    
+    // Função combo: autopreencher + verificar (ADMIN ONLY)
+    const debugSolveArticle = () => {
+        if (!isAdmin.value) return;
+        
+        autofillCorrectAnswers();
+        
+        // Aguardar o preenchimento e depois verificar
+        setTimeout(() => {
+            quickCheckAnswers();
+        }, 500);
+    };
 </script>
 
 <style scoped>
@@ -1699,5 +1833,30 @@ button {
 .game-button:active {
     transform: translateY(4px);
     box-shadow: none !important;
+}
+
+/* Estilos para o botão de debug flutuante (apenas para administradores) */
+.debug-submenu {
+    transform: translateY(-10px);
+}
+
+.fixed.bottom-4.right-4:hover .debug-submenu {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    transform: translateY(0);
+}
+
+/* Pulse animation para indicar funcionalidade ativa */
+.bg-purple-600 {
+    animation: debug-pulse 2s infinite;
+}
+
+@keyframes debug-pulse {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(147, 51, 234, 0.7);
+    }
+    50% {
+        box-shadow: 0 0 0 8px rgba(147, 51, 234, 0);
+    }
 }
 </style>
