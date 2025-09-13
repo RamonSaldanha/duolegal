@@ -6,7 +6,7 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, Sid
 import { type NavItem } from '@/types';
 import { computed } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
-import { BookOpen, Folder, LayoutGrid, Lock, Play, Users } from 'lucide-vue-next';
+import { BookOpen, Folder, Lock, Play, Users } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
 
 

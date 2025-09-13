@@ -24,8 +24,10 @@ This is a gamified law study application called "Memorize Direito" built with La
 - `php artisan migrate:fresh --seed` - Fresh migration with seeding
 
 ### Testing
-- `php artisan test` - Run PHPUnit tests
-- `vendor/bin/pest` - Run Pest tests (preferred testing framework)
+- `php artisan test` - Run all tests (uses Pest as default)
+- `php artisan test tests/Feature/ExampleTest.php` - Run specific test file
+- `php artisan test --filter=testName` - Run specific test by name
+- `vendor/bin/pest` - Run Pest tests directly (preferred testing framework)
 
 ### Code Quality
 - `vendor/bin/pint` - Run Laravel Pint (PHP CS Fixer)
@@ -42,11 +44,14 @@ This is a gamified law study application called "Memorize Direito" built with La
 - **State Management**: Composables with Vue 3 Composition API
 
 ### Key Models & Relationships
-- **User**: Has lives, XP, subscriptions, and progress tracking
+- **User**: Has lives, XP, subscriptions, and progress tracking via Laravel Cashier
 - **LegalReference**: Legal documents/laws that users can study
 - **LawArticle**: Individual articles within legal references with practice content
 - **LawArticleOption**: Multiple choice options for fill-in-the-blank exercises
 - **UserProgress**: Tracks user performance and completion status per article
+- **Challenge**: User-created challenges and custom exercises
+- **ChallengeProgress**: Tracks progress on challenges
+- **UserArticleProgress**: Additional granular progress tracking for articles
 
 ### Game Mechanics
 - **Lives System**: Users lose lives on incorrect answers, can be replenished
@@ -58,11 +63,20 @@ This is a gamified law study application called "Memorize Direito" built with La
 ### Frontend Architecture
 - **Layouts**: AppLayout (main), AuthLayout (authentication)
 - **Pages**: 
-  - `Play/Phase.vue` - Main game interface with fill-in-the-blank exercises
-  - `Play/Map.vue` - Progress map showing available phases
+  - `Play/Phase.vue` - Main game interface with fill-in-the-blank exercises and debug tools
+  - `Play/Map.vue` - Progress map showing available phases with journey system
+  - `Play/DebugPanel.vue` - Administrative debugging interface
   - `Dashboard.vue` - User dashboard and statistics
-- **Components**: Reusable UI components in `components/ui/` following shadcn-vue patterns
-- **Composables**: Shared logic like `useAppearance.ts` for theme management
+  - `Subscription/Index.vue` - Stripe subscription management
+  - `User/LegalReferences.vue` - User preference selection for laws to study
+- **Components**: 
+  - shadcn-vue UI components in `components/ui/` with full TypeScript support
+  - Custom game components like `GameButton.vue`
+  - Admin components for content management
+- **Composables**: 
+  - `useAppearance.ts` - Theme management with dark mode support
+  - `useInitials.ts` - User avatar utilities
+- **TypeScript**: Full type safety with custom types in `types/index.ts` and Ziggy route types
 
 ### Key Features Implementation
 - **Gap-filling Exercise**: Uses practice_content with `____` placeholders replaced by user selections
@@ -93,10 +107,16 @@ This is a gamified law study application called "Memorize Direito" built with La
 - Use TypeScript interfaces for type safety in Vue components
 
 ### Important Constants & Configuration
-- Phase generation is controlled by constants in `PlayController.php`
+- Phase generation is controlled by constants in `PlayController.php`:
+  - `ARTICLES_PER_PHASE = 6` - Articles per regular phase
+  - `REVIEW_PHASE_INTERVAL = 3` - Review phase every 3 regular phases  
+  - `PHASES_PER_MODULE_PER_LAW = 6` - Max regular phases per law per module (controls intercalation)
+  - `PHASES_PER_JOURNEY = 24` - Max phases per journey for UI organization
 - Difficulty levels: 1=Iniciante, 2=Básico, 3=Intermediário, 4=Avançado, 5=Especialista
 - Success threshold: 70% correct answers to pass an article
 - Perfect score for reviews: 100% required to advance from review phases
+- XP calculation: `difficultyLevel * 5` (5-25 XP per article based on difficulty)
+- Lives system: Users start with finite lives, subscribers get infinite lives
 
 ===
 
@@ -110,7 +130,7 @@ The Laravel Boost guidelines are specifically curated by Laravel maintainers for
 ## Foundational Context
 This application is a Laravel application and its main Laravel ecosystems package & versions are below. You are an expert with them all. Ensure you abide by these specific packages & versions.
 
-- php - 8.2.27
+- php - 8.2.25
 - inertiajs/inertia-laravel (INERTIA) - v2
 - laravel/framework (LARAVEL) - v12
 - laravel/prompts (PROMPTS) - v0
