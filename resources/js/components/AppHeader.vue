@@ -190,7 +190,7 @@ const rightNavItems: NavItem[] = [
                     </Sheet>
                 </div>
 
-                <Link :href="route('play.map')" class="flex items-center gap-x-2">
+                <Link :href="route('play.map')" class="hidden lg:flex items-center gap-x-2">
                     <AppLogo  />
                 </Link>
 
