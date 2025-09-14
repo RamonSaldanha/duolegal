@@ -221,27 +221,21 @@
                                         </span>
                                     </div>
 
-                                    <div class="text-lg font-medium mb-2">
+                                    <div class="text-md">
                                         Você acertou {{ articleScore.correct }} de {{ articleScore.total }} lacunas ({{ articleScore.percentage }}%)
                                     </div>
                                     
                                     <!-- Removido a exibição de estatísticas adicionais conforme solicitado -->
 
-                                    <div class="mt-6">
-                                        <h3 class="font-medium mb-2">Texto original:</h3>
-                                        <div class="p-1 bg-muted/70 dark:bg-muted/10 border border-muted/80 rounded-md max-h-[150px] overflow-y-auto">
-                                            <p class="whitespace-pre-line text-md" v-html="highlightedOriginalText">
-                                            </p>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Nova seção para mostrar as respostas do usuário -->
-                                    <div class="mt-4">
-                                        <h3 class="font-medium mb-2">Suas respostas:</h3>
+                                    <!-- Seção única com tooltips para respostas incorretas -->
+                                    <div class="mt-2">
+                                        <h3 class="font-medium mb-2">Sua resposta:</h3>
                                         <div class="p-2 bg-muted/70 dark:bg-muted/10 border border-muted/80 rounded-md max-h-[150px] overflow-y-auto">
-                                            <p class="whitespace-pre-line text-md" v-html="highlightedUserAnswers"></p>
+                                            <p class="whitespace-pre-line text-sm p-4" v-html="highlightedUserAnswersWithTooltips"></p>
                                         </div>
-                                        
+                                        <div class="mt-2 text-xs text-muted-foreground flex items-center gap-1">
+                                            <span>Passe o mouse sobre as respostas incorretas para ver a resposta correta</span>
+                                        </div>
                                     </div>
 
                                     <div class="mt-6 flex justify-between gap-4">
@@ -1244,27 +1238,27 @@ const reviewCompletionPercentage = computed(() => {
         }, 150); // Aumentei o timeout para dar mais tempo ao DOM para atualizar
     }
 
-    // Adicione este computed property ao seu script
+    // Computed property original (mantido como backup)
     const highlightedUserAnswers = computed(() => {
         if (!currentArticle.value || !answered.value) return '';
 
         let text = currentArticle.value.practice_content;
         const lacunas = text.match(/_{5,}/g) || [];
         const answers = userAnswers.value[currentArticleIndex.value] || {};
-        
+
         // Para cada lacuna, substitua pelo texto do usuário com destaque adequado
         lacunas.forEach((lacuna, index) => {
             // Obtém a resposta do usuário para esta lacuna
             const userAnswer = answers[index];
-            
+
             // Obtém a resposta correta para esta lacuna
             const correctAnswer = getCorrectAnswerForGap(index + 1); // gap_order é 1-based
-            
+
             let replacement;
             if (userAnswer) {
                 // Usuário respondeu, verificar se está correto
                 const isCorrect = userAnswer === correctAnswer;
-                
+
                 if (isCorrect) {
                     // Resposta correta - verde
                     replacement = `<span class="px-1 py-0.5 rounded font-medium bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300">${userAnswer}</span>`;
@@ -1276,10 +1270,71 @@ const reviewCompletionPercentage = computed(() => {
                 // Usuário não respondeu - usar cinza
                 replacement = `<span class="px-1 py-0.5 rounded font-medium bg-gray-100 text-gray-500 dark:bg-gray-800/40 dark:text-gray-400">(...)</span>`;
             }
-            
+
             text = text.replace(lacuna, replacement);
         });
-        
+
+        return text;
+    });
+
+    // Nova versão com tooltips para respostas incorretas
+    const highlightedUserAnswersWithTooltips = computed(() => {
+        if (!currentArticle.value || !answered.value) return '';
+
+        let text = currentArticle.value.practice_content;
+        const lacunas = text.match(/_{5,}/g) || [];
+        const answers = userAnswers.value[currentArticleIndex.value] || {};
+
+        // Para cada lacuna, substitua pelo texto do usuário com destaque adequado
+        lacunas.forEach((lacuna, index) => {
+            // Obtém a resposta do usuário para esta lacuna
+            const userAnswer = answers[index];
+
+            // Obtém a resposta correta para esta lacuna
+            const correctAnswer = getCorrectAnswerForGap(index + 1); // gap_order é 1-based
+
+            let replacement;
+            if (userAnswer) {
+                // Usuário respondeu, verificar se está correto
+                const isCorrect = userAnswer === correctAnswer;
+
+                if (isCorrect) {
+                    // Resposta correta - verde (sem tooltip)
+                    replacement = `<span class="px-1 py-0.5 rounded font-medium bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300">${userAnswer}</span>`;
+                } else {
+                    // Resposta incorreta - vermelho com tooltip
+                    // Escapar HTML para segurança
+                    const escapedUserAnswer = userAnswer.replace(/[<>&"']/g, (char) => {
+                        const escapeMap: Record<string, string> = {
+                            '<': '&lt;',
+                            '>': '&gt;',
+                            '&': '&amp;',
+                            '"': '&quot;',
+                            "'": '&#39;'
+                        };
+                        return escapeMap[char] || char;
+                    });
+                    const escapedCorrectAnswer = correctAnswer.replace(/[<>&"']/g, (char) => {
+                        const escapeMap: Record<string, string> = {
+                            '<': '&lt;',
+                            '>': '&gt;',
+                            '&': '&amp;',
+                            '"': '&quot;',
+                            "'": '&#39;'
+                        };
+                        return escapeMap[char] || char;
+                    });
+
+                    replacement = `<span class="px-1 py-0.5 rounded font-medium bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 lacuna-tooltip-trigger cursor-help" data-correct-answer="${escapedCorrectAnswer}">${escapedUserAnswer}</span>`;
+                }
+            } else {
+                // Usuário não respondeu - usar cinza (sem tooltip)
+                replacement = `<span class="px-1 py-0.5 rounded font-medium bg-gray-100 text-gray-500 dark:bg-gray-800/40 dark:text-gray-400">(...)</span>`;
+            }
+
+            text = text.replace(lacuna, replacement);
+        });
+
         return text;
     });
 
@@ -1752,6 +1807,65 @@ button {
 .game-button:active {
     transform: translateY(4px);
     box-shadow: none !important;
+}
+
+/* Tooltip styles for incorrect lacunas - Tailwind pattern */
+.lacuna-tooltip-trigger {
+    position: relative;
+}
+
+.lacuna-tooltip-trigger::before {
+    content: "";
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 8px solid #dcfce7;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s ease;
+    z-index: 1001;
+}
+
+.lacuna-tooltip-trigger::after {
+    content: attr(data-correct-answer);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #dcfce7;
+    color: #166534;
+    padding: 2px 4px;
+    border-radius: 4px;
+    font-size: inherit;
+    font-weight: 500;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s ease;
+    z-index: 1000;
+}
+
+.lacuna-tooltip-trigger:hover::before,
+.lacuna-tooltip-trigger:hover::after {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Dark mode adjustments for tooltip - Tailwind pattern */
+@media (prefers-color-scheme: dark) {
+    .lacuna-tooltip-trigger::before {
+        border-top-color: #14532d;
+    }
+
+    .lacuna-tooltip-trigger::after {
+        background: #14532d;
+        color: #86efac;
+    }
 }
 
 </style>
