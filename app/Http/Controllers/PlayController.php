@@ -1081,13 +1081,19 @@ class PlayController extends Controller
 
         $article = LawArticle::where('uuid', $validated['article_uuid'])->firstOrFail();
         $user = Auth::user();
-        $percentage = ($validated['total_answers'] > 0)
-                      ? (($validated['correct_answers'] / $validated['total_answers']) * 100)
-                      : 0;
 
-        // Garantir que correct_answers não seja maior que total_answers
-        $correctAnswers = min((int)$validated['correct_answers'], (int)$validated['total_answers']);
-        $totalAnswers = (int)$validated['total_answers'];
+        // Detectar artigos revogados/vazios
+        if ($this->isRevokedArticle($article)) {
+            // Para artigos revogados, sempre considerar 100% completo
+            $correctAnswers = 1;
+            $totalAnswers = 1;
+        } else {
+            // Lógica normal para artigos válidos
+            $correctAnswers = min((int)$validated['correct_answers'], (int)$validated['total_answers']);
+            $totalAnswers = (int)$validated['total_answers'];
+        }
+
+        $percentage = ($totalAnswers > 0) ? (($correctAnswers / $totalAnswers) * 100) : 0;
 
         // Verificar se o usuário havia completado este artigo antes
         $previousProgress = UserProgress::where('user_id', $user->id)
@@ -1334,5 +1340,15 @@ class PlayController extends Controller
         return array_values($unique);
     }
 
+    private function isRevokedArticle(LawArticle $article): bool
+    {
+        $content = trim($article->practice_content ?? '');
+
+        // Detecta artigos apenas com cabeçalho
+        $isOnlyHeader = preg_match('/^Art\.?\s*\d+[°.]?\.?$/', $content) && strlen($content) < 20;
+        $hasNoGaps = !str_contains($content, '_____');
+
+        return $isOnlyHeader && $hasNoGaps;
+    }
 
 } // Fim da classe

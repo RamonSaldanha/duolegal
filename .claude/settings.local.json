@@ -17,12 +17,14 @@
       "Bash(rm:*)",
       "Bash(cp:*)",
       "Bash(composer search:*)",
-      "Bash(composer require:*)"
+      "Bash(composer require:*)",
+      "mcp__laravel-boost__database-query",
+      "mcp__laravel-boost__database-schema"
     ],
     "deny": []
   },
+  "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
     "laravel-boost"
-  ],
-  "enableAllProjectMcpServers": true
+  ]
 }

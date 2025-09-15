@@ -152,17 +152,37 @@
                     </CardHeader>
 
                     <CardContent class="px-0 pb-0">
-                        <!-- Texto com lacunas - aumentado no mobile -->
+                        <!-- Para artigos revogados, mostrar apenas o aviso no lugar do texto -->
+                        <div v-if="isRevokedArticle" class="rounded-md mb-7">
+                            <div class="p-6 bg-amber-50 border border-amber-200 rounded-lg">
+                                <div class="flex items-start gap-3">
+                                    <AlertTriangle class="h-6 w-6 text-amber-600 mt-1 flex-shrink-0" />
+                                    <div class="flex-1">
+                                        <h3 class="text-lg font-semibold text-amber-800 mb-2">Disposição Revogada</h3>
+                                        <p class="text-amber-700 mb-3">
+                                            Este artigo foi revogado e não possui conteúdo para exercício.
+                                            Está registrado apenas para fins de conhecimento histórico.
+                                        </p>
+                                        <div class="text-sm text-amber-600">
+                                            <strong>Artigo:</strong> {{ currentArticle.article_reference }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Texto com lacunas - apenas para artigos válidos -->
                         <div
+                            v-else
                             ref="textContainerRef"
                             class="rounded-md mb-7 text-xl md:text-lg leading-relaxed whitespace-pre-line overflow-hidden transition-all duration-300 font-medium"
                             :class="{ 'mobile-collapsed': isMobile && !allLacunasFilled }"
                             :style="isMobile ? { maxHeight: textContainerHeight + 'px' } : {}"
                             v-html="processedText"
                         ></div>
-                        
-                        <button 
-                            v-if="isMobile && hasHiddenLacunas" 
+
+                        <button
+                            v-if="!isRevokedArticle && isMobile && hasHiddenLacunas"
                             @click="toggleTextContainer"
                             class="md:hidden w-full py-2 text-sm text-primary flex items-center justify-center border-t border-primary/10 -mt-2 mb-4"
                         >
@@ -184,23 +204,23 @@
                             <!-- Conteúdo do offcanvas -->
                             <div class="flex items-center justify-between border-b border-border pb-4 mb-4">
                                 <div class="flex items-center gap-3 text-xl">
-                                        <div 
+                                        <div
                                             :class="[
                                                 'flex items-center justify-center w-12 h-12 rounded-full',
-                                                (articleScore && articleScore.percentage >= 70) ? 'bg-green-100 dark:bg-green-950' : 'bg-red-100 dark:bg-red-950'
+                                                (articleScore && (articleScore.percentage >= 70 || isRevokedArticle)) ? 'bg-green-100 dark:bg-green-950' : 'bg-red-100 dark:bg-red-950'
                                             ]"
                                         >
-                                            <Check 
-                                                v-if="articleScore && articleScore.percentage >= 70" 
+                                            <Check
+                                                v-if="articleScore && (articleScore.percentage >= 70 || isRevokedArticle)"
                                                 class="w-6 h-6 text-green-600"
                                             />
-                                            <X 
-                                                v-else 
+                                            <X
+                                                v-else
                                                 class="w-6 h-6 text-red-600"
                                             />
                                         </div>
                                         <span class="font-semibold">
-                                            {{ articleScore && articleScore.percentage >= 70 ? 'Parabéns!' : 'Continue tentando!' }}
+                                            {{ (articleScore && (articleScore.percentage >= 70 || isRevokedArticle)) ? 'Parabéns!' : 'Continue tentando!' }}
                                         </span>
                                     </div>
                                     
@@ -214,7 +234,7 @@
 
                                 <div v-if="articleScore">
                                     <!-- Notificação de vida perdida -->
-                                    <div v-if="articleScore.percentage < 70" class="bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-200 p-2 rounded-lg text-center text-sm mb-4">
+                                    <div v-if="articleScore.percentage < 70 && !isRevokedArticle" class="bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-200 p-2 rounded-lg text-center text-sm mb-4">
                                         <span class="flex items-center justify-center gap-1">
                                             <Heart class="w-4 h-4" fill="currentColor" />
                                             Você perdeu 1 vida!
@@ -222,13 +242,18 @@
                                     </div>
 
                                     <div class="text-md">
-                                        Você acertou {{ articleScore.correct }} de {{ articleScore.total }} lacunas ({{ articleScore.percentage }}%)
+                                        <template v-if="isRevokedArticle">
+                                            Disposição revogada - conhecimento registrado (100%)
+                                        </template>
+                                        <template v-else>
+                                            Você acertou {{ articleScore.correct }} de {{ articleScore.total }} lacunas ({{ articleScore.percentage }}%)
+                                        </template>
                                     </div>
                                     
                                     <!-- Removido a exibição de estatísticas adicionais conforme solicitado -->
 
-                                    <!-- Seção única com tooltips para respostas incorretas -->
-                                    <div class="mt-2">
+                                    <!-- Seção única com tooltips para respostas incorretas - apenas para artigos válidos -->
+                                    <div v-if="!isRevokedArticle" class="mt-2">
                                         <h3 class="font-medium mb-2">Sua resposta:</h3>
                                         <div class="p-2 bg-muted/70 dark:bg-muted/10 border border-muted/80 rounded-md max-h-[150px] overflow-y-auto">
                                             <p class="whitespace-pre-line text-sm p-4" v-html="highlightedUserAnswersWithTooltips"></p>
@@ -238,8 +263,10 @@
                                         </div>
                                     </div>
 
-                                    <div class="mt-6 flex justify-between gap-4">
+                                    <div :class="isRevokedArticle ? 'mt-6 flex justify-center' : 'mt-6 flex justify-between gap-4'">
+                                        <!-- Botão Tentar Novamente - apenas para artigos válidos -->
                                         <GameButton
+                                            v-if="!isRevokedArticle"
                                             @click="resetAnswers"
                                             variant="white"
                                             class="w-full flex items-center justify-center gap-2"
@@ -256,19 +283,21 @@
                                             v-if="currentArticleIndex < articlesArray.length - 1"
                                             @click="nextArticle"
                                             variant="green"
-                                            class="w-full flex items-center justify-center gap-2"
+                                            :class="isRevokedArticle ? 'w-auto px-8' : 'w-full'"
+                                            class="flex items-center justify-center gap-2"
                                             :size="isMobile ? 'sm' : 'lg'"
                                         >
                                             Próximo
                                             <ChevronRight class="h-4 w-4" />
                                         </GameButton>
-                                        
+
                                         <!-- Botão especial para o último artigo quando a fase estiver completa -->
                                         <GameButton
                                             v-else-if="isPhaseComplete || (props.phase.is_review && areAllReviewArticlesCompleted)"
                                             @click="showPhaseCompletionModal"
                                             variant="green"
-                                            class="w-full flex items-center justify-center gap-2"
+                                            :class="isRevokedArticle ? 'w-auto px-8' : 'w-full'"
+                                            class="flex items-center justify-center gap-2"
                                             :size="isMobile ? 'sm' : 'lg'"
                                         >
                                             {{ props.phase.has_next_phase ? 'Próxima Fase' : 'Concluir' }}
@@ -285,7 +314,8 @@
                     <CardFooter class="px-0">
                         <!-- Botões na parte inferior do card -->
                         <div v-if="!answered" class="w-full">
-                            <div v-if="availableOptions.length > 0">
+                            <!-- Opções de palavras - apenas para artigos válidos -->
+                            <div v-if="!isRevokedArticle && availableOptions.length > 0">
                                 <div class="flex flex-wrap gap-2 mb-4">
                                     <GameButton
                                         v-for="(word, index) in availableOptions"
@@ -301,7 +331,9 @@
                             
                             <!-- Botões de ações -->
                             <div class="flex justify-between mt-6 pt-4 border-t">
-                                <GameButton 
+                                <!-- Botão Limpar - apenas para artigos válidos -->
+                                <GameButton
+                                    v-if="!isRevokedArticle"
                                     @click="resetAnswers"
                                     variant="white"
                                     class="flex items-center gap-2"
@@ -311,8 +343,11 @@
                                     <span class="md:hidden">Limpar</span>
                                 </GameButton>
 
-                                <GameButton 
-                                    :disabled="!allLacunasFilled" 
+                                <!-- Placeholder para manter alinhamento em artigos revogados -->
+                                <div v-else></div>
+
+                                <GameButton
+                                    :disabled="!allLacunasFilled"
                                     @click="checkAnswers"
                                     variant="purple"
                                 >
@@ -323,7 +358,9 @@
 
                         <!-- Botões após verificação -->
                         <div v-else class="w-full flex justify-between">
-                            <GameButton 
+                            <!-- Botão Tentar Novamente - apenas para artigos válidos -->
+                            <GameButton
+                                v-if="!isRevokedArticle"
                                 @click="resetAnswers"
                                 variant="white"
                                 class="flex items-center gap-2"
@@ -332,6 +369,9 @@
                                 <span class="hidden md:inline">Tentar novamente</span>
                                 <span class="md:hidden">Novamente</span>
                             </GameButton>
+
+                            <!-- Placeholder para manter alinhamento em artigos revogados -->
+                            <div v-else></div>
                         
                             <!-- Botão condicional baseado em se é o último artigo e se a fase está completa -->
                             <GameButton 
@@ -549,6 +589,9 @@ const userAnswers = ref<UserAnswers>({});
 const answered = ref(false);
 const offcanvasMinimize = ref(false);
 
+// Estado de carregamento para prevenir race conditions
+const isSavingProgress = ref(false);
+
 // Inicializa attemptedArticles com os índices dos artigos já tentados (com progresso)
 const attemptedArticles = ref<number[]>(
     articlesArray.value
@@ -702,8 +745,24 @@ const reviewCompletionPercentage = computed(() => {
     });
 
 
+    // Detectar artigos revogados/vazios
+    const isRevokedArticle = computed(() => {
+        if (!currentArticle.value?.practice_content) return true;
+        const content = currentArticle.value.practice_content.trim();
+
+        // Detecta se é apenas cabeçalho do artigo (padrão: "Art. X°" ou "Art. X.")
+        const isOnlyHeader = /^Art\.?\s*\d+[°.]?\.?$/.test(content) && content.length < 20;
+        const hasNoGaps = !content.includes('_____');
+
+        return isOnlyHeader && hasNoGaps;
+    });
+
     // Verifica se todas as lacunas foram preenchidas
     const allLacunasFilled = computed(() => {
+        // Para artigos revogados, sempre permitir verificação
+        if (isRevokedArticle.value) return true;
+
+        // Lógica original para artigos normais
         if (!userAnswers.value[currentArticleIndex.value]) return false;
         return Object.keys(userAnswers.value[currentArticleIndex.value]).length === totalLacunas.value;
     });
@@ -711,16 +770,24 @@ const reviewCompletionPercentage = computed(() => {
     // Calcula a pontuação do usuário para o artigo atual
     const articleScore = computed(() => {
         if (!answered.value) return null;
+
+        // Para artigos revogados, sempre retornar 100% de sucesso
+        if (isRevokedArticle.value) {
+            return {
+                correct: 1,
+                total: 1,
+                percentage: 100
+            };
+        }
+
         let correctCount = 0;
         const answers = userAnswers.value[currentArticleIndex.value] || {};
-
 
         Object.entries(answers).forEach(([lacunaIndex, userAnswer]) => {
             const gapNumber = Number(lacunaIndex) + 1; // gap_order é 1-based
             // Obtém a resposta correta para esta lacuna
             const correctAnswer = articleOptions.value.correctAnswers.get(gapNumber);
-            
-            
+
             if (correctAnswer && userAnswer === correctAnswer) {
                 correctCount++;
             }
@@ -750,6 +817,19 @@ const reviewCompletionPercentage = computed(() => {
         spread: 50,
         zIndex: 100 // Garantindo que o z-index também está definido na configuração
     });
+
+    // Função para reproduzir áudio de sucesso
+    const playSuccessAudio = () => {
+        try {
+            const audio = new Audio('/bell-win.wav');
+            audio.volume = 0.7; // Volume controlado para não ser muito alto
+            audio.play().catch(error => {
+                console.log('Não foi possível reproduzir o áudio:', error);
+            });
+        } catch (error) {
+            console.log('Erro ao criar instância de áudio:', error);
+        }
+    };
 
     // Determina a próxima lacuna vazia para preenchimento
     const nextEmptyLacunaIndex = computed(() => {
@@ -905,16 +985,17 @@ const reviewCompletionPercentage = computed(() => {
             .catch(error => {
                 console.error('Erro ao salvar progresso:', error);
             });
-        
+
             // Código para exibir recompensas visuais
             if (score.percentage >= 70) {
                 if (!completedArticles.value.includes(currentArticleIndex.value)) {
                     completedArticles.value.push(currentArticleIndex.value);
                 }
-                
+
                 // Dispara o confetti para acertos acima de 70%
                 setTimeout(() => {
                     confettiReward();
+                    playSuccessAudio(); // ✅ Áudio de sucesso para acertos >= 70%
                 }, 300);
                 
                 // Para 100% de acerto, mostre emojis também
@@ -924,6 +1005,9 @@ const reviewCompletionPercentage = computed(() => {
                     }, 600);
                 }
             }
+        } else {
+            // Se não há score, ainda assim liberar navegação
+            isSavingProgress.value = false;
         }
 
         // Expande o texto para mostrar o próximo trecho após verificar as respostas
@@ -931,7 +1015,7 @@ const reviewCompletionPercentage = computed(() => {
             isTextExpanded.value = false;
             scrollToNextEmptyLacuna();
         }
-        
+
         // Integração do sistema de XP: atualização será feita automaticamente via resposta do servidor
     };
     
@@ -1089,7 +1173,13 @@ const reviewCompletionPercentage = computed(() => {
     // Modifique as funções nextArticle e previousArticle
     const nextArticle = () => {
         checkNoLivesRedirect(); // Verifica redirecionamento antes de qualquer ação
-        
+
+        // Bloquear se estiver salvando progresso para evitar race condition
+        if (isSavingProgress.value) {
+            console.log('Aguardando salvamento do progresso...');
+            return;
+        }
+
         if (currentArticleIndex.value < articlesArray.value.length - 1) {
             currentArticleIndex.value++;
             answered.value = false;
@@ -1356,29 +1446,22 @@ const reviewCompletionPercentage = computed(() => {
 
     // Função para verificar as respostas do usuário
     const checkAnswers = () => {
-        if (!allLacunasFilled.value) return;
-        
-        answered.value = true;
-        
-        // Se não estiver no array de artigos tentados, adicione
-        if (!attemptedArticles.value.includes(currentArticleIndex.value)) {
-            attemptedArticles.value.push(currentArticleIndex.value);
-        }
-        
-        const score = articleScore.value;
-        
-        if (score) {
-            // Salvar progresso no servidor
+        // Para artigos revogados, simular resposta perfeita
+        if (isRevokedArticle.value) {
+            answered.value = true;
+            isSavingProgress.value = true; // ✅ Bloquear navegação
+
+            // Salvar progresso com score simulado para artigos revogados
             axios.post(getProgressRoute(), {
                 article_uuid: currentArticle.value.uuid,
-                correct_answers: score.correct,
-                total_answers: score.total,
+                correct_answers: 1,
+                total_answers: 1,
             })
             .then(response => {
                 // Atualizar o progresso local com os dados do servidor
                 if (response.data.success) {
                     console.log('Progresso atualizado:', response.data.progress);
-                    
+
                     // Atualiza o estado de redirecionamento de sem vidas
                     noLivesState.value = {
                         shouldRedirect: response.data.should_redirect,
@@ -1392,7 +1475,7 @@ const reviewCompletionPercentage = computed(() => {
                         ...articlesCopy[currentIdx],
                         progress: response.data.progress
                     };
-                    
+
                     // Atualizar o array reativo
                     articlesArray.value = articlesCopy;
 
@@ -1400,7 +1483,7 @@ const reviewCompletionPercentage = computed(() => {
                     if (response.data.user?.lives !== undefined) {
                         page.props.auth.user.lives = response.data.user.lives;
                     }
-                    
+
                     // Atualizar XP do usuário e mostrar notificação gamificada
                     if (response.data.user?.xp !== undefined) {
                         page.props.auth.user.xp = response.data.user.xp;
@@ -1408,7 +1491,7 @@ const reviewCompletionPercentage = computed(() => {
                     if (response.data.xp_gained && response.data.xp_gained > 0) {
                         showXpGainedNotification(response.data.xp_gained);
                     }
-                    
+
                     // Verificar se todos os artigos foram respondidos, mas NÃO exibe o modal
                     // Se for o último artigo, só marca como pronto para exibir o botão especial
                     if (currentArticleIndex.value === articlesArray.value.length - 1) {
@@ -1422,17 +1505,111 @@ const reviewCompletionPercentage = computed(() => {
             })
             .catch(error => {
                 console.error('Erro ao salvar progresso:', error);
+            })
+            .finally(() => {
+                isSavingProgress.value = false; // ✅ Liberar navegação após artigo revogado
             });
-        
+
+            // Código para exibir recompensas visuais (sempre sucesso para artigos revogados)
+            if (!completedArticles.value.includes(currentArticleIndex.value)) {
+                completedArticles.value.push(currentArticleIndex.value);
+            }
+
+            // Dispara o confetti para artigos revogados (considerados como 100%)
+            setTimeout(() => {
+                confettiReward();
+                playSuccessAudio(); // ✅ Áudio de sucesso para artigos revogados
+            }, 300);
+
+            setTimeout(() => {
+                emojiReward();
+            }, 600);
+
+            return;
+        }
+
+        if (!allLacunasFilled.value) return;
+
+        answered.value = true;
+        isSavingProgress.value = true; // ✅ Bloquear navegação
+
+        // Se não estiver no array de artigos tentados, adicione
+        if (!attemptedArticles.value.includes(currentArticleIndex.value)) {
+            attemptedArticles.value.push(currentArticleIndex.value);
+        }
+
+        const score = articleScore.value;
+
+        if (score) {
+            // Salvar progresso no servidor
+            axios.post(getProgressRoute(), {
+                article_uuid: currentArticle.value.uuid,
+                correct_answers: score.correct,
+                total_answers: score.total,
+            })
+            .then(response => {
+                // Atualizar o progresso local com os dados do servidor
+                if (response.data.success) {
+                    console.log('Progresso atualizado:', response.data.progress);
+
+                    // Atualiza o estado de redirecionamento de sem vidas
+                    noLivesState.value = {
+                        shouldRedirect: response.data.should_redirect,
+                        redirectUrl: response.data.redirect_url
+                    };
+
+                    // Atualiza o objeto do artigo atual com o progresso atualizado
+                    const currentIdx = currentArticleIndex.value;
+                    const articlesCopy = [...articlesArray.value];
+                    articlesCopy[currentIdx] = {
+                        ...articlesCopy[currentIdx],
+                        progress: response.data.progress
+                    };
+
+                    // Atualizar o array reativo
+                    articlesArray.value = articlesCopy;
+
+                    // Atualizar as vidas do usuário no estado da página
+                    if (response.data.user?.lives !== undefined) {
+                        page.props.auth.user.lives = response.data.user.lives;
+                    }
+
+                    // Atualizar XP do usuário e mostrar notificação gamificada
+                    if (response.data.user?.xp !== undefined) {
+                        page.props.auth.user.xp = response.data.user.xp;
+                    }
+                    if (response.data.xp_gained && response.data.xp_gained > 0) {
+                        showXpGainedNotification(response.data.xp_gained);
+                    }
+
+                    // Verificar se todos os artigos foram respondidos, mas NÃO exibe o modal
+                    // Se for o último artigo, só marca como pronto para exibir o botão especial
+                    if (currentArticleIndex.value === articlesArray.value.length - 1) {
+                        const allDone = articlesCopy.every(article => article.progress !== null);
+                        if (allDone) {
+                            // Ao invés de mostrar o modal, marcamos que a fase está completa
+                            isPhaseComplete.value = true;
+                        }
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao salvar progresso:', error);
+            })
+            .finally(() => {
+                isSavingProgress.value = false; // ✅ Liberar navegação após artigo normal
+            });
+
             // Código para exibir recompensas visuais
             if (score.percentage >= 70) {
                 if (!completedArticles.value.includes(currentArticleIndex.value)) {
                     completedArticles.value.push(currentArticleIndex.value);
                 }
-                
+
                 // Dispara o confetti para acertos acima de 70%
                 setTimeout(() => {
                     confettiReward();
+                    playSuccessAudio(); // ✅ Áudio de sucesso para acertos >= 70%
                 }, 300);
                 
                 // Para 100% de acerto, mostre emojis também

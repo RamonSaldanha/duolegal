@@ -472,8 +472,17 @@ class ChallengeController extends Controller
             return response()->json(['error' => 'Artigo não faz parte deste desafio.'], 400);
         }
 
-        $correctAnswers = min((int)$validated['correct_answers'], (int)$validated['total_answers']);
-        $totalAnswers = (int)$validated['total_answers'];
+        // Detectar artigos revogados/vazios
+        if ($this->isRevokedArticle($article)) {
+            // Para artigos revogados, sempre considerar 100% completo
+            $correctAnswers = 1;
+            $totalAnswers = 1;
+        } else {
+            // Lógica normal para artigos válidos
+            $correctAnswers = min((int)$validated['correct_answers'], (int)$validated['total_answers']);
+            $totalAnswers = (int)$validated['total_answers'];
+        }
+
         $percentage = ($correctAnswers / $totalAnswers) * 100;
 
         // Perder vida se necessário (mesmo sistema do jogo vanilla)
@@ -1391,5 +1400,16 @@ class ChallengeController extends Controller
         }
 
         return $usersPerPhase;
+    }
+
+    private function isRevokedArticle(LawArticle $article): bool
+    {
+        $content = trim($article->practice_content ?? '');
+
+        // Detecta artigos apenas com cabeçalho
+        $isOnlyHeader = preg_match('/^Art\.?\s*\d+[°.]?\.?$/', $content) && strlen($content) < 20;
+        $hasNoGaps = !str_contains($content, '_____');
+
+        return $isOnlyHeader && $hasNoGaps;
     }
 }
