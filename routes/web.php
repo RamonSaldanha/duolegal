@@ -10,6 +10,7 @@ use App\Http\Controllers\WelcomeController;
 use App\Http\Controllers\PublicController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\ChallengeController;
+use App\Http\Controllers\RankingController;
 
 Route::get('/', [WelcomeController::class, 'index'])->name('home');
 
@@ -105,6 +106,9 @@ Route::post('/admin/law-article-options', [LawArticleOptionController::class, 's
         Route::post('/subscription', [SubscriptionController::class, 'subscribe'])->name('subscription.subscribe');
         Route::post('/subscription/cancel', [SubscriptionController::class, 'cancel'])->name('subscription.cancel');
         Route::post('/subscription/resume', [SubscriptionController::class, 'resume'])->name('subscription.resume');
+
+        // Rota de ranking
+        Route::get('/ranking', [RankingController::class, 'index'])->name('ranking.index');
     });
 
 

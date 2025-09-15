@@ -17,7 +17,7 @@ import UserMenuContent from '@/components/UserMenuContent.vue';
 import { getInitials } from '@/composables/useInitials';
 import type { BreadcrumbItem, NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
-import { BookOpen, Heart, Play, Menu, Lock, Settings2, Gem, Infinity, Users, Star, Trophy } from 'lucide-vue-next';
+import { BookOpen, Heart, Play, Menu, Lock, Settings2, Gem, Infinity, Users, Star, Trophy, Crown } from 'lucide-vue-next';
 import { computed, watch } from 'vue';
 
 interface Props {
@@ -75,6 +75,11 @@ const mainNavItems: NavItem[] = [
         title: 'Desafios',
         href: '/challenges',
         icon: Trophy,
+    },
+    {
+        title: 'Ranking',
+        href: '/ranking',
+        icon: Crown,
     },
     {
         title: 'Preferências',
