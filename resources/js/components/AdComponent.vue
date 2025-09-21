@@ -90,7 +90,7 @@ const emit = defineEmits<{
 
 // Component state
 const showAdDialog = ref(false)
-const countdown = ref(15)
+const countdown = ref(30)
 const adLoaded = ref(false)
 let countdownInterval: ReturnType<typeof setInterval> | null = null
 const adSenseRef = ref<InstanceType<typeof AdSenseComponent> | null>(null)
@@ -98,7 +98,6 @@ const adSenseRef = ref<InstanceType<typeof AdSenseComponent> | null>(null)
 // Inicializa o anúncio usando o novo componente
 const initializeAd = async () => {
     try {
-        console.log('🚀 Initializing AdSense with new component...')
 
         // Aguarda o modal estar totalmente renderizado
         await nextTick()
@@ -110,24 +109,21 @@ const initializeAd = async () => {
         // Aguarda mais um pouco e força inicialização se necessário
         setTimeout(() => {
             if (adSenseRef.value) {
-                console.log('🔄 Force initializing AdSense component')
-                adSenseRef.value.forceInitialize()
+                        adSenseRef.value.forceInitialize()
             }
         }, 1000)
 
     } catch (error) {
-        console.error('❌ Error initializing ad:', error)
         adLoaded.value = true
     }
 }
 
 // Inicia a experiência de anúncio
 const startAdExperience = async () => {
-    console.log('🎬 Starting ad experience...')
 
     // Reset states
     adLoaded.value = false
-    countdown.value = 15
+    countdown.value = 30
 
     // Mostra o modal
     showAdDialog.value = true
@@ -167,7 +163,7 @@ const handleDialogUpdate = (isOpen: boolean) => {
 
         // Reset states
         showAdDialog.value = false
-        countdown.value = 15
+        countdown.value = 30
         adLoaded.value = false
 
         emit('adClosed')
@@ -177,17 +173,13 @@ const handleDialogUpdate = (isOpen: boolean) => {
 // Trata a conclusão do anúncio
 const handleAdComplete = async () => {
     try {
-        console.log('Completing ad experience...')
         const response = await axios.post(props.rewardRoute)
 
         if (response.data.success) {
             emit('adCompleted')
             window.location.href = props.redirectRoute
-        } else {
-            console.error('Failed to reward life:', response.data)
         }
     } catch (error) {
-        console.error('Error rewarding life:', error)
     } finally {
         showAdDialog.value = false
     }
@@ -204,7 +196,6 @@ const isLocalhost = () => {
 const toggleTestMode = () => {
     const currentMode = localStorage.getItem('adsense_test_mode') === 'true'
     localStorage.setItem('adsense_test_mode', (!currentMode).toString())
-    console.log(`AdSense test mode ${!currentMode ? 'ENABLED' : 'DISABLED'}`)
     window.location.reload()
 }
 
