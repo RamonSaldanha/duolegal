@@ -116,8 +116,8 @@
                                 </div>
                             </div>
                             
-                            <Link 
-                                :href="route('public.law', { uuid: law.uuid })"
+                            <Link
+                                :href="route('public.law', { legalReference: law.slug || law.uuid })"
                                 class="block w-full"
                             >
                                 <GameButton variant="white" class="w-full flex items-center justify-center gap-2 min-w-0">
@@ -180,6 +180,7 @@ interface SampleArticle {
 
 interface LegalReference {
     uuid: string
+    slug?: string
     name: string
     description: string
     type: string

@@ -17,6 +17,7 @@ class LegalReference extends Model
         'description',
         'type',
         'uuid',
+        'slug',
         'is_active'
     ];
 
@@ -46,6 +47,13 @@ class LegalReference extends Model
 
         static::creating(function ($model) {
             $model->uuid = $model->uuid ?? (string) Str::uuid();
+            $model->slug = $model->slug ?? $model->generateSlug();
+        });
+
+        static::updating(function ($model) {
+            if ($model->isDirty('name') && !$model->isDirty('slug')) {
+                $model->slug = $model->generateSlug();
+            }
         });
 
         // Quando uma referência legal for excluída, exclua também todos os seus artigos
@@ -67,6 +75,52 @@ class LegalReference extends Model
      */
     public function getRouteKeyName()
     {
-        return 'uuid';
+        return 'slug';
+    }
+
+    /**
+     * Generate a unique slug for this legal reference.
+     */
+    public function generateSlug(): string
+    {
+        $baseSlug = $this->createBaseSlug($this->name);
+        $slug = $baseSlug;
+        $counter = 1;
+
+        while (static::where('slug', $slug)->where('id', '!=', $this->id ?? 0)->exists()) {
+            $slug = $baseSlug . '-' . $counter;
+            $counter++;
+        }
+
+        return $slug;
+    }
+
+    /**
+     * Create base slug from name.
+     */
+    private function createBaseSlug(string $name): string
+    {
+        $name = strtolower($name);
+
+        $replacements = [
+            'constituição' => 'constituicao',
+            'código' => 'codigo',
+            'introdução' => 'introducao',
+            'normas' => 'normas',
+            'processo' => 'processo',
+            'penal' => 'penal',
+            'defesa' => 'defesa',
+            'consumidor' => 'consumidor',
+        ];
+
+        foreach ($replacements as $from => $to) {
+            $name = str_replace($from, $to, $name);
+        }
+
+        $stopWords = ['de', 'do', 'da', 'e', 'às', 'a', 'o', 'as', 'os'];
+        $words = explode(' ', $name);
+        $words = array_filter($words, fn($word) => !in_array($word, $stopWords) && strlen($word) > 1);
+
+        return Str::slug(implode(' ', $words));
     }
 }

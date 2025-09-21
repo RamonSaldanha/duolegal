@@ -25,6 +25,7 @@ class PublicController extends Controller
             ->map(function($reference) {
                 return [
                     'uuid' => $reference->uuid,
+                    'slug' => $reference->slug,
                     'name' => $this->sanitizeString($reference->name),
                     'description' => $this->sanitizeString($reference->description),
                     'type' => $this->sanitizeString($reference->type),
@@ -50,21 +51,23 @@ class PublicController extends Controller
     }
 
     /**
-     * Página de uma lei específica com todos os seus artigos (SEO)
+     * Página de uma lei específica com todos os seus artigos (SEO) - slug version
      */
-    public function showLaw($uuid)
+    public function showLaw(LegalReference $legalReference)
     {
-        $legalReference = LegalReference::where('uuid', $uuid)
-            ->where('is_active', true)
-            ->with(['articles' => function($query) {
-                $query->where('is_active', true)
-                      ->orderByRaw('CAST(article_reference AS UNSIGNED) ASC');
-            }])
-            ->firstOrFail();
+        if (!$legalReference->is_active) {
+            abort(404);
+        }
+
+        $legalReference->load(['articles' => function($query) {
+            $query->where('is_active', true)
+                  ->orderByRaw('CAST(article_reference AS UNSIGNED) ASC');
+        }]);
 
         $articles = $legalReference->articles->map(function($article) use ($legalReference) {
             return [
                 'uuid' => $article->uuid,
+                'slug' => $article->slug,
                 'article_reference' => $this->sanitizeString($article->article_reference),
                 'difficulty_level' => $article->difficulty_level,
                 'preview_content' => $this->sanitizeString(substr(strip_tags($article->original_content), 0, 150) . '...'),
@@ -76,6 +79,7 @@ class PublicController extends Controller
         return Inertia::render('Public/LawDetail', [
             'law' => [
                 'uuid' => $legalReference->uuid,
+                'slug' => $legalReference->slug,
                 'name' => $this->sanitizeString($legalReference->name),
                 'description' => $this->sanitizeString($legalReference->description),
                 'type' => $this->sanitizeString($legalReference->type),
@@ -90,29 +94,28 @@ class PublicController extends Controller
     }
 
     /**
-     * Página de um artigo específico com exercício público (SEO)
+     * Página de um artigo específico com exercício público (SEO) - slug version
      */
-    public function showArticle($lawUuid, $articleUuid)
+    public function showArticle(LegalReference $legalReference, LawArticle $article)
     {
-        $article = LawArticle::where('uuid', $articleUuid)
-            ->where('is_active', true)
-            ->with(['legalReference', 'options'])
-            ->firstOrFail();
-
-        // Verificar se o artigo pertence à lei especificada
-        if ($article->legalReference->uuid !== $lawUuid) {
+        if (!$legalReference->is_active || !$article->is_active) {
             abort(404);
         }
+
+        // The scopeBindings() ensures the article belongs to the legal reference
+        $article->load(['options']);
 
         // Preparar dados do artigo para o exercício público
         $articleData = [
             'uuid' => $article->uuid,
+            'slug' => $article->slug,
             'article_reference' => $this->sanitizeString($article->article_reference),
             'original_content' => $this->sanitizeString($article->original_content),
             'practice_content' => $this->sanitizeString($article->practice_content),
             'difficulty_level' => $article->difficulty_level,
-            'law_name' => $this->sanitizeString($article->legalReference->name),
-            'law_uuid' => $article->legalReference->uuid,
+            'law_name' => $this->sanitizeString($legalReference->name),
+            'law_uuid' => $legalReference->uuid,
+            'law_slug' => $legalReference->slug,
             'options' => $article->options->map(function($option) {
                 return [
                     'id' => $option->id,
@@ -126,20 +129,21 @@ class PublicController extends Controller
 
         // Buscar artigos relacionados (sempre artigos posteriores para melhor SEO)
         $currentArticleNumber = (int) preg_replace('/[^0-9]/', '', $article->article_reference);
-        
+
         $relatedArticles = LawArticle::where('legal_reference_id', $article->legal_reference_id)
             ->where('is_active', true)
-            ->where('uuid', '!=', $articleUuid)
+            ->where('uuid', '!=', $article->uuid)
             ->whereRaw('CAST(REGEXP_REPLACE(article_reference, "[^0-9]", "") AS UNSIGNED) > ?', [$currentArticleNumber])
             ->orderByRaw('CAST(article_reference AS UNSIGNED) ASC')
             ->take(5)
             ->get()
-            ->map(function($relatedArticle) use ($lawUuid) {
+            ->map(function($relatedArticle) use ($legalReference) {
                 return [
                     'uuid' => $relatedArticle->uuid,
+                    'slug' => $relatedArticle->slug,
                     'article_reference' => $this->sanitizeString($relatedArticle->article_reference),
                     'preview_content' => $this->sanitizeString(substr(strip_tags($relatedArticle->original_content), 0, 100) . '...'),
-                    'url' => route('public.article', ['lawUuid' => $lawUuid, 'articleUuid' => $relatedArticle->uuid])
+                    'url' => route('public.article', ['legalReference' => $legalReference->slug, 'article' => $relatedArticle->slug])
                 ];
             });
 
@@ -147,15 +151,15 @@ class PublicController extends Controller
 
         // Criar uma meta description mais rica com trechos do conteúdo original
         $originalContentPreview = $this->sanitizeString(substr(strip_tags($article->original_content), 0, 120));
-        $metaDescription = $this->sanitizeString("Art. {$article->article_reference} - {$article->legalReference->name}: \"{$originalContentPreview}...\" Pratique este artigo com exercício interativo gratuito. Nível: {$difficultyText}.");
-        
+        $metaDescription = $this->sanitizeString("Art. {$article->article_reference} - {$legalReference->name}: \"{$originalContentPreview}...\" Pratique este artigo com exercício interativo gratuito. Nível: {$difficultyText}.");
+
         return Inertia::render('Public/ArticleExercise', [
             'article' => $articleData,
             'relatedArticles' => $relatedArticles,
             'meta' => [
-                'title' => $this->sanitizeString("Art. {$article->article_reference} da {$article->legalReference->name}"),
+                'title' => $this->sanitizeString("Art. {$article->article_reference} da {$legalReference->name}"),
                 'description' => $metaDescription,
-                'keywords' => $this->sanitizeString("artigo {$article->article_reference}, {$article->legalReference->name}, direito, exercício, {$difficultyText}, memorização, estudo")
+                'keywords' => $this->sanitizeString("artigo {$article->article_reference}, {$legalReference->name}, direito, exercício, {$difficultyText}, memorização, estudo")
             ]
         ]);
     }
@@ -220,6 +224,38 @@ class PublicController extends Controller
             5 => 'Especialista',
             default => 'Intermediário'
         };
+    }
+
+    /**
+     * Redirect from legacy UUID URL to new slug URL (law)
+     */
+    public function redirectLaw(string $uuid)
+    {
+        $legalReference = LegalReference::where('uuid', $uuid)
+            ->where('is_active', true)
+            ->firstOrFail();
+
+        return redirect()->route('public.law', ['legalReference' => $legalReference->slug], 301);
+    }
+
+    /**
+     * Redirect from legacy UUID URL to new slug URL (article)
+     */
+    public function redirectArticle(string $lawUuid, string $articleUuid)
+    {
+        $legalReference = LegalReference::where('uuid', $lawUuid)
+            ->where('is_active', true)
+            ->firstOrFail();
+
+        $lawArticle = LawArticle::where('uuid', $articleUuid)
+            ->where('legal_reference_id', $legalReference->id)
+            ->where('is_active', true)
+            ->firstOrFail();
+
+        return redirect()->route('public.article', [
+            'legalReference' => $legalReference->slug,
+            'article' => $lawArticle->slug
+        ], 301);
     }
 
     /**

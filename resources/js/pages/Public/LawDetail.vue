@@ -5,7 +5,7 @@
         <meta property="og:title" :content="meta.title" />
         <meta property="og:description" :content="meta.description" />
         <meta property="og:type" content="website" />
-        <link rel="canonical" :href="route('public.law', { uuid: law.uuid })" />
+        <link rel="canonical" :href="route('public.law', { legalReference: law.slug || law.uuid })" />
     </Head>
 
     <div class="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 dark:from-gray-900 dark:to-black">
@@ -132,8 +132,8 @@
                                     </div>
                                     
                                     <div class="flex justify-end sm:justify-start mt-4 sm:mt-0">
-                                        <Link 
-                                            :href="route('public.article', { lawUuid: law.uuid, articleUuid: article.uuid })"
+                                        <Link
+                                            :href="route('public.article', { legalReference: law.slug || law.uuid, article: article.slug || article.uuid })"
                                             class="inline-flex items-center justify-center"
                                         >
                                             <GameButton variant="white" size="sm" class="inline-flex items-center gap-1">
@@ -207,6 +207,7 @@ import GameButton from '@/components/ui/GameButton.vue'
 
 interface Article {
     uuid: string
+    slug?: string
     article_reference: string
     difficulty_level: number
     preview_content: string
@@ -216,6 +217,7 @@ interface Article {
 
 interface Law {
     uuid: string
+    slug?: string
     name: string
     description: string
     type: string

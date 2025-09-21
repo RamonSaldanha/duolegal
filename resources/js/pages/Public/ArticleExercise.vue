@@ -7,7 +7,7 @@
         <meta property="og:title" :content="meta.title" />
         <meta property="og:description" :content="seoDescription" />
         <meta property="og:type" content="article" />
-        <meta property="og:url" :content="route('public.article', { lawUuid: article.law_uuid, articleUuid: article.uuid })" />
+        <meta property="og:url" :content="getArticleRoute(article.law_slug, article.law_uuid, article.slug, article.uuid)" />
         <meta property="og:site_name" content="Memorize Direito" />
         
         <!-- Twitter Cards -->
@@ -28,7 +28,7 @@
         <meta name="coverage" content="Brasil" />
         <meta name="distribution" content="Global" />
         <meta name="rating" content="General" />
-        <link rel="canonical" :href="route('public.article', { lawUuid: article.law_uuid, articleUuid: article.uuid })" />
+        <link rel="canonical" :href="getArticleRoute(article.law_slug, article.law_uuid, article.slug, article.uuid)" />
         
     </Head>
 
@@ -51,7 +51,7 @@
                 <!-- Cabeçalho da fase - versão responsiva -->
                 <div class="mb-4 md:mb-4">
                     <!-- Mostrar apenas no desktop -->
-                    <Link :href="route('public.law', { uuid: article.law_uuid })" class="hidden md:flex text-sm items-center text-primary hover:underline mb-4">
+                    <Link :href="getLawRoute(article.law_slug, article.law_uuid)" class="hidden md:flex text-sm items-center text-primary hover:underline mb-4">
                         <ChevronLeft class="h-3 w-3 mr-1" />
                         Voltar para {{ article.law_name }}
                     </Link>
@@ -79,8 +79,8 @@
                             </div>
                             
                             <!-- Botão de voltar - apenas no mobile -->
-                            <Link 
-                                :href="route('public.law', { uuid: article.law_uuid })" 
+                            <Link
+                                :href="getLawRoute(article.law_slug, article.law_uuid)"
                                 class="md:hidden ml-3 rounded-full p-1.5 bg-muted hover:bg-muted/80 transition-colors"
                             >
                                 <X class="h-4 w-4" />
@@ -370,12 +370,14 @@ interface ArticleOption {
 
 interface Article {
     uuid: string
+    slug?: string
     article_reference: string
     original_content: string
     practice_content: string
     difficulty_level: number
     law_name: string
     law_uuid: string
+    law_slug?: string
     options: ArticleOption[]
 }
 
@@ -397,6 +399,33 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+
+// Helper function to detect UUID vs slug
+const isUUID = (value: string): boolean => {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    return uuidRegex.test(value)
+}
+
+// Helper function to get appropriate route for law
+const getLawRoute = (lawSlug?: string, lawUuid?: string): string => {
+    if (lawSlug && !isUUID(lawSlug)) {
+        return route('public.law', { legalReference: lawSlug })
+    }
+    return route('public.law.legacy', { uuid: lawUuid || lawSlug })
+}
+
+// Helper function to get appropriate route for article
+const getArticleRoute = (lawSlug?: string, lawUuid?: string, articleSlug?: string, articleUuid?: string): string => {
+    // If we have slugs and they're not UUIDs, use new route
+    if (lawSlug && !isUUID(lawSlug) && articleSlug && !isUUID(articleSlug)) {
+        return route('public.article', { legalReference: lawSlug, article: articleSlug })
+    }
+    // Otherwise use legacy route
+    return route('public.article.legacy', {
+        lawUuid: lawUuid || lawSlug,
+        articleUuid: articleUuid || articleSlug
+    })
+}
 
 // SEO computed properties
 const seoDescription = computed(() => {
@@ -432,7 +461,7 @@ const structuredData = computed(() => {
             },
             "mainEntityOfPage": {
                 "@type": "WebPage",
-                "@id": route('public.article', { lawUuid: props.article.law_uuid, articleUuid: props.article.uuid })
+                "@id": getArticleRoute(props.article.law_slug, props.article.law_uuid, props.article.slug, props.article.uuid)
             },
             "about": [
                 {
@@ -500,13 +529,13 @@ const structuredData = computed(() => {
                     "@type": "ListItem",
                     "position": 3,
                     "name": props.article.law_name,
-                    "item": route('public.law', { uuid: props.article.law_uuid })
+                    "item": getLawRoute(props.article.law_slug, props.article.law_uuid)
                 },
                 {
                     "@type": "ListItem",
                     "position": 4,
                     "name": `Artigo ${props.article.article_reference}`,
-                    "item": route('public.article', { lawUuid: props.article.law_uuid, articleUuid: props.article.uuid })
+                    "item": getArticleRoute(props.article.law_slug, props.article.law_uuid, props.article.slug, props.article.uuid)
                 }
             ]
         }

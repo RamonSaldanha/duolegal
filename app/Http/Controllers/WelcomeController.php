@@ -20,7 +20,7 @@ class WelcomeController extends Controller
         $firstFourLaws = LegalReference::where('is_active', true)
             ->orderBy('id', 'asc')
             ->take(4)
-            ->get(['name', 'uuid']);
+            ->get(['name', 'uuid', 'slug']);
         
         return Inertia::render('Welcome', [
             'articlesCount' => $articlesCount,

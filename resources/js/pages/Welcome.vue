@@ -29,10 +29,21 @@ defineProps<{
     firstFourLaws: Array<{
         name: string;
         uuid: string;
+        slug?: string;
     }>;
 }>();
 
 // Redirecionamento agora é feito no backend (WelcomeController)
+
+// Helper function para URLs seguras com fallback
+const getLawUrl = (law: { uuid: string; slug?: string }) => {
+    // Prefer slug-based URL if available, fallback to UUID
+    if (law.slug) {
+        return route('public.law', { legalReference: law.slug });
+    }
+    // Fallback to legacy UUID route
+    return route('public.law.legacy', { uuid: law.uuid });
+};
 </script>
 
 <style>
@@ -670,10 +681,10 @@ defineProps<{
                     <div class="text-center md:text-left">
                         <h4 class="font-semibold text-white mb-4">Leis Principais</h4>
                         <div class="flex flex-col gap-2 text-sm text-gray-400">
-                            <Link 
-                                v-for="law in firstFourLaws" 
+                            <Link
+                                v-for="law in firstFourLaws"
                                 :key="law.uuid"
-                                :href="route('public.law', { uuid: law.uuid })" 
+                                :href="getLawUrl(law)"
                                 class="hover:text-white transition-colors"
                             >
                                 {{ law.name }}

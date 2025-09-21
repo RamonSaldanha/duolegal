@@ -17,12 +17,21 @@ Route::get('/', [WelcomeController::class, 'index'])->name('home');
 // === ROTAS PÚBLICAS PARA SEO ===
 // Páginas públicas de leis e artigos (sem necessidade de login)
 Route::get('/leis', [PublicController::class, 'index'])->name('public.laws');
-Route::get('/leis/{uuid}', [PublicController::class, 'showLaw'])
+
+// Legacy UUID routes with redirect middleware (must come first due to constraints)
+Route::get('/leis/{uuid}', [PublicController::class, 'redirectLaw'])
     ->where('uuid', '[0-9a-f-]{36}')
-    ->name('public.law');
-Route::get('/leis/{lawUuid}/artigo/{articleUuid}', [PublicController::class, 'showArticle'])
+    ->name('public.law.legacy');
+Route::get('/leis/{lawUuid}/artigo/{articleUuid}', [PublicController::class, 'redirectArticle'])
     ->where(['lawUuid' => '[0-9a-f-]{36}', 'articleUuid' => '[0-9a-f-]{36}'])
-    ->name('public.article');
+    ->name('public.article.legacy');
+
+// New slug-based routes (preferred)
+Route::get('/leis/{legalReference:slug}', [PublicController::class, 'showLaw'])
+    ->name('public.law');
+Route::get('/leis/{legalReference:slug}/artigo/{article:slug}', [PublicController::class, 'showArticle'])
+    ->name('public.article')
+    ->scopeBindings();
 Route::get('/buscar', [PublicController::class, 'search'])->name('public.search');
 
 // === ROTAS DO SITEMAP PARA SEO ===
