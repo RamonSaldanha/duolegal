@@ -21,7 +21,8 @@
       "mcp__laravel-boost__database-query",
       "mcp__laravel-boost__database-schema",
       "mcp__laravel-boost__tinker",
-      "mcp__laravel-boost__get-absolute-url"
+      "mcp__laravel-boost__get-absolute-url",
+      "WebSearch"
     ],
     "deny": []
   },
