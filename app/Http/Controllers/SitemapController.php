@@ -77,21 +77,22 @@ class SitemapController extends Controller
     {
         $sitemap = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
         $sitemap .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
-        
+
         $laws = LegalReference::where('is_active', true)
             ->orderBy('name')
             ->get();
-            
+
         foreach ($laws as $law) {
-            $sitemap .= $this->addUrl(
-                route('public.law', ['uuid' => $law->uuid]), 
-                '0.8', 
-                'weekly'
-            );
+            // Usar slug se disponível, senão usar rota legacy com UUID
+            $url = $law->slug
+                ? route('public.law', ['legalReference' => $law->slug])
+                : route('public.law.legacy', ['uuid' => $law->uuid]);
+
+            $sitemap .= $this->addUrl($url, '0.8', 'weekly');
         }
-        
+
         $sitemap .= '</urlset>';
-        
+
         return response($sitemap, 200, [
             'Content-Type' => 'application/xml',
             'Cache-Control' => 'public, max-age=3600'
@@ -105,7 +106,7 @@ class SitemapController extends Controller
     {
         $sitemap = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
         $sitemap .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
-        
+
         // Buscar artigos com suas respectivas leis, limitando para evitar sitemap muito grande
         $articles = LawArticle::where('is_active', true)
             ->with('legalReference')
@@ -116,22 +117,26 @@ class SitemapController extends Controller
             ->orderByRaw('CAST(article_reference AS UNSIGNED) ASC')
             ->take(5000) // Limitar a 5000 artigos por sitemap
             ->get();
-            
+
         foreach ($articles as $article) {
             if ($article->legalReference) {
-                $sitemap .= $this->addUrl(
-                    route('public.article', [
+                // Usar slugs se disponíveis, senão usar rota legacy com UUIDs
+                $url = ($article->legalReference->slug && $article->slug)
+                    ? route('public.article', [
+                        'legalReference' => $article->legalReference->slug,
+                        'article' => $article->slug
+                    ])
+                    : route('public.article.legacy', [
                         'lawUuid' => $article->legalReference->uuid,
                         'articleUuid' => $article->uuid
-                    ]), 
-                    '0.7', 
-                    'monthly'
-                );
+                    ]);
+
+                $sitemap .= $this->addUrl($url, '0.7', 'monthly');
             }
         }
-        
+
         $sitemap .= '</urlset>';
-        
+
         return response($sitemap, 200, [
             'Content-Type' => 'application/xml',
             'Cache-Control' => 'public, max-age=86400' // Cache por 24h para artigos
