@@ -18,20 +18,27 @@
 
             <div class="flex-1 flex items-center justify-center flex-col py-8">
                 <!-- Container para o anúncio do AdSense -->
-                <div
-                    id="ad-container"
-                    class="w-full max-w-4xl mb-8 overflow-hidden min-h-[300px] flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-lg"
-                >
-                    <div v-if="!adLoaded" class="text-center p-8">
-                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-                        <p class="text-sm text-muted-foreground">Carregando anúncio...</p>
+                <div class="w-full max-w-4xl mb-8">
+                    <div v-if="!adLoaded" class="text-center p-8 bg-gray-100 dark:bg-gray-800 rounded-lg min-h-[300px] flex items-center justify-center">
+                        <div>
+                            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                            <p class="text-sm text-muted-foreground">Carregando anúncio...</p>
+                        </div>
                     </div>
 
+                    <!-- Container fixo para AdSense com dimensões garantidas -->
                     <div
                         v-show="adLoaded"
-                        id="adsense-ad"
-                        class="w-full h-full flex items-center justify-center"
-                    ></div>
+                        id="adsense-container"
+                        class="w-full min-h-[250px] bg-gray-50 dark:bg-gray-900 rounded-lg p-4 border-2 border-dashed border-gray-300 dark:border-gray-600"
+                        style="min-width: 320px; max-width: 100%;"
+                    >
+                        <div class="text-xs text-gray-500 text-center mb-2">Anúncio</div>
+                        <div
+                            id="adsense-ad"
+                            class="w-full"
+                        ></div>
+                    </div>
                 </div>
 
                 <div class="text-center">
@@ -94,51 +101,42 @@ declare global {
     }
 }
 
-// Carrega script do AdSense com melhor handling de erros
+// Carrega script do AdSense (versão simplificada)
 const ensureAdSenseScript = (): Promise<void> => {
     return new Promise((resolve) => {
         // Se já carregou, resolve imediatamente
-        if (adSenseScriptLoaded || document.querySelector('script[src*="adsbygoogle.js"]')) {
+        if (adSenseScriptLoaded || document.querySelector('script[src*="adsbygoogle.js"]') || window.adsbygoogle) {
             adSenseScriptLoaded = true
             resolve()
             return
         }
 
-        // Em localhost, simula script carregado para evitar erros de rede
-        if (isLocalhost() && !shouldUseTestAds()) {
-            console.log('Localhost detected: skipping AdSense script load')
+        // Em localhost sem modo teste, simula carregamento
+        if (shouldShowMockAd()) {
+            console.log('Mock mode: skipping AdSense script load')
             adSenseScriptLoaded = true
-            // Simula window.adsbygoogle para desenvolvimento
-            if (!window.adsbygoogle) {
-                window.adsbygoogle = []
-            }
+            window.adsbygoogle = window.adsbygoogle || []
             resolve()
             return
         }
 
-        // Cria e adiciona o script
+        // Carrega script real
         const script = document.createElement('script')
         script.async = true
         script.crossOrigin = 'anonymous'
-
-        // Usa publisher ID de teste se estiver em modo de teste
-        const clientId = shouldUseTestAds() ? 'ca-pub-3940256099942544' : 'ca-pub-2585274176504938'
-        script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${clientId}`
+        script.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2585274176504938'
 
         script.onload = () => {
             adSenseScriptLoaded = true
-            console.log(`AdSense script loaded successfully (${shouldUseTestAds() ? 'TEST MODE' : 'PRODUCTION'})`)
+            console.log('✅ AdSense script loaded successfully')
             resolve()
         }
 
-        script.onerror = (error) => {
-            console.warn('AdSense script failed to load:', error)
+        script.onerror = () => {
+            console.warn('⚠️ AdSense script failed to load')
             adSenseScriptLoaded = true
-            // Simula window.adsbygoogle para continuar funcionamento
-            if (!window.adsbygoogle) {
-                window.adsbygoogle = []
-            }
-            resolve() // Não rejeita para não quebrar a aplicação
+            window.adsbygoogle = window.adsbygoogle || []
+            resolve()
         }
 
         document.head.appendChild(script)
@@ -190,15 +188,20 @@ const createTestAd = () => {
     const adContainer = document.getElementById('adsense-ad')
     if (!adContainer) return null
 
+    // Limpa container
+    adContainer.innerHTML = ''
+
     // Cria elemento ins do AdSense com configuração de teste
     const adElement = document.createElement('ins')
     adElement.className = 'adsbygoogle'
     adElement.style.display = 'block'
-    adElement.setAttribute('data-ad-client', 'ca-pub-3940256099942544') // Test Publisher ID do Google
-    adElement.setAttribute('data-ad-slot', '6300978111') // Test Ad Unit ID
+    adElement.style.width = '100%'
+    adElement.style.minHeight = '250px'
+    adElement.setAttribute('data-ad-client', 'ca-pub-3940256099942544')
+    adElement.setAttribute('data-ad-slot', '6300978111')
     adElement.setAttribute('data-ad-format', 'auto')
     adElement.setAttribute('data-full-width-responsive', 'true')
-    adElement.setAttribute('data-adtest', 'on') // Força modo de teste
+    adElement.setAttribute('data-adtest', 'on')
 
     adContainer.appendChild(adElement)
     return adElement
@@ -209,7 +212,7 @@ const createAdElement = () => {
     const adContainer = document.getElementById('adsense-ad')
     if (!adContainer) {
         console.error('Ad container not found')
-        return
+        return null
     }
 
     // Limpa container anterior
@@ -232,13 +235,14 @@ const createAdElement = () => {
     const adElement = document.createElement('ins')
     adElement.className = 'adsbygoogle'
     adElement.style.display = 'block'
+    adElement.style.width = '100%'
+    adElement.style.minHeight = '250px'
     adElement.setAttribute('data-ad-client', 'ca-pub-2585274176504938')
     adElement.setAttribute('data-ad-slot', '3465272448')
     adElement.setAttribute('data-ad-format', 'auto')
     adElement.setAttribute('data-full-width-responsive', 'true')
 
     adContainer.appendChild(adElement)
-
     return adElement
 }
 
@@ -247,8 +251,32 @@ const initializeAd = async () => {
     try {
         console.log('Initializing AdSense ad...')
 
-        // Aguarda um momento para o DOM estar pronto
-        await new Promise(resolve => setTimeout(resolve, 500))
+        // Aguarda mais tempo para garantir que o DOM e CSS estão prontos
+        await new Promise(resolve => setTimeout(resolve, 1000))
+
+        // Verifica se o container tem largura antes de prosseguir
+        const container = document.getElementById('adsense-container')
+        if (!container) {
+            console.error('AdSense container not found')
+            adLoaded.value = true
+            return
+        }
+
+        const containerWidth = container.offsetWidth
+        console.log('Container width:', containerWidth)
+
+        if (containerWidth === 0) {
+            console.error('Container width is 0 - waiting more...')
+            await new Promise(resolve => setTimeout(resolve, 1000))
+            const newWidth = container.offsetWidth
+            console.log('Container width after wait:', newWidth)
+
+            if (newWidth === 0) {
+                console.error('Container still has 0 width, aborting')
+                adLoaded.value = true
+                return
+            }
+        }
 
         const adElement = createAdElement()
 
@@ -265,22 +293,26 @@ const initializeAd = async () => {
             return
         }
 
-        // Inicializa o AdSense (funciona tanto para teste quanto produção)
+        // Garante que o elemento tem dimensões válidas
+        console.log('Ad element dimensions:', adElement.offsetWidth, 'x', adElement.offsetHeight)
+
+        // Inicializa o AdSense
         if (window.adsbygoogle) {
             try {
+                console.log('Pushing ad to AdSense queue...')
                 window.adsbygoogle.push({})
                 console.log(`AdSense ad pushed to queue (${shouldUseTestAds() ? 'TEST MODE' : 'PRODUCTION'})`)
                 adLoaded.value = true
 
-                // Em modo de teste, monitora se o anúncio carregou
-                if (shouldUseTestAds()) {
-                    setTimeout(() => {
-                        const hasAdContent = adElement.querySelector('iframe') || adElement.offsetHeight > 0
-                        if (!hasAdContent) {
-                            console.warn('Test ad may not have loaded. This is normal on localhost.')
-                        }
-                    }, 2000)
-                }
+                // Monitora se o anúncio carregou com sucesso
+                setTimeout(() => {
+                    const iframe = adElement.querySelector('iframe')
+                    if (iframe && iframe.offsetHeight > 50) {
+                        console.log('✅ Ad successfully loaded with content')
+                    } else {
+                        console.warn('⚠️ Ad may not have loaded properly')
+                    }
+                }, 3000)
             } catch (error) {
                 console.error('Error pushing ad to AdSense queue:', error)
                 adLoaded.value = true
