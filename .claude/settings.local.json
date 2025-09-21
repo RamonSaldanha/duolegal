@@ -23,7 +23,8 @@
       "mcp__laravel-boost__tinker",
       "mcp__laravel-boost__get-absolute-url",
       "WebSearch",
-      "Bash(del \"C:\\Users\\ramon\\Desktop\\code\\memorize\\public\\adsense-test.html\")"
+      "Bash(del \"C:\\Users\\ramon\\Desktop\\code\\memorize\\public\\adsense-test.html\")",
+      "Bash(npm install:*)"
     ],
     "deny": []
   },
