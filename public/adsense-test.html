@@ -137,29 +137,92 @@
         console.log('🎯 Ad Slot: 3465272448');
         console.log('⏰ Loaded at:', new Date().toISOString());
 
-        // Monitora se o script do AdSense carregou
-        window.addEventListener('load', function() {
-            setTimeout(function() {
-                if (window.adsbygoogle) {
-                    console.log('✅ AdSense script loaded successfully');
-                    console.log('📈 AdSense queue length:', window.adsbygoogle.length);
+        // Função de diagnóstico avançado
+        function diagnoseAdSense() {
+            console.log('\n🔍 === DIAGNÓSTICO ADSENSE ===');
+
+            // Verifica script
+            if (window.adsbygoogle) {
+                console.log('✅ AdSense script carregado');
+                console.log('📈 Queue length:', window.adsbygoogle.length);
+            } else {
+                console.log('❌ AdSense script NÃO carregado');
+                return;
+            }
+
+            // Verifica cada anúncio
+            const adElements = document.querySelectorAll('.adsbygoogle');
+            console.log(`\n📊 Encontrados ${adElements.length} elementos de anúncio:`);
+
+            adElements.forEach((ad, index) => {
+                console.log(`\n--- ANÚNCIO ${index + 1} ---`);
+                console.log('Client ID:', ad.getAttribute('data-ad-client'));
+                console.log('Ad Slot:', ad.getAttribute('data-ad-slot'));
+                console.log('Dimensões:', ad.offsetWidth + 'x' + ad.offsetHeight);
+
+                const iframe = ad.querySelector('iframe');
+                if (iframe) {
+                    console.log('✅ iframe criado');
+                    console.log('iframe src:', iframe.src.substring(0, 100) + '...');
+                    console.log('iframe dimensões:', iframe.offsetWidth + 'x' + iframe.offsetHeight);
+
+                    // Verifica se iframe tem conteúdo
+                    if (iframe.offsetWidth > 0 && iframe.offsetHeight > 0) {
+                        console.log('✅ iframe tem dimensões');
+                    } else {
+                        console.log('❌ iframe VAZIO (sem dimensões)');
+                    }
                 } else {
-                    console.log('❌ AdSense script not loaded');
+                    console.log('❌ iframe NÃO criado');
                 }
 
-                // Verifica se os anúncios foram renderizados
+                // Verifica atributos especiais
+                console.log('Status do elemento:', ad.getAttribute('data-ad-status') || 'N/A');
+                console.log('Filled:', ad.getAttribute('data-adsbygoogle-status') || 'N/A');
+            });
+
+            // Diagnóstico de possíveis problemas
+            console.log('\n🚨 === POSSÍVEIS PROBLEMAS ===');
+            console.log('1. ❓ Sua conta AdSense está APROVADA?');
+            console.log('2. ❓ Seu SITE está adicionado ao AdSense (março 2024)?');
+            console.log('3. ❓ Domínio verificado no Google AdSense?');
+            console.log('4. ❓ Site com conteúdo suficiente de qualidade?');
+            console.log('5. ❓ Violações de política?');
+            console.log('\n📋 Verifique: https://www.google.com/adsense/');
+        }
+
+        // Monitora carregamento
+        window.addEventListener('load', function() {
+            setTimeout(diagnoseAdSense, 3000);
+
+            // Diagnóstico estendido após mais tempo
+            setTimeout(function() {
+                console.log('\n⏱️ === DIAGNÓSTICO ESTENDIDO (10s) ===');
+                diagnoseAdSense();
+
+                // Verifica se houve mudanças
                 const adElements = document.querySelectorAll('.adsbygoogle');
+                let hasFilledAd = false;
                 adElements.forEach((ad, index) => {
                     const iframe = ad.querySelector('iframe');
-                    if (iframe) {
-                        console.log(`✅ Ad ${index + 1} rendered with iframe`);
-                    } else if (ad.offsetHeight > 0) {
-                        console.log(`✅ Ad ${index + 1} has height: ${ad.offsetHeight}px`);
-                    } else {
-                        console.log(`❌ Ad ${index + 1} not rendered`);
+                    if (iframe && iframe.offsetHeight > 50) {
+                        hasFilledAd = true;
+                        console.log(`✅ Anúncio ${index + 1} PREENCHIDO!`);
                     }
                 });
-            }, 3000);
+
+                if (!hasFilledAd) {
+                    console.log('\n❌ === CONCLUSÃO ===');
+                    console.log('🔴 NENHUM anúncio foi preenchido após 10 segundos');
+                    console.log('🔴 Problema mais provável: CONTA/SITE NÃO APROVADOS');
+                    console.log('🔧 Ação: Verificar status no Google AdSense');
+                }
+            }, 10000);
+        });
+
+        // Monitora erros de rede
+        window.addEventListener('error', function(e) {
+            console.log('❌ Erro detectado:', e.message);
         });
     </script>
 </body>
