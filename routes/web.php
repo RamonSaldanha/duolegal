@@ -44,6 +44,11 @@ Route::get('/terms', function () {
     return Inertia::render('Terms');
 })->name('terms');
 
+// Rota para teste do Google AdSense (página estática)
+Route::get('/adsense-test', function () {
+    return response()->file(public_path('adsense-test.html'));
+})->name('adsense.test');
+
 Route::get('dashboard', function () {
     return redirect()->route('play.map');
 })->middleware(['auth', 'verified'])->name('dashboard');

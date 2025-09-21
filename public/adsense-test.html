@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Google AdSense - Memorize Direito</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 20px;
+            background: #f5f5f5;
+            border-radius: 8px;
+        }
+        .ad-container {
+            margin: 40px 0;
+            padding: 20px;
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+        .ad-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        .content {
+            margin: 20px 0;
+        }
+        .debug-info {
+            background: #e8f4f8;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 30px;
+            font-size: 14px;
+        }
+    </style>
+
+    <!-- Google AdSense Script -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2585274176504938"
+            crossorigin="anonymous"></script>
+</head>
+<body>
+    <div class="header">
+        <h1>🧪 Teste Google AdSense</h1>
+        <p>Página estática para validação de anúncios do Google AdSense</p>
+        <p><strong>URL de teste:</strong> /adsense-test.html</p>
+    </div>
+
+    <div class="content">
+        <h2>Sobre o Memorize Direito</h2>
+        <p>O Memorize Direito é uma plataforma gamificada para estudos jurídicos, ajudando estudantes de direito a memorizar artigos de lei através de exercícios interativos no estilo Duolingo.</p>
+
+        <p>Esta página foi criada especificamente para testar a integração com Google AdSense em ambiente de produção, seguindo exatamente as especificações fornecidas pelo Google.</p>
+    </div>
+
+    <!-- ANÚNCIO GOOGLE ADSENSE -->
+    <div class="ad-container">
+        <div class="ad-label">📢 ANÚNCIO - Google AdSense</div>
+
+        <!-- SEM VIDA -->
+        <ins class="adsbygoogle"
+             style="display:block"
+             data-ad-client="ca-pub-2585274176504938"
+             data-ad-slot="3465272448"
+             data-ad-format="auto"
+             data-full-width-responsive="true"></ins>
+
+        <script>
+             (adsbygoogle = window.adsbygoogle || []).push({});
+        </script>
+    </div>
+
+    <div class="content">
+        <h3>Funcionalidades da Plataforma</h3>
+        <ul>
+            <li>Exercícios de preenchimento de lacunas em artigos de lei</li>
+            <li>Sistema de vidas e XP para gamificação</li>
+            <li>Progresso por fases e revisões espaçadas</li>
+            <li>Ranking e desafios entre usuários</li>
+            <li>Suporte a múltiplas áreas do direito</li>
+        </ul>
+
+        <h3>Tecnologias Utilizadas</h3>
+        <ul>
+            <li>Laravel 12 - Framework PHP backend</li>
+            <li>Vue.js 3 - Framework JavaScript frontend</li>
+            <li>Inertia.js - SPA sem complexidade de API</li>
+            <li>Tailwind CSS - Framework CSS utilitário</li>
+            <li>Laravel Cashier - Integração com Stripe</li>
+        </ul>
+    </div>
+
+    <!-- SEGUNDO ANÚNCIO PARA TESTE -->
+    <div class="ad-container">
+        <div class="ad-label">📢 SEGUNDO ANÚNCIO - Teste de múltiplos ads</div>
+
+        <ins class="adsbygoogle"
+             style="display:block"
+             data-ad-client="ca-pub-2585274176504938"
+             data-ad-slot="3465272448"
+             data-ad-format="auto"
+             data-full-width-responsive="true"></ins>
+
+        <script>
+             (adsbygoogle = window.adsbygoogle || []).push({});
+        </script>
+    </div>
+
+    <div class="debug-info">
+        <h4>🔍 Informações de Debug</h4>
+        <p><strong>Publisher ID:</strong> ca-pub-2585274176504938</p>
+        <p><strong>Ad Slot:</strong> 3465272448</p>
+        <p><strong>Formato:</strong> auto (responsivo)</p>
+        <p><strong>Timestamp:</strong> <span id="timestamp"></span></p>
+        <p><strong>User Agent:</strong> <span id="useragent"></span></p>
+        <p><strong>URL:</strong> <span id="currenturl"></span></p>
+    </div>
+
+    <script>
+        // Debug info
+        document.getElementById('timestamp').textContent = new Date().toLocaleString('pt-BR');
+        document.getElementById('useragent').textContent = navigator.userAgent;
+        document.getElementById('currenturl').textContent = window.location.href;
+
+        // Log para debugging
+        console.log('🧪 AdSense Test Page Loaded');
+        console.log('📊 AdSense Publisher ID: ca-pub-2585274176504938');
+        console.log('🎯 Ad Slot: 3465272448');
+        console.log('⏰ Loaded at:', new Date().toISOString());
+
+        // Monitora se o script do AdSense carregou
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                if (window.adsbygoogle) {
+                    console.log('✅ AdSense script loaded successfully');
+                    console.log('📈 AdSense queue length:', window.adsbygoogle.length);
+                } else {
+                    console.log('❌ AdSense script not loaded');
+                }
+
+                // Verifica se os anúncios foram renderizados
+                const adElements = document.querySelectorAll('.adsbygoogle');
+                adElements.forEach((ad, index) => {
+                    const iframe = ad.querySelector('iframe');
+                    if (iframe) {
+                        console.log(`✅ Ad ${index + 1} rendered with iframe`);
+                    } else if (ad.offsetHeight > 0) {
+                        console.log(`✅ Ad ${index + 1} has height: ${ad.offsetHeight}px`);
+                    } else {
+                        console.log(`❌ Ad ${index + 1} not rendered`);
+                    }
+                });
+            }, 3000);
+        });
+    </script>
+</body>
+</html>
