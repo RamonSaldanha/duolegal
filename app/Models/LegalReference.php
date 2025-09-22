@@ -16,9 +16,10 @@ class LegalReference extends Model
         'name',
         'description',
         'type',
+        'difficulty_level', // Campo para nível de dificuldade (1-5)
         'uuid',
         'slug',
-        'is_active'
+        'is_active',
     ];
 
     /**
@@ -35,7 +36,7 @@ class LegalReference extends Model
     public function users()
     {
         return $this->belongsToMany(User::class, 'user_legal_references')
-                    ->withTimestamps();
+            ->withTimestamps();
     }
 
     /**
@@ -51,7 +52,7 @@ class LegalReference extends Model
         });
 
         static::updating(function ($model) {
-            if ($model->isDirty('name') && !$model->isDirty('slug')) {
+            if ($model->isDirty('name') && ! $model->isDirty('slug')) {
                 $model->slug = $model->generateSlug();
             }
         });
@@ -61,7 +62,7 @@ class LegalReference extends Model
             // Deletar todos os artigos relacionados
             // Isso irá triggear o boot method do LawArticle que deleta as opções
             $legalReference->articles()->delete();
-            
+
             // Deletar relacionamentos diretos na tabela user_legal_references
             // (já é tratado pelo onDelete('cascade') na migration, mas é bom garantir)
             DB::table('user_legal_references')
@@ -88,7 +89,7 @@ class LegalReference extends Model
         $counter = 1;
 
         while (static::where('slug', $slug)->where('id', '!=', $this->id ?? 0)->exists()) {
-            $slug = $baseSlug . '-' . $counter;
+            $slug = $baseSlug.'-'.$counter;
             $counter++;
         }
 
@@ -119,7 +120,7 @@ class LegalReference extends Model
 
         $stopWords = ['de', 'do', 'da', 'e', 'às', 'a', 'o', 'as', 'os'];
         $words = explode(' ', $name);
-        $words = array_filter($words, fn($word) => !in_array($word, $stopWords) && strlen($word) > 1);
+        $words = array_filter($words, fn ($word) => ! in_array($word, $stopWords) && strlen($word) > 1);
 
         return Str::slug(implode(' ', $words));
     }

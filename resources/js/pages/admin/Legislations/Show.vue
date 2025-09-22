@@ -5,11 +5,14 @@ import { Head, Link, router } from '@inertiajs/vue3';
 import { type BreadcrumbItem } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, PenSquare, Trash2 } from 'lucide-vue-next';
+import { ChevronLeft, PenSquare, Trash2, Settings } from 'lucide-vue-next';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ref, computed } from 'vue';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { useToast } from '@/components/ui/toast/use-toast';
+import Toaster from '@/components/ui/toast/Toaster.vue';
+import EditLegislationModal from '@/components/admin/EditLegislationModal.vue';
 
 // Recebe os dados da legislação específica do backend
 const props = defineProps<{
@@ -18,6 +21,7 @@ const props = defineProps<{
     uuid: string;
     name: string;
     description?: string;
+    difficulty_level?: number;
     articles: Array<{
       id: number;
       uuid: string;
@@ -40,6 +44,12 @@ const selectedArticleId = ref(props.legalReference.articles[0]?.id || null);
 // Termo de busca para filtrar artigos
 const searchTerm = ref('');
 
+// Estado do modal de edição
+const isEditModalOpen = ref(false);
+
+// Toast notifications
+const { toast } = useToast();
+
 // Define os breadcrumbs para navegação
 const breadcrumbs: BreadcrumbItem[] = [
   {
@@ -52,7 +62,7 @@ const breadcrumbs: BreadcrumbItem[] = [
   },
   {
     title: props.legalReference.name,
-    href: `/admin/legislations/${props.legalReference.id}`,
+    href: `/admin/legislations/${props.legalReference.uuid}`,
   },
 ];
 
@@ -91,6 +101,12 @@ const articleOptions = computed(() => {
     return { correct, incorrect };
 });
 
+// Função para abrir modal de edição
+const openEditModal = () => {
+  isEditModalOpen.value = true;
+};
+
+
 // Função para deletar uma legislação
 const deleteLegislation = () => {
   if (confirm(`Tem certeza que deseja excluir a legislação "${props.legalReference.name}"?\n\nEsta ação irá deletar todos os artigos, opções e progresso dos usuários relacionados a esta legislação. Esta ação não pode ser desfeita.`)) {
@@ -108,17 +124,22 @@ const deleteLegislation = () => {
 </script>
 
 <template>
-  <Head :title="legalReference.name" />
+  <Head :title="props.legalReference.name" />
 
   <AppLayout :breadcrumbs="breadcrumbs">
     <div class="container p-8">
-      
+
       <Card class="mb-6">
         <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
           <div>
-            <CardTitle class="text-2xl font-bold">{{ legalReference.name }}</CardTitle>
+            <div class="flex items-center gap-3 mb-2">
+              <CardTitle class="text-2xl font-bold">{{ props.legalReference.name }}</CardTitle>
+              <Badge v-if="props.legalReference.difficulty_level" variant="secondary" class="text-xs">
+                Nível {{ props.legalReference.difficulty_level }}
+              </Badge>
+            </div>
             <CardDescription>
-              {{ legalReference.description }}
+              {{ props.legalReference.description }}
             </CardDescription>
           </div>
           
@@ -129,15 +150,20 @@ const deleteLegislation = () => {
                 Voltar
               </Button>
             </Link>
-            
+
+            <Button @click="openEditModal">
+              <Settings class="h-4 w-4 mr-2" />
+              Editar Legislação
+            </Button>
+
             <Link v-if="selectedArticle" :href="route('admin.form.edit', selectedArticle.uuid as any)">
               <Button>
                 <PenSquare class="h-4 w-4 mr-2" />
-                Editar
+                Editar Artigo
               </Button>
             </Link>
-            
-            <Button 
+
+            <Button
               variant="destructive"
               @click="deleteLegislation"
             >
@@ -274,6 +300,15 @@ const deleteLegislation = () => {
         </div>
       </div>
     </div>
+
+    <!-- Modal de edição da legislação -->
+    <EditLegislationModal
+      v-model:open="isEditModalOpen"
+      :legal-reference="props.legalReference"
+    />
+
+    <!-- Toast notifications -->
+    <Toaster />
   </AppLayout>
 </template>
 

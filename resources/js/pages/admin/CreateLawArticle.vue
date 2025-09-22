@@ -427,7 +427,17 @@ const submit = () => {
                             create-entity-name="referência legal"
                             create-route="admin.legal-references.store"
                             @item-created="handleReferenceCreated"
-                        />
+                            show-edit-button
+                        >
+                            <template #item-description="{ item }">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-sm text-muted-foreground">{{ item.description }}</span>
+                                    <span v-if="item.difficulty_level" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                                        Nível {{ item.difficulty_level }}
+                                    </span>
+                                </div>
+                            </template>
+                        </SearchCreateSelect>
                         
                         <!-- Referência específica do artigo com Input normal -->
                         <div class="grid gap-2">

@@ -412,7 +412,7 @@ const scrollToCurrentPhase = () => {
   if (phaseElement) {
     // Scroll suave para a fase atual
     phaseElement.scrollIntoView({
-      behavior: 'smooth',
+      // behavior: 'smooth',
       block: 'center',
       inline: 'center'
     });

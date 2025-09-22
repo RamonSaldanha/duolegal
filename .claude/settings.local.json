@@ -27,7 +27,11 @@
       "Bash(npm install:*)",
       "mcp__laravel-boost__search-docs",
       "mcp__laravel-boost__last-error",
-      "mcp__ide__getDiagnostics"
+      "mcp__ide__getDiagnostics",
+      "mcp__laravel-boost__list-routes",
+      "mcp__laravel-boost__browser-logs",
+      "mcp__laravel-boost__get-config",
+      "Bash(vendor/bin/pint:*)"
     ],
     "deny": []
   },

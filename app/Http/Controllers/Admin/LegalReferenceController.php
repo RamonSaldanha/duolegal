@@ -17,7 +17,7 @@ class LegalReferenceController extends Controller
     public function index()
     {
         $references = LegalReference::orderBy('name')->get();
-        
+
         return response()->json($references);
     }
 
@@ -30,11 +30,12 @@ class LegalReferenceController extends Controller
             'name' => ['required', 'string', 'max:255', 'unique:legal_references'],
             'description' => ['nullable', 'string'],
             'type' => ['nullable', 'string'],
+            'difficulty_level' => ['nullable', 'integer', 'between:1,5'],
         ]);
 
         if ($validator->fails()) {
             return response()->json([
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -42,12 +43,13 @@ class LegalReferenceController extends Controller
             'name' => $request->name,
             'description' => $request->description,
             'type' => $request->type ?? 'law',
+            'difficulty_level' => $request->difficulty_level ?? 1,
         ]);
 
         return response()->json($reference, 201);
     }
 
-        /**
+    /**
      * Criar referência legal via n8n (sem auth)
      */
     public function storeFromN8n(Request $request)
@@ -60,7 +62,7 @@ class LegalReferenceController extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -73,7 +75,7 @@ class LegalReferenceController extends Controller
             'id' => $reference->id,
             'name' => $reference->name,
             'created_at' => $reference->created_at,
-            'status' => 'success'
+            'status' => 'success',
         ], 201);
     }
 
@@ -94,17 +96,18 @@ class LegalReferenceController extends Controller
             'name' => ['required', 'string', 'max:255', Rule::unique('legal_references')->ignore($legalReference->id)],
             'description' => ['nullable', 'string'],
             'type' => ['nullable', 'string'],
+            'difficulty_level' => ['nullable', 'integer', 'between:1,5'],
         ]);
 
         if ($validator->fails()) {
             return response()->json([
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
         $legalReference->update($request->all());
 
-        return response()->json($legalReference);
+        return redirect()->route('admin.legislations.show', $legalReference->uuid);
     }
 
     /**
@@ -119,16 +122,16 @@ class LegalReferenceController extends Controller
             // - Todas as opções dos artigos (através do boot method do LawArticle)
             // - Todo o progresso dos usuários (através das foreign keys cascade)
             // - Todas as associações user_legal_references (através das foreign keys cascade)
-            
+
             $legalReference->delete();
-            
+
             return response()->json([
-                'message' => 'Legislação excluída com sucesso.'
+                'message' => 'Legislação excluída com sucesso.',
             ], 200);
-            
+
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Erro ao excluir a legislação. Tente novamente.'
+                'message' => 'Erro ao excluir a legislação. Tente novamente.',
             ], 500);
         }
     }
@@ -139,9 +142,9 @@ class LegalReferenceController extends Controller
     public function legislationsIndex()
     {
         $legalReferences = LegalReference::withCount('articles')->get();
-        
+
         return Inertia::render('admin/Legislations/Index', [
-            'legalReferences' => $legalReferences
+            'legalReferences' => $legalReferences,
         ]);
     }
 
@@ -151,12 +154,12 @@ class LegalReferenceController extends Controller
     public function legislationsShow(LegalReference $legalReference)
     {
         // Carregar os artigos ordenados por referência numérica e incluir as opções
-        $legalReference->load(['articles' => function($query) {
+        $legalReference->load(['articles' => function ($query) {
             $query->orderByRaw('CAST(article_reference AS UNSIGNED) ASC');
         }, 'articles.options']);
-        
+
         return Inertia::render('admin/Legislations/Show', [
-            'legalReference' => $legalReference
+            'legalReference' => $legalReference,
         ]);
     }
 }
