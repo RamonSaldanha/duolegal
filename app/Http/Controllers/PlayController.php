@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\LawArticle;
 use App\Models\LegalReference;
 use App\Models\UserProgress;
-use App\Services\OptimizedMapService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Log;
@@ -47,93 +46,327 @@ class PlayController extends Controller
         }
 
         $hasPreferences = $user->legalReferences()->exists();
-        if (!$hasPreferences && !LegalReference::exists()) {
-            return redirect()->route('play.map')->with('message', 'Nenhuma lei disponível no momento.');
-        }
-
-        // Usar o service otimizado
-        $optimizedMapService = new OptimizedMapService();
+        
+        // Obter jornada atual (padrão: detectar automaticamente)
         $requestedJourney = $request->get('jornada');
+        $currentJourney = 1; // Será atualizado depois se necessário
 
-        try {
-            $mapData = $optimizedMapService->getOptimizedMap($userId, $requestedJourney);
+        $legalReferencesQuery = LegalReference::with(['articles' => function($query) {
+            $query->orderByRaw('CAST(article_reference AS UNSIGNED) ASC')->where('is_active', true);
+        }]);
 
-            if (isset($mapData['error'])) {
-                return redirect()->route('user.legal-references.index')
-                    ->with('message', $hasPreferences ? 'Nenhuma das suas leis selecionadas está disponível ou ativa.' : 'Selecione as leis que deseja estudar.');
-            }
-
-            return Inertia::render('Play/Map', $mapData);
-
-        } catch (\Exception $e) {
-            Log::error('[Map Optimized] Error generating optimized map: ' . $e->getMessage());
-
-            // Fallback para o método original se houver erro
-            return $this->mapFallback($request);
+        if ($hasPreferences) {
+            $legalReferencesQuery->whereHas('users', function($query) use ($userId) {
+                $query->where('users.id', $userId);
+            });
+        } else {
+             if (!LegalReference::exists()) {
+                 return redirect()->route('play.map')->with('message', 'Nenhuma lei disponível no momento.');
+             }
+             $legalReferencesQuery = LegalReference::with(['articles' => function($query) {
+                 $query->orderByRaw('CAST(article_reference AS UNSIGNED) ASC')->where('is_active', true);
+             }])->where('is_active', true);
         }
-    }
 
-    /**
-     * Método de fallback para o mapa (versão original simplificada)
-     */
-    private function mapFallback(Request $request)
-    {
-        $user = Auth::user();
-        $userId = $user->id;
-
-        // Versão simplificada usando apenas dados essenciais
-        $legalReferences = $this->getUserLegalReferencesSimple($user);
+        $legalReferences = $legalReferencesQuery->orderBy('id', 'asc')->get();
 
         if ($legalReferences->isEmpty()) {
-            return redirect()->route('user.legal-references.index')
-                ->with('message', 'Selecione as leis que deseja estudar.');
+             return redirect()->route('user.legal-references.index')
+                    ->with('message', $hasPreferences ? 'Nenhuma das suas leis selecionadas está disponível ou ativa.' : 'Selecione as leis que deseja estudar.');
         }
 
-        // Dados mínimos para renderização
-        $fallbackData = [
-            'phases' => [],
-            'modules' => [],
-            'journey' => [
-                'current' => 1,
-                'total' => 1,
-                'has_previous' => false,
-                'has_next' => false,
-                'phases_in_journey' => 0,
-                'total_phases' => 0,
-                'journey_title' => null,
-                'current_phase_id' => null,
-                'was_auto_detected' => false
-            ],
+        // --- Lógica de Geração de Fases e Bloqueio (Revisada) ---
+
+        $phasesData = []; // Array final com dados completos das fases
+        $phaseStructureList = []; // Lista apenas com a estrutura (ID, tipo, ref, chunk) para lógica de escopo
+        $globalPhaseCounter = 0;
+        $currentPhaseId = null; // ID da fase que será marcada como 'is_current'
+        $blockSubsequent = false; // Flag para bloquear todas as fases após a atual ser encontrada
+        $previousPhaseIsComplete = true; // Estado da fase *anterior* (true se concluída no novo sentido)
+        $currentLawUuid = null;
+        $lawCompletionStatus = []; // uuid => bool (true se lei 100% completa no novo sentido)
+
+        // --- PASSO 1: Construir a ESTRUTURA completa de fases INTERCALADAS (NOVA LÓGICA) ---
+        // Primeiro, preparar chunks de todas as leis
+        $lawChunksData = [];
+        $maxChunks = 0;
+        
+        foreach ($legalReferences as $reference) {
+            $chunks = $reference->articles->chunk(self::ARTICLES_PER_PHASE);
+            $lawChunksData[$reference->uuid] = [
+                'reference' => $reference,
+                'chunks' => $chunks,
+                'total_chunks' => $chunks->count()
+            ];
+            $maxChunks = max($maxChunks, $chunks->count());
+        }
+        
+        // NOVA LÓGICA: Intercalar de forma mais rigorosa
+        $tempCounter = 0;
+        $totalModules = ceil($maxChunks / self::PHASES_PER_MODULE_PER_LAW);
+        
+        // Para cada módulo, distribuir fases de forma equilibrada
+        for ($moduleIndex = 0; $moduleIndex < $totalModules; $moduleIndex++) {
+            $startChunkIndex = $moduleIndex * self::PHASES_PER_MODULE_PER_LAW;
+            $endChunkIndex = $startChunkIndex + self::PHASES_PER_MODULE_PER_LAW;
+            
+            // Para cada lei, adicionar suas fases deste módulo (se ainda tiver chunks)
+            foreach ($lawChunksData as $lawUuid => $lawData) {
+                $phasesAddedForThisLaw = 0;
+                
+                // Adicionar fases regulares desta lei para este módulo
+                for ($chunkIndex = $startChunkIndex; $chunkIndex < $endChunkIndex && $phasesAddedForThisLaw < self::PHASES_PER_MODULE_PER_LAW; $chunkIndex++) {
+                    // Só adicionar se esta lei ainda tem chunks para este índice
+                    if ($chunkIndex < $lawData['total_chunks']) {
+                        $tempCounter++;
+                        
+                        $phaseStructureList[] = [
+                            'id' => $tempCounter,
+                            'is_review' => false,
+                            'reference_uuid' => $lawUuid,
+                            'chunk_index' => $chunkIndex,
+                            'article_chunk' => $lawData['chunks'][$chunkIndex]
+                        ];
+                        
+                        $phasesAddedForThisLaw++;
+                    }
+                }
+                
+                // Adicionar revisão se esta lei adicionou exatamente PHASES_PER_MODULE_PER_LAW fases neste módulo
+                // E se o número total de fases regulares desta lei até agora é múltiplo de REVIEW_PHASE_INTERVAL
+                if ($phasesAddedForThisLaw > 0) {
+                    $totalRegularPhasesOfThisLaw = min($endChunkIndex, $lawData['total_chunks']);
+                    
+                    // Verificar se deve adicionar revisão (a cada REVIEW_PHASE_INTERVAL fases regulares)
+                    if ($totalRegularPhasesOfThisLaw % self::REVIEW_PHASE_INTERVAL === 0) {
+                        $tempCounter++;
+                        $phaseStructureList[] = [
+                            'id' => $tempCounter,
+                            'is_review' => true,
+                            'reference_uuid' => $lawUuid,
+                            'last_regular_counter' => $totalRegularPhasesOfThisLaw
+                        ];
+                    }
+                }
+            }
+        }
+        // Log::debug("[Map Structure] Phase structure list built. Count: " . count($phaseStructureList));
+
+
+        // --- PASSO 2: Iterar pela ESTRUTURA para calcular progresso, bloqueios e fase atual ---
+        foreach ($phaseStructureList as $phaseIndex => $phaseStruct) {
+            $currentPhaseGlobalId = $phaseStruct['id']; // ID global desta fase
+
+             // Verificar se a lei mudou para avaliar bloqueio inter-lei
+             if ($phaseStruct['reference_uuid'] !== $currentLawUuid) {
+                 $previousLawUuid = $currentLawUuid;
+                 $currentLawUuid = $phaseStruct['reference_uuid'];
+                 // Log::debug("[Map Pass 2 - Phase {$currentPhaseGlobalId}] Switched to Law UUID: {$currentLawUuid}");
+
+                 // Verificar se a lei anterior *não* foi completada (se houver lei anterior)
+                 if ($previousLawUuid !== null && isset($lawCompletionStatus[$previousLawUuid]) && !$lawCompletionStatus[$previousLawUuid]) {
+                     // Log::debug("[Map Pass 2 - Phase {$currentPhaseGlobalId}] Blocking subsequent phases because previous law ({$previousLawUuid}) was incomplete.");
+                     $blockSubsequent = true; // Bloqueia esta lei e as seguintes
+                 }
+                  // Assumir que a lei atual está completa até prova em contrário
+                  $lawCompletionStatus[$currentLawUuid] = true;
+             }
+
+             // --- Lógica central de bloqueio e conclusão ---
+             // $isPhaseBlocked depende do estado da fase ANTERIOR ($previousPhaseIsComplete)
+             // e se o bloqueio geral ($blockSubsequent) já foi ativado.
+             $isPhaseBlocked = $blockSubsequent || !$previousPhaseIsComplete;
+             $isPhaseCurrent = false; // Será definida como true se for a primeira incompleta e não bloqueada
+             $phaseProgress = null;
+             $isPhaseComplete = false; // Estado de conclusão DESTA fase (no novo sentido)
+             $phaseBuiltData = null; // Dados finais a serem adicionados a $phasesData
+
+             // Calcular progresso e conclusão específica para tipo de fase
+             if ($phaseStruct['is_review']) {
+                 // --- Fase de Revisão ---
+                 // Log::debug("[Map Pass 2 - Phase {$currentPhaseGlobalId}] Processing REVIEW phase.");
+                 $articleIdsInScope = $this->getArticlesInScopeForReview($currentPhaseGlobalId, $phaseStructureList); // Passa a lista de ESTRUTURA completa
+                 $phaseProgress = $this->getReviewPhaseProgress($userId, $articleIdsInScope);
+                 $isPhaseComplete = $phaseProgress['is_complete']; // Revisão completa se !needs_review
+
+                 // Log::debug("[Map Pass 2 - Phase {$currentPhaseGlobalId}] Review - Blocked: ".($isPhaseBlocked?'Yes':'No').", Complete: ".($isPhaseComplete?'Yes':'No'));
+
+                 // Determina se é a fase atual GLOBAL
+                 if (!$isPhaseBlocked && !$isPhaseComplete && $currentPhaseId === null) {
+                     $isPhaseCurrent = true;
+                     $currentPhaseId = $currentPhaseGlobalId;
+                      // Log::debug("[Map Pass 2 - Phase {$currentPhaseGlobalId}] SET AS CURRENT (Review). Blocking subsequent.");
+                 }
+
+                 // Construir dados finais da fase de revisão
+                 $phaseBuiltData = $this->buildReviewPhaseData(
+                    $currentPhaseGlobalId,
+                    $legalReferences->firstWhere('uuid', $currentLawUuid), // Obter o modelo da referência
+                    $phaseStruct['last_regular_counter'],
+                    $isPhaseBlocked,
+                    $isPhaseCurrent,
+                    $phaseProgress
+                 );
+
+             } else {
+                 // --- Fase Regular ---
+                 Log::debug("[Map Pass 2 - Phase {$currentPhaseGlobalId}] Processing REGULAR phase (Chunk {$phaseStruct['chunk_index']}).");
+                 $phaseProgress = $this->getPhaseProgress($userId, $phaseStruct['article_chunk']);
+                 $isPhaseComplete = $phaseProgress['all_attempted']; // Regular completa se all_attempted
+
+                 Log::debug("[Map Pass 2 - Phase {$currentPhaseGlobalId}] Regular - Blocked: ".($isPhaseBlocked?'Yes':'No').", Attempted(Complete): ".($isPhaseComplete?'Yes':'No'));
+
+                 // Determina se é a fase atual GLOBAL
+                 if (!$isPhaseBlocked && !$isPhaseComplete && $currentPhaseId === null) {
+                     $isPhaseCurrent = true;
+                     $currentPhaseId = $currentPhaseGlobalId;
+                     Log::debug("[Map Pass 2 - Phase {$currentPhaseGlobalId}] SET AS CURRENT (Regular). Blocking subsequent.");
+                 }
+
+                 // Construir dados finais da fase regular
+                 $phaseBuiltData = $this->buildPhaseData(
+                    $currentPhaseGlobalId,
+                    $legalReferences->firstWhere('uuid', $currentLawUuid), // Obter o modelo da referência
+                    $phaseStruct['article_chunk'],
+                    $phaseStruct['chunk_index'],
+                    $phaseProgress,
+                    $isPhaseBlocked,
+                    $isPhaseCurrent
+                 );
+             }
+
+             // Atualizar status de conclusão da LEI se esta fase for incompleta
+             if (!$isPhaseComplete) {
+                  if ($lawCompletionStatus[$currentLawUuid]) { 
+                     // Log::debug("[Map Pass 2 - Phase {$currentPhaseGlobalId}] Marking Law UUID {$currentLawUuid} as incomplete due to this phase.");
+                 }
+                 $lawCompletionStatus[$currentLawUuid] = false;
+             }
+
+             // Adicionar dados construídos ao array final
+             if ($phaseBuiltData) {
+                 $phasesData[] = $phaseBuiltData;
+             } else {
+                  // Log::error("[Map Pass 2 - Phase {$currentPhaseGlobalId}] Failed to build phase data.");
+             }
+
+
+             // --- Atualizar estado para a PRÓXIMA iteração ---
+             // O estado de conclusão DESTA fase determina se a PRÓXIMA estará bloqueada
+             $previousPhaseIsComplete = $isPhaseComplete;
+
+             // Ativar o bloqueio subsequente se esta fase foi marcada como a atual
+             // Isso garante que mesmo que a próxima fase na lista seja calculada como "completa",
+             // ela ainda será bloqueada porque $blockSubsequent será true.
+             if ($isPhaseCurrent) {
+                 $blockSubsequent = true;
+             }
+
+        } // Fim do loop PASSO 2
+
+        Log::debug("[Map Completion] Finished Pass 2. CurrentPhaseId identified: {$currentPhaseId}.");
+
+        // --- AUTO-DETECÇÃO DA JORNADA ATUAL ---
+        // Se não foi especificada uma jornada, detectar automaticamente baseado na fase atual
+        if ($requestedJourney === null && $currentPhaseId !== null) {
+            // Encontrar em qual jornada está a fase atual
+            $totalPhases = count($phasesData);
+            $currentPhaseIndex = -1;
+            
+            // Encontrar o índice da fase atual no array de dados
+            foreach ($phasesData as $index => $phase) {
+                if ($phase['id'] === $currentPhaseId) {
+                    $currentPhaseIndex = $index;
+                    break;
+                }
+            }
+            
+            if ($currentPhaseIndex !== -1) {
+                // Calcular qual jornada contém esta fase
+                $detectedJourney = floor($currentPhaseIndex / self::PHASES_PER_JOURNEY) + 1;
+                $currentJourney = $detectedJourney;
+                Log::debug("[Map Auto-Detection] Current phase at index {$currentPhaseIndex}, detected journey: {$detectedJourney}");
+            }
+        } else if ($requestedJourney !== null) {
+            // Usar jornada especificada
+            $currentJourney = max(1, (int) $requestedJourney);
+        }
+
+        // --- PASSO 3: Ajuste Final - Garantir que is_current e is_blocked estejam corretos ---
+        // A fase atual NUNCA deve ser bloqueada.
+        if ($currentPhaseId !== null) {
+            $foundCurrent = false;
+            foreach ($phasesData as $index => $phase) {
+                 if ($phase['id'] === $currentPhaseId) {
+                     // Se esta é a fase atual identificada, garantir que is_current=true e is_blocked=false
+                     $phasesData[$index]['is_current'] = true;
+                     if ($phasesData[$index]['is_blocked']) {
+                         Log::warning("[Map Final Check] Forcing is_blocked=false for identified current phase {$currentPhaseId}.");
+                         $phasesData[$index]['is_blocked'] = false;
+                     }
+                     $foundCurrent = true;
+                 } elseif ($phase['is_current']) {
+                      // Desmarcar qualquer outra fase que possa ter sido erroneamente marcada como atual
+                      Log::warning("[Map Final Check] Found phase {$phase['id']} marked as current, but actual current is {$currentPhaseId}. Unsetting.");
+                      $phasesData[$index]['is_current'] = false;
+                 }
+            }
+             if (!$foundCurrent) {
+                 Log::error("[Map Final Check] Could not find the identified current phase ID {$currentPhaseId} in the final phasesData array.");
+             }
+        } else {
+             Log::debug("[Map Final Check] No current phase ID identified (likely all phases completed or blocked).");
+             // Opcional: Encontrar a última fase não bloqueada como "atual" visualmente? Ou deixar sem fase atual.
+             // Por enquanto, deixamos sem fase atual se $currentPhaseId for null.
+        }
+
+        // --- Sistema de Jornadas ---
+        $totalPhases = count($phasesData);
+        $totalJourneys = ceil($totalPhases / self::PHASES_PER_JOURNEY);
+        
+        // Validar jornada atual
+        if ($currentJourney > $totalJourneys) {
+            $currentJourney = $totalJourneys;
+        }
+        
+        // Filtrar fases para a jornada atual
+        $startIndex = ($currentJourney - 1) * self::PHASES_PER_JOURNEY;
+        $endIndex = min($startIndex + self::PHASES_PER_JOURNEY, $totalPhases);
+        $journeyPhases = array_slice($phasesData, $startIndex, $endIndex - $startIndex);
+        
+        // Organizar fases em módulos (apenas para a jornada atual) - OTIMIZADO
+        $modulesData = $this->organizePhasesIntoModulesOptimized($journeyPhases);
+        
+        // Informações de navegação entre jornadas
+        $journeyInfo = [
+            'current' => $currentJourney,
+            'total' => $totalJourneys,
+            'has_previous' => $currentJourney > 1,
+            'has_next' => $currentJourney < $totalJourneys,
+            'phases_in_journey' => count($journeyPhases),
+            'total_phases' => $totalPhases,
+            'journey_title' => $totalJourneys > 1 ? "Jornada {$currentJourney} de {$totalJourneys}" : null,
+            'current_phase_id' => $currentPhaseId, // Adicionar ID da fase atual para scroll automático
+            'was_auto_detected' => $requestedJourney === null // Flag para indicar se foi detectado automaticamente
+        ];
+        
+        return Inertia::render('Play/Map', [
+            'phases' => $journeyPhases,
+            'modules' => $modulesData,
+            'journey' => $journeyInfo,
             'user' => [
                 'lives' => $user->lives,
                 'has_infinite_lives' => $user->hasInfiniteLives()
             ],
-        ];
-
-        return Inertia::render('Play/Map', $fallbackData);
-    }
-
-    /**
-     * Obtém referências legais de forma simples
-     */
-    private function getUserLegalReferencesSimple($user): Collection
-    {
-        $hasPreferences = $user->legalReferences()->exists();
-
-        $query = LegalReference::query();
-        if ($hasPreferences) {
-            $query->whereHas('users', function($query) use ($user) {
-                $query->where('users.id', $user->id);
-            });
-        } else {
-            $query->where('is_active', true);
-        }
-
-        return $query->orderBy('id', 'asc')->get();
-    }
+        ]);
+    } // --- Fim da função map() ---
 
     // ===============================================================
     // Demais funções (Helpers, phase, review, saveProgress etc.)
+    // Certifique-se que as versões mais recentes de
+    // buildPhaseData, buildReviewPhaseData, getPhaseProgress,
+    // getReviewPhaseProgress, getArticlesInScopeForReview
+    // estejam presentes aqui.
     // ===============================================================
 
      // Helper para construir dados da fase regular (otimizado)
@@ -885,10 +1118,6 @@ class PlayController extends Controller
             $correctAnswers, // Usar valor corrigido
             $totalAnswers // Usar valor corrigido
         );
-
-        // Invalidar cache do progresso do usuário após salvar
-        $optimizedMapService = new OptimizedMapService();
-        $optimizedMapService->invalidateUserProgressCache($user->id);
 
          // A função updateProgress deve retornar o objeto $progress atualizado
          // Vamos buscá-lo novamente para garantir os últimos dados, especialmente se updateProgress não retornar
