@@ -32,6 +32,7 @@
       "mcp__laravel-boost__browser-logs",
       "mcp__laravel-boost__get-config",
       "Bash(vendor/bin/pint:*)",
+      "Bash(git checkout:*)",
       "Bash(git stash:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)"
