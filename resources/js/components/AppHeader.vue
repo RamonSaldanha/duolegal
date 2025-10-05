@@ -17,7 +17,7 @@ import UserMenuContent from '@/components/UserMenuContent.vue';
 import { getInitials } from '@/composables/useInitials';
 import type { BreadcrumbItem, NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
-import { BookOpen, Heart, Play, Menu, Lock, Settings2, Gem, Infinity, Users, Star, Trophy, Crown } from 'lucide-vue-next';
+import { Heart, Menu, Gem, Infinity } from 'lucide-vue-next';
 import { computed, watch } from 'vue';
 
 interface Props {
@@ -62,36 +62,36 @@ const hasSubscription = computed(() => {
 const isCurrentRoute = computed(() => (url: string) => page.url === url);
 
 const activeItemStyles = computed(
-    () => (url: string) => (isCurrentRoute.value(url) ? 'text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100' : ''),
+    () => (url: string) => (isCurrentRoute.value(url) ? '!bg-accent dark:!bg-neutral-800 text-neutral-900 dark:text-neutral-100' : '!bg-transparent hover:!bg-accent'),
 );
 
-const mainNavItems: NavItem[] = [
+const mainNavItems = computed(() => [
     {
         title: 'Jogar',
         href: '/play',
-        icon: Play,
+        iconPath: '/icons/livro.png',
     },
     {
         title: 'Desafios',
         href: '/challenges',
-        icon: Trophy,
+        iconPath: '/icons/trofeu.png',
     },
     {
         title: 'Ranking',
         href: '/ranking',
-        icon: Crown,
+        iconPath: '/icons/medalha.png',
     },
     {
         title: 'Preferências',
         href: '/user/legal-references',
-        icon: Settings2,
+        iconPath: '/icons/configuracoes.png',
     },
     ...(isAdmin.value
         ? [
             {
                 title: 'Criar artigo',
                 href: '/admin/create-lawarticle',
-                icon: Lock,
+                iconPath: '/icons/configuracoes.png',
             },
         ]
         : []),
@@ -100,7 +100,7 @@ const mainNavItems: NavItem[] = [
             {
                 title: 'Legislações',
                 href: '/admin/legislations',
-                icon: BookOpen,
+                iconPath: '/icons/configuracoes.png',
             },
         ]
         : []),
@@ -109,11 +109,11 @@ const mainNavItems: NavItem[] = [
             {
                 title: 'Usuários',
                 href: '/admin/users',
-                icon: Users,
+                iconPath: '/icons/configuracoes.png',
             },
         ]
         : []),
-];
+]);
 
 const userLives = computed(() => page.props.auth.user?.lives ?? 0);
 
@@ -150,13 +150,13 @@ const rightNavItems: NavItem[] = [
 <template>
     <div>
         <div class="border-b border-sidebar-border/80">
-            <div class="mx-auto flex h-16 items-center px-4 md:max-w-7xl">
+            <div class="mx-auto flex h-20 items-center px-4 md:max-w-7xl">
                 <!-- Mobile Menu -->
                 <div class="lg:hidden">
                     <Sheet>
                         <SheetTrigger :as-child="true">
-                            <Button variant="ghost" size="icon" class="mr-2 h-9 w-9">
-                                <Menu class="h-5 w-5" />
+                            <Button variant="ghost" size="icon" class="mr-2 h-10 w-10">
+                                <Menu class="h-6 w-6" />
                             </Button>
                         </SheetTrigger>
                         <SheetContent side="left" class="w-[300px] p-6">
@@ -170,10 +170,10 @@ const rightNavItems: NavItem[] = [
                                         v-for="item in mainNavItems"
                                         :key="item.title"
                                         :href="item.href"
-                                        class="flex items-center gap-x-3 rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent"
+                                        class="flex items-center gap-x-3 rounded-lg px-4 py-3 text-sm font-medium hover:bg-accent"
                                         :class="activeItemStyles(item.href)"
                                     >
-                                        <component v-if="item.icon" :is="item.icon" class="h-5 w-5" />
+                                        <img v-if="item.iconPath" :src="item.iconPath" :alt="item.title" class="h-8 w-8" />
                                         {{ item.title }}
                                     </Link>
                                 </nav>
@@ -202,13 +202,13 @@ const rightNavItems: NavItem[] = [
                 <!-- Desktop Menu -->
                 <div class="hidden h-full lg:flex lg:flex-1">
                     <NavigationMenu class="ml-10 flex h-full items-stretch">
-                        <NavigationMenuList class="flex h-full items-stretch space-x-2">
+                        <NavigationMenuList class="flex h-full items-stretch space-x-1">
                             <NavigationMenuItem v-for="(item, index) in mainNavItems" :key="index" class="relative flex h-full items-center">
                                 <Link :href="item.href">
                                     <NavigationMenuLink
-                                        :class="[navigationMenuTriggerStyle(), activeItemStyles(item.href), 'h-9 cursor-pointer px-3']"
+                                        :class="[navigationMenuTriggerStyle(), activeItemStyles(item.href), 'h-12 cursor-pointer px-2']"
                                     >
-                                        <component v-if="item.icon" :is="item.icon" class="mr-2 h-4 w-4" />
+                                        <img v-if="item.iconPath" :src="item.iconPath" :alt="item.title" class="mr-2 h-8 w-8" />
                                         {{ item.title }}
                                     </NavigationMenuLink>
                                 </Link>
@@ -320,7 +320,7 @@ const rightNavItems: NavItem[] = [
         </div>
 
         <div v-if="props.breadcrumbs.length > 1" class="flex w-full border-b border-sidebar-border/70">
-            <div class="mx-auto flex h-12 w-full items-center justify-start px-4 text-neutral-500 md:max-w-7xl">
+            <div class="mx-auto flex h-14 w-full items-center justify-start px-4 text-neutral-500 md:max-w-7xl">
                 <Breadcrumbs :breadcrumbs="breadcrumbs" />
             </div>
 

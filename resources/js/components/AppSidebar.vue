@@ -6,60 +6,63 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, Sid
 import { type NavItem } from '@/types';
 import { computed } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
-import { BookOpen, Folder, Lock, Play, Users } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
 
 
 const page = usePage();
 const isAdmin = computed(() => page.props.auth.user?.is_admin);
 
-const mainNavItems: NavItem[] = [
+const mainNavItems = computed(() => [
     {
         title: 'Jogar',
         href: '/play',
-        icon: Play,
+        iconPath: '/icons/livro.png',
+    },
+    {
+        title: 'Desafios',
+        href: '/challenges',
+        iconPath: '/icons/trofeu.png',
+    },
+    {
+        title: 'Ranking',
+        href: '/ranking',
+        iconPath: '/icons/medalha.png',
+    },
+    {
+        title: 'Preferências',
+        href: '/user/legal-references',
+        iconPath: '/icons/configuracoes.png',
     },
     ...(isAdmin.value
         ? [
             {
                 title: 'Criar artigo',
                 href: '/admin/create-lawarticle',
-                icon: Lock,
+                iconPath: '/icons/configuracoes.png',
             },
         ]
         : []),
-        ...(isAdmin.value
+    ...(isAdmin.value
         ? [
             {
                 title: 'Legislações',
                 href: '/admin/legislations',
-                icon: BookOpen,
+                iconPath: '/icons/configuracoes.png',
             },
         ]
         : []),
-        ...(isAdmin.value
+    ...(isAdmin.value
         ? [
             {
                 title: 'Usuários',
                 href: '/admin/users',
-                icon: Users,
+                iconPath: '/icons/configuracoes.png',
             },
         ]
         : []),
-];
+]);
 
-const footerNavItems: NavItem[] = [
-    {
-        title: 'Github Repo',
-        href: 'https://github.com/laravel/vue-starter-kit',
-        icon: Folder,
-    },
-    {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits',
-        icon: BookOpen,
-    },
-];
+const footerNavItems: NavItem[] = [];
 </script>
 
 <template>

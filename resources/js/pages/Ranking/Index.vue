@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import AppHeaderLayout from '@/layouts/app/AppHeaderLayout.vue';
+import { Head } from '@inertiajs/vue3';
 import { Trophy, Medal, Award, Crown, Star } from 'lucide-vue-next';
 import { computed } from 'vue';
 
@@ -13,6 +14,8 @@ interface User {
 
 interface Props {
     topUsers: User[];
+    currentUserPosition: number | null;
+    currentUserData: User | null;
 }
 
 const props = defineProps<Props>();
@@ -23,7 +26,28 @@ const breadcrumbs = [
 ];
 
 const top3Users = computed(() => props.topUsers.slice(0, 3));
-const remainingUsers = computed(() => props.topUsers.slice(3));
+
+const remainingUsers = computed(() => {
+    const users = props.topUsers.slice(3);
+
+    // Se o usuário está fora do top 20, adiciona no final
+    if (props.currentUserData && props.currentUserPosition && props.currentUserPosition > 20) {
+        return [...users, props.currentUserData];
+    }
+
+    return users;
+});
+
+const pageTitle = computed(() => {
+    if (props.currentUserPosition) {
+        return `Ranking (#${props.currentUserPosition})`;
+    }
+    return 'Ranking';
+});
+
+const isCurrentUserInTop20 = computed(() => {
+    return props.currentUserPosition && props.currentUserPosition <= 20;
+});
 
 const getPositionIcon = (position: number) => {
     switch (position) {
@@ -38,9 +62,15 @@ const getPositionIcon = (position: number) => {
     }
 };
 
+const isCurrentUser = (userId: number) => {
+    return props.currentUserData?.id === userId;
+};
+
 </script>
 
 <template>
+    <Head :title="pageTitle" />
+
     <AppHeaderLayout :breadcrumbs="breadcrumbs">
         <div class="mx-auto max-w-4xl space-y-6">
             <!-- Cabeçalho -->
@@ -57,8 +87,9 @@ const getPositionIcon = (position: number) => {
                     class="relative"
                 >
                     <div
-                        class="rounded-lg p-4 text-center space-y-3 border-2"
+                        class="rounded-lg p-4 text-center space-y-3 border-2 transition-all"
                         :class="[
+                            isCurrentUser(user.id) ? 'ring-4 ring-blue-500 ring-offset-2 dark:ring-offset-gray-900 scale-105' : '',
                             user.position === 1 ? 'border-yellow-400 bg-yellow-50 dark:bg-yellow-900/10' :
                             user.position === 2 ? 'border-gray-400 bg-gray-50 dark:bg-gray-800/10' :
                             'border-orange-400 bg-orange-50 dark:bg-orange-900/10'
@@ -126,11 +157,23 @@ const getPositionIcon = (position: number) => {
                 </h2>
 
                 <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-                    <div
-                        v-for="user in remainingUsers"
-                        :key="user.id"
-                        class="flex items-center justify-between p-3 border-b border-gray-100 dark:border-gray-700 last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-                    >
+                    <template v-for="(user, index) in remainingUsers" :key="user.id">
+                        <!-- Separador visual quando o usuário está fora do top 20 -->
+                        <div
+                            v-if="isCurrentUser(user.id) && user.position > 20"
+                            class="flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-700/50 border-y border-gray-200 dark:border-gray-600"
+                        >
+                            <div class="flex-1 h-px bg-gray-300 dark:bg-gray-600"></div>
+                            <span class="text-xs font-semibold text-gray-500 dark:text-gray-400">...</span>
+                            <div class="flex-1 h-px bg-gray-300 dark:bg-gray-600"></div>
+                        </div>
+
+                        <div
+                            class="flex items-center justify-between p-3 border-b border-gray-100 dark:border-gray-700 last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all"
+                            :class="[
+                                isCurrentUser(user.id) ? 'bg-blue-50 dark:bg-blue-900/20 ring-2 ring-inset ring-blue-500 dark:ring-blue-400' : ''
+                            ]"
+                        >
                         <!-- Posição e Nome -->
                         <div class="flex items-center gap-3">
                             <div
@@ -158,6 +201,7 @@ const getPositionIcon = (position: number) => {
                             </span>
                         </div>
                     </div>
+                    </template>
                 </div>
             </div>
 
