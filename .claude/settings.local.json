@@ -35,7 +35,10 @@
       "Bash(dir \"C:\\Users\\ramon\\Desktop\\code\\memorize\\public\\icons\")",
       "Bash(git checkout:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(git merge:*)",
+      "Bash(git push:*)",
+      "Bash(git stash push:*)"
     ],
     "deny": []
   },

@@ -4,12 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Challenge;
 use App\Models\ChallengeProgress;
-use App\Models\LegalReference;
 use App\Models\LawArticle;
+use App\Models\LegalReference;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
-use Illuminate\Support\Facades\DB;
 
 class ChallengeController extends Controller
 {
@@ -17,12 +16,12 @@ class ChallengeController extends Controller
     public function index(Request $request)
     {
         $search = $request->get('search');
-        
+
         $challenges = Challenge::with('creator')
             ->public()
             ->when($search, function ($query, $search) {
-                return $query->where('title', 'like', '%' . $search . '%')
-                           ->orWhere('description', 'like', '%' . $search . '%');
+                return $query->where('title', 'like', '%'.$search.'%')
+                    ->orWhere('description', 'like', '%'.$search.'%');
             })
             ->withCount('challengeProgress as participants_count')
             ->orderBy('created_at', 'desc')
@@ -32,25 +31,26 @@ class ChallengeController extends Controller
         $challenges->getCollection()->transform(function ($challenge) {
             $stats = $challenge->getStats();
             $challenge->stats = $stats;
+
             return $challenge;
         });
 
         return Inertia::render('Challenges/Index', [
             'challenges' => $challenges,
-            'search' => $search
+            'search' => $search,
         ]);
     }
 
     // Exibir página de criação de desafio
     public function create()
     {
-        $legalReferences = LegalReference::with(['articles' => function($query) {
+        $legalReferences = LegalReference::with(['articles' => function ($query) {
             $query->where('is_active', true)
-                  ->orderByRaw('CAST(article_reference AS UNSIGNED) ASC');
+                ->orderByRaw('CAST(article_reference AS UNSIGNED) ASC');
         }])->where('is_active', true)->get();
 
         return Inertia::render('Challenges/Create', [
-            'legalReferences' => $legalReferences
+            'legalReferences' => $legalReferences,
         ]);
     }
 
@@ -62,7 +62,7 @@ class ChallengeController extends Controller
             'description' => 'nullable|string|max:1000',
             'selected_articles' => 'required|array|min:1',
             'selected_articles.*' => 'exists:law_articles,id',
-            'is_public' => 'boolean'
+            'is_public' => 'boolean',
         ]);
 
         $challenge = Challenge::create([
@@ -71,23 +71,23 @@ class ChallengeController extends Controller
             'created_by' => Auth::id(),
             'selected_articles' => $validated['selected_articles'],
             'is_public' => $validated['is_public'] ?? false,
-            'is_active' => true
+            'is_active' => true,
         ]);
 
         return redirect()->route('challenges.show', $challenge->uuid)
-                        ->with('success', 'Desafio criado com sucesso!');
+            ->with('success', 'Desafio criado com sucesso!');
     }
 
     // Exibir detalhes do desafio
     public function show(Challenge $challenge)
     {
-        if (!$challenge->canAccess(Auth::user())) {
+        if (! $challenge->canAccess(Auth::user())) {
             abort(403, 'Você não tem permissão para acessar este desafio.');
         }
 
         $challenge->load('creator');
         $stats = $challenge->getStats();
-        
+
         // Verificar se o usuário já está participando
         $userProgress = null;
         if (Auth::check()) {
@@ -95,12 +95,12 @@ class ChallengeController extends Controller
         }
 
         // Obter artigos do desafio com informações de referência legal
-        $challengeArticles = $challenge->getSelectedArticles()->map(function($article) {
+        $challengeArticles = $challenge->getSelectedArticles()->map(function ($article) {
             return [
                 'id' => $article->id,
                 'article_reference' => $article->article_reference,
                 'difficulty_level' => $article->difficulty_level,
-                'legal_reference_name' => $article->legalReference->name
+                'legal_reference_name' => $article->legalReference->name,
             ];
         });
 
@@ -108,27 +108,27 @@ class ChallengeController extends Controller
             'challenge' => $challenge,
             'stats' => $stats,
             'userProgress' => $userProgress,
-            'isParticipating' => !empty($userProgress),
-            'challengeArticles' => $challengeArticles
+            'isParticipating' => ! empty($userProgress),
+            'challengeArticles' => $challengeArticles,
         ]);
     }
 
     // Iniciar participação no desafio
     public function join(Challenge $challenge)
     {
-        if (!$challenge->canAccess(Auth::user())) {
+        if (! $challenge->canAccess(Auth::user())) {
             abort(403, 'Você não tem permissão para acessar este desafio.');
         }
 
         $user = Auth::user();
-        
+
         // Verificar se o usuário já tem progresso registrado neste desafio
         $existingProgress = ChallengeProgress::where('user_id', $user->id)
             ->where('challenge_id', $challenge->id)
             ->exists();
-        
+
         // Se não tem progresso, criar um registro inicial para marcar participação
-        if (!$existingProgress) {
+        if (! $existingProgress) {
             $firstArticle = $challenge->getSelectedArticles()->first();
             if ($firstArticle) {
                 ChallengeProgress::create([
@@ -140,7 +140,7 @@ class ChallengeController extends Controller
                     'percentage' => 0,
                     'attempts' => 0,
                     'best_score' => 0,
-                    'is_completed' => false
+                    'is_completed' => false,
                 ]);
             }
         }
@@ -152,7 +152,7 @@ class ChallengeController extends Controller
     // Mapa do desafio (usando lógica idêntica ao PlayController::map)
     public function map(Challenge $challenge)
     {
-        if (!$challenge->canAccess(Auth::user())) {
+        if (! $challenge->canAccess(Auth::user())) {
             abort(403, 'Você não tem permissão para acessar este desafio.');
         }
 
@@ -161,22 +161,22 @@ class ChallengeController extends Controller
 
         // Obter artigos do desafio
         $challengeArticles = $challenge->getSelectedArticles();
-        
+
         if ($challengeArticles->isEmpty()) {
             return redirect()->route('challenges.show', $challenge->uuid)
-                           ->with('error', 'Este desafio não possui artigos válidos.');
+                ->with('error', 'Este desafio não possui artigos válidos.');
         }
 
         // === APLICAR LÓGICA IDÊNTICA DO PLAYCONTROLLER ===
-        
+
         // Agrupar artigos por referência legal (simular legalReferences)
         $legalReferencesData = [];
         foreach ($challengeArticles as $article) {
             $refUuid = $article->legalReference->uuid;
-            if (!isset($legalReferencesData[$refUuid])) {
+            if (! isset($legalReferencesData[$refUuid])) {
                 $legalReferencesData[$refUuid] = [
                     'reference' => $article->legalReference,
-                    'articles' => collect()
+                    'articles' => collect(),
                 ];
             }
             $legalReferencesData[$refUuid]['articles']->push($article);
@@ -191,54 +191,54 @@ class ChallengeController extends Controller
         $phaseStructureList = [];
         $lawChunksData = [];
         $maxChunks = 0;
-        
+
         foreach ($legalReferencesData as $refUuid => $refData) {
             $chunks = $refData['articles']->chunk($ARTICLES_PER_PHASE);
             $lawChunksData[$refUuid] = [
                 'reference' => $refData['reference'],
                 'chunks' => $chunks,
-                'total_chunks' => $chunks->count()
+                'total_chunks' => $chunks->count(),
             ];
             $maxChunks = max($maxChunks, $chunks->count());
         }
-        
+
         // Intercalar fases por módulo (lógica do PlayController)
         $tempCounter = 0;
         $totalModules = ceil($maxChunks / $PHASES_PER_MODULE_PER_LAW);
-        
+
         for ($moduleIndex = 0; $moduleIndex < $totalModules; $moduleIndex++) {
             $startChunkIndex = $moduleIndex * $PHASES_PER_MODULE_PER_LAW;
             $endChunkIndex = $startChunkIndex + $PHASES_PER_MODULE_PER_LAW;
-            
+
             foreach ($lawChunksData as $lawUuid => $lawData) {
                 $phasesAddedForThisLaw = 0;
-                
+
                 for ($chunkIndex = $startChunkIndex; $chunkIndex < $endChunkIndex && $phasesAddedForThisLaw < $PHASES_PER_MODULE_PER_LAW; $chunkIndex++) {
                     if ($chunkIndex < $lawData['total_chunks']) {
                         $tempCounter++;
-                        
+
                         $phaseStructureList[] = [
                             'id' => $tempCounter,
                             'is_review' => false,
                             'reference_uuid' => $lawUuid,
                             'chunk_index' => $chunkIndex,
-                            'article_chunk' => $lawData['chunks'][$chunkIndex]
+                            'article_chunk' => $lawData['chunks'][$chunkIndex],
                         ];
-                        
+
                         $phasesAddedForThisLaw++;
                     }
                 }
-                
+
                 if ($phasesAddedForThisLaw > 0) {
                     $totalRegularPhasesOfThisLaw = min($endChunkIndex, $lawData['total_chunks']);
-                    
+
                     if ($totalRegularPhasesOfThisLaw % $REVIEW_PHASE_INTERVAL === 0) {
                         $tempCounter++;
                         $phaseStructureList[] = [
                             'id' => $tempCounter,
                             'is_review' => true,
                             'reference_uuid' => $lawUuid,
-                            'last_regular_counter' => $totalRegularPhasesOfThisLaw
+                            'last_regular_counter' => $totalRegularPhasesOfThisLaw,
                         ];
                     }
                 }
@@ -260,17 +260,17 @@ class ChallengeController extends Controller
             if ($phaseStruct['reference_uuid'] !== $currentLawUuid) {
                 $previousLawUuid = $currentLawUuid;
                 $currentLawUuid = $phaseStruct['reference_uuid'];
-                
-                if ($previousLawUuid !== null && isset($lawCompletionStatus[$previousLawUuid]) && !$lawCompletionStatus[$previousLawUuid]) {
+
+                if ($previousLawUuid !== null && isset($lawCompletionStatus[$previousLawUuid]) && ! $lawCompletionStatus[$previousLawUuid]) {
                     $blockSubsequent = true;
                 }
                 $lawCompletionStatus[$currentLawUuid] = true;
             }
 
-            $isPhaseBlocked = $blockSubsequent || !$previousPhaseIsComplete;
+            $isPhaseBlocked = $blockSubsequent || ! $previousPhaseIsComplete;
             $isPhaseCurrent = false;
             $isPhaseComplete = false;
-            
+
             $reference = $lawChunksData[$currentLawUuid]['reference'];
 
             if ($phaseStruct['is_review']) {
@@ -279,7 +279,7 @@ class ChallengeController extends Controller
                 $phaseProgress = $this->getChallengeReviewPhaseProgress($userId, $challenge->id, $articleIdsInScope);
                 $isPhaseComplete = $phaseProgress['is_complete'];
 
-                if (!$isPhaseBlocked && !$isPhaseComplete && $currentPhaseId === null) {
+                if (! $isPhaseBlocked && ! $isPhaseComplete && $currentPhaseId === null) {
                     $isPhaseCurrent = true;
                     $currentPhaseId = $currentPhaseGlobalId;
                 }
@@ -297,7 +297,7 @@ class ChallengeController extends Controller
                 $phaseProgress = $this->getChallengePhaseProgress($userId, $challenge->id, $phaseStruct['article_chunk']);
                 $isPhaseComplete = $phaseProgress['all_attempted'];
 
-                if (!$isPhaseBlocked && !$isPhaseComplete && $currentPhaseId === null) {
+                if (! $isPhaseBlocked && ! $isPhaseComplete && $currentPhaseId === null) {
                     $isPhaseCurrent = true;
                     $currentPhaseId = $currentPhaseGlobalId;
                 }
@@ -313,7 +313,7 @@ class ChallengeController extends Controller
                 );
             }
 
-            if (!$isPhaseComplete) {
+            if (! $isPhaseComplete) {
                 $lawCompletionStatus[$currentLawUuid] = false;
             }
 
@@ -345,26 +345,26 @@ class ChallengeController extends Controller
         // Obter usuários por fase (apenas para desafios)
         $usersPerPhase = $this->getChallengeUsersPerPhase($challenge);
 
-        return Inertia::render('Play/Map', [ // USAR O MESMO COMPONENTE!
+        return Inertia::render('Learn/Map', [ // Usar mapa otimizado
             'phases' => $phasesData,
             'modules' => $modulesData,
             'journey' => null, // Desafios não usam jornadas
             'user' => [
                 'lives' => $user->lives,
-                'has_infinite_lives' => $user->hasInfiniteLives()
+                'has_infinite_lives' => $user->hasInfiniteLives(),
             ],
             // Adicionar flag para identificar que é um desafio
             'is_challenge' => true,
             'challenge' => $challenge,
             // Adicionar dados de usuários por fase
-            'users_per_phase' => $usersPerPhase
+            'users_per_phase' => $usersPerPhase,
         ]);
     }
 
     // Fase do desafio (baseado no PlayController::phase mas para desafios)
     public function phase(Challenge $challenge, $phaseNumber)
     {
-        if (!$challenge->canAccess(Auth::user())) {
+        if (! $challenge->canAccess(Auth::user())) {
             abort(403, 'Você não tem permissão para acessar este desafio.');
         }
 
@@ -374,18 +374,18 @@ class ChallengeController extends Controller
 
         // Obter informações sobre a fase (se é revisão ou não)
         $phaseInfo = $this->getChallengePhaseInfo($challenge, $phaseNumber);
-        
-        if (!$phaseInfo) {
+
+        if (! $phaseInfo) {
             return redirect()->route('challenges.map', $challenge->uuid)
-                           ->with('error', 'Fase não encontrada.');
+                ->with('error', 'Fase não encontrada.');
         }
 
         // Obter todos os artigos da fase usando a mesma lógica do mapa
         $phaseArticles = $this->getChallengePhaseArticles($challenge, $phaseNumber);
-        
+
         if ($phaseArticles->isEmpty()) {
             return redirect()->route('challenges.map', $challenge->uuid)
-                           ->with('error', 'Nenhum artigo encontrado para esta fase.');
+                ->with('error', 'Nenhum artigo encontrado para esta fase.');
         }
 
         // Obter primeira referência legal para o título
@@ -396,21 +396,21 @@ class ChallengeController extends Controller
         $articlesWithProgress = [];
         foreach ($phaseArticles as $article) {
             $articleProgress = ChallengeProgress::where('user_id', $userId)
-                                              ->where('challenge_id', $challenge->id)
-                                              ->where('law_article_id', $article->id)
-                                              ->first();
+                ->where('challenge_id', $challenge->id)
+                ->where('law_article_id', $article->id)
+                ->first();
 
             $articlesWithProgress[$article->uuid] = [
                 'uuid' => $article->uuid,
                 'article_reference' => $article->article_reference,
                 'original_content' => $article->original_content,
                 'practice_content' => $article->practice_content,
-                'options' => $article->options->map(fn($o) => [
+                'options' => $article->options->map(fn ($o) => [
                     'id' => $o->id,
                     'word' => $o->word,
                     'is_correct' => $o->is_correct,
                     'gap_order' => $o->gap_order,
-                    'position' => $o->position
+                    'position' => $o->position,
                 ])->sortBy('position')->values()->all(),
                 'progress' => $articleProgress ? [
                     'percentage' => $articleProgress->percentage,
@@ -425,10 +425,10 @@ class ChallengeController extends Controller
         // Verificar se há próxima fase
         $hasNextPhase = $this->hasNextChallengePhase($challenge, $phaseNumber);
         $nextPhaseNumber = $hasNextPhase ? $this->getNextChallengePhaseNumber($challenge, $phaseNumber) : null;
-        
+
         // Determinar o título baseado se é fase de revisão ou não
-        $phaseTitle = $phaseInfo['is_review'] ? 'Fase ' . $phaseNumber . ' - Revisão' : 'Fase ' . $phaseNumber;
-        
+        $phaseTitle = $phaseInfo['is_review'] ? 'Fase '.$phaseNumber.' - Revisão' : 'Fase '.$phaseNumber;
+
         return Inertia::render('Play/Phase', [ // USAR O MESMO COMPONENTE!
             'phase' => [
                 'title' => $phaseTitle,
@@ -447,14 +447,14 @@ class ChallengeController extends Controller
                 'uuid' => $challenge->uuid,
                 'title' => $challenge->title,
                 'description' => $challenge->description,
-            ]
+            ],
         ]);
     }
 
     // Salvar progresso no desafio
     public function saveProgress(Request $request, Challenge $challenge)
     {
-        if (!$challenge->canAccess(Auth::user())) {
+        if (! $challenge->canAccess(Auth::user())) {
             abort(403, 'Você não tem permissão para acessar este desafio.');
         }
 
@@ -468,7 +468,7 @@ class ChallengeController extends Controller
         $user = Auth::user();
 
         // Verificar se o artigo faz parte do desafio
-        if (!in_array($article->id, $challenge->selected_articles)) {
+        if (! in_array($article->id, $challenge->selected_articles)) {
             return response()->json(['error' => 'Artigo não faz parte deste desafio.'], 400);
         }
 
@@ -479,8 +479,8 @@ class ChallengeController extends Controller
             $totalAnswers = 1;
         } else {
             // Lógica normal para artigos válidos
-            $correctAnswers = min((int)$validated['correct_answers'], (int)$validated['total_answers']);
-            $totalAnswers = (int)$validated['total_answers'];
+            $correctAnswers = min((int) $validated['correct_answers'], (int) $validated['total_answers']);
+            $totalAnswers = (int) $validated['total_answers'];
         }
 
         $percentage = ($correctAnswers / $totalAnswers) * 100;
@@ -488,7 +488,7 @@ class ChallengeController extends Controller
         // Perder vida se necessário (mesmo sistema do jogo vanilla)
         $lostLife = false;
         if ($percentage < 70) {
-            if ($user->lives > 0 && !$user->hasInfiniteLives()) {
+            if ($user->lives > 0 && ! $user->hasInfiniteLives()) {
                 $user->decrementLife();
                 $lostLife = true;
             }
@@ -506,7 +506,7 @@ class ChallengeController extends Controller
         // Calcular XP (mesmo sistema do vanilla)
         $wasAlreadyCompleted = $progress->attempts > 1 && $progress->is_completed;
         $xpGained = 0;
-        if ($percentage >= 70 && !$wasAlreadyCompleted) {
+        if ($percentage >= 70 && ! $wasAlreadyCompleted) {
             $xpGained = \App\Models\User::calculateXpGain($article->difficulty_level);
             $user->addXp($xpGained);
         }
@@ -523,12 +523,12 @@ class ChallengeController extends Controller
             'user' => [
                 'lives' => $user->lives,
                 'xp' => $user->xp,
-                'has_infinite_lives' => $user->hasInfiniteLives()
+                'has_infinite_lives' => $user->hasInfiniteLives(),
             ],
             'xp_gained' => $xpGained,
             'lost_life' => $lostLife,
-            'should_redirect' => !$user->hasInfiniteLives() && $user->lives <= 0,
-            'redirect_url' => !$user->hasInfiniteLives() && $user->lives <= 0 ? route('play.nolives') : null
+            'should_redirect' => ! $user->hasInfiniteLives() && $user->lives <= 0,
+            'redirect_url' => ! $user->hasInfiniteLives() && $user->lives <= 0 ? route('play.nolives') : null,
         ]);
     }
 
@@ -536,21 +536,22 @@ class ChallengeController extends Controller
     public function myIndex()
     {
         $user = Auth::user();
-        
+
         $challenges = Challenge::where('created_by', $user->id)
-                               ->withCount('challengeProgress as participants_count')
-                               ->orderBy('created_at', 'desc')
-                               ->paginate(10);
+            ->withCount('challengeProgress as participants_count')
+            ->orderBy('created_at', 'desc')
+            ->paginate(10);
 
         // Adicionar estatísticas
         $challenges->getCollection()->transform(function ($challenge) {
             $stats = $challenge->getStats();
             $challenge->stats = $stats;
+
             return $challenge;
         });
 
         return Inertia::render('Challenges/MyIndex', [
-            'challenges' => $challenges
+            'challenges' => $challenges,
         ]);
     }
 
@@ -561,14 +562,14 @@ class ChallengeController extends Controller
             abort(403, 'Você não tem permissão para editar este desafio.');
         }
 
-        $legalReferences = LegalReference::with(['articles' => function($query) {
+        $legalReferences = LegalReference::with(['articles' => function ($query) {
             $query->where('is_active', true)
-                  ->orderByRaw('CAST(article_reference AS UNSIGNED) ASC');
+                ->orderByRaw('CAST(article_reference AS UNSIGNED) ASC');
         }])->where('is_active', true)->get();
 
         return Inertia::render('Challenges/Edit', [
             'challenge' => $challenge,
-            'legalReferences' => $legalReferences
+            'legalReferences' => $legalReferences,
         ]);
     }
 
@@ -584,13 +585,13 @@ class ChallengeController extends Controller
             'description' => 'nullable|string|max:1000',
             'selected_articles' => 'required|array|min:1',
             'selected_articles.*' => 'exists:law_articles,id',
-            'is_public' => 'boolean'
+            'is_public' => 'boolean',
         ]);
 
         $challenge->update($validated);
 
         return redirect()->route('challenges.show', $challenge->uuid)
-                        ->with('success', 'Desafio atualizado com sucesso!');
+            ->with('success', 'Desafio atualizado com sucesso!');
     }
 
     // Excluir desafio
@@ -603,18 +604,18 @@ class ChallengeController extends Controller
         $challenge->delete();
 
         return redirect()->route('challenges.my-index')
-                        ->with('success', 'Desafio excluído com sucesso!');
+            ->with('success', 'Desafio excluído com sucesso!');
     }
 
     // === MÉTODOS AUXILIARES PARA SIMULAR PLAYCONTROLLER ===
 
     private function getChallengePhaseProgress($userId, $challengeId, $articles)
     {
-        if (!$userId || $articles->isEmpty()) {
+        if (! $userId || $articles->isEmpty()) {
             return [
                 'completed' => 0, 'total' => $articles->count(), 'percentage' => 0,
                 'article_status' => array_fill(0, $articles->count(), 'pending'),
-                'is_fully_complete' => false, 'all_attempted' => false
+                'is_fully_complete' => false, 'all_attempted' => false,
             ];
         }
 
@@ -656,17 +657,17 @@ class ChallengeController extends Controller
             'percentage' => $progressPercentage,
             'article_status' => array_values($articleStatus),
             'is_fully_complete' => $isFullyComplete,
-            'all_attempted' => $allAttempted
+            'all_attempted' => $allAttempted,
         ];
     }
 
     private function getChallengeReviewPhaseProgress($userId, $challengeId, $articleIdsInScope)
     {
-        if (!$userId || $articleIdsInScope->isEmpty()) {
+        if (! $userId || $articleIdsInScope->isEmpty()) {
             return [
                 'is_complete' => true, 'needs_review' => false, 'articles_to_review_count' => 0,
                 'completed' => 0, 'total' => 0, 'percentage' => 0, 'article_status' => [],
-                'is_fully_complete' => true, 'all_attempted' => true
+                'is_fully_complete' => true, 'all_attempted' => true,
             ];
         }
 
@@ -679,10 +680,10 @@ class ChallengeController extends Controller
         $needsReview = $incompleteArticlesCount > 0;
 
         return [
-            'is_complete' => !$needsReview, 'needs_review' => $needsReview,
+            'is_complete' => ! $needsReview, 'needs_review' => $needsReview,
             'articles_to_review_count' => $incompleteArticlesCount,
             'completed' => 0, 'total' => $incompleteArticlesCount, 'percentage' => 0, 'article_status' => [],
-            'is_fully_complete' => !$needsReview, 'all_attempted' => !$needsReview
+            'is_fully_complete' => ! $needsReview, 'all_attempted' => ! $needsReview,
         ];
     }
 
@@ -718,7 +719,7 @@ class ChallengeController extends Controller
         $endIndex = $currentReviewPhaseIndex - 1;
 
         for ($i = $startIndex; $i <= $endIndex; $i++) {
-            if (isset($phaseStructureList[$i]) && !$phaseStructureList[$i]['is_review']) {
+            if (isset($phaseStructureList[$i]) && ! $phaseStructureList[$i]['is_review']) {
                 $phase = $phaseStructureList[$i];
                 if (isset($phase['article_chunk'])) {
                     $chunkArticleIds = $phase['article_chunk']->pluck('id');
@@ -734,7 +735,7 @@ class ChallengeController extends Controller
     {
         return [
             'id' => $phaseId,
-            'title' => 'Fase ' . $phaseId,
+            'title' => 'Fase '.$phaseId,
             'reference_name' => $reference->name,
             'reference_uuid' => $reference->uuid,
             'article_count' => $articleChunk->count(),
@@ -749,9 +750,9 @@ class ChallengeController extends Controller
                 'percentage' => $progress['percentage'] ?? 0,
                 'is_fully_complete' => $progress['is_fully_complete'] ?? false,
                 'all_attempted' => $progress['all_attempted'] ?? false,
-                'has_errors' => isset($progress['article_status']) ? 
+                'has_errors' => isset($progress['article_status']) ?
                     in_array('incorrect', $progress['article_status']) : false,
-                'article_status' => $progress['article_status'] ?? []
+                'article_status' => $progress['article_status'] ?? [],
             ],
             'is_blocked' => $isBlocked,
             'is_current' => $isCurrent,
@@ -771,7 +772,7 @@ class ChallengeController extends Controller
 
         return [
             'id' => $phaseId,
-            'title' => 'Revisão ' . ceil($lastRegularPhaseCounter / 3), // REVIEW_PHASE_INTERVAL
+            'title' => 'Revisão '.ceil($lastRegularPhaseCounter / 3), // REVIEW_PHASE_INTERVAL
             'reference_name' => $reference->name,
             'reference_uuid' => $reference->uuid,
             'article_count' => $progress['articles_to_review_count'] ?? 0,
@@ -800,59 +801,59 @@ class ChallengeController extends Controller
         if (empty($phasesData)) {
             return [];
         }
-        
+
         // Se há apenas uma lei, não mostrar módulos
         $uniqueReferences = [];
         foreach ($phasesData as $phase) {
             $uuid = $phase['reference_uuid'];
-            if (!isset($uniqueReferences[$uuid])) {
+            if (! isset($uniqueReferences[$uuid])) {
                 $uniqueReferences[$uuid] = [
                     'uuid' => $uuid,
-                    'name' => $phase['reference_name']
+                    'name' => $phase['reference_name'],
                 ];
             }
         }
-        
+
         if (count($uniqueReferences) <= 1) {
             return [];
         }
-        
+
         $modules = [];
         $moduleNumber = 1;
         $totalPhases = count($phasesData);
         $phasesPerModule = 12; // Aproximadamente
-        
+
         for ($startIndex = 0; $startIndex < $totalPhases; $startIndex += $phasesPerModule) {
             $endIndex = min($startIndex + $phasesPerModule, $totalPhases);
             $modulePhasesSlice = array_slice($phasesData, $startIndex, $endIndex - $startIndex);
-            
+
             if (empty($modulePhasesSlice)) {
                 continue;
             }
-            
+
             $referenceGroups = [];
             foreach ($modulePhasesSlice as $phase) {
                 $uuid = $phase['reference_uuid'];
-                if (!isset($referenceGroups[$uuid])) {
+                if (! isset($referenceGroups[$uuid])) {
                     $referenceGroups[$uuid] = [
                         'reference_name' => $phase['reference_name'],
                         'reference_uuid' => $uuid,
-                        'phase_ids' => []
+                        'phase_ids' => [],
                     ];
                 }
                 $referenceGroups[$uuid]['phase_ids'][] = $phase['id'];
             }
-            
-            if (!empty($referenceGroups)) {
+
+            if (! empty($referenceGroups)) {
                 $modules[] = [
                     'id' => $moduleNumber,
                     'title' => "Módulo {$moduleNumber}",
-                    'references' => array_values($referenceGroups)
+                    'references' => array_values($referenceGroups),
                 ];
                 $moduleNumber++;
             }
         }
-        
+
         return $modules;
     }
 
@@ -862,6 +863,7 @@ class ChallengeController extends Controller
             return 1;
         }
         $totalDifficulty = $articles->sum('difficulty_level');
+
         return round($totalDifficulty / $articles->count());
     }
 
@@ -876,10 +878,10 @@ class ChallengeController extends Controller
         $legalReferencesData = [];
         foreach ($challengeArticles as $article) {
             $refUuid = $article->legalReference->uuid;
-            if (!isset($legalReferencesData[$refUuid])) {
+            if (! isset($legalReferencesData[$refUuid])) {
                 $legalReferencesData[$refUuid] = [
                     'reference' => $article->legalReference,
-                    'articles' => collect()
+                    'articles' => collect(),
                 ];
             }
             $legalReferencesData[$refUuid]['articles']->push($article);
@@ -889,54 +891,54 @@ class ChallengeController extends Controller
         $phaseStructureList = [];
         $lawChunksData = [];
         $maxChunks = 0;
-        
+
         foreach ($legalReferencesData as $refUuid => $refData) {
             $chunks = $refData['articles']->chunk($ARTICLES_PER_PHASE);
             $lawChunksData[$refUuid] = [
                 'reference' => $refData['reference'],
                 'chunks' => $chunks,
-                'total_chunks' => $chunks->count()
+                'total_chunks' => $chunks->count(),
             ];
             $maxChunks = max($maxChunks, $chunks->count());
         }
-        
+
         // Intercalar fases por módulo (mesmo que no map)
         $tempCounter = 0;
         $totalModules = ceil($maxChunks / $PHASES_PER_MODULE_PER_LAW);
-        
+
         for ($moduleIndex = 0; $moduleIndex < $totalModules; $moduleIndex++) {
             $startChunkIndex = $moduleIndex * $PHASES_PER_MODULE_PER_LAW;
             $endChunkIndex = $startChunkIndex + $PHASES_PER_MODULE_PER_LAW;
-            
+
             foreach ($lawChunksData as $lawUuid => $lawData) {
                 $phasesAddedForThisLaw = 0;
-                
+
                 for ($chunkIndex = $startChunkIndex; $chunkIndex < $endChunkIndex && $phasesAddedForThisLaw < $PHASES_PER_MODULE_PER_LAW; $chunkIndex++) {
                     if ($chunkIndex < $lawData['total_chunks']) {
                         $tempCounter++;
-                        
+
                         $phaseStructureList[] = [
                             'id' => $tempCounter,
                             'is_review' => false,
                             'reference_uuid' => $lawUuid,
                             'chunk_index' => $chunkIndex,
-                            'article_chunk' => $lawData['chunks'][$chunkIndex]
+                            'article_chunk' => $lawData['chunks'][$chunkIndex],
                         ];
-                        
+
                         $phasesAddedForThisLaw++;
                     }
                 }
-                
+
                 if ($phasesAddedForThisLaw > 0) {
                     $totalRegularPhasesOfThisLaw = min($endChunkIndex, $lawData['total_chunks']);
-                    
+
                     if ($totalRegularPhasesOfThisLaw % $REVIEW_PHASE_INTERVAL === 0) {
                         $tempCounter++;
                         $phaseStructureList[] = [
                             'id' => $tempCounter,
                             'is_review' => true,
                             'reference_uuid' => $lawUuid,
-                            'last_regular_counter' => $totalRegularPhasesOfThisLaw
+                            'last_regular_counter' => $totalRegularPhasesOfThisLaw,
                         ];
                     }
                 }
@@ -946,9 +948,9 @@ class ChallengeController extends Controller
         // Construir mapa: phaseId -> articleIndex
         $phaseToArticleMap = [];
         $articleIndexCounter = 0;
-        
+
         foreach ($phaseStructureList as $phaseStruct) {
-            if (!$phaseStruct['is_review'] && isset($phaseStruct['article_chunk'])) {
+            if (! $phaseStruct['is_review'] && isset($phaseStruct['article_chunk'])) {
                 foreach ($phaseStruct['article_chunk'] as $article) {
                     $phaseToArticleMap[$phaseStruct['id']] = $articleIndexCounter;
                     $articleIndexCounter++;
@@ -968,15 +970,15 @@ class ChallengeController extends Controller
 
         // Obter artigos do desafio
         $challengeArticles = $challenge->getSelectedArticles();
-        
+
         // Agrupar artigos por referência legal (mesmo que no map)
         $legalReferencesData = [];
         foreach ($challengeArticles as $article) {
             $refUuid = $article->legalReference->uuid;
-            if (!isset($legalReferencesData[$refUuid])) {
+            if (! isset($legalReferencesData[$refUuid])) {
                 $legalReferencesData[$refUuid] = [
                     'reference' => $article->legalReference,
-                    'articles' => collect()
+                    'articles' => collect(),
                 ];
             }
             $legalReferencesData[$refUuid]['articles']->push($article);
@@ -986,54 +988,54 @@ class ChallengeController extends Controller
         $phaseStructureList = [];
         $lawChunksData = [];
         $maxChunks = 0;
-        
+
         foreach ($legalReferencesData as $refUuid => $refData) {
             $chunks = $refData['articles']->chunk($ARTICLES_PER_PHASE);
             $lawChunksData[$refUuid] = [
                 'reference' => $refData['reference'],
                 'chunks' => $chunks,
-                'total_chunks' => $chunks->count()
+                'total_chunks' => $chunks->count(),
             ];
             $maxChunks = max($maxChunks, $chunks->count());
         }
-        
+
         // Intercalar fases por módulo (mesmo que no map)
         $tempCounter = 0;
         $totalModules = ceil($maxChunks / $PHASES_PER_MODULE_PER_LAW);
-        
+
         for ($moduleIndex = 0; $moduleIndex < $totalModules; $moduleIndex++) {
             $startChunkIndex = $moduleIndex * $PHASES_PER_MODULE_PER_LAW;
             $endChunkIndex = $startChunkIndex + $PHASES_PER_MODULE_PER_LAW;
-            
+
             foreach ($lawChunksData as $lawUuid => $lawData) {
                 $phasesAddedForThisLaw = 0;
-                
+
                 for ($chunkIndex = $startChunkIndex; $chunkIndex < $endChunkIndex && $phasesAddedForThisLaw < $PHASES_PER_MODULE_PER_LAW; $chunkIndex++) {
                     if ($chunkIndex < $lawData['total_chunks']) {
                         $tempCounter++;
-                        
+
                         $phaseStructureList[] = [
                             'id' => $tempCounter,
                             'is_review' => false,
                             'reference_uuid' => $lawUuid,
                             'chunk_index' => $chunkIndex,
-                            'article_chunk' => $lawData['chunks'][$chunkIndex]
+                            'article_chunk' => $lawData['chunks'][$chunkIndex],
                         ];
-                        
+
                         $phasesAddedForThisLaw++;
                     }
                 }
-                
+
                 if ($phasesAddedForThisLaw > 0) {
                     $totalRegularPhasesOfThisLaw = min($endChunkIndex, $lawData['total_chunks']);
-                    
+
                     if ($totalRegularPhasesOfThisLaw % $REVIEW_PHASE_INTERVAL === 0) {
                         $tempCounter++;
                         $phaseStructureList[] = [
                             'id' => $tempCounter,
                             'is_review' => true,
                             'reference_uuid' => $lawUuid,
-                            'last_regular_counter' => $totalRegularPhasesOfThisLaw
+                            'last_regular_counter' => $totalRegularPhasesOfThisLaw,
                         ];
                     }
                 }
@@ -1046,22 +1048,22 @@ class ChallengeController extends Controller
                 if ($phaseStruct['is_review']) {
                     // Para fases de revisão, retornar apenas artigos que precisam de revisão
                     $articleIdsInScope = $this->getChallengeArticlesInScopeForReview($phaseNumber, $phaseStructureList, $challenge->id);
-                    
+
                     // Converter para array se for Collection
                     if (is_object($articleIdsInScope) && method_exists($articleIdsInScope, 'toArray')) {
                         $articleIdsInScope = $articleIdsInScope->toArray();
                     }
-                    
+
                     // Filtrar apenas artigos que precisam de revisão (< 100% OU nunca tentados)
                     $userId = Auth::id();
-                    
+
                     // Buscar artigos com progresso < 100%
                     $articlesNeedingReview = ChallengeProgress::where('user_id', $userId)
                         ->where('challenge_id', $challenge->id)
                         ->whereIn('law_article_id', $articleIdsInScope)
                         ->where('percentage', '<', 100)
                         ->pluck('law_article_id');
-                    
+
                     // Buscar artigos nunca tentados (sem progresso)
                     $articlesNeverAttempted = collect($articleIdsInScope)->diff(
                         ChallengeProgress::where('user_id', $userId)
@@ -1069,11 +1071,11 @@ class ChallengeController extends Controller
                             ->whereIn('law_article_id', $articleIdsInScope)
                             ->pluck('law_article_id')
                     );
-                    
+
                     // Unir os dois grupos
                     $allArticlesToReview = $articlesNeedingReview->concat($articlesNeverAttempted)->unique();
-                    
-                    return collect($challengeArticles)->filter(function($article) use ($allArticlesToReview) {
+
+                    return collect($challengeArticles)->filter(function ($article) use ($allArticlesToReview) {
                         return $allArticlesToReview->contains($article->id);
                     });
                 } else {
@@ -1095,15 +1097,15 @@ class ChallengeController extends Controller
 
         // Obter artigos do desafio
         $challengeArticles = $challenge->getSelectedArticles();
-        
+
         // Agrupar artigos por referência legal (mesmo que no map)
         $legalReferencesData = [];
         foreach ($challengeArticles as $article) {
             $refUuid = $article->legalReference->uuid;
-            if (!isset($legalReferencesData[$refUuid])) {
+            if (! isset($legalReferencesData[$refUuid])) {
                 $legalReferencesData[$refUuid] = [
                     'reference' => $article->legalReference,
-                    'articles' => collect()
+                    'articles' => collect(),
                 ];
             }
             $legalReferencesData[$refUuid]['articles']->push($article);
@@ -1113,54 +1115,54 @@ class ChallengeController extends Controller
         $phaseStructureList = [];
         $lawChunksData = [];
         $maxChunks = 0;
-        
+
         foreach ($legalReferencesData as $refUuid => $refData) {
             $chunks = $refData['articles']->chunk($ARTICLES_PER_PHASE);
             $lawChunksData[$refUuid] = [
                 'reference' => $refData['reference'],
                 'chunks' => $chunks,
-                'total_chunks' => $chunks->count()
+                'total_chunks' => $chunks->count(),
             ];
             $maxChunks = max($maxChunks, $chunks->count());
         }
-        
+
         // Intercalar fases por módulo (mesmo que no map)
         $tempCounter = 0;
         $totalModules = ceil($maxChunks / $PHASES_PER_MODULE_PER_LAW);
-        
+
         for ($moduleIndex = 0; $moduleIndex < $totalModules; $moduleIndex++) {
             $startChunkIndex = $moduleIndex * $PHASES_PER_MODULE_PER_LAW;
             $endChunkIndex = $startChunkIndex + $PHASES_PER_MODULE_PER_LAW;
-            
+
             foreach ($lawChunksData as $lawUuid => $lawData) {
                 $phasesAddedForThisLaw = 0;
-                
+
                 for ($chunkIndex = $startChunkIndex; $chunkIndex < $endChunkIndex && $phasesAddedForThisLaw < $PHASES_PER_MODULE_PER_LAW; $chunkIndex++) {
                     if ($chunkIndex < $lawData['total_chunks']) {
                         $tempCounter++;
-                        
+
                         $phaseStructureList[] = [
                             'id' => $tempCounter,
                             'is_review' => false,
                             'reference_uuid' => $lawUuid,
                             'chunk_index' => $chunkIndex,
-                            'article_chunk' => $lawData['chunks'][$chunkIndex]
+                            'article_chunk' => $lawData['chunks'][$chunkIndex],
                         ];
-                        
+
                         $phasesAddedForThisLaw++;
                     }
                 }
-                
+
                 if ($phasesAddedForThisLaw > 0) {
                     $totalRegularPhasesOfThisLaw = min($endChunkIndex, $lawData['total_chunks']);
-                    
+
                     if ($totalRegularPhasesOfThisLaw % $REVIEW_PHASE_INTERVAL === 0) {
                         $tempCounter++;
                         $phaseStructureList[] = [
                             'id' => $tempCounter,
                             'is_review' => true,
                             'reference_uuid' => $lawUuid,
-                            'last_regular_counter' => $totalRegularPhasesOfThisLaw
+                            'last_regular_counter' => $totalRegularPhasesOfThisLaw,
                         ];
                     }
                 }
@@ -1181,6 +1183,7 @@ class ChallengeController extends Controller
     {
         // Verificar se existe uma fase posterior usando getChallengePhaseInfo
         $phaseInfo = $this->getChallengePhaseInfo($challenge, $currentPhaseNumber + 1);
+
         return $phaseInfo !== null;
     }
 
@@ -1195,14 +1198,14 @@ class ChallengeController extends Controller
     {
         // Buscar todos os usuários que têm progresso neste desafio
         $challengeProgress = ChallengeProgress::where('challenge_id', $challenge->id)
-            ->with(['user' => function($query) {
+            ->with(['user' => function ($query) {
                 $query->select('id', 'name');
             }])
             ->get();
 
         // Obter artigos do desafio organizados por fase
         $challengeArticles = $challenge->getSelectedArticles();
-        
+
         // Usar as mesmas constantes para calcular fases
         $ARTICLES_PER_PHASE = 6;
         $REVIEW_PHASE_INTERVAL = 3;
@@ -1212,10 +1215,10 @@ class ChallengeController extends Controller
         $legalReferencesData = [];
         foreach ($challengeArticles as $article) {
             $refUuid = $article->legalReference->uuid;
-            if (!isset($legalReferencesData[$refUuid])) {
+            if (! isset($legalReferencesData[$refUuid])) {
                 $legalReferencesData[$refUuid] = [
                     'reference' => $article->legalReference,
-                    'articles' => collect()
+                    'articles' => collect(),
                 ];
             }
             $legalReferencesData[$refUuid]['articles']->push($article);
@@ -1225,54 +1228,54 @@ class ChallengeController extends Controller
         $phaseStructureList = [];
         $lawChunksData = [];
         $maxChunks = 0;
-        
+
         foreach ($legalReferencesData as $refUuid => $refData) {
             $chunks = $refData['articles']->chunk($ARTICLES_PER_PHASE);
             $lawChunksData[$refUuid] = [
                 'reference' => $refData['reference'],
                 'chunks' => $chunks,
-                'total_chunks' => $chunks->count()
+                'total_chunks' => $chunks->count(),
             ];
             $maxChunks = max($maxChunks, $chunks->count());
         }
-        
+
         // Intercalar fases por módulo (mesma lógica do map)
         $tempCounter = 0;
         $totalModules = ceil($maxChunks / $PHASES_PER_MODULE_PER_LAW);
-        
+
         for ($moduleIndex = 0; $moduleIndex < $totalModules; $moduleIndex++) {
             $startChunkIndex = $moduleIndex * $PHASES_PER_MODULE_PER_LAW;
             $endChunkIndex = $startChunkIndex + $PHASES_PER_MODULE_PER_LAW;
-            
+
             foreach ($lawChunksData as $lawUuid => $lawData) {
                 $phasesAddedForThisLaw = 0;
-                
+
                 for ($chunkIndex = $startChunkIndex; $chunkIndex < $endChunkIndex && $phasesAddedForThisLaw < $PHASES_PER_MODULE_PER_LAW; $chunkIndex++) {
                     if ($chunkIndex < $lawData['total_chunks']) {
                         $tempCounter++;
-                        
+
                         $phaseStructureList[] = [
                             'id' => $tempCounter,
                             'is_review' => false,
                             'reference_uuid' => $lawUuid,
                             'chunk_index' => $chunkIndex,
-                            'article_chunk' => $lawData['chunks'][$chunkIndex]
+                            'article_chunk' => $lawData['chunks'][$chunkIndex],
                         ];
-                        
+
                         $phasesAddedForThisLaw++;
                     }
                 }
-                
+
                 if ($phasesAddedForThisLaw > 0) {
                     $totalRegularPhasesOfThisLaw = min($endChunkIndex, $lawData['total_chunks']);
-                    
+
                     if ($totalRegularPhasesOfThisLaw % $REVIEW_PHASE_INTERVAL === 0) {
                         $tempCounter++;
                         $phaseStructureList[] = [
                             'id' => $tempCounter,
                             'is_review' => true,
                             'reference_uuid' => $lawUuid,
-                            'last_regular_counter' => $totalRegularPhasesOfThisLaw
+                            'last_regular_counter' => $totalRegularPhasesOfThisLaw,
                         ];
                     }
                 }
@@ -1282,7 +1285,7 @@ class ChallengeController extends Controller
         // Mapear artigos para fases
         $articleToPhaseMap = [];
         foreach ($phaseStructureList as $phaseStruct) {
-            if (!$phaseStruct['is_review'] && isset($phaseStruct['article_chunk'])) {
+            if (! $phaseStruct['is_review'] && isset($phaseStruct['article_chunk'])) {
                 foreach ($phaseStruct['article_chunk'] as $article) {
                     $articleToPhaseMap[$article->id] = $phaseStruct['id'];
                 }
@@ -1291,63 +1294,65 @@ class ChallengeController extends Controller
 
         // Determinar fase atual de cada usuário
         $usersPerPhase = [];
-        
+
         foreach ($challengeProgress->groupBy('user_id') as $userId => $userProgress) {
             $user = $userProgress->first()->user;
-            if (!$user) continue;
+            if (! $user) {
+                continue;
+            }
 
             // Mapear progresso por fase
             $progressByPhase = [];
             foreach ($userProgress as $progress) {
                 $articleId = $progress->law_article_id;
                 $phaseId = $articleToPhaseMap[$articleId] ?? null;
-                
+
                 if ($phaseId) {
-                    if (!isset($progressByPhase[$phaseId])) {
+                    if (! isset($progressByPhase[$phaseId])) {
                         $progressByPhase[$phaseId] = [
                             'completed_articles' => 0,
                             'attempted_articles' => 0,
-                            'total_articles' => 0
+                            'total_articles' => 0,
                         ];
                     }
-                    
+
                     $progressByPhase[$phaseId]['total_articles']++;
-                    
+
                     if ($progress->attempts > 0) {
                         $progressByPhase[$phaseId]['attempted_articles']++;
                     }
-                    
+
                     if ($progress->is_completed) {
                         $progressByPhase[$phaseId]['completed_articles']++;
                     }
                 }
             }
-            
+
             // Determinar fase atual usando a MESMA lógica do map() principal
             $currentPhase = null;
             $blockSubsequent = false;
             $previousPhaseIsComplete = true;
             $currentLawUuid = null;
             $lawCompletionStatus = [];
-            
+
             // Percorrer fases exatamente como no método map()
             foreach ($phaseStructureList as $phaseStruct) {
                 $phaseId = $phaseStruct['id'];
-                
+
                 // Lógica de mudança de lei (igual ao map)
                 if ($phaseStruct['reference_uuid'] !== $currentLawUuid) {
                     $previousLawUuid = $currentLawUuid;
                     $currentLawUuid = $phaseStruct['reference_uuid'];
-                    
-                    if ($previousLawUuid !== null && isset($lawCompletionStatus[$previousLawUuid]) && !$lawCompletionStatus[$previousLawUuid]) {
+
+                    if ($previousLawUuid !== null && isset($lawCompletionStatus[$previousLawUuid]) && ! $lawCompletionStatus[$previousLawUuid]) {
                         $blockSubsequent = true;
                     }
                     $lawCompletionStatus[$currentLawUuid] = true;
                 }
 
-                $isPhaseBlocked = $blockSubsequent || !$previousPhaseIsComplete;
+                $isPhaseBlocked = $blockSubsequent || ! $previousPhaseIsComplete;
                 $isPhaseComplete = false;
-                
+
                 if ($phaseStruct['is_review']) {
                     // Para revisão, verificar se há artigos que precisam revisar
                     $phaseProgress = $progressByPhase[$phaseId] ?? null;
@@ -1371,31 +1376,31 @@ class ChallengeController extends Controller
                 }
 
                 // Determinar se esta é a fase atual (igual ao map)
-                if (!$isPhaseBlocked && !$isPhaseComplete && $currentPhase === null) {
+                if (! $isPhaseBlocked && ! $isPhaseComplete && $currentPhase === null) {
                     $currentPhase = $phaseId;
                     $blockSubsequent = true;
                 }
 
-                if (!$isPhaseComplete) {
+                if (! $isPhaseComplete) {
                     $lawCompletionStatus[$currentLawUuid] = false;
                 }
 
                 $previousPhaseIsComplete = $isPhaseComplete;
             }
-            
+
             // Se não encontrou fase atual, significa que completou tudo
-            if (!$currentPhase) {
+            if (! $currentPhase) {
                 continue;
             }
-            
+
             // Adicionar usuário à fase atual
-            if (!isset($usersPerPhase[$currentPhase])) {
+            if (! isset($usersPerPhase[$currentPhase])) {
                 $usersPerPhase[$currentPhase] = [];
             }
-            
+
             $usersPerPhase[$currentPhase][] = [
                 'id' => $user->id,
-                'name' => $user->name
+                'name' => $user->name,
             ];
         }
 
@@ -1408,7 +1413,7 @@ class ChallengeController extends Controller
 
         // Detecta artigos apenas com cabeçalho
         $isOnlyHeader = preg_match('/^Art\.?\s*\d+[°.]?\.?$/', $content) && strlen($content) < 20;
-        $hasNoGaps = !str_contains($content, '_____');
+        $hasNoGaps = ! str_contains($content, '_____');
 
         return $isOnlyHeader && $hasNoGaps;
     }

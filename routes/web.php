@@ -3,13 +3,15 @@
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\Admin\LawArticleOptionController;
+use App\Http\Controllers\ChallengeController;
+use App\Http\Controllers\InfiniteMapController;
+use App\Http\Controllers\LearnController;
 use App\Http\Controllers\PlayController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\UserLegalReferenceController;
 use App\Http\Controllers\WelcomeController;
 use App\Http\Controllers\PublicController;
 use App\Http\Controllers\SitemapController;
-use App\Http\Controllers\ChallengeController;
 use App\Http\Controllers\RankingController;
 
 Route::get('/', [WelcomeController::class, 'index'])->name('home');
@@ -66,60 +68,69 @@ Route::get('/admin/law-article-options', [LawArticleOptionController::class, 'in
 Route::post('/admin/law-article-options', [LawArticleOptionController::class, 'store'])
     ->name('admin.law-article-options.store');
 
-    // Adicione esta rota ao seu arquivo de rotas
-    Route::middleware(['auth'])->group(function () {
-        Route::get('/user/legal-references', [UserLegalReferenceController::class, 'index'])
-            ->name('user.legal-references.index');
-        Route::post('/user/legal-references', [UserLegalReferenceController::class, 'store'])
+// Adicione esta rota ao seu arquivo de rotas
+Route::middleware(['auth'])->group(function () {
+    Route::get('/user/legal-references', [UserLegalReferenceController::class, 'index'])
+        ->name('user.legal-references.index');
+    Route::post('/user/legal-references', [UserLegalReferenceController::class, 'store'])
         ->name('user.legal-references.store');
-        // Rotas de jogo (Play)
-        Route::get('/play', [PlayController::class, 'map'])->name('play.map');
-        Route::get('/play/no-lives', fn() => Inertia::render('Play/NoLives'))->name('play.nolives');
-        // ROTA MODIFICADA: Aceita apenas o ID global da fase
-        Route::get('/play/phase/{phaseId}', [PlayController::class, 'phase'])
+
+    // Rotas de jogo (Play)
+    Route::get('/play', [PlayController::class, 'map'])->name('play.map');
+
+    // Nova rota otimizada para mapa de aprendizado
+    Route::get('/learn', [LearnController::class, 'map'])->name('learn.map');
+
+    // Novas rotas para mapa com scroll infinito
+    Route::get('/play/map/infinite', [InfiniteMapController::class, 'index'])->name('play.map.infinite');
+    Route::get('/play/map/infinite/load-more', [InfiniteMapController::class, 'loadMore'])->name('play.map.load-more');
+
+    Route::get('/play/no-lives', fn () => Inertia::render('Play/NoLives'))->name('play.nolives');
+    // ROTA MODIFICADA: Aceita apenas o ID global da fase
+    Route::get('/play/phase/{phaseId}', [PlayController::class, 'phase'])
         ->where('phaseId', '[0-9]+') // Garante que phaseId seja numérico
         ->name('play.phase'); // Manter o nome da rota, se preferir
 
-        // Rota de revisão continua aceitando UUID e phase ID (número global)
-        Route::get('/play/review/{referenceUuid}/{phase}', [PlayController::class, 'review'])
+    // Rota de revisão continua aceitando UUID e phase ID (número global)
+    Route::get('/play/review/{referenceUuid}/{phase}', [PlayController::class, 'review'])
         ->where('phase', '[0-9]+') // Garante que phase (ID global) seja numérico
         ->name('play.review');
 
-        Route::post('/play/progress', [PlayController::class, 'saveProgress'])->name('play.progress');
-        Route::post('/play/reward-life', [PlayController::class, 'rewardLife'])->name('play.reward-life');
+    Route::post('/play/progress', [PlayController::class, 'saveProgress'])->name('play.progress');
+    Route::post('/play/reward-life', [PlayController::class, 'rewardLife'])->name('play.reward-life');
 
-        // === ROTAS DE DESAFIOS ===
-        // Desafios públicos
-        Route::get('/challenges', [ChallengeController::class, 'index'])->name('challenges.index');
-        Route::get('/challenges/create', [ChallengeController::class, 'create'])->name('challenges.create');
-        Route::post('/challenges', [ChallengeController::class, 'store'])->name('challenges.store');
-        
-        // Meus desafios
-        Route::get('/my-challenges', [ChallengeController::class, 'myIndex'])->name('challenges.my-index');
-        
-        // Detalhes e participação em desafios (usando model binding com uuid)
-        Route::get('/challenges/{challenge:uuid}', [ChallengeController::class, 'show'])->name('challenges.show');
-        Route::get('/challenges/{challenge:uuid}/edit', [ChallengeController::class, 'edit'])->name('challenges.edit');
-        Route::put('/challenges/{challenge:uuid}', [ChallengeController::class, 'update'])->name('challenges.update');
-        Route::delete('/challenges/{challenge:uuid}', [ChallengeController::class, 'destroy'])->name('challenges.destroy');
-        
-        // Participação nos desafios
-        Route::post('/challenges/{challenge:uuid}/join', [ChallengeController::class, 'join'])->name('challenges.join');
-        Route::get('/challenges/{challenge:uuid}/map', [ChallengeController::class, 'map'])->name('challenges.map');
-        Route::get('/challenges/{challenge:uuid}/phase/{phaseNumber}', [ChallengeController::class, 'phase'])
-            ->where('phaseNumber', '[0-9]+')
-            ->name('challenges.phase');
-        Route::post('/challenges/{challenge:uuid}/progress', [ChallengeController::class, 'saveProgress'])->name('challenges.progress');
+    // === ROTAS DE DESAFIOS ===
+    // Desafios públicos
+    Route::get('/challenges', [ChallengeController::class, 'index'])->name('challenges.index');
+    Route::get('/challenges/create', [ChallengeController::class, 'create'])->name('challenges.create');
+    Route::post('/challenges', [ChallengeController::class, 'store'])->name('challenges.store');
 
-        // Rotas de assinatura
-        Route::get('/subscription', [SubscriptionController::class, 'index'])->name('subscription.index');
-        Route::post('/subscription', [SubscriptionController::class, 'subscribe'])->name('subscription.subscribe');
-        Route::post('/subscription/cancel', [SubscriptionController::class, 'cancel'])->name('subscription.cancel');
-        Route::post('/subscription/resume', [SubscriptionController::class, 'resume'])->name('subscription.resume');
+    // Meus desafios
+    Route::get('/my-challenges', [ChallengeController::class, 'myIndex'])->name('challenges.my-index');
 
-        // Rota de ranking
-        Route::get('/ranking', [RankingController::class, 'index'])->name('ranking.index');
-    });
+    // Detalhes e participação em desafios (usando model binding com uuid)
+    Route::get('/challenges/{challenge:uuid}', [ChallengeController::class, 'show'])->name('challenges.show');
+    Route::get('/challenges/{challenge:uuid}/edit', [ChallengeController::class, 'edit'])->name('challenges.edit');
+    Route::put('/challenges/{challenge:uuid}', [ChallengeController::class, 'update'])->name('challenges.update');
+    Route::delete('/challenges/{challenge:uuid}', [ChallengeController::class, 'destroy'])->name('challenges.destroy');
+
+    // Participação nos desafios
+    Route::post('/challenges/{challenge:uuid}/join', [ChallengeController::class, 'join'])->name('challenges.join');
+    Route::get('/challenges/{challenge:uuid}/map', [ChallengeController::class, 'map'])->name('challenges.map');
+    Route::get('/challenges/{challenge:uuid}/phase/{phaseNumber}', [ChallengeController::class, 'phase'])
+        ->where('phaseNumber', '[0-9]+')
+        ->name('challenges.phase');
+    Route::post('/challenges/{challenge:uuid}/progress', [ChallengeController::class, 'saveProgress'])->name('challenges.progress');
+
+    // Rotas de assinatura
+    Route::get('/subscription', [SubscriptionController::class, 'index'])->name('subscription.index');
+    Route::post('/subscription', [SubscriptionController::class, 'subscribe'])->name('subscription.subscribe');
+    Route::post('/subscription/cancel', [SubscriptionController::class, 'cancel'])->name('subscription.cancel');
+    Route::post('/subscription/resume', [SubscriptionController::class, 'resume'])->name('subscription.resume');
+
+    // Rota de ranking
+    Route::get('/ranking', [RankingController::class, 'index'])->name('ranking.index');
+});
 
 
 // Rota para o webhook do Stripe - sem verificação CSRF
