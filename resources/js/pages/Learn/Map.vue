@@ -312,31 +312,41 @@ const totalPhasesCount = computed(() => {
 
                     <!-- Título do Desafio com estilo gamificado -->
                     <div class="flex justify-center mb-6">
-                        <div class="w-full max-w-3xl px-6 py-4 bg-gray-500 dark:bg-gray-600 text-white rounded-lg border-4 border-gray-700 dark:border-gray-800 shadow-[0_8px_0_theme(colors.gray.700)] dark:shadow-[0_8px_0_theme(colors.gray.800)] font-bold relative overflow-hidden">
-                            <!-- Ícone de troféu decorativo no canto -->
-                            <div class="absolute top-2 left-3 opacity-10">
+                        <div class="w-full max-w-3xl px-4 sm:px-6 py-4 bg-gray-500 dark:bg-gray-600 text-white rounded-lg border-4 border-gray-700 dark:border-gray-800 shadow-[0_8px_0_theme(colors.gray.700)] dark:shadow-[0_8px_0_theme(colors.gray.800)] font-bold relative overflow-hidden">
+                            <!-- Ícone de troféu decorativo no canto (apenas desktop) -->
+                            <div class="hidden sm:block absolute top-2 left-3 opacity-10">
                                 <Trophy class="w-16 h-16" />
                             </div>
 
                             <!-- Conteúdo principal -->
                             <div class="relative z-10">
-                                <div class="flex items-center justify-between gap-4">
-                                    <div class="flex items-center gap-3">
-                                        <div class="bg-white/20 p-2.5 rounded-full">
-                                            <Trophy class="w-7 h-7 text-white" />
+                                <!-- Layout: sempre horizontal com título/descrição à esquerda e progresso à direita -->
+                                <div class="flex items-center justify-between gap-2 sm:gap-4">
+                                    <!-- Título e Descrição (esquerda) -->
+                                    <div class="min-w-0 flex-1">
+                                        <!-- Ícone troféu apenas em desktop -->
+                                        <div class="hidden sm:flex sm:items-center sm:gap-3">
+                                            <div class="bg-white/20 p-2.5 rounded-full shrink-0">
+                                                <Trophy class="w-7 h-7 text-white" />
+                                            </div>
+                                            <div class="min-w-0 flex-1">
+                                                <h1 class="text-2xl font-bold leading-tight truncate">{{ props.challenge.title }}</h1>
+                                                <p v-if="props.challenge.description" class="text-sm text-white/95 mt-0.5 font-normal leading-tight line-clamp-2">{{ props.challenge.description }}</p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <h1 class="text-2xl font-bold leading-tight">{{ props.challenge.title }}</h1>
-                                            <p v-if="props.challenge.description" class="text-sm text-white/95 mt-0.5 font-normal leading-tight">{{ props.challenge.description }}</p>
+                                        <!-- Mobile: sem ícone -->
+                                        <div class="sm:hidden">
+                                            <h1 class="text-sm font-bold leading-tight line-clamp-1">{{ props.challenge.title }}</h1>
+                                            <p v-if="props.challenge.description" class="text-[11px] text-white/95 mt-0.5 font-normal leading-tight line-clamp-1">{{ props.challenge.description }}</p>
                                         </div>
                                     </div>
 
-                                    <!-- Contador de progresso -->
-                                    <div class="text-right bg-white/20 px-4 py-2 rounded-lg border-2 border-white/20 min-w-[100px]">
-                                        <div class="text-3xl font-bold leading-none">
+                                    <!-- Contador de progresso (direita) -->
+                                    <div class="text-right bg-white/20 px-2 sm:px-4 py-1 sm:py-2 rounded-lg border-2 border-white/20 shrink-0">
+                                        <div class="text-xl sm:text-3xl font-bold leading-none">
                                             {{ currentPhaseNumber }}/{{ totalPhasesCount }}
                                         </div>
-                                        <div class="text-xs text-white/90 mt-1 font-semibold uppercase tracking-wide">Fase Atual</div>
+                                        <div class="text-[9px] sm:text-xs text-white/90 mt-0.5 sm:mt-1 font-semibold uppercase tracking-wide whitespace-nowrap">Fase Atual</div>
                                     </div>
                                 </div>
                             </div>

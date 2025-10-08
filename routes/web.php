@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\LawArticleOptionController;
 use App\Http\Controllers\ChallengeController;
 use App\Http\Controllers\InfiniteMapController;
 use App\Http\Controllers\LearnController;
+use App\Http\Controllers\LearnChallengeController;
 use App\Http\Controllers\PlayController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\UserLegalReferenceController;
@@ -117,6 +118,10 @@ Route::middleware(['auth'])->group(function () {
     // Participação nos desafios
     Route::post('/challenges/{challenge:uuid}/join', [ChallengeController::class, 'join'])->name('challenges.join');
     Route::get('/challenges/{challenge:uuid}/map', [ChallengeController::class, 'map'])->name('challenges.map');
+
+    // Nova rota otimizada para mapa de desafios
+    Route::get('/learn/challenges/{challenge:uuid}/map', [LearnChallengeController::class, 'map'])->name('learn.challenges.map');
+
     Route::get('/challenges/{challenge:uuid}/phase/{phaseNumber}', [ChallengeController::class, 'phase'])
         ->where('phaseNumber', '[0-9]+')
         ->name('challenges.phase');

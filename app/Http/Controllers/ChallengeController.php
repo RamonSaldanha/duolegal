@@ -345,7 +345,7 @@ class ChallengeController extends Controller
         // Obter usuários por fase (apenas para desafios)
         $usersPerPhase = $this->getChallengeUsersPerPhase($challenge);
 
-        return Inertia::render('Learn/Map', [ // Usar mapa otimizado
+        return Inertia::render('Play/Map', [ // Usar mapa tradicional (não otimizado)
             'phases' => $phasesData,
             'modules' => $modulesData,
             'journey' => null, // Desafios não usam jornadas
