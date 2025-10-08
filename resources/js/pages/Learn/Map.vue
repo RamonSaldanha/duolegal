@@ -278,10 +278,11 @@ const closeUsersModal = () => {
     selectedPhaseUsers.value = null;
 };
 
-// =============== CONTADOR DE DESAFIOS COMPLETOS ===============
-const completedPhasesCount = computed(() => {
+// =============== CONTADOR DE DESAFIOS - FASE ATUAL ===============
+const currentPhaseNumber = computed(() => {
     if (!props.is_challenge || !props.phases) return 0;
-    return props.phases.filter(phase => phase.is_complete).length;
+    const currentPhase = props.phases.find(phase => phase.is_current);
+    return currentPhase ? props.phases.indexOf(currentPhase) + 1 : 0;
 });
 
 const totalPhasesCount = computed(() => {
@@ -299,7 +300,7 @@ const totalPhasesCount = computed(() => {
 
                 <!-- Header de Desafios -->
                 <div v-if="props.is_challenge && props.challenge" class="mb-8">
-                    <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center justify-between mb-6">
                         <Link
                             :href="route('challenges.index')"
                             class="flex items-center gap-2 text-primary hover:text-primary/80 transition-colors"
@@ -309,22 +310,35 @@ const totalPhasesCount = computed(() => {
                         </Link>
                     </div>
 
-                    <div class="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-lg p-6 shadow-lg">
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-4">
-                                <div class="bg-white/20 p-3 rounded-full">
-                                    <Trophy class="w-8 h-8 text-white" />
-                                </div>
-                                <div>
-                                    <h1 class="text-2xl font-bold text-white">{{ props.challenge.title }}</h1>
-                                    <p v-if="props.challenge.description" class="text-white/90 mt-1">{{ props.challenge.description }}</p>
-                                </div>
+                    <!-- Título do Desafio com estilo gamificado -->
+                    <div class="flex justify-center mb-6">
+                        <div class="w-full max-w-3xl px-6 py-4 bg-gray-500 dark:bg-gray-600 text-white rounded-lg border-4 border-gray-700 dark:border-gray-800 shadow-[0_8px_0_theme(colors.gray.700)] dark:shadow-[0_8px_0_theme(colors.gray.800)] font-bold relative overflow-hidden">
+                            <!-- Ícone de troféu decorativo no canto -->
+                            <div class="absolute top-2 left-3 opacity-10">
+                                <Trophy class="w-16 h-16" />
                             </div>
-                            <div class="text-right">
-                                <div class="text-3xl font-bold text-white">
-                                    {{ completedPhasesCount }}/{{ totalPhasesCount }}
+
+                            <!-- Conteúdo principal -->
+                            <div class="relative z-10">
+                                <div class="flex items-center justify-between gap-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="bg-white/20 p-2.5 rounded-full">
+                                            <Trophy class="w-7 h-7 text-white" />
+                                        </div>
+                                        <div>
+                                            <h1 class="text-2xl font-bold leading-tight">{{ props.challenge.title }}</h1>
+                                            <p v-if="props.challenge.description" class="text-sm text-white/95 mt-0.5 font-normal leading-tight">{{ props.challenge.description }}</p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Contador de progresso -->
+                                    <div class="text-right bg-white/20 px-4 py-2 rounded-lg border-2 border-white/20 min-w-[100px]">
+                                        <div class="text-3xl font-bold leading-none">
+                                            {{ currentPhaseNumber }}/{{ totalPhasesCount }}
+                                        </div>
+                                        <div class="text-xs text-white/90 mt-1 font-semibold uppercase tracking-wide">Fase Atual</div>
+                                    </div>
                                 </div>
-                                <div class="text-sm text-white/90">fases completas</div>
                             </div>
                         </div>
                     </div>
