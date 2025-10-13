@@ -100,14 +100,23 @@
                             <span class="text-muted-foreground">por {{ challenge.creator.name }}</span>
                         </div>
                         
-                        <!-- Action Button -->
-                        <GameButton 
-                            :href="route('challenges.show', challenge.uuid)"
-                            variant="purple"
-                            class="w-full"
-                        >
-                            Ver Desafio
-                        </GameButton>
+                        <!-- Action Buttons -->
+                        <div class="flex gap-2">
+                            <GameButton
+                                :href="route('learn.challenges.map', challenge.uuid)"
+                                variant="green"
+                                class="flex-1"
+                            >
+                                Entrar no Mapa
+                            </GameButton>
+                            <GameButton
+                                :href="route('challenges.show', challenge.uuid)"
+                                variant="purple"
+                                class="flex-1"
+                            >
+                                Ver Desafio
+                            </GameButton>
+                        </div>
                     </div>
                 </div>
                 

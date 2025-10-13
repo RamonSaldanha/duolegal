@@ -38,7 +38,8 @@
       "Bash(git commit:*)",
       "Bash(git merge:*)",
       "Bash(git push:*)",
-      "Bash(git stash push:*)"
+      "Bash(git stash push:*)",
+      "Bash(claude mcp add chrome-devtools npx chrome-devtools-mcp@latest:*)"
     ],
     "deny": []
   },
