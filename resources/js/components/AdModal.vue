@@ -129,12 +129,12 @@ watch(
     <Transition name="fade">
         <div
             v-if="show"
-            class="fixed inset-0 z-50 flex flex-col bg-black/95 backdrop-blur-sm"
+            class="fixed inset-0 z-50 flex h-screen min-h-screen flex-col bg-black/95 backdrop-blur-sm"
             @click.self="handleClose"
         >
             <!-- Modal Container Full Screen -->
             <div
-                class="relative flex h-full w-full flex-col bg-white dark:bg-gray-900"
+                class="relative flex h-screen min-h-screen w-full flex-col bg-white dark:bg-gray-900"
                 @click.stop
             >
                 <!-- Header com botão de fechar -->
@@ -179,7 +179,7 @@ watch(
 
                 <!-- Conteúdo: AdSense - Ocupa todo o espaço disponível -->
                 <div
-                    class="flex flex-1 items-center justify-center overflow-auto p-6"
+                    class="flex min-h-0 flex-1 items-center justify-center overflow-auto p-6"
                 >
                     <div class="w-full max-w-4xl">
                         <AdSenseComponent
@@ -231,5 +231,12 @@ watch(
 /* Previne scroll do body quando modal está aberto */
 body:has(.fixed.z-50) {
     overflow: hidden;
+}
+
+/* Garante que o modal sempre ocupe 100% da altura da viewport */
+.fixed.inset-0 {
+    height: 100vh !important;
+    min-height: 100vh !important;
+    max-height: 100vh !important;
 }
 </style>
