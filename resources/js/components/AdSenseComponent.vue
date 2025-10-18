@@ -12,7 +12,7 @@
             :clientId="clientId"
             :slotId="slotId"
             :format="format"
-            :fullWidthResponsive="fullWidthResponsive"
+            :fullWidthResponsive="fullWidthResponsive ? 'true' : 'false'"
         />
 
         <!-- Loading discreto -->

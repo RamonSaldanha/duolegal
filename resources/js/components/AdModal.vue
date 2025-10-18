@@ -186,7 +186,7 @@ watch(
                             :client-id="clientId"
                             :slot-id="slotId"
                             format="auto"
-                            :full-width-responsive="true"
+                            full-width-responsive="true"
                             :min-width="300"
                             :min-height="250"
                         />
