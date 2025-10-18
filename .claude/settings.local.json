@@ -39,7 +39,9 @@
       "Bash(git merge:*)",
       "Bash(git push:*)",
       "Bash(git stash push:*)",
-      "Bash(claude mcp add chrome-devtools npx chrome-devtools-mcp@latest:*)"
+      "Bash(claude mcp add chrome-devtools npx chrome-devtools-mcp@latest:*)",
+      "Bash(del \"C:\\Users\\ramon\\Desktop\\code\\memorize\\README_STRIPE.md\" \"C:\\Users\\ramon\\Desktop\\code\\memorize\\INICIO_RAPIDO_STRIPE.md\" \"C:\\Users\\ramon\\Desktop\\code\\memorize\\STRIPE_SETUP.md\" \"C:\\Users\\ramon\\Desktop\\code\\memorize\\OBSERVACAO_PRECO.md\" \"C:\\Users\\ramon\\Desktop\\code\\memorize\\TROUBLESHOOTING_STRIPE.md\")",
+      "Bash(git reset --soft HEAD~2)"
     ],
     "deny": []
   },

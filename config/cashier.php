@@ -124,4 +124,16 @@ return [
 
     'logger' => env('CASHIER_LOGGER'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Stripe Price ID
+    |--------------------------------------------------------------------------
+    |
+    | The default price ID to use for new subscriptions. This can be
+    | configured per environment (test vs production) using the .env file.
+    |
+    */
+
+    'price_id' => env('STRIPE_PRICE_ID'),
+
 ];

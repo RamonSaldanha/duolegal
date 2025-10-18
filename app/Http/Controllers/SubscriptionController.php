@@ -23,7 +23,7 @@ class SubscriptionController extends Controller
         if (empty($user->stripe_id)) {
             try {
                 // Cria um cliente no Stripe para o usuário
-                $stripeCustomer = $user->createOrGetStripeCustomer();
+                $user->createOrGetStripeCustomer();
             } catch (\Exception $e) {
                 // Silenciosamente falha e continua
             }
@@ -62,7 +62,7 @@ class SubscriptionController extends Controller
                         $subscriptionEndsAt = $subscription->ends_at->format('d/m/Y');
                     }
                     // Se a assinatura será cancelada no final do período atual
-                    else if ($cancelAtPeriodEnd && isset($subscription->asStripeSubscription()->current_period_end)) {
+                    elseif ($cancelAtPeriodEnd && isset($subscription->asStripeSubscription()->current_period_end)) {
                         $endTimestamp = $subscription->asStripeSubscription()->current_period_end;
                         $endDate = \Carbon\Carbon::createFromTimestamp($endTimestamp);
                         $subscriptionEndsAt = $endDate->format('d/m/Y');
@@ -103,7 +103,7 @@ class SubscriptionController extends Controller
                 // Verifica se o usuário já tem um ID do Stripe
                 if (empty($user->stripe_id)) {
                     // Cria um cliente no Stripe para o usuário
-                    $stripeCustomer = $user->createOrGetStripeCustomer();
+                    $user->createOrGetStripeCustomer();
 
                     // Recarrega o usuário para garantir que o stripe_id esteja atualizado
                     $user = $user->fresh();
@@ -114,13 +114,11 @@ class SubscriptionController extends Controller
                     throw new \Exception('Não foi possível criar um cliente Stripe para o usuário');
                 }
 
-                // Determina o preço com base no status de admin do usuário
-                $priceId = $user->is_admin 
-                    ? 'price_1RABA9JhFrAxy23kClj0jR7u' // PREÇO DE ADMIN
-                    : 'price_1R9xghJhFrAxy23kFqF5gDrD'; // Preço padrão para usuários normais
+                // Usa o preço configurado no .env (STRIPE_PRICE_ID)
+                $priceId = config('cashier.price_id');
 
                 // Tenta criar a assinatura usando o Cashier (sem trial)
-                $subscription = $user
+                $user
                     ->newSubscription('default', $priceId)
                     ->skipTrial() // Garante que não haja período de teste
                     ->create($request->payment_method);
@@ -164,7 +162,7 @@ class SubscriptionController extends Controller
 
         try {
             // Verifica se o usuário tem uma assinatura ativa
-            if (!$user->hasActiveSubscription()) {
+            if (! $user->hasActiveSubscription()) {
                 return redirect()->route('subscription.index')
                     ->with('error', 'Você não possui uma assinatura ativa para cancelar.');
             }
@@ -234,7 +232,7 @@ class SubscriptionController extends Controller
             );
 
             // Processar o evento
-            $method = 'handle' . str_replace('.', '', ucwords($event->type, '.'));
+            $method = 'handle'.str_replace('.', '', ucwords($event->type, '.'));
 
             if (method_exists($this, $method)) {
                 return $this->{$method}($event->data->object);
@@ -254,7 +252,7 @@ class SubscriptionController extends Controller
     {
         Log::info('Processando evento de assinatura cancelada', [
             'customer_id' => $object->customer,
-            'subscription_id' => $object->id
+            'subscription_id' => $object->id,
         ]);
 
         $user = User::where('stripe_id', $object->customer)->first();
