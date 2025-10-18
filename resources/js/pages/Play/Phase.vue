@@ -475,6 +475,13 @@
             </div>
         </div>
     </transition>
+
+    <!-- Modal de Anúncio -->
+    <AdModal
+        :show="showAdModal"
+        :close-delay="10"
+        @close="showAdModal = false"
+    />
 </template>
 
 <script lang="ts" setup>
@@ -492,6 +499,8 @@ import { useWindowSize } from '@vueuse/core';
 import axios from 'axios';
 import { useToast } from '@/components/ui/toast/use-toast';
 import Toaster from '@/components/ui/toast/Toaster.vue';
+import AdModal from '@/components/AdModal.vue';
+import { useAdFrequency } from '@/composables/useAdFrequency';
 const { toast } = useToast()
 
 // Atualizar a interface Article para incluir progresso
@@ -550,6 +559,18 @@ const page = usePage<{
 
 // Computed property para verificar se o usuário é admin
 const isAdmin = computed(() => page.props.auth.user?.is_admin);
+
+// Sistema de anúncios
+const showAdModal = ref(false);
+const adFrequency = useAdFrequency();
+
+// Inicializar o sistema de anúncios com a frequência do .env
+onMounted(() => {
+    // Tenta ler do .env, se não existir ou for inválido, usa 3 como padrão
+    const envValue = import.meta.env.VITE_AD_FREQUENCY;
+    const frequency = envValue ? parseInt(envValue, 10) : 3;
+    adFrequency.initialize(isNaN(frequency) ? 3 : frequency);
+});
 
 // Usar props para inicializar articlesArray
 const articlesArray = ref(Object.values(props.articles));
@@ -1525,6 +1546,15 @@ const reviewCompletionPercentage = computed(() => {
                 emojiReward();
             }, 600);
 
+            // Sistema de anúncios: Artigos revogados contam como conclusão
+            const shouldShowAd = adFrequency.registerArticleCompletion();
+            if (shouldShowAd) {
+                setTimeout(() => {
+                    showAdModal.value = true;
+                    adFrequency.markAdShown();
+                }, 2000);
+            }
+
             return;
         }
 
@@ -1611,12 +1641,22 @@ const reviewCompletionPercentage = computed(() => {
                     confettiReward();
                     playSuccessAudio(); // ✅ Áudio de sucesso para acertos >= 70%
                 }, 300);
-                
+
                 // Para 100% de acerto, mostre emojis também
                 if (score.percentage === 100) {
                     setTimeout(() => {
                         emojiReward();
                     }, 600);
+                }
+
+                // Sistema de anúncios: Registrar conclusão bem-sucedida
+                const shouldShowAd = adFrequency.registerArticleCompletion();
+                if (shouldShowAd) {
+                    // Exibir anúncio após um delay para não interromper as recompensas
+                    setTimeout(() => {
+                        showAdModal.value = true;
+                        adFrequency.markAdShown();
+                    }, 2000); // 2s após as recompensas visuais
                 }
             }
         }
