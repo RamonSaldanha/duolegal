@@ -3,10 +3,11 @@ import UserInfo from '@/components/UserInfo.vue';
 import { DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import type { User } from '@/types';
 import { Link } from '@inertiajs/vue3';
-import { LogOut, Settings } from 'lucide-vue-next';
+import { LogOut, Settings, FileText, Scale, Users } from 'lucide-vue-next';
 
 interface Props {
     user: User;
+    isAdmin?: boolean;
 }
 
 defineProps<Props>();
@@ -27,6 +28,29 @@ defineProps<Props>();
             </Link>
         </DropdownMenuItem>
     </DropdownMenuGroup>
+    <template v-if="isAdmin">
+        <DropdownMenuSeparator />
+        <DropdownMenuGroup>
+            <DropdownMenuItem :as-child="true">
+                <Link class="block w-full" href="/admin/create-lawarticle" as="button">
+                    <FileText class="mr-2 h-4 w-4" />
+                    Criar artigo
+                </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem :as-child="true">
+                <Link class="block w-full" href="/admin/legislations" as="button">
+                    <Scale class="mr-2 h-4 w-4" />
+                    Legislações
+                </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem :as-child="true">
+                <Link class="block w-full" href="/admin/users" as="button">
+                    <Users class="mr-2 h-4 w-4" />
+                    Usuários
+                </Link>
+            </DropdownMenuItem>
+        </DropdownMenuGroup>
+    </template>
     <DropdownMenuSeparator />
     <DropdownMenuItem :as-child="true">
         <Link class="block w-full" method="post" :href="route('logout')" as="button">

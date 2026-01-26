@@ -1,19 +1,20 @@
 <?php
+
 // routes\web.php
-use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 use App\Http\Controllers\Admin\LawArticleOptionController;
 use App\Http\Controllers\ChallengeController;
 use App\Http\Controllers\InfiniteMapController;
-use App\Http\Controllers\LearnController;
 use App\Http\Controllers\LearnChallengeController;
+use App\Http\Controllers\LearnController;
 use App\Http\Controllers\PlayController;
+use App\Http\Controllers\PublicController;
+use App\Http\Controllers\RankingController;
+use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\UserLegalReferenceController;
 use App\Http\Controllers\WelcomeController;
-use App\Http\Controllers\PublicController;
-use App\Http\Controllers\SitemapController;
-use App\Http\Controllers\RankingController;
+use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
 Route::get('/', [WelcomeController::class, 'index'])->name('home');
 
@@ -55,7 +56,6 @@ Route::get('/cookies', function () {
 Route::get('/terms', function () {
     return Inertia::render('Terms');
 })->name('terms');
-
 
 Route::get('dashboard', function () {
     return redirect()->route('play.map');
@@ -132,11 +132,11 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/subscription', [SubscriptionController::class, 'subscribe'])->name('subscription.subscribe');
     Route::post('/subscription/cancel', [SubscriptionController::class, 'cancel'])->name('subscription.cancel');
     Route::post('/subscription/resume', [SubscriptionController::class, 'resume'])->name('subscription.resume');
+    Route::post('/subscription/validate-coupon', [SubscriptionController::class, 'validateCoupon'])->name('subscription.validate-coupon');
 
     // Rota de ranking
     Route::get('/ranking', [RankingController::class, 'index'])->name('ranking.index');
 });
-
 
 // Rota para o webhook do Stripe - sem verificação CSRF
 Route::post('/stripe/webhook', [\App\Http\Controllers\StripeWebhookController::class, 'handleWebhook'])

@@ -1,116 +1,447 @@
 <template>
     <Head title="Assinatura" />
 
-    <AppLayout>
-        <div class="container py-8">
-            <div class="w-[300px] md:w-full max-w-3xl mx-auto mt-8">
-                <div v-if="hasActiveSubscription" class="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg p-6 mb-8">
-                    <div class="flex items-start">
-                        <CheckCircle class="text-green-500 dark:text-green-400 w-6 h-6 mr-3 mt-1" />
-                        <div>
-                            <h2 class="text-xl font-semibold text-green-700 dark:text-green-300">Assinatura Ativa</h2>
-                            <p class="text-green-600 dark:text-green-400 mt-1">
-                                Você tem acesso a vidas infinitas! Aproveite para estudar sem limitações.
+    <!-- Layout Checkout -->
+    <template v-if="!hasActiveSubscription">
+        <div class="min-h-screen bg-white dark:bg-gray-900">
+            <!-- Header -->
+            <div class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+                <div class="max-w-6xl mx-auto px-4 h-18 flex items-center justify-between">
+                    <a href="/" class="flex items-center">
+                        <img src="/img/logomemorizeblack.svg" class="mt-[-16px] block dark:hidden" alt="Logo" style="height: 90px; width: 110px;">
+                    </a>
+                    <a href="/" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                        <X class="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                    </a>
+                </div>
+            </div>
+
+            <!-- Conteúdo -->
+            <div class="max-w-6xl mx-auto px-4 py-6 lg:py-8">
+                <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 lg:gap-8">
+                    <!-- Coluna Esquerda: Benefícios -->
+                    <div class="lg:col-span-2">
+                        <div class="p-5 lg:p-6">
+                            <h2 class="text-lg lg:text-xl font-bold text-gray-900 dark:text-white mb-1">
+                                Seja Premium e estude sem limites
+                            </h2>
+                            <p class="text-gray-600 dark:text-gray-400 text-sm mb-5">
+                                Desbloqueie todos os recursos e acelere seus estudos
                             </p>
 
-                            <div v-if="props.subscriptionCancelled" class="mt-3 p-3 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-md">
-                                <p class="text-amber-700 dark:text-amber-300 font-medium flex items-center">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-amber-500 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                    Sua assinatura foi cancelada
-                                </p>
-                                <p v-if="props.subscriptionEndsAt" class="text-amber-600 dark:text-amber-400 mt-1 ml-7">
-                                    Você continuará tendo acesso Premium até <span class="font-bold">{{ props.subscriptionEndsAt }}</span>
-                                </p>
-                                <p v-else class="text-amber-600 dark:text-amber-400 mt-1 ml-7">
-                                    Você continuará tendo acesso Premium até o final do período já pago.
-                                </p>
-                            </div>
-
-                            <div v-if="props.subscriptionCancelled && isAdmin" class="mt-2 text-xs text-dark-500 dark:text-dark-400 border-l-2 border-dark-300 dark:border-dark-600 pl-2">
-                                <div class="font-semibold">[Debug]</div>
-                                Status: {{ props.subscriptionCancelled ? 'Cancelada' : 'Ativa' }} |
-                                Data de término: {{ props.subscriptionEndsAt || 'Não definida' }}
-                            </div>
-
-                            <div class="mt-4">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    :class="{
-                                        'text-red-500 dark:text-red-400 border-red-300 dark:border-red-700 hover:bg-red-50 dark:hover:bg-red-900/30': !props.subscriptionCancelled,
-                                        'text-dark-400 dark:text-dark-500 border-dark-300 dark:border-dark-700 cursor-not-allowed': props.subscriptionCancelled
-                                    }"
-                                    @click="cancelSubscription"
-                                    :disabled="props.subscriptionCancelled"
-                                >
-                                    {{ props.subscriptionCancelled ? 'Assinatura já cancelada' : 'Cancelar assinatura' }}
-                                </Button>
-                            </div>
+                            <ul class="space-y-4">
+                                <li class="flex items-start gap-3">
+                                    <Heart class="w-5 h-5 text-gray-700 dark:text-gray-300 flex-shrink-0 mt-0.5" />
+                                    <div>
+                                        <h4 class="font-medium text-gray-900 dark:text-white text-sm">Vidas infinitas</h4>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400">Estude sem interrupções</p>
+                                    </div>
+                                </li>
+                                <li class="flex items-start gap-3">
+                                    <Zap class="w-5 h-5 text-gray-700 dark:text-gray-300 flex-shrink-0 mt-0.5" />
+                                    <div>
+                                        <h4 class="font-medium text-gray-900 dark:text-white text-sm">Sem anúncios</h4>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400">Experiência limpa e focada</p>
+                                    </div>
+                                </li>
+                                <li class="flex items-start gap-3">
+                                    <BookOpen class="w-5 h-5 text-gray-700 dark:text-gray-300 flex-shrink-0 mt-0.5" />
+                                    <div>
+                                        <h4 class="font-medium text-gray-900 dark:text-white text-sm">Todas as legislações</h4>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400">Acesso completo ao conteúdo</p>
+                                    </div>
+                                </li>
+                                <li class="flex items-start gap-3">
+                                    <Shield class="w-5 h-5 text-gray-700 dark:text-gray-300 flex-shrink-0 mt-0.5" />
+                                    <div>
+                                        <h4 class="font-medium text-gray-900 dark:text-white text-sm">Garantia de 7 dias</h4>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400">Reembolso total se não gostar</p>
+                                    </div>
+                                </li>
+                            </ul>
                         </div>
                     </div>
-                </div>
-                <div v-else class=" rounded-lg shadow-sm py-6 px-0 md:p-6 mb-8 container md:mx-auto md:max-w-4xl">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-9">
-                        <div class="flex-1 flex justify-center items-center md:block">
-                            <div class="relative inline-block text-center md:text-left">
-                                <div class="absolute -top-[45px] md:-top-[45px] md:-right-10 bg-card dark:border rounded-lg px-3 py-1 shadow-md text-sm font-medium speech-bubble text-foreground">
-                                    Não fique mais travado ✅
-                                </div>
-                                <div class="absolute -top-[10px] -left-[0px] md:-top-[10px] md:-left-[95px] bg-card dark:border rounded-lg px-3 py-1 shadow-md text-sm font-medium speech-bubble text-foreground">
-                                    Com o Premium, você estuda sem limites! ✅
-                                </div>
-                                <img src="/img/superararaazul.png" class="w-56 mt-6 md:mt-1 mx-auto md:mx-0" />
-                            </div>
-                        </div>
 
-                        <div class="flex-1 w-full md:w-auto min-w-[300px]">
-                            <div class="mb-4 text-center md:text-left">
-                                <h2 class="text-2xl font-bold dark:text-white">Plano premium</h2>
-                                <div class="text-lg font-bold dark:text-white">R$ 9,90/mês</div>
-                            </div>
-                            <div v-if="cardError" class="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 p-3 rounded-md mb-4">
-                                <div class="flex flex-col">
-                                    <p>{{ cardError }}</p>
+                    <!-- Coluna Direita: Checkout -->
+                    <div class="lg:col-span-3">
+                        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                            <!-- Escolher Plano -->
+                            <div class="p-5 lg:p-6 border-b border-gray-200 dark:border-gray-700">
+                                <h3 class="font-semibold text-gray-900 dark:text-white mb-4">Escolher plano</h3>
+
+                                <div class="grid grid-cols-3 gap-2 lg:gap-3">
+                                    <!-- Plano Mensal -->
+                                    <button
+                                        @click="selectPlan('monthly')"
+                                        :class="[
+                                            'relative p-3 lg:p-4 rounded-xl border-2 text-left transition-all',
+                                            selectedPlan === 'monthly'
+                                                ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
+                                                : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                                        ]"
+                                    >
+                                        <div class="font-semibold text-gray-900 dark:text-white text-sm">Mensal</div>
+                                        <div class="mt-1">
+                                            <span class="text-lg lg:text-xl font-bold text-gray-900 dark:text-white">{{ formatCurrency(getPlanPrice('monthly')) }}</span>
+                                        </div>
+                                        <div class="text-xs text-gray-500 dark:text-gray-400">/mês</div>
+                                        <div v-if="selectedPlan === 'monthly'" class="absolute top-2 right-2">
+                                            <CheckCircle class="w-4 h-4 text-purple-500" />
+                                        </div>
+                                    </button>
+
+                                    <!-- Plano Trimestral -->
+                                    <button
+                                        @click="selectPlan('quarterly')"
+                                        :class="[
+                                            'relative p-3 lg:p-4 rounded-xl border-2 text-left transition-all',
+                                            selectedPlan === 'quarterly'
+                                                ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
+                                                : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                                        ]"
+                                    >
+                                        <div v-if="getDiscount('quarterly')" class="absolute -top-2 left-1/2 -translate-x-1/2">
+                                            <span class="bg-green-500 text-white text-[10px] font-medium px-1.5 py-0.5 rounded-full">
+                                                {{ getDiscount('quarterly') }}
+                                            </span>
+                                        </div>
+                                        <div class="font-semibold text-gray-900 dark:text-white text-sm">Trimestral</div>
+                                        <div class="mt-1">
+                                            <span class="text-lg lg:text-xl font-bold text-gray-900 dark:text-white">{{ formatCurrency(getPlanPrice('quarterly')) }}</span>
+                                        </div>
+                                        <div class="text-xs text-gray-500 dark:text-gray-400">{{ formatCurrency(getPlanMonthlyPrice('quarterly')) }}/mês</div>
+                                        <div v-if="selectedPlan === 'quarterly'" class="absolute top-2 right-2">
+                                            <CheckCircle class="w-4 h-4 text-purple-500" />
+                                        </div>
+                                    </button>
+
+                                    <!-- Plano Anual -->
+                                    <button
+                                        @click="selectPlan('yearly')"
+                                        :class="[
+                                            'relative p-3 lg:p-4 rounded-xl border-2 text-left transition-all',
+                                            selectedPlan === 'yearly'
+                                                ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
+                                                : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                                        ]"
+                                    >
+                                        <div v-if="getDiscount('yearly')" class="absolute -top-2 left-1/2 -translate-x-1/2">
+                                            <span class="bg-green-500 text-white text-[10px] font-medium px-1.5 py-0.5 rounded-full">
+                                                {{ getDiscount('yearly') }}
+                                            </span>
+                                        </div>
+                                        <div class="font-semibold text-gray-900 dark:text-white text-sm">Anual</div>
+                                        <div class="mt-1">
+                                            <span class="text-lg lg:text-xl font-bold text-gray-900 dark:text-white">{{ formatCurrency(getPlanPrice('yearly')) }}</span>
+                                        </div>
+                                        <div class="text-xs text-gray-500 dark:text-gray-400">{{ formatCurrency(getPlanMonthlyPrice('yearly')) }}/mês</div>
+                                        <div v-if="selectedPlan === 'yearly'" class="absolute top-2 right-2">
+                                            <CheckCircle class="w-4 h-4 text-purple-500" />
+                                        </div>
+                                    </button>
                                 </div>
                             </div>
 
-                            <div id="card-element" class="border dark:border-dark-700 rounded-md p-3 mb-4 dark:bg-dark-700"></div>
+                            <!-- Informações de Pagamento -->
+                            <div class="p-5 lg:p-6 border-b border-gray-200 dark:border-gray-700">
+                                <h3 class="font-semibold text-gray-900 dark:text-white mb-4">Informações de pagamento</h3>
 
-                            <Button
-                                type="button"
-                                @click="subscribe"
-                                :disabled="isProcessing"
-                                class="w-full"
-                            >
-                                <span v-if="isProcessing">
-                                    <Loader2 class="mr-2 h-4 w-4 animate-spin" />
-                                    Processando...
-                                </span>
-                                <span v-else>
-                                    Assinar agora
-                                </span>
-                            </Button>
+                                <!-- Flash/Error Messages -->
+                                <div v-if="flash.error" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg p-3 mb-4">
+                                    <div class="flex items-center">
+                                        <AlertCircle class="text-red-500 w-4 h-4 mr-2 flex-shrink-0" />
+                                        <p class="text-red-700 dark:text-red-300 text-sm">{{ flash.error }}</p>
+                                    </div>
+                                </div>
+
+                                <div v-if="cardError" class="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 p-3 rounded-lg mb-4 text-sm">
+                                    {{ cardError }}
+                                </div>
+
+                                <!-- Campos do Cartão -->
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                                            Número do Cartão <span class="text-red-500">*</span>
+                                        </label>
+                                        <div class="relative">
+                                            <div id="card-number-element" class="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-3 bg-white dark:bg-gray-900 h-[46px] pr-12"></div>
+                                            <div v-if="cardBrand" class="absolute right-3 top-1/2 -translate-y-1/2">
+                                                <img :src="getCardBrandIcon(cardBrand)" :alt="cardBrand" class="h-6 w-auto" />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                                                Data de Expiração <span class="text-red-500">*</span>
+                                            </label>
+                                            <div id="card-expiry-element" class="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-3 bg-white dark:bg-gray-900 h-[46px]"></div>
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                                                CVV <span class="text-red-500">*</span>
+                                            </label>
+                                            <div id="card-cvc-element" class="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-3 bg-white dark:bg-gray-900 h-[46px]"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Resumo do Faturamento -->
+                            <div class="p-5 lg:p-6 bg-gray-50 dark:bg-gray-900/50">
+                                <h3 class="font-semibold text-gray-900 dark:text-white mb-4">Resumo do faturamento</h3>
+
+                                <!-- Cupom -->
+                                <div class="mb-4">
+                                    <div class="flex gap-2">
+                                        <Input
+                                            v-model="couponCode"
+                                            type="text"
+                                            placeholder="Código de desconto"
+                                            class="flex-1 bg-white dark:bg-gray-800 h-10"
+                                            :disabled="couponLoading || !!appliedCoupon"
+                                        />
+                                        <Button
+                                            v-if="!appliedCoupon"
+                                            variant="outline"
+                                            @click="applyCoupon"
+                                            :disabled="couponLoading || !couponCode.trim()"
+                                            class="h-10"
+                                        >
+                                            <Loader2 v-if="couponLoading" class="h-4 w-4 animate-spin" />
+                                            <span v-else>Aplicar</span>
+                                        </Button>
+                                        <Button
+                                            v-else
+                                            variant="outline"
+                                            @click="removeCoupon"
+                                            class="h-10 text-red-500 hover:text-red-600"
+                                        >
+                                            Remover
+                                        </Button>
+                                    </div>
+                                    <p v-if="couponError" class="text-red-500 text-xs mt-1">{{ couponError }}</p>
+                                    <div v-if="appliedCoupon" class="mt-2 flex items-center gap-2 text-green-600 dark:text-green-400 text-sm">
+                                        <CheckCircle class="w-4 h-4" />
+                                        <span>Cupom "{{ appliedCoupon.code }}" aplicado!</span>
+                                    </div>
+                                </div>
+
+                                <!-- Valores -->
+                                <div class="space-y-2 text-sm">
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-600 dark:text-gray-400">{{ planLabels[selectedPlan] }}</span>
+                                        <span class="text-gray-900 dark:text-white">{{ formatCurrency(getPlanPrice(selectedPlan)) }}</span>
+                                    </div>
+                                    <div v-if="appliedCoupon" class="flex justify-between text-green-600 dark:text-green-400">
+                                        <span>Desconto</span>
+                                        <span>-{{ formatCurrency(discountAmount) }}</span>
+                                    </div>
+                                    <div class="flex justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
+                                        <span class="font-semibold text-gray-900 dark:text-white">Total</span>
+                                        <span class="font-bold text-xl text-gray-900 dark:text-white">{{ formatCurrency(finalTotal) }}</span>
+                                    </div>
+                                </div>
+
+                                <!-- Botão de Assinar -->
+                                <GameButton
+                                    variant="purple"
+                                    size="lg"
+                                    @click="subscribe"
+                                    :disabled="isProcessing"
+                                    class="w-full mt-6"
+                                >
+                                    <span v-if="isProcessing" class="flex items-center justify-center">
+                                        <Loader2 class="h-5 w-5 animate-spin mr-2" />
+                                        Processando...
+                                    </span>
+                                    <span v-else>Assinar agora</span>
+                                </GameButton>
+
+                                <p class="text-xs text-gray-500 dark:text-gray-400 text-center mt-4">
+                                    Ao assinar, você concorda com nossos Termos de Uso.
+                                    Pagamento seguro pelo Stripe.
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    </AppLayout>
+    </template>
+
+    <!-- Layout para usuários com assinatura ativa -->
+    <template v-else>
+        <div class="min-h-screen bg-white dark:bg-gray-900">
+            <!-- Header -->
+            <div class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+                <div class="max-w-6xl mx-auto px-4 h-18 flex items-center justify-between">
+                    <a href="/" class="flex items-center">
+                        <img src="/img/logomemorizeblack.svg" class="mt-[-16px] block dark:hidden" alt="Logo" style="height: 90px; width: 110px;">
+                    </a>
+                    <a href="/" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                        <X class="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                    </a>
+                </div>
+            </div>
+
+            <!-- Conteúdo -->
+            <div class="max-w-6xl mx-auto px-4 py-6 lg:py-8">
+                <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 lg:gap-8">
+                    <!-- Coluna Esquerda: Benefícios -->
+                    <div class="lg:col-span-2">
+                        <div class="p-5 lg:p-6">
+                            <h2 class="text-lg lg:text-xl font-bold text-gray-900 dark:text-white mb-1">
+                                Você é Premium!
+                            </h2>
+                            <p class="text-gray-600 dark:text-gray-400 text-sm mb-5">
+                                Aproveite todos os recursos desbloqueados
+                            </p>
+
+                            <ul class="space-y-4">
+                                <li class="flex items-start gap-3">
+                                    <Heart class="w-5 h-5 text-gray-700 dark:text-gray-300 flex-shrink-0 mt-0.5" />
+                                    <div>
+                                        <h4 class="font-medium text-gray-900 dark:text-white text-sm">Vidas infinitas</h4>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400">Estude sem interrupções</p>
+                                    </div>
+                                </li>
+                                <li class="flex items-start gap-3">
+                                    <Zap class="w-5 h-5 text-gray-700 dark:text-gray-300 flex-shrink-0 mt-0.5" />
+                                    <div>
+                                        <h4 class="font-medium text-gray-900 dark:text-white text-sm">Sem anúncios</h4>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400">Experiência limpa e focada</p>
+                                    </div>
+                                </li>
+                                <li class="flex items-start gap-3">
+                                    <BookOpen class="w-5 h-5 text-gray-700 dark:text-gray-300 flex-shrink-0 mt-0.5" />
+                                    <div>
+                                        <h4 class="font-medium text-gray-900 dark:text-white text-sm">Todas as legislações</h4>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400">Acesso completo ao conteúdo</p>
+                                    </div>
+                                </li>
+                                <li class="flex items-start gap-3">
+                                    <Shield class="w-5 h-5 text-gray-700 dark:text-gray-300 flex-shrink-0 mt-0.5" />
+                                    <div>
+                                        <h4 class="font-medium text-gray-900 dark:text-white text-sm">Garantia de 7 dias</h4>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400">Reembolso total se não gostar</p>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Coluna Direita: Gerenciar Assinatura -->
+                    <div class="lg:col-span-3">
+                        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                            <!-- Seu Plano -->
+                            <div class="p-5 lg:p-6 border-b border-gray-200 dark:border-gray-700">
+                                <h3 class="font-semibold text-gray-900 dark:text-white mb-4">Seu plano</h3>
+
+                                <div class="flex items-center justify-between p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
+                                            <CheckCircle class="w-5 h-5 text-green-600 dark:text-green-400" />
+                                        </div>
+                                        <div>
+                                            <div class="font-semibold text-gray-900 dark:text-white">Memorize Premium</div>
+                                            <div class="text-sm text-green-600 dark:text-green-400">Ativo</div>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-xl font-bold text-gray-900 dark:text-white">{{ formatCurrency(props.price || 1199) }}</div>
+                                        <div class="text-xs text-gray-500 dark:text-gray-400">/{{ props.planInterval || 'mês' }}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Status da Assinatura -->
+                            <div class="p-5 lg:p-6">
+                                <!-- Assinatura cancelada mas ainda ativa -->
+                                <div v-if="props.subscriptionCancelled">
+                                    <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 mb-4">
+                                        <div class="flex items-start gap-3">
+                                            <AlertCircle class="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                                            <div>
+                                                <p class="font-medium text-amber-800 dark:text-amber-200">Cancelamento agendado</p>
+                                                <p class="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                                                    Você ainda tem acesso até <strong>{{ props.subscriptionEndsAt }}</strong>
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <GameButton
+                                        @click="resumeSubscription"
+                                        class="w-full"
+                                        variant="green"
+                                    >
+                                        Reativar assinatura
+                                    </GameButton>
+                                </div>
+
+                                <!-- Assinatura ativa normal -->
+                                <div v-else>
+                                    <div class="flex items-center justify-between text-sm p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl mb-4">
+                                        <span class="text-gray-600 dark:text-gray-400">Próxima cobrança</span>
+                                        <span class="text-gray-900 dark:text-white font-medium">{{ props.nextBillingDate || '—' }}</span>
+                                    </div>
+                                    <GameButton
+                                        @click="cancelSubscription"
+                                        class="w-full"
+                                        variant="red"
+                                    >
+                                        Cancelar assinatura
+                                    </GameButton>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Link para voltar -->
+                        <div class="text-center mt-6">
+                            <a href="/" class="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 text-sm font-medium">
+                                ← Voltar para o app
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
 </template>
 
 <script setup lang="ts">
 import { Head, useForm, usePage } from '@inertiajs/vue3';
-import AppLayout from '@/layouts/AppLayout.vue';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Loader2 } from 'lucide-vue-next';
+import { Input } from '@/components/ui/input';
+import GameButton from '@/components/ui/GameButton.vue';
+import { CheckCircle, Loader2, AlertCircle, X, Heart, Zap, BookOpen, Shield } from 'lucide-vue-next';
 import { onMounted, ref, computed } from 'vue';
+import axios from 'axios';
 
 declare global {
     interface Window {
         Stripe?: any;
     }
+}
+
+interface AppliedCoupon {
+    code: string;
+    description: string;
+    discount_amount: number;
+    percent_off: number | null;
+    amount_off: number | null;
+    promotion_code_id: string;
+}
+
+interface PlanInfo {
+    price_id: string;
+    price: number;
+    monthly_price: number;
+    interval: string;
+    interval_count: number;
+    currency: string;
 }
 
 interface Props {
@@ -120,40 +451,190 @@ interface Props {
     };
     subscriptionEndsAt: string | null;
     subscriptionCancelled: boolean;
+    nextBillingDate: string | null;
+    price: number;
+    planInterval: string;
+    plans?: Record<string, PlanInfo>;
 }
 
 const props = defineProps<Props>();
 const page = usePage();
 
-const isAdmin = computed(() => {
-    try {
-        const pageProps = page.props as any;
-        if (pageProps && pageProps.auth && pageProps.auth.user) {
-            return !!pageProps.auth.user.is_admin;
-        }
-        return false;
-    } catch (error) {
-        console.error('Erro ao acessar propriedades de auth:', error);
-        return false;
+// Planos disponíveis
+const selectedPlan = ref<'monthly' | 'quarterly' | 'yearly'>('monthly');
+
+// Valores padrão caso o backend não retorne os planos
+const defaultPrices: Record<string, number> = {
+    monthly: 1199,
+    quarterly: 2999,
+    yearly: 8999,
+};
+
+const defaultMonthlyPrices: Record<string, number> = {
+    monthly: 1199,
+    quarterly: 1000,
+    yearly: 750,
+};
+
+const planLabels: Record<string, string> = {
+    monthly: 'Plano Mensal',
+    quarterly: 'Plano Trimestral',
+    yearly: 'Plano Anual',
+};
+
+// Funções para obter preços (do backend ou valores padrão)
+const getPlanPrice = (plan: string): number => {
+    if (props.plans && props.plans[plan]) {
+        return props.plans[plan].price;
     }
+    return defaultPrices[plan] || 0;
+};
+
+const getPlanMonthlyPrice = (plan: string): number => {
+    if (props.plans && props.plans[plan]) {
+        return props.plans[plan].monthly_price;
+    }
+    return defaultMonthlyPrices[plan] || 0;
+};
+
+const getPlanPriceId = (plan: string): string => {
+    if (props.plans && props.plans[plan]) {
+        return props.plans[plan].price_id;
+    }
+    // Fallback para IDs padrão
+    const defaultIds: Record<string, string> = {
+        monthly: 'price_1StCFJGjTEIZborGaTlExEMF',
+        quarterly: 'price_1StIQJGjTEIZborGfWvfFumD',
+        yearly: 'price_1StIR1GjTEIZborGzAc3WC2U',
+    };
+    return defaultIds[plan] || '';
+};
+
+const getDiscount = (plan: string): string | null => {
+    const monthlyPrice = getPlanMonthlyPrice('monthly');
+    const planMonthlyPrice = getPlanMonthlyPrice(plan);
+
+    if (monthlyPrice > 0 && planMonthlyPrice > 0 && planMonthlyPrice < monthlyPrice) {
+        const discount = Math.round((1 - planMonthlyPrice / monthlyPrice) * 100);
+        return `-${discount}%`;
+    }
+    return null;
+};
+
+const selectPlan = (plan: 'monthly' | 'quarterly' | 'yearly') => {
+    selectedPlan.value = plan;
+    if (appliedCoupon.value) {
+        recalculateDiscount();
+    }
+};
+
+const recalculateDiscount = () => {
+    if (!appliedCoupon.value) return;
+    const price = getPlanPrice(selectedPlan.value);
+    if (appliedCoupon.value.percent_off) {
+        appliedCoupon.value.discount_amount = Math.round(price * (appliedCoupon.value.percent_off / 100));
+    }
+};
+
+const flash = computed(() => {
+    const pageProps = page.props as any;
+    return {
+        success: pageProps?.flash?.success || null,
+        error: pageProps?.flash?.error || null,
+        info: pageProps?.flash?.info || null,
+    };
 });
 
 const stripe = ref<any>(null);
 const elements = ref<any>(null);
-const cardElement = ref<any>(null);
+const cardNumberElement = ref<any>(null);
+const cardExpiryElement = ref<any>(null);
+const cardCvcElement = ref<any>(null);
 const cardError = ref<string | null>(null);
 const isProcessing = ref(false);
+const cardBrand = ref<string | null>(null);
+
+const getCardBrandIcon = (brand: string): string => {
+    const brandIcons: Record<string, string> = {
+        visa: 'https://js.stripe.com/v3/fingerprinted/img/visa-729c05c240c4bdb47b03ac81d9945bfe.svg',
+        mastercard: 'https://js.stripe.com/v3/fingerprinted/img/mastercard-4d8844094130711885b5e41b28c9848f.svg',
+        amex: 'https://js.stripe.com/v3/fingerprinted/img/amex-a49b82f46c5cd6a96a6e418a6ca1717c.svg',
+        discover: 'https://js.stripe.com/v3/fingerprinted/img/discover-ac52cd46f89fa40a29a0bfb954e33173.svg',
+        diners: 'https://js.stripe.com/v3/fingerprinted/img/diners-fbcbd3360f8e3f629cdaa80e93abdb8b.svg',
+        jcb: 'https://js.stripe.com/v3/fingerprinted/img/jcb-271fd06e6e7a2c52692f000e6b0e7ce1.svg',
+        unionpay: 'https://js.stripe.com/v3/fingerprinted/img/unionpay-8a10aefc7295216c338ba4e1224627a1.svg',
+        elo: 'https://js.stripe.com/v3/fingerprinted/img/elo-3c5c28c4be8e3f1f79c8a1f5b31ffcd7.svg',
+        hipercard: 'https://js.stripe.com/v3/fingerprinted/img/hipercard-d42d8c59d889e5f7c6378e3e9b0c8b99.svg',
+    };
+    return brandIcons[brand] || '';
+};
+
+// Cupom
+const couponCode = ref('');
+const couponLoading = ref(false);
+const couponError = ref<string | null>(null);
+const appliedCoupon = ref<AppliedCoupon | null>(null);
+
+const discountAmount = computed(() => {
+    if (!appliedCoupon.value) return 0;
+    return appliedCoupon.value.discount_amount;
+});
+
+const finalTotal = computed(() => {
+    return Math.max(0, getPlanPrice(selectedPlan.value) - discountAmount.value);
+});
+
+const formatCurrency = (valueInCents: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL'
+    }).format(valueInCents / 100);
+};
+
+const applyCoupon = async () => {
+    if (!couponCode.value.trim()) return;
+
+    couponLoading.value = true;
+    couponError.value = null;
+
+    try {
+        const response = await axios.post(route('subscription.validate-coupon'), {
+            coupon_code: couponCode.value.trim(),
+            price: getPlanPrice(selectedPlan.value),
+        });
+
+        if (response.data.valid) {
+            appliedCoupon.value = {
+                code: couponCode.value.trim().toUpperCase(),
+                description: response.data.description,
+                discount_amount: response.data.discount_amount,
+                percent_off: response.data.percent_off,
+                amount_off: response.data.amount_off,
+                promotion_code_id: response.data.promotion_code_id,
+            };
+        } else {
+            couponError.value = response.data.message || 'Cupom inválido';
+        }
+    } catch (error: any) {
+        couponError.value = error.response?.data?.message || 'Erro ao validar cupom';
+    } finally {
+        couponLoading.value = false;
+    }
+};
+
+const removeCoupon = () => {
+    appliedCoupon.value = null;
+    couponCode.value = '';
+    couponError.value = null;
+};
 
 onMounted(() => {
     if (!props.hasActiveSubscription) {
         if (typeof window.Stripe !== 'undefined') {
-            console.log('Stripe já está disponível, carregando...');
             loadStripe();
         } else {
-            console.log('Stripe ainda não está disponível, aguardando carregamento...');
             const checkStripe = setInterval(() => {
                 if (typeof window.Stripe !== 'undefined') {
-                    console.log('Stripe carregado, inicializando...');
                     clearInterval(checkStripe);
                     loadStripe();
                 }
@@ -162,8 +643,7 @@ onMounted(() => {
             setTimeout(() => {
                 clearInterval(checkStripe);
                 if (typeof window.Stripe === 'undefined') {
-                    console.error('Timeout ao aguardar carregamento do Stripe');
-                    cardError.value = 'Timeout ao carregar o Stripe. Por favor, recarregue a página.';
+                    cardError.value = 'Erro ao carregar Stripe. Recarregue a página.';
                 }
             }, 5000);
         }
@@ -172,88 +652,76 @@ onMounted(() => {
 
 const loadStripe = async () => {
     try {
-        console.log('Carregando Stripe.js...');
-        const stripeKey = import.meta.env.VITE_STRIPE_KEY || 'pk_test_51MbXdpJhFrAxy23koT5CfvObNzBhbm8MzV8Fdm3iFlKkY5spSgCS8M3L2LgKLN9CD2B562DQ1Ubu5iylvzC22Zvf007tmLk05K';
-        console.log('Chave do Stripe:', stripeKey.substring(0, 10) + '...');
+        const stripeKey = import.meta.env.VITE_STRIPE_KEY;
 
-        if (typeof Stripe === 'undefined') {
-            throw new Error('Stripe.js não foi carregado. Verifique se o script está sendo carregado corretamente.');
+        if (!stripeKey) {
+            throw new Error('Chave do Stripe não configurada.');
         }
 
-        stripe.value = Stripe(stripeKey);
-        console.log('Stripe.js carregado com sucesso');
+        if (typeof window.Stripe === 'undefined') {
+            throw new Error('Stripe.js não carregado.');
+        }
+
+        stripe.value = window.Stripe(stripeKey);
 
         const isDarkMode = document.documentElement.classList.contains('dark');
-        console.log('Modo dark detectado:', isDarkMode);
+
+        const elementStyles = {
+            base: {
+                fontSize: '16px',
+                color: isDarkMode ? '#e2e8f0' : '#334155',
+                fontFamily: 'system-ui, -apple-system, sans-serif',
+                '::placeholder': {
+                    color: isDarkMode ? '#64748b' : '#94a3b8',
+                },
+            },
+            invalid: {
+                color: '#ef4444',
+            },
+        };
 
         elements.value = stripe.value.elements({
             appearance: {
                 theme: isDarkMode ? 'night' : 'stripe',
-                variables: {
-                    colorText: isDarkMode ? '#e2e8f0' : '#334155',
-                },
-                rules: {
-                    '.Input': {
-                        color: isDarkMode ? '#e2e8f0' : '#334155',
-                    },
-                    '.Label': {
-                        color: isDarkMode ? '#e2e8f0' : '#334155',
-                    },
-                    '.Error': {
-                        color: '#ef4444',
-                    }
-                }
             }
         });
 
-        cardElement.value = elements.value.create('card');
+        cardNumberElement.value = elements.value.create('cardNumber', {
+            style: elementStyles,
+            placeholder: '1234 5678 9012 3456',
+        });
 
-        const cardElementContainer = document.getElementById('card-element');
-        if (!cardElementContainer) {
-            throw new Error('Elemento #card-element não encontrado no DOM');
-        }
+        cardExpiryElement.value = elements.value.create('cardExpiry', {
+            style: elementStyles,
+            placeholder: 'MM/AA',
+        });
 
-        cardElement.value.mount('#card-element');
-        console.log('Elemento de cartão montado com sucesso');
+        cardCvcElement.value = elements.value.create('cardCvc', {
+            style: elementStyles,
+            placeholder: '123',
+        });
 
-        cardElement.value.on('change', (event: any) => {
-            console.log('Evento de mudança do cartão:', event);
+        cardNumberElement.value.mount('#card-number-element');
+        cardExpiryElement.value.mount('#card-expiry-element');
+        cardCvcElement.value.mount('#card-cvc-element');
+
+        const handleChange = (event: any) => {
             cardError.value = event.error ? event.error.message : null;
-        });
+        };
 
-        const darkModeObserver = new MutationObserver((mutations) => {
-            mutations.forEach((mutation) => {
-                if (mutation.attributeName === 'class' && document.documentElement.classList.contains('dark') !== isDarkMode) {
-                    console.log('Tema mudou, recarregando elemento do Stripe...');
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 100);
-                }
-            });
-        });
-        
-        darkModeObserver.observe(document.documentElement, { attributes: true });
-        
-    } catch (error) {
-        console.error('Erro ao carregar Stripe:', error);
-        cardError.value = 'Erro ao carregar o formulário de pagamento: ' + (error instanceof Error ? error.message : 'Erro desconhecido');
-
-        setTimeout(() => {
-            const cardElementContainer = document.getElementById('card-element');
-            if (cardElementContainer) {
-                cardElementContainer.innerHTML = `
-                    <div class="p-4 text-center">
-                        <p class="text-red-500 dark:text-red-400 mb-4">${cardError.value}</p>
-                        <button
-                            class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-                            onclick="window.location.reload()"
-                        >
-                            Recarregar Página
-                        </button>
-                    </div>
-                `;
+        cardNumberElement.value.on('change', (event: any) => {
+            handleChange(event);
+            if (event.brand && event.brand !== 'unknown') {
+                cardBrand.value = event.brand;
+            } else {
+                cardBrand.value = null;
             }
-        }, 100);
+        });
+        cardExpiryElement.value.on('change', handleChange);
+        cardCvcElement.value.on('change', handleChange);
+
+    } catch {
+        cardError.value = 'Erro ao carregar formulário. Recarregue a página.';
     }
 };
 
@@ -264,122 +732,88 @@ const subscribe = async () => {
     cardError.value = null;
 
     try {
-        if (!stripe.value || !cardElement.value) {
-            cardError.value = 'Erro ao carregar o formulário de pagamento. Por favor, recarregue a página.';
+        if (!stripe.value || !cardNumberElement.value) {
+            cardError.value = 'Formulário não carregado. Recarregue a página.';
             isProcessing.value = false;
             return;
         }
 
-        console.log('Criando payment method...');
-
         const { paymentMethod, error } = await stripe.value.createPaymentMethod({
             type: 'card',
-            card: cardElement.value,
+            card: cardNumberElement.value,
         });
 
         if (error) {
-            console.error('Erro ao criar payment method:', error);
             cardError.value = error.message;
             isProcessing.value = false;
             return;
         }
 
         if (!paymentMethod || !paymentMethod.id) {
-            console.error('Payment method não foi criado corretamente');
-            cardError.value = 'Ocorreu um erro ao processar o cartão. Por favor, tente novamente.';
+            cardError.value = 'Erro ao processar cartão. Tente novamente.';
             isProcessing.value = false;
             return;
         }
 
         form.payment_method = paymentMethod.id;
+        form.promotion_code_id = appliedCoupon.value?.promotion_code_id || '';
+        form.price_id = getPlanPriceId(selectedPlan.value);
 
-        console.log('Payment Method ID:', paymentMethod.id);
-
-        console.log('Enviando payment method para o servidor:', form.payment_method);
-
-        try {
-            await form.post(route('subscription.subscribe'), {
-                preserveScroll: true,
-                onSuccess: (response) => {
-                    console.log('Assinatura realizada com sucesso:', response);
-                    isProcessing.value = false;
-                    window.location.reload();
-                },
-                onError: (errors) => {
-                    isProcessing.value = false;
-                    console.error('Erro na assinatura:', errors);
-
-                    if (errors.message) {
-                        cardError.value = errors.message;
-                    } else if (errors.payment_method) {
-                        cardError.value = errors.payment_method;
+        form.post(route('subscription.subscribe'), {
+            preserveScroll: true,
+            onSuccess: () => {
+                isProcessing.value = false;
+            },
+            onError: (errors) => {
+                isProcessing.value = false;
+                if (errors.message) {
+                    cardError.value = errors.message;
+                } else {
+                    const errorKeys = Object.keys(errors);
+                    if (errorKeys.length > 0) {
+                        cardError.value = errors[errorKeys[0]];
                     } else {
-                        cardError.value = 'Ocorreu um erro ao processar sua assinatura. Por favor, tente novamente.';
+                        cardError.value = 'Erro ao processar assinatura.';
                     }
                 }
-            });
-        } catch (postError) {
-            console.error('Erro ao enviar formulário:', postError);
-            isProcessing.value = false;
-            cardError.value = 'Erro ao enviar dados para o servidor. Por favor, tente novamente.';
-        }
+            },
+            onFinish: () => {
+                isProcessing.value = false;
+            }
+        });
     } catch (error: any) {
-        console.error('Erro inesperado:', error);
         isProcessing.value = false;
-        cardError.value = error.message || 'Ocorreu um erro ao processar o pagamento.';
+        cardError.value = error.message || 'Erro ao processar pagamento.';
     }
 };
 
 const form = useForm({
     payment_method: '',
+    promotion_code_id: '',
+    price_id: '',
 });
 
 const cancelSubscription = () => {
-    if (props.subscriptionCancelled) {
-        console.log('Assinatura já está cancelada');
-        return;
-    }
+    if (props.subscriptionCancelled) return;
 
-    console.log('Iniciando cancelamento da assinatura...');
-
-    if (confirm('Tem certeza que deseja cancelar sua assinatura?\n\nVocê continuará tendo acesso até o final do período já pago.')) {
-        console.log('Usuário confirmou o cancelamento');
-
-        try {
-            const cancelForm = useForm({});
-            console.log('Formulário criado:', cancelForm);
-
-            const cancelRoute = route('subscription.cancel');
-            console.log('Rota de cancelamento:', cancelRoute);
-
-            console.log('Enviando solicitação de cancelamento...');
-            cancelForm.post(cancelRoute, {
-                preserveScroll: true,
-                onSuccess: (response) => {
-                    console.log('Cancelamento bem-sucedido:', response);
-                    window.location.reload();
-                },
-                onError: (errors) => {
-                    console.error('Erro ao cancelar assinatura:', errors);
-                    alert('Ocorreu um erro ao cancelar sua assinatura. Por favor, tente novamente.');
-                }
-            });
-        } catch (error) {
-            console.error('Erro inesperado ao cancelar assinatura:', error);
-            alert('Ocorreu um erro inesperado ao cancelar sua assinatura. Por favor, tente novamente.');
-        }
-    } else {
-        console.log('Usuário cancelou a operação');
+    if (confirm('Cancelar assinatura?\n\nVocê manterá acesso até o fim do período pago.')) {
+        const cancelForm = useForm({});
+        cancelForm.post(route('subscription.cancel'), {
+            preserveScroll: true,
+            onError: () => {
+                alert('Erro ao cancelar. Tente novamente.');
+            }
+        });
     }
 };
+
+const resumeSubscription = () => {
+    const resumeForm = useForm({});
+    resumeForm.post(route('subscription.resume'), {
+        preserveScroll: true,
+        onError: () => {
+            alert('Erro ao reativar. Tente novamente.');
+        }
+    });
+};
 </script>
-
-<style>
-:root.dark .StripeElement iframe {
-  filter: invert(0.85) hue-rotate(180deg) !important;
-}
-
-:root.dark .StripeElement [data-stripe-type="card-preview"] iframe {
-  filter: invert(0) hue-rotate(0deg) !important;
-}
-</style>

@@ -2,6 +2,7 @@
 import AppContent from '@/components/AppContent.vue';
 import AppHeader from '@/components/AppHeader.vue';
 import AppShell from '@/components/AppShell.vue';
+import BottomNavigation from '@/components/BottomNavigation.vue';
 import type { BreadcrumbItemType } from '@/types';
 
 interface Props {
@@ -18,8 +19,9 @@ withDefaults(defineProps<Props>(), {
         <div class="sticky top-0 z-50 bg-white dark:bg-gray-900">
             <AppHeader :breadcrumbs="breadcrumbs" />
         </div>
-        <AppContent>
+        <AppContent class="pb-20">
             <slot />
         </AppContent>
+        <BottomNavigation />
     </AppShell>
 </template>

@@ -2,12 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Laravel\Cashier\Exceptions\IncompletePayment;
+use Stripe\PromotionCode;
+use Stripe\Stripe;
 use Stripe\Webhook;
 
 class SubscriptionController extends Controller
@@ -42,6 +43,7 @@ class SubscriptionController extends Controller
         $subscription = null;
         $subscriptionEndsAt = null;
         $subscriptionCancelled = false;
+        $nextBillingDate = null;
 
         try {
             // Verifica se o usuário tem uma assinatura
@@ -55,17 +57,23 @@ class SubscriptionController extends Controller
                 // Uma assinatura é considerada cancelada se estiver no período de graça ou se for cancelada no final do período
                 $subscriptionCancelled = $onGracePeriod || $cancelAtPeriodEnd;
 
-                // Se a assinatura foi cancelada, obter a data de término
+                // Obtém a data do próximo billing/término
+                $stripeSubscription = $subscription->asStripeSubscription();
+
                 if ($subscriptionCancelled) {
-                    // Se a assinatura tem uma data de término definida
+                    // Se a assinatura foi cancelada, obter a data de término
                     if ($subscription->ends_at) {
                         $subscriptionEndsAt = $subscription->ends_at->format('d/m/Y');
-                    }
-                    // Se a assinatura será cancelada no final do período atual
-                    elseif ($cancelAtPeriodEnd && isset($subscription->asStripeSubscription()->current_period_end)) {
-                        $endTimestamp = $subscription->asStripeSubscription()->current_period_end;
+                    } elseif ($cancelAtPeriodEnd && isset($stripeSubscription->current_period_end)) {
+                        $endTimestamp = $stripeSubscription->current_period_end;
                         $endDate = \Carbon\Carbon::createFromTimestamp($endTimestamp);
                         $subscriptionEndsAt = $endDate->format('d/m/Y');
+                    }
+                } else {
+                    // Se a assinatura está ativa, obter a data da próxima cobrança
+                    if (isset($stripeSubscription->current_period_end)) {
+                        $nextBillingTimestamp = $stripeSubscription->current_period_end;
+                        $nextBillingDate = \Carbon\Carbon::createFromTimestamp($nextBillingTimestamp)->format('d/m/Y');
                     }
                 }
             }
@@ -73,12 +81,191 @@ class SubscriptionController extends Controller
             // Silenciosamente falha e continua
         }
 
+        // Busca informações do preço no Stripe
+        $priceInfo = $this->getPriceInfo();
+
+        // Busca todos os planos disponíveis
+        $plans = $this->getAllPlans();
+
         return Inertia::render('Subscription/Index', [
             'hasActiveSubscription' => $user->hasActiveSubscription(),
             'intent' => $intent,
             'subscriptionEndsAt' => $subscriptionEndsAt,
             'subscriptionCancelled' => $subscriptionCancelled,
+            'nextBillingDate' => $nextBillingDate,
+            'price' => $priceInfo['price'],
+            'planInterval' => $priceInfo['interval'],
+            'plans' => $plans,
         ]);
+    }
+
+    /**
+     * Busca informações do preço no Stripe (usado na página de assinatura ativa)
+     */
+    private function getPriceInfo(): array
+    {
+        try {
+            Stripe::setApiKey(config('cashier.secret'));
+            // Usa o plano mensal como referência
+            $priceId = config('subscription.plans.monthly');
+
+            if (empty($priceId)) {
+                return ['price' => 0000, 'interval' => 'mês'];
+            }
+
+            $price = \Stripe\Price::retrieve($priceId);
+
+            $intervalMap = [
+                'year' => 'ano',
+                'month' => 'mês',
+                'week' => 'semana',
+                'day' => 'dia',
+            ];
+
+            return [
+                'price' => $price->unit_amount,
+                'interval' => $intervalMap[$price->recurring->interval] ?? 'período',
+            ];
+        } catch (\Exception $e) {
+            Log::error('Erro ao buscar informações do preço', ['error' => $e->getMessage()]);
+
+            return ['price' => 0000, 'interval' => 'mês'];
+        }
+    }
+
+    /**
+     * Busca todos os planos de preços do Stripe
+     * Os IDs dos preços são configurados em config/subscription.php
+     */
+    private function getAllPlans(): array
+    {
+        $plans = config('subscription.plans', []);
+        $result = [];
+
+        try {
+            Stripe::setApiKey(config('cashier.secret'));
+
+            foreach ($plans as $key => $priceId) {
+                try {
+                    $price = \Stripe\Price::retrieve($priceId);
+
+                    $intervalCount = $price->recurring->interval_count ?? 1;
+                    $interval = $price->recurring->interval ?? 'month';
+
+                    // Calcula o preço mensal equivalente
+                    $monthlyPrice = $price->unit_amount;
+                    if ($interval === 'year') {
+                        $monthlyPrice = round($price->unit_amount / 12);
+                    } elseif ($interval === 'month' && $intervalCount > 1) {
+                        $monthlyPrice = round($price->unit_amount / $intervalCount);
+                    }
+
+                    $result[$key] = [
+                        'price_id' => $priceId,
+                        'price' => $price->unit_amount,
+                        'monthly_price' => $monthlyPrice,
+                        'interval' => $interval,
+                        'interval_count' => $intervalCount,
+                        'currency' => $price->currency,
+                    ];
+                } catch (\Exception $e) {
+                    Log::warning("Erro ao buscar preço {$key}", ['error' => $e->getMessage()]);
+                }
+            }
+        } catch (\Exception $e) {
+            Log::error('Erro ao buscar planos', ['error' => $e->getMessage()]);
+        }
+
+        return $result;
+    }
+
+    /**
+     * Valida um código de cupom/promocional
+     */
+    public function validateCoupon(Request $request)
+    {
+        $request->validate([
+            'coupon_code' => 'required|string|max:50',
+        ]);
+
+        try {
+            Stripe::setApiKey(config('cashier.secret'));
+
+            $couponCode = strtoupper(trim($request->coupon_code));
+
+            // Busca o código promocional pelo código
+            $promotionCodes = PromotionCode::all([
+                'code' => $couponCode,
+                'active' => true,
+                'limit' => 1,
+            ]);
+
+            if (empty($promotionCodes->data)) {
+                return response()->json([
+                    'valid' => false,
+                    'message' => 'Cupom não encontrado ou expirado.',
+                ]);
+            }
+
+            $promotionCode = $promotionCodes->data[0];
+            $coupon = $promotionCode->coupon;
+
+            // Verifica se o cupom está ativo
+            if (! $coupon->valid) {
+                return response()->json([
+                    'valid' => false,
+                    'message' => 'Este cupom não está mais disponível.',
+                ]);
+            }
+
+            // Verifica se atingiu o limite de usos
+            if ($promotionCode->max_redemptions !== null && $promotionCode->times_redeemed >= $promotionCode->max_redemptions) {
+                return response()->json([
+                    'valid' => false,
+                    'message' => 'Este cupom já atingiu o limite de usos.',
+                ]);
+            }
+
+            // Calcula o desconto
+            $priceInfo = $this->getPriceInfo();
+            $originalPrice = $priceInfo['price'];
+            $discountAmount = 0;
+            $description = '';
+
+            if ($coupon->percent_off) {
+                $discountAmount = (int) round($originalPrice * ($coupon->percent_off / 100));
+                $description = "{$coupon->percent_off}% de desconto";
+            } elseif ($coupon->amount_off) {
+                $discountAmount = $coupon->amount_off;
+                $description = 'R$ '.number_format($coupon->amount_off / 100, 2, ',', '.').' de desconto';
+            }
+
+            // Se o cupom tem duração específica
+            if ($coupon->duration === 'once') {
+                $description .= ' (primeiro pagamento)';
+            } elseif ($coupon->duration === 'repeating' && $coupon->duration_in_months) {
+                $description .= " (por {$coupon->duration_in_months} meses)";
+            }
+
+            return response()->json([
+                'valid' => true,
+                'description' => $description,
+                'discount_amount' => $discountAmount,
+                'percent_off' => $coupon->percent_off,
+                'amount_off' => $coupon->amount_off,
+                'promotion_code_id' => $promotionCode->id,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Erro ao validar cupom', [
+                'coupon_code' => $request->coupon_code,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'valid' => false,
+                'message' => 'Erro ao validar o cupom. Tente novamente.',
+            ]);
+        }
     }
 
     /**
@@ -91,6 +278,8 @@ class SubscriptionController extends Controller
         try {
             $request->validate([
                 'payment_method' => 'required|string',
+                'promotion_code_id' => 'nullable|string',
+                'price_id' => 'nullable|string',
             ]);
 
             // Verifica se o usuário já tem uma assinatura ativa
@@ -100,8 +289,16 @@ class SubscriptionController extends Controller
             }
 
             try {
+                Log::info('Iniciando processo de assinatura', [
+                    'user_id' => $user->id,
+                    'payment_method' => $request->payment_method,
+                    'promotion_code_id' => $request->promotion_code_id,
+                    'price_id' => $request->price_id,
+                ]);
+
                 // Verifica se o usuário já tem um ID do Stripe
                 if (empty($user->stripe_id)) {
+                    Log::info('Criando cliente Stripe para o usuário', ['user_id' => $user->id]);
                     // Cria um cliente no Stripe para o usuário
                     $user->createOrGetStripeCustomer();
 
@@ -114,20 +311,53 @@ class SubscriptionController extends Controller
                     throw new \Exception('Não foi possível criar um cliente Stripe para o usuário');
                 }
 
-                // Usa o preço configurado no .env (STRIPE_PRICE_ID)
-                $priceId = config('cashier.price_id');
+                Log::info('Cliente Stripe criado/obtido', ['stripe_id' => $user->stripe_id]);
 
-                // Tenta criar a assinatura usando o Cashier (sem trial)
-                $user
+                // Usa o preço enviado pelo frontend ou o plano mensal como padrão
+                $priceId = $request->price_id ?: config('subscription.plans.monthly');
+
+                if (empty($priceId)) {
+                    throw new \Exception('Nenhum plano de preço configurado');
+                }
+
+                // Lista de preços válidos (configurados em config/subscription.php)
+                $validPrices = array_values(config('subscription.plans', []));
+
+                if (! empty($validPrices) && ! in_array($priceId, $validPrices)) {
+                    throw new \Exception('Plano inválido selecionado');
+                }
+
+                Log::info('Criando assinatura', [
+                    'price_id' => $priceId,
+                    'stripe_id' => $user->stripe_id,
+                    'promotion_code_id' => $request->promotion_code_id,
+                ]);
+
+                // Cria a assinatura usando o Cashier (sem trial)
+                $subscriptionBuilder = $user
                     ->newSubscription('default', $priceId)
-                    ->skipTrial() // Garante que não haja período de teste
-                    ->create($request->payment_method);
+                    ->skipTrial();
+
+                // Adiciona o código promocional se fornecido
+                if ($request->promotion_code_id) {
+                    $subscriptionBuilder->withPromotionCode($request->promotion_code_id);
+                }
+
+                $subscriptionBuilder->create($request->payment_method);
+
+                Log::info('Assinatura criada com sucesso!', ['user_id' => $user->id]);
 
                 return redirect()->route('subscription.index')
                     ->with('success', 'Assinatura realizada com sucesso! Você agora tem vidas infinitas.');
             } catch (\Exception $e) {
+                Log::error('Erro ao criar assinatura', [
+                    'user_id' => $user->id,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                ]);
+
                 return redirect()->route('subscription.index')
-                    ->with('error', 'Não foi possível processar sua assinatura. Por favor, tente novamente ou entre em contato com o suporte.');
+                    ->with('error', 'Erro: '.$e->getMessage());
             }
         } catch (IncompletePayment $exception) {
             try {
@@ -255,16 +485,18 @@ class SubscriptionController extends Controller
             'subscription_id' => $object->id,
         ]);
 
-        $user = User::where('stripe_id', $object->customer)->first();
+        // Deleta a assinatura do banco de dados
+        $subscription = \Laravel\Cashier\Subscription::where('stripe_id', $object->id)->first();
 
-        if ($user) {
-            Log::info('Usuário encontrado, desativando vidas infinitas', ['user_id' => $user->id]);
-            // As vidas infinitas são automaticamente desativadas quando a assinatura é cancelada
-            // pois agora elas são baseadas diretamente no status da assinatura
-            Log::info('Assinatura cancelada, vidas infinitas desativadas automaticamente');
-            Log::info('Vidas infinitas desativadas com sucesso');
+        if ($subscription) {
+            Log::info('Assinatura encontrada, deletando do banco', [
+                'subscription_id' => $subscription->id,
+                'user_id' => $subscription->user_id,
+            ]);
+            $subscription->delete();
+            Log::info('Assinatura deletada com sucesso');
         } else {
-            Log::warning('Usuário não encontrado para o customer_id', ['customer_id' => $object->customer]);
+            Log::warning('Assinatura não encontrada no banco', ['stripe_id' => $object->id]);
         }
 
         return response()->json(['status' => 'success']);

@@ -1,32 +1,13 @@
 <script setup lang="ts">
 import AppLogo from '@/components/AppLogo.vue';
-import AppLogoIcon from '@/components/AppLogoIcon.vue';
-import Breadcrumbs from '@/components/Breadcrumbs.vue';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import {
-    NavigationMenu,
-    NavigationMenuItem,
-    NavigationMenuLink,
-    NavigationMenuList,
-    navigationMenuTriggerStyle,
-} from '@/components/ui/navigation-menu';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger,  } from '@/components/ui/sheet';
 import UserMenuContent from '@/components/UserMenuContent.vue';
 import { getInitials } from '@/composables/useInitials';
-import type { BreadcrumbItem, NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
-import { Heart, Menu, Gem, Infinity } from 'lucide-vue-next';
+import { Heart, Gem, Infinity } from 'lucide-vue-next';
 import { computed, watch } from 'vue';
-
-interface Props {
-    breadcrumbs?: BreadcrumbItem[];
-}
-
-const props = withDefaults(defineProps<Props>(), {
-    breadcrumbs: () => [],
-});
 
 const page = usePage<{
     auth: {
@@ -39,92 +20,24 @@ const page = usePage<{
             xp: number;
             avatar?: string;
             has_infinite_lives?: boolean;
-            debug_info?: {
-                has_active_subscription: boolean;
-                on_trial: boolean;
-                subscribed: boolean;
-                trial_ends_at: string | null;
-            };
         } | null;
     };
 }>();
-const auth = computed(() => page.props.auth);
-const isAdmin = computed(() => page.props.auth.user?.is_admin);
 
-// Verifica se o usuário tem uma assinatura ativa (vidas infinitas)
+const auth = computed(() => page.props.auth);
+const isAdmin = computed(() => page.props.auth.user?.is_admin ?? false);
+
 const hasSubscription = computed(() => {
-    // Verifica se o usuário está logado e tem uma assinatura ativa
     return !!page.props.auth.user?.has_infinite_lives;
 });
 
-
-
-const isCurrentRoute = computed(() => (url: string) => page.url === url);
-
-const activeItemStyles = computed(
-    () => (url: string) => (isCurrentRoute.value(url) ? '!bg-accent dark:!bg-neutral-800 text-neutral-900 dark:text-neutral-100' : '!bg-transparent hover:!bg-accent'),
-);
-
-const mainNavItems = computed(() => [
-    {
-        title: 'Jogar',
-        href: '/play',
-        iconPath: '/icons/livro.png',
-    },
-    {
-        title: 'Desafios',
-        href: '/challenges',
-        iconPath: '/icons/trofeu.png',
-    },
-    {
-        title: 'Ranking',
-        href: '/ranking',
-        iconPath: '/icons/medalha.png',
-    },
-    {
-        title: 'Preferências',
-        href: '/user/legal-references',
-        iconPath: '/icons/configuracoes.png',
-    },
-    ...(isAdmin.value
-        ? [
-            {
-                title: 'Criar artigo',
-                href: '/admin/create-lawarticle',
-                iconPath: '/icons/configuracoes.png',
-            },
-        ]
-        : []),
-    ...(isAdmin.value
-        ? [
-            {
-                title: 'Legislações',
-                href: '/admin/legislations',
-                iconPath: '/icons/configuracoes.png',
-            },
-        ]
-        : []),
-    ...(isAdmin.value
-        ? [
-            {
-                title: 'Usuários',
-                href: '/admin/users',
-                iconPath: '/icons/configuracoes.png',
-            },
-        ]
-        : []),
-]);
-
 const userLives = computed(() => page.props.auth.user?.lives ?? 0);
 
-// Observa mudanças nas vidas para recriar a animação
 watch(userLives, (newValue, oldValue) => {
     if (newValue !== oldValue) {
-        // Remove e readiciona a classe para recriar a animação
         const heartElement = document.querySelector('.animate-pulse-once') as HTMLElement;
         if (heartElement) {
             heartElement.classList.remove('animate-pulse-once');
-            // Force reflow usando uma maneira type-safe
             heartElement.style.animation = 'none';
             heartElement.getBoundingClientRect();
             heartElement.style.animation = '';
@@ -132,198 +45,77 @@ watch(userLives, (newValue, oldValue) => {
         }
     }
 });
-
-const rightNavItems: NavItem[] = [
-    // {
-    //     title: 'Repository',
-    //     href: 'https://github.com/laravel/vue-starter-kit',
-    //     icon: Folder,
-    // },
-    // {
-    //     title: 'Documentation',
-    //     href: 'https://laravel.com/docs/starter-kits',
-    //     icon: BookOpen,
-    // },
-];
 </script>
 
 <template>
-    <div>
-        <div class="border-b border-sidebar-border/80">
-            <div class="mx-auto flex h-20 items-center px-4 md:max-w-7xl">
-                <!-- Mobile Menu -->
-                <div class="lg:hidden">
-                    <Sheet>
-                        <SheetTrigger :as-child="true">
-                            <Button variant="ghost" size="icon" class="mr-2 h-10 w-10">
-                                <Menu class="h-6 w-6" />
-                            </Button>
-                        </SheetTrigger>
-                        <SheetContent side="left" class="w-[300px] p-6">
-                            <SheetTitle class="sr-only">Navigation Menu</SheetTitle>
-                            <SheetHeader class="flex justify-start text-left">
-                                <AppLogoIcon class="size-6 fill-current text-black dark:text-white" />
-                            </SheetHeader>
-                            <div class="flex h-full flex-1 flex-col justify-between space-y-4 py-6">
-                                <nav class="-mx-3 space-y-1">
-                                    <Link
-                                        v-for="item in mainNavItems"
-                                        :key="item.title"
-                                        :href="item.href"
-                                        class="flex items-center gap-x-3 rounded-lg px-4 py-3 text-sm font-medium hover:bg-accent"
-                                        :class="activeItemStyles(item.href)"
-                                    >
-                                        <img v-if="item.iconPath" :src="item.iconPath" :alt="item.title" class="h-8 w-8" />
-                                        {{ item.title }}
-                                    </Link>
-                                </nav>
-                                <div class="flex flex-col space-y-4">
-                                    <a
-                                        v-for="item in rightNavItems"
-                                        :key="item.title"
-                                        :href="item.href"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        class="flex items-center space-x-2 text-sm font-medium"
-                                    >
-                                        <component v-if="item.icon" :is="item.icon" class="h-5 w-5" />
-                                        <span>{{ item.title }}</span>
-                                    </a>
-                                </div>
-                            </div>
-                        </SheetContent>
-                    </Sheet>
+    <div class="border-b border-sidebar-border/80">
+        <div class="mx-auto flex h-16 items-center justify-between px-4 max-w-4xl">
+            <!-- Logo (Desktop only) -->
+            <Link :href="route('play.map')" class="hidden lg:flex items-center">
+                <AppLogo />
+            </Link>
+
+            <!-- Stats Container - Centered on mobile, right on desktop -->
+            <div class="flex flex-1 items-center justify-center gap-6 lg:flex-none lg:justify-end lg:gap-8">
+                <!-- Lives Counter -->
+                <div v-if="auth.user?.lives !== undefined" class="flex items-center">
+                    <div class="flex items-center gap-1.5 rounded-full bg-pink-50 px-3 py-1.5 dark:bg-pink-900/20">
+                        <template v-if="!hasSubscription">
+                            <Heart
+                                class="h-5 w-5 transition-transform animate-pulse-once"
+                                :class="userLives > 0 ? 'text-red-500' : 'text-gray-400'"
+                                fill="currentColor"
+                            />
+                            <span class="font-bold" :class="userLives > 0 ? 'text-red-500' : 'text-gray-400'">
+                                {{ userLives }}
+                            </span>
+                        </template>
+                        <template v-else>
+                            <Heart
+                                class="h-5 w-5 text-blue-500 animate-pulse-once"
+                                fill="currentColor"
+                            />
+                            <Infinity class="h-5 w-5 text-blue-500" />
+                        </template>
+                    </div>
                 </div>
 
-                <Link :href="route('play.map')" class="hidden lg:flex items-center gap-x-2">
-                    <AppLogo  />
+                <!-- XP Counter -->
+                <div v-if="auth.user?.xp !== undefined" class="flex items-center gap-1">
+                    <span class="rounded bg-purple-100 px-2 py-1 text-xs font-bold text-purple-500 dark:bg-purple-900/30">XP</span>
+                    <span class="font-bold text-purple-500">{{ auth.user.xp }}</span>
+                </div>
+
+                <!-- Diamond / Premium -->
+                <Link
+                    :href="route('subscription.index')"
+                    class="flex items-center gap-2 text-blue-500 transition-colors hover:text-blue-600"
+                >
+                    <Gem class="h-6 w-6" />
+                    <span class="hidden lg:inline font-medium text-sm">Assine Premium</span>
                 </Link>
 
-                <!-- Desktop Menu -->
-                <div class="hidden h-full lg:flex lg:flex-1">
-                    <NavigationMenu class="ml-10 flex h-full items-stretch">
-                        <NavigationMenuList class="flex h-full items-stretch space-x-1">
-                            <NavigationMenuItem v-for="(item, index) in mainNavItems" :key="index" class="relative flex h-full items-center">
-                                <Link :href="item.href">
-                                    <NavigationMenuLink
-                                        :class="[navigationMenuTriggerStyle(), activeItemStyles(item.href), 'h-12 cursor-pointer px-2']"
-                                    >
-                                        <img v-if="item.iconPath" :src="item.iconPath" :alt="item.title" class="mr-2 h-8 w-8" />
-                                        {{ item.title }}
-                                    </NavigationMenuLink>
-                                </Link>
-                                <div
-                                    v-if="isCurrentRoute(item.href)"
-                                    class="absolute bottom-0 left-0 h-0.5 w-full translate-y-px bg-black dark:bg-white"
-                                ></div>
-                            </NavigationMenuItem>
-                        </NavigationMenuList>
-                    </NavigationMenu>
-                </div>
-
-                    <div class="ml-auto flex items-center space-x-4">
-                        <!-- XP Counter -->
-                        <div v-if="auth.user?.xp !== undefined" class="flex items-center gap-1">
-                            <span class="text-xs font-bold text-purple-500 bg-purple-100 dark:bg-purple-900/30 px-2 py-1 rounded">XP</span>
-                            <span class="font-bold text-purple-500">{{ auth.user.xp }}</span>
-                        </div>
-                        <!-- Lives Counter -->
-                        <div v-if="auth.user?.lives !== undefined" class="flex items-center gap-1">
-                            <div class="flex items-center gap-1">
-                                <!-- Mostrar ícone de coração para usuários normais ou coroa para premium -->
-                                <template v-if="!hasSubscription">
-                                    <Heart
-                                        class="w-5 h-5 transition-transform"
-                                        :class="[
-                                            userLives > 0 ? 'text-red-500' : 'text-gray-400',
-                                            'animate-pulse-once'
-                                        ]"
-                                        fill="currentColor"
-                                    />
-                                </template>
-                                <template v-else>
-                                    <Link :href="route('subscription.index')" class="inline-flex">
-                                        <Heart
-                                            class="w-5 h-5 text-blue-500 animate-pulse-once cursor-pointer hover:text-blue-600 transition-colors"
-                                            fill="currentColor"
-                                        />
-                                    </Link>
-                                </template>
-
-                                <!-- Mostrar número de vidas para usuários normais -->
-                                <span v-if="!hasSubscription" class="font-medium" :class="userLives > 0 ? 'text-red-500' : 'text-gray-400'">
-                                    {{ userLives }}
-                                </span>
-                                <!-- Mostrar símbolo de infinito para usuários premium -->
-                                <span v-else class="font-medium text-blue-500">
-                                    <Infinity class="w-5 h-5" />
-                                </span>
-                            </div>
-
-                            <!-- Badge Premium para usuários premium -->
-                            <!-- <Link v-if="hasSubscription" :href="route('subscription.index')" class="ml-2">
-                                <div class="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 text-xs font-medium rounded-full hover:bg-blue-200 dark:hover:bg-blue-800/30 transition-colors cursor-pointer">
-                                    Premium
-                                </div>
-                            </Link> -->
-
-                            <!-- Botão de assinatura para usuários normais -->
-                            <Link
-                                v-if="!hasSubscription"
-                                :href="route('subscription.index')"
-                                class="ml-2 flex items-center gap-1 text-sm text-blue-500 hover:text-blue-600 font-medium"
-                            >
-                                <Gem class="w-5" />
-                                <span class="hidden sm:inline">Premium</span>
-                            </Link>
-                        </div>
-
-                        <div class="relative flex items-center space-x-1">
-                        <!-- <Button variant="ghost" size="icon" class="group h-9 w-9 cursor-pointer">
-                            <Search class="size-5 opacity-80 group-hover:opacity-100" />
-                        </Button> -->
-
-                        <div class="hidden space-x-1 lg:flex">
-                            <template v-for="item in rightNavItems" :key="item.title">
-                                <!-- Substituindo o Tooltip por um botão simples -->
-                                <Button variant="ghost" size="icon" as-child class="group h-9 w-9 cursor-pointer">
-                                    <a :href="item.href" target="_blank" rel="noopener noreferrer">
-                                        <span class="sr-only">{{ item.title }}</span>
-                                        <component :is="item.icon" class="size-5 opacity-80 group-hover:opacity-100" />
-                                    </a>
-                                </Button>
-                            </template>
-                        </div>
-                    </div>
-
-                    <DropdownMenu v-if="auth.user">
-                        <DropdownMenuTrigger :as-child="true">
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                class="relative size-10 w-auto rounded-full p-1 focus-within:ring-2 focus-within:ring-primary"
-                            >
-                                <Avatar class="size-8 overflow-hidden rounded-full">
-                                    <AvatarImage v-if="auth.user?.avatar" :src="auth.user.avatar" :alt="auth.user.name" />
-                                    <AvatarFallback class="rounded-lg bg-neutral-200 font-semibold text-black dark:bg-neutral-700 dark:text-white">
-                                        {{ getInitials(auth.user.name) }}
-                                    </AvatarFallback>
-                                </Avatar>
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" class="w-56">
-                            <UserMenuContent :user="auth.user" />
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                </div>
+                <!-- User Avatar with Dropdown -->
+                <DropdownMenu v-if="auth.user">
+                    <DropdownMenuTrigger :as-child="true">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            class="relative size-10 w-auto rounded-full p-1 focus-within:ring-2 focus-within:ring-primary"
+                        >
+                            <Avatar class="h-10 w-10 overflow-hidden rounded-full border-2 border-gray-200 dark:border-gray-700">
+                                <AvatarImage v-if="auth.user?.avatar" :src="auth.user.avatar" :alt="auth.user.name" />
+                                <AvatarFallback class="rounded-full bg-neutral-200 font-semibold text-black dark:bg-neutral-700 dark:text-white">
+                                    {{ getInitials(auth.user.name) }}
+                                </AvatarFallback>
+                            </Avatar>
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" class="w-56">
+                        <UserMenuContent :user="auth.user" :is-admin="isAdmin" />
+                    </DropdownMenuContent>
+                </DropdownMenu>
             </div>
-        </div>
-
-        <div v-if="props.breadcrumbs.length > 1" class="flex w-full border-b border-sidebar-border/70">
-            <div class="mx-auto flex h-14 w-full items-center justify-start px-4 text-neutral-500 md:max-w-7xl">
-                <Breadcrumbs :breadcrumbs="breadcrumbs" />
-            </div>
-
         </div>
     </div>
 </template>
@@ -335,14 +127,6 @@ const rightNavItems: NavItem[] = [
 }
 
 .animate-pulse-once {
-    animation: pulse-once 0.6s cubic-bezier(0.4, 0, 0.6, 1);
-}
-
-.animate-pulse-once {
-    animation: none;
-}
-
-:deep(.animate-pulse-once:not(:hover)) {
     animation: pulse-once 0.6s cubic-bezier(0.4, 0, 0.6, 1);
 }
 </style>
