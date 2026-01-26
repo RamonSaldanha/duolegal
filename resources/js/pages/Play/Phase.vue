@@ -553,12 +553,16 @@ const page = usePage<{
             lives: number;
             xp: number;
             is_admin?: boolean;
+            has_infinite_lives?: boolean;
         }
     }
 }>();
 
 // Computed property para verificar se o usuário é admin
 const isAdmin = computed(() => page.props.auth.user?.is_admin);
+
+// Computed property para verificar se o usuário tem assinatura (não mostrar anúncios)
+const hasSubscription = computed(() => !!page.props.auth.user?.has_infinite_lives);
 
 // Sistema de anúncios
 const showAdModal = ref(false);
@@ -1547,8 +1551,9 @@ const reviewCompletionPercentage = computed(() => {
             }, 600);
 
             // Sistema de anúncios: Artigos revogados contam como conclusão
+            // Não mostrar anúncios para assinantes
             const shouldShowAd = adFrequency.registerArticleCompletion();
-            if (shouldShowAd) {
+            if (shouldShowAd && !hasSubscription.value) {
                 setTimeout(() => {
                     showAdModal.value = true;
                     adFrequency.markAdShown();
@@ -1650,8 +1655,9 @@ const reviewCompletionPercentage = computed(() => {
                 }
 
                 // Sistema de anúncios: Registrar conclusão bem-sucedida
+                // Não mostrar anúncios para assinantes
                 const shouldShowAd = adFrequency.registerArticleCompletion();
-                if (shouldShowAd) {
+                if (shouldShowAd && !hasSubscription.value) {
                     // Exibir anúncio após um delay para não interromper as recompensas
                     setTimeout(() => {
                         showAdModal.value = true;
@@ -1837,13 +1843,13 @@ const reviewCompletionPercentage = computed(() => {
     bottom: 0;
     left: 0;
     right: 0;
-    z-index: 50;
+    z-index: 55; /* Acima do BottomNavigation (z-50) */
     transform: translateY(100%); /* Inicialmente escondido */
     transition: transform 0.3s ease-in-out;
     width: 100%;
     overflow-x: hidden;
     /* Tornamos visível por padrão, controlando apenas com transform */
-    display: block; 
+    display: block;
 }
   
 .offcanvas-open {
@@ -1859,6 +1865,7 @@ const reviewCompletionPercentage = computed(() => {
     border-top-right-radius: 1rem;
     box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.1), 0 -2px 4px -1px rgba(0, 0, 0, 0.06);
     padding: 1.5rem;
+    padding-bottom: 5rem; /* Espaço para o menu de navegação inferior */
     max-height: 80vh;
     overflow-y: auto;
     box-sizing: border-box; /* Garantir que padding não aumente largura */
