@@ -1,0 +1,419 @@
+{
+  "name": "[CURL request] Memorize Direito EASY",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "// Código otimizado para criar blocos pequenos e focados - n8n\n// Com remoção SELETIVA de referências legais desnecessárias\n\nconst items = $input.all();\n\nfunction limparReferenciasLegais(texto) {\n  if (!texto || typeof texto !== 'string') {\n    return texto;\n  }\n  \n  // Remove APENAS as referências legais específicas que causam problemas nas lacunas\n  // Mantém a estrutura e formatação original do texto\n  let textoLimpo = texto\n    // Remove textos do tipo \"(Redação dada pela Lei nº 12.376, de 2010)\"\n    .replace(/\\(Redação\\s+dada\\s+pela\\s+Lei\\s+n[ºo°]?\\s*[\\d.,/-]+[^)]*\\)/gi, '')\n    \n    // Remove textos do tipo \"(Vide Lei nº 1.991, de 1953)\"\n    .replace(/\\(Vide\\s+Lei\\s+n[ºo°]?\\s*[\\d.,/-]+[^)]*\\)/gi, '')\n    \n    // Remove textos do tipo \"(Incluído pela Lei nº 3.238, de 1957)\"\n    .replace(/\\(Incluído\\s+pela\\s+Lei\\s+n[ºo°]?\\s*[\\d.,/-]+[^)]*\\)/gi, '')\n    \n    // Remove outros padrões similares\n    .replace(/\\(Alterado\\s+pela\\s+Lei\\s+n[ºo°]?\\s*[\\d.,/-]+[^)]*\\)/gi, '')\n    .replace(/\\(Acrescentado\\s+pela\\s+Lei\\s+n[ºo°]?\\s*[\\d.,/-]+[^)]*\\)/gi, '')\n    .replace(/\\(Revogado\\s+pela\\s+Lei\\s+n[ºo°]?\\s*[\\d.,/-]+[^)]*\\)/gi, '')\n    \n    // Remove referências de vigência isoladas\n    .replace(/\\(Vigência\\)/gi, '')\n    \n    // Limpa espaços duplos que podem ter ficado\n    .replace(/\\s{2,}/g, ' ')\n    \n    // Remove espaços antes de pontuação\n    .replace(/\\s+([,.;:])/g, '$1');\n    \n  return textoLimpo;\n}\n\nfunction processarLeiEmBlocos(rawText) {\n  if (!rawText || typeof rawText !== 'string') {\n    return [];\n  }\n\n  // Remove texto preliminar até o primeiro artigo\n  const textoLimpo = rawText.replace(/^[\\s\\S]*?(?=Art\\.?\\s*\\d+)/i, '');\n  \n  // Separa por artigos\n  const artigos = textoLimpo.split(/(?=Art\\.?\\s*\\d+)/g).filter(a => a.trim());\n  \n  const blocos = [];\n  let position = 1;\n\n  for (const artigo of artigos) {\n    const blocosArtigo = processarArtigoIndividual(artigo);\n    \n    for (const bloco of blocosArtigo) {\n      if (bloco.trecho.trim().length > 30) { // Mínimo de conteúdo\n        // APLICAR LIMPEZA APENAS NO MOMENTO FINAL, NO CONTEÚDO DO BLOCO\n        const trechoLimpo = limparReferenciasLegais(bloco.trecho);\n        \n        blocos.push({\n          ...bloco,\n          trecho: trechoLimpo,\n          position: position++\n        });\n      }\n    }\n  }\n\n  return blocos;\n}\n\nfunction processarArtigoIndividual(artigo) {\n  const blocos = [];\n  const linhas = artigo.split('\\n').filter(l => l.trim() !== '');\n  \n  if (linhas.length === 0) return [];\n\n  // Identifica caput e subdivisões\n  let caput = '';\n  let subdivisoes = [];\n  let capturandoCaput = true;\n\n  for (const linha of linhas) {\n    const linhaTrim = linha.trim();\n    \n    if (capturandoCaput && /^\\s*(§|[IVXLCDM]+\\s*[-–]|[a-z]\\)|[0-9]+\\))/i.test(linhaTrim)) {\n      capturandoCaput = false;\n    }\n    \n    if (capturandoCaput) {\n      caput += linha + '\\n';\n    } else {\n      subdivisoes.push({ texto: linhaTrim, tipo: identificarTipo(linhaTrim) });\n    }\n  }\n\n  caput = caput.trim();\n\n  // Estratégia: Blocos pequenos e focados\n  const TAMANHO_MAXIMO = 800; // Bem menor que 5000\n  const MAX_ELEMENTOS_POR_BLOCO = 4; // Máximo de elementos por bloco\n\n  // 1. Caput sozinho se for substancial\n  if (caput.length > 100 && caput.length <= TAMANHO_MAXIMO) {\n    blocos.push({\n      trecho: caput,\n      tipo: 'caput'\n    });\n  }\n\n  if (subdivisoes.length === 0) {\n    // Artigo sem subdivisões\n    if (caput.length <= TAMANHO_MAXIMO && !blocos.length) {\n      blocos.push({\n        trecho: caput,\n        tipo: 'artigo_completo'\n      });\n    }\n    return blocos;\n  }\n\n  // 2. Agrupa subdivisões por tipo e tamanho\n  const grupos = agruparSubdivisoes(subdivisoes, caput, TAMANHO_MAXIMO, MAX_ELEMENTOS_POR_BLOCO);\n  \n  for (const grupo of grupos) {\n    blocos.push({\n      trecho: montarTrechoComContexto(caput, grupo.elementos),\n      tipo: grupo.tipo\n    });\n  }\n\n  return blocos;\n}\n\nfunction identificarTipo(linha) {\n  if (/^\\s*(§|Parágrafo único)/i.test(linha)) return 'paragrafo';\n  if (/^\\s*[IVXLCDM]+\\s*[-–]/.test(linha)) return 'inciso';\n  if (/^\\s*[a-z]\\)/.test(linha)) return 'alinea';\n  if (/^\\s*[0-9]+\\)/.test(linha)) return 'item';\n  return 'outro';\n}\n\nfunction agruparSubdivisoes(subdivisoes, caput, tamanhoMaximo, maxElementos) {\n  const grupos = [];\n  const tamanhoContexto = caput.length + 20; // caput + \"[...]\" + quebras\n  \n  let grupoAtual = [];\n  let tamanhoAtual = tamanhoContexto;\n  let tipoAtual = null;\n\n  for (let i = 0; i < subdivisoes.length; i++) {\n    const subdivisao = subdivisoes[i];\n    const tamanhoElemento = subdivisao.texto.length + 10;\n    \n    // Critérios para criar novo grupo:\n    const excedeTamanho = (tamanhoAtual + tamanhoElemento) > tamanhoMaximo;\n    const excedeElementos = grupoAtual.length >= maxElementos;\n    const mudouTipo = tipoAtual && tipoAtual !== subdivisao.tipo && subdivisao.tipo !== 'outro';\n    const elementoMuitoGrande = tamanhoElemento > (tamanhoMaximo * 0.6);\n\n    if ((excedeTamanho || excedeElementos || mudouTipo) && grupoAtual.length > 0) {\n      // Finaliza grupo atual\n      grupos.push({\n        elementos: [...grupoAtual],\n        tipo: tipoAtual || 'misto'\n      });\n      \n      // Inicia novo grupo\n      grupoAtual = [];\n      tamanhoAtual = tamanhoContexto;\n      tipoAtual = null;\n    }\n\n    // Se elemento individual é muito grande, coloca sozinho\n    if (elementoMuitoGrande && grupoAtual.length === 0) {\n      grupos.push({\n        elementos: [subdivisao],\n        tipo: subdivisao.tipo\n      });\n    } else {\n      // Adiciona ao grupo atual\n      grupoAtual.push(subdivisao);\n      tamanhoAtual += tamanhoElemento;\n      \n      if (!tipoAtual) {\n        tipoAtual = subdivisao.tipo;\n      } else if (tipoAtual !== subdivisao.tipo) {\n        tipoAtual = 'misto';\n      }\n    }\n  }\n\n  // Finaliza último grupo\n  if (grupoAtual.length > 0) {\n    grupos.push({\n      elementos: grupoAtual,\n      tipo: tipoAtual || 'misto'\n    });\n  }\n\n  return grupos;\n}\n\nfunction montarTrechoComContexto(caput, elementos) {\n  if (elementos.length === 0) return caput;\n  \n  // Se é só um elemento e é parágrafo, pode não precisar do contexto completo\n  if (elementos.length === 1 && elementos[0].tipo === 'paragrafo') {\n    const elementoTexto = elementos[0].texto;\n    // Se o parágrafo é auto-explicativo, usa contexto reduzido\n    if (elementoTexto.length > 200) {\n      return `${caput}\\n[...]\\n${elementoTexto}`;\n    }\n  }\n  \n  const textosElementos = elementos.map(e => e.texto).join('\\n');\n  return `${caput}\\n[...]\\n${textosElementos}`;\n}\n\n// Processa cada item de entrada\nconst outputItems = [];\n\nfor (const item of items) {\n  try {\n    const rawText = item.json.raw_text;\n    \n    if (!rawText) {\n      outputItems.push({\n        json: {\n          erro: 'Propriedade raw_text não encontrada ou vazia',\n          item_original: item.json\n        }\n      });\n      continue;\n    }\n\n    const blocos = processarLeiEmBlocos(rawText);\n    \n    for (const bloco of blocos) {\n      // Validação final de tamanho\n      if (bloco.trecho.length <= 4500) {\n        outputItems.push({\n          json: {\n            ...bloco,\n            fonte_item_id: item.json.id || null,\n            fonte_url: item.json.url || null,\n            processado_em: new Date().toISOString(),\n            // Adiciona flag indicando que foi limpo\n            texto_limpo_aplicado: true\n          }\n        });\n      }\n    }\n    \n  } catch (error) {\n    outputItems.push({\n      json: {\n        erro: `Erro ao processar item: ${error.message}`,\n        item_original: item.json\n      }\n    });\n  }\n}\n\nreturn outputItems;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1920,
+        -16
+      ],
+      "id": "fcbcb6da-09c0-46c9-8e7c-c12ea56b5515",
+      "name": "Dividir lei em bloco",
+      "executeOnce": false
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        2144,
+        -16
+      ],
+      "id": "89d2ca23-f0a4-480b-9a80-c6085960d757",
+      "name": "Loop Over Items1"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Código inteligente para criação de desafios jurídicos - n8n (CORRIGIDO)\n\nconst texto = $json[\"trecho\"];\nconst position = $json[\"position\"];\nconst tipo = $json[\"tipo\"] || \"artigo_completo\";\n\n// Base de palavras jurídicas para distratores\nconst PALAVRAS_JURIDICAS = [\n  // Conceitos fundamentais\n  \"direito\", \"dever\", \"obrigação\", \"faculdade\", \"prerrogativa\", \"competência\",\n  \"jurisdição\", \"soberania\", \"cidadania\", \"nacionalidade\", \"personalidade\",\n  \n  // Direito Constitucional\n  \"constituição\", \"emenda\", \"revisão\", \"princípio\", \"norma\", \"dispositivo\",\n  \"artigo\", \"parágrafo\", \"inciso\", \"alínea\", \"república\", \"federação\",\n  \"estado\", \"município\", \"união\", \"distrito\", \"território\", \"autonomia\",\n  \n  // Poderes e Órgãos\n  \"executivo\", \"legislativo\", \"judiciário\", \"presidente\", \"governador\",\n  \"prefeito\", \"senado\", \"câmara\", \"assembleia\", \"tribunal\", \"ministério\",\n  \"procuradoria\", \"defensoria\", \"advocacia\", \"magistratura\",\n  \n  // Direitos Fundamentais\n  \"liberdade\", \"igualdade\", \"fraternidade\", \"dignidade\", \"vida\", \"honra\",\n  \"intimidade\", \"privacidade\", \"imagem\", \"propriedade\", \"herança\",\n  \"manifestação\", \"expressão\", \"comunicação\", \"informação\", \"petição\",\n  \n  // Processo e Procedimento\n  \"processo\", \"procedimento\", \"ação\", \"recurso\", \"apelação\", \"embargos\",\n  \"habeas\", \"mandado\", \"liminar\", \"cautelar\", \"antecipação\", \"execução\",\n  \"citação\", \"intimação\", \"notificação\", \"audiência\", \"sentença\", \"acórdão\",\n  \n  // Direito Civil\n  \"pessoa\", \"capacidade\", \"domicílio\", \"residência\", \"ausência\", \"morte\",\n  \"nascimento\", \"filiação\", \"parentesco\", \"tutela\", \"curatela\", \"casamento\",\n  \"união\", \"divórcio\", \"sucessão\", \"testamento\", \"legado\", \"herança\",\n  \n  // Direito Penal\n  \"crime\", \"contravenção\", \"delito\", \"pena\", \"multa\", \"reclusão\", \"detenção\",\n  \"prisão\", \"liberdade\", \"fiança\", \"sursis\", \"livramento\", \"reincidência\",\n  \"antecedentes\", \"atenuantes\", \"agravantes\", \"excludentes\", \"culpabilidade\",\n  \n  // Direito Administrativo\n  \"administração\", \"servidor\", \"funcionário\", \"cargo\", \"função\", \"emprego\",\n  \"concurso\", \"nomeação\", \"posse\", \"exercício\", \"licença\", \"afastamento\",\n  \"aposentadoria\", \"pensão\", \"licitação\", \"contrato\", \"convênio\", \"termo\",\n  \n  // Direito Tributário\n  \"tributo\", \"imposto\", \"taxa\", \"contribuição\", \"empréstimo\", \"receita\",\n  \"arrecadação\", \"lançamento\", \"cobrança\", \"execução\", \"parcelamento\",\n  \"anistia\", \"remissão\", \"transação\", \"compensação\", \"restituição\",\n  \n  // Direito Trabalhista\n  \"trabalho\", \"emprego\", \"empregado\", \"empregador\", \"salário\", \"remuneração\",\n  \"jornada\", \"descanso\", \"férias\", \"décimo\", \"fundo\", \"garantia\", \"aviso\",\n  \"rescisão\", \"demissão\", \"aposentadoria\", \"pensão\", \"sindicato\", \"greve\",\n  \n  // Termos Processuais\n  \"inicial\", \"contestação\", \"tréplica\", \"reconvenção\", \"exceção\", \"impugnação\",\n  \"agravo\", \"revista\", \"especial\", \"extraordinário\", \"rescisória\", \"monitória\",\n  \"cautelar\", \"possessória\", \"reivindicatória\", \"declaratória\", \"condenatória\",\n  \n  // Adjetivos e Advérbios Jurídicos\n  \"legal\", \"ilegal\", \"legítimo\", \"ilegítimo\", \"lícito\", \"ilícito\", \"válido\",\n  \"inválido\", \"nulo\", \"anulável\", \"inexistente\", \"eficaz\", \"ineficaz\",\n  \"público\", \"privado\", \"individual\", \"coletivo\", \"geral\", \"especial\",\n  \"ordinário\", \"extraordinário\", \"comum\", \"especial\", \"federal\", \"estadual\",\n  \"municipal\", \"nacional\", \"internacional\", \"interno\", \"externo\", \"anterior\",\n  \"posterior\", \"simultâneo\", \"sucessivo\", \"definitivo\", \"provisório\",\n  \n  // Conectivos e Preposições Jurídicas\n  \"mediante\", \"perante\", \"conforme\", \"segundo\", \"salvo\", \"exceto\", \"ressalvado\",\n  \"observado\", \"respeitado\", \"garantido\", \"assegurado\", \"vedado\", \"proibido\",\n  \"permitido\", \"autorizado\", \"facultado\", \"obrigatório\", \"necessário\",\n  \n  // Verbos Jurídicos\n  \"aplicar\", \"executar\", \"cumprir\", \"observar\", \"respeitar\", \"garantir\",\n  \"assegurar\", \"proteger\", \"defender\", \"tutelar\", \"preservar\", \"manter\",\n  \"estabelecer\", \"determinar\", \"fixar\", \"definir\", \"regular\", \"disciplinar\"\n];\n\n// Extrai a referência legal se existir - apenas o número\n// Extrai a referência legal se existir - aceita milhares com ponto (ex.: 1.234)\nconst articleMatch = texto.match(/Art\\.?\\s*(\\d{1,3}(?:\\.\\d{3})*|\\d+)\\s*[ºo]?/i);\nconst article_reference = articleMatch ? parseInt(articleMatch[1].replace(/\\./g, ''), 10) : null;\n\n// Preserva o texto original com quebras de linha\nconst textoOriginal = texto.trim();\n\n// Cria versão normalizada apenas para cálculos\nconst textoNormalizado = texto.replace(/\\n+/g, ' ').replace(/\\s+/g, ' ').trim();\n\n// Quebra o texto ORIGINAL em tokens (palavras + espaços + quebras de linha)\nlet tokens = textoOriginal.split(/(\\s+|\\n+)/);\n// Remove tokens vazios\ntokens = tokens.filter(t => t.length > 0);\n\n// Separa apenas as palavras (sem espaços/quebras) para análise\nlet palavras = tokens.filter(t => !/^\\s*$/.test(t));\n\n// *** CORREÇÃO 1: Cria versão sem pontuação APENAS para análise de exclusão de palavras duplicadas ***\nlet palavrasSemPontuacao = palavras.map(p => p.replace(/[.,;:()\\[\\]\"']/g, ''));\n\n// Função para calcular número ideal de lacunas baseado no tamanho - VERSÃO MAIS FÁCIL\nfunction calcularNumeroLacunas(texto, numeroPalavras) {\n  const caracteresTotais = texto.length;\n  \n  // Regras mais conservadoras para facilitar os desafios\n  if (caracteresTotais < 300) {\n    return Math.max(1, Math.floor(numeroPalavras * 0.05)); // 5% mínimo 1\n  } else if (caracteresTotais < 600) {\n    return Math.max(2, Math.floor(numeroPalavras * 0.07)); // 7% mínimo 2\n  } else if (caracteresTotais < 1000) {\n    return Math.max(2, Math.floor(numeroPalavras * 0.09)); // 9% mínimo 2\n  } else if (caracteresTotais < 1500) {\n    return Math.max(3, Math.floor(numeroPalavras * 0.11)); // 11% mínimo 3\n  } else {\n    return Math.max(3, Math.floor(numeroPalavras * 0.13)); // 13% mínimo 3\n  }\n}\n\n// Função para avaliar se uma palavra é adequada para lacuna\nfunction avaliarPalavra(palavra, indice, palavras) {\n  const palavraLimpa = palavra.replace(/[.,;:()\\[\\]\"']/g, '').toLowerCase();\n  \n  // Filtros de exclusão\n  const palavrasExcluidas = [\n    'o', 'a', 'os', 'as', 'um', 'uma', 'uns', 'umas', // artigos\n    'de', 'do', 'da', 'dos', 'das', 'em', 'no', 'na', 'nos', 'nas', // preposições simples\n    'por', 'para', 'com', 'sem', 'sob', 'sobre', 'ante', 'após', 'até',\n    'e', 'ou', 'mas', 'porém', 'contudo', 'entretanto', // conjunções simples\n    'que', 'se', 'como', 'quando', 'onde', 'qual', 'quais', // pronomes\n    'é', 'são', 'foi', 'foram', 'será', 'serão', 'tem', 'têm', // verbos comuns\n    'este', 'esta', 'estes', 'estas', 'esse', 'essa', 'esses', 'essas',\n    'aquele', 'aquela', 'aqueles', 'aquelas', 'seu', 'sua', 'seus', 'suas',\n    'i', 'ii', 'iii', 'iv', 'v', 'vi', 'vii', 'viii', 'ix', 'x', // numerais romanos\n    'art', 'artigo', '§', 'paragrafo', '[...]'\n  ];\n  \n  // Palavra muito curta\n  if (palavraLimpa.length < 3) return 0;\n  \n  // Palavra excluída\n  if (palavrasExcluidas.includes(palavraLimpa)) return 0;\n  \n  // Apenas números\n  if (/^\\d+$/.test(palavraLimpa)) return 0;\n  \n  // Apenas pontuação\n  if (/^[^\\w]$/.test(palavraLimpa)) return 0;\n  \n  // Sistema de pontuação para priorizar palavras\n  let pontuacao = 1;\n  \n  // Substantivos jurídicos importantes (maior pontuação)\n  const substantivosJuridicos = [\n    'constituição', 'república', 'federação', 'estado', 'união', 'direito',\n    'liberdade', 'igualdade', 'dignidade', 'soberania', 'cidadania', 'justiça',\n    'lei', 'norma', 'princípio', 'garantia', 'proteção', 'segurança',\n    'propriedade', 'vida', 'privacidade', 'intimidade', 'manifestação'\n  ];\n  \n  if (substantivosJuridicos.includes(palavraLimpa)) pontuacao += 3;\n  \n  // Palavras mais longas são mais desafiadoras\n  if (palavraLimpa.length >= 8) pontuacao += 2;\n  else if (palavraLimpa.length >= 6) pontuacao += 1;\n  \n  // Palavras técnicas (com características jurídicas)\n  if (palavraLimpa.includes('ção') || palavraLimpa.includes('dade') || \n      palavraLimpa.includes('mento') || palavraLimpa.includes('ncia')) {\n    pontuacao += 1;\n  }\n  \n  // Evita muitas lacunas consecutivas\n  const palavrasProximas = 3;\n  let lacunasProximas = 0;\n  for (let i = Math.max(0, indice - palavrasProximas); \n       i <= Math.min(palavras.length - 1, indice + palavrasProximas); i++) {\n    if (i !== indice && palavras[i] === '_____') lacunasProximas++;\n  }\n  \n  if (lacunasProximas > 1) pontuacao -= 2;\n  \n  return Math.max(0, pontuacao);\n}\n\n// Calcula número de lacunas\nconst numeroPalavrasValidas = palavrasSemPontuacao.filter(p => p.length > 0).length;\nconst numLacunas = calcularNumeroLacunas(textoNormalizado, numeroPalavrasValidas);\n\n// Adiciona variação aleatória menor para manter a facilidade\nconst variacao = Math.random() < 0.5 ? 0 : 1; // 0 ou +1 apenas\nconst numLacunasAjustado = Math.max(1, Math.min(numLacunas + variacao, Math.floor(numeroPalavrasValidas * 0.15)));\n\n// *** CORREÇÃO 2: Conjunto para controlar palavras já selecionadas (evita duplicatas) ***\nconst palavrasJaSelecionadas = new Set();\n\n// Avalia todas as palavras e seleciona as melhores\nlet candidatos = [];\nlet indicePalavra = 0; // Contador apenas para palavras (não espaços)\n\nfor (let i = 0; i < tokens.length; i++) {\n  const token = tokens[i];\n  \n  // Se é uma palavra (não espaço/quebra)\n  if (!/^\\s*$/.test(token)) {\n    const palavraLimpa = token.replace(/[.,;:()\\[\\]\"']/g, '').toLowerCase();\n    \n    // *** CORREÇÃO 2: Só adiciona se a palavra (sem pontuação) não foi selecionada ainda ***\n    if (!palavrasJaSelecionadas.has(palavraLimpa)) {\n      const pontuacao = avaliarPalavra(token, indicePalavra, palavras);\n      if (pontuacao > 0) {\n        candidatos.push({\n          indiceToken: i, // índice no array de tokens\n          indicePalavra: indicePalavra, // índice apenas entre palavras\n          palavra: token, // *** CORREÇÃO 1: mantém a palavra ORIGINAL com pontuação ***\n          palavraLimpa: palavraLimpa, // palavra sem pontuação para controle de duplicatas\n          pontuacao: pontuacao\n        });\n      }\n    }\n    indicePalavra++;\n  }\n}\n\n// Ordena por pontuação e adiciona aleatoriedade\ncandidatos.sort((a, b) => {\n  const difPontuacao = b.pontuacao - a.pontuacao;\n  if (difPontuacao === 0) {\n    return Math.random() - 0.5; // Aleatoriza empates\n  }\n  return difPontuacao;\n});\n\n// *** CORREÇÃO 2 APRIMORADA: Controle rigoroso de duplicatas ***\n// Seleciona as melhores palavras, garantindo que NUNCA se repitam\nlet indicesTokensSelecionados = []; // Índices no array de tokens\nconst palavrasEscolhidasParaLacunas = new Set(); // Controla palavras já escolhidas para lacunas\nconst pool = Math.min(candidatos.length, numLacunasAjustado * 3);\n\nfor (let i = 0; i < numLacunasAjustado && candidatos.length > 0; i++) {\n  let candidatoEncontrado = false;\n  let tentativas = 0;\n  const maxTentativas = candidatos.length;\n  \n  while (!candidatoEncontrado && tentativas < maxTentativas) {\n    const maxIndex = Math.min(pool, candidatos.length);\n    const peso = Math.random() * Math.random();\n    const indiceEscolhido = Math.floor(peso * maxIndex);\n    \n    const candidatoSelecionado = candidatos[indiceEscolhido];\n    \n    // *** VERIFICAÇÃO RIGOROSA: só aceita se a palavra não foi escolhida ainda ***\n    if (!palavrasEscolhidasParaLacunas.has(candidatoSelecionado.palavraLimpa)) {\n      indicesTokensSelecionados.push(candidatoSelecionado.indiceToken);\n      palavrasEscolhidasParaLacunas.add(candidatoSelecionado.palavraLimpa);\n      candidatos.splice(indiceEscolhido, 1);\n      candidatoEncontrado = true;\n    } else {\n      // Remove candidato duplicado da lista\n      candidatos.splice(indiceEscolhido, 1);\n    }\n    \n    tentativas++;\n  }\n  \n  // Se não encontrou candidato único, para o loop\n  if (!candidatoEncontrado) {\n    break;\n  }\n}\n\n// Ordena por posição para o gap_order ficar correto\nindicesTokensSelecionados.sort((a, b) => a - b);\n\n// Cria as lacunas e monta selected_words\nlet selected_words = [];\nlet gap_order = 1;\nlet practice = [];\n\ntokens.forEach((token, index) => {\n  if (indicesTokensSelecionados.includes(index)) {\n    // *** CORREÇÃO 1: Mantém a palavra ORIGINAL com pontuação ***\n    selected_words.push({\n      word: token, // palavra completa com pontuação\n      position: index,\n      gap_order: gap_order++\n    });\n    practice.push(\"_____\");\n  } else {\n    // Mantém o token original (palavra, espaço ou quebra de linha)\n    practice.push(token);\n  }\n});\n\n// Gera opções customizadas inteligentes - VERSÃO MAIS FÁCIL\nfunction gerarOpcoesPistao(palavrasCorretas) {\n  const opcoes = [];\n  const palavrasUsadas = new Set(palavrasCorretas.map(p => p.word.replace(/[.,;:()\\[\\]\"']/g, '').toLowerCase()));\n  \n  // Número de opções bem reduzido para facilitar\n  let numOpcoes;\n  if (palavrasCorretas.length <= 3) {\n    numOpcoes = 0; // Nenhuma opção distratora para poucos gaps\n  } else if (palavrasCorretas.length <= 5) {\n    numOpcoes = 1; // Apenas 1 opção para 4-5 lacunas  \n  } else {\n    numOpcoes = 2; // máximo 2 opções para 6+ lacunas\n  }\n  \n  // Mistura palavras jurídicas aleatórias\n  const palavrasDisponiveis = PALAVRAS_JURIDICAS.filter(p => \n    !palavrasUsadas.has(p.toLowerCase()) && \n    p.length >= 3 && \n    p.length <= 15\n  );\n  \n  // Seleciona palavras com tamanhos similares às corretas (para maior desafio)\n  const tamanhosMedios = palavrasCorretas.map(p => p.word.replace(/[.,;:()\\[\\]\"']/g, '').length);\n  const tamanhoMedio = tamanhosMedios.reduce((a, b) => a + b, 0) / tamanhosMedios.length;\n  \n  // Prioriza palavras com tamanho similar\n  palavrasDisponiveis.sort((a, b) => {\n    const difA = Math.abs(a.length - tamanhoMedio);\n    const difB = Math.abs(b.length - tamanhoMedio);\n    if (difA !== difB) return difA - difB;\n    return Math.random() - 0.5;\n  });\n  \n  // Seleciona as opções\n  for (let i = 0; i < numOpcoes && i < palavrasDisponiveis.length; i++) {\n    opcoes.push({ word: palavrasDisponiveis[i] });\n  }\n  \n  // Se não tiver opções suficientes, completa com mais palavras (mas respeitando o limite reduzido)\n  while (opcoes.length < numOpcoes && opcoes.length < 2) {\n    const palavraAleatoria = PALAVRAS_JURIDICAS[Math.floor(Math.random() * PALAVRAS_JURIDICAS.length)];\n    if (!opcoes.some(o => o.word === palavraAleatoria) && !palavrasUsadas.has(palavraAleatoria.toLowerCase())) {\n      opcoes.push({ word: palavraAleatoria });\n    }\n  }\n  \n  return opcoes;\n}\n\nconst custom_options = gerarOpcoesPistao(selected_words);\n\n// Determina dificuldade baseada no número de lacunas - VERSÃO MAIS FÁCIL\nlet difficulty_level = 1;\nif (numLacunasAjustado <= 1) difficulty_level = 1;\nelse if (numLacunasAjustado <= 2) difficulty_level = 1;\nelse if (numLacunasAjustado <= 3) difficulty_level = 2;\nelse difficulty_level = 2; // Máximo nível 2 para manter fácil\n\n// Ajusta dificuldade baseada no tipo de bloco (mais conservador)\nif (tipo === 'alinea' || tipo === 'item') difficulty_level = 1; // Sempre fácil para itens pequenos\n\nreturn {\n  json: {\n    legal_reference_id: $('Adiciona a lei no endpoint').item.json.id,\n    original_content: texto,\n    practice_content: practice.join(\"\"),  // *** CORREÇÃO: Remove espaço aqui para preservar formatação original ***\n    article_reference: article_reference,\n    difficulty_level: difficulty_level,\n    position: position,\n    is_active: true,\n    selected_words: selected_words,\n    custom_options: custom_options,\n    // Metadados para debug/análise\n    metadata: {\n      total_words: numeroPalavrasValidas,\n      gaps_created: indicesTokensSelecionados.length, // *** CORREÇÃO: usa length real das lacunas criadas ***\n      gap_percentage: Math.round((indicesTokensSelecionados.length / numeroPalavrasValidas) * 100),\n      text_length: textoNormalizado.length,\n      block_type: tipo,\n      custom_options_count: custom_options.length,\n      unique_words_selected: palavrasEscolhidasParaLacunas.size, // *** ATUALIZADO: novo conjunto de controle ***\n      attempted_gaps: numLacunasAjustado // número que tentou criar\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2608,
+        64
+      ],
+      "id": "6d02ba00-d26c-4480-83bf-e96b8251d587",
+      "name": "Separar palavras1",
+      "executeOnce": false
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "07012569-cfc1-475e-b830-1eee3c1f8ac5",
+              "name": "legal_reference_id",
+              "value": "={{ $json['legal_reference_id'] }}",
+              "type": "number"
+            },
+            {
+              "id": "2521a561-06d5-4ac6-9110-11f59a5fc7b4",
+              "name": "original_content",
+              "value": "={{ $json['original_content'] }}",
+              "type": "string"
+            },
+            {
+              "id": "dd13e770-7c27-4e4f-a449-d7ba6f46881d",
+              "name": "practice_content",
+              "value": "={{ $json['practice_content'] }}",
+              "type": "string"
+            },
+            {
+              "id": "d6cfe22e-02e7-48aa-8fc8-39f322557fc4",
+              "name": "article_reference",
+              "value": "={{ $json['article_reference'] }}",
+              "type": "string"
+            },
+            {
+              "id": "3500aab1-6823-4637-b2d0-491ccea6e60c",
+              "name": "difficulty_level",
+              "value": "={{ $json['difficulty_level'] }}",
+              "type": "number"
+            },
+            {
+              "id": "85f0696d-98d8-4544-a2b3-bccab37edc80",
+              "name": "position",
+              "value": "={{ $json['difficulty_level'] }}",
+              "type": "number"
+            },
+            {
+              "id": "802c9cb1-e92e-4cf4-9492-f80f107099c8",
+              "name": "is_active",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "6f36ca1b-95be-4bd2-8853-5eaf03dd8d15",
+              "name": "selected_words",
+              "value": "={{ $json['selected_words'] }}",
+              "type": "array"
+            },
+            {
+              "id": "a836cf5c-25be-4972-a807-f096bfc16320",
+              "name": "custom_options",
+              "value": "={{ $json['custom_options'] }}",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2848,
+        64
+      ],
+      "id": "975d60e0-6402-4bc3-8b58-6791b9aac394",
+      "name": "Organizar JSON1",
+      "executeOnce": false,
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "amount": 1
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2400,
+        64
+      ],
+      "id": "b3d2f0a5-5a62-45a5-8081-6ac252834d45",
+      "name": "Wait1",
+      "webhookId": "89bbe3ad-c52d-4eab-b78d-decbcc7aed7a"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9eac651c-3166-4627-ae33-e43efa88aacb",
+              "name": "raw_text",
+              "value": "texto da lei com \\n",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1744,
+        -16
+      ],
+      "id": "87cb8b11-cd1c-4d89-a96e-0a14eaf61e98",
+      "name": "Entrada de texto",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "url": "https://r.jina.ai/https://www.planalto.gov.br/ccivil_03/decreto-lei/Del5452compilado.htm",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer jina_b7bafe9bb95b48c2a18126e53f61e626OhcsF4U69ZxGO4lBIrEi3CaG4clR"
+            },
+            {
+              "name": "X-Return-Format",
+              "value": "text"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text",
+              "outputPropertyName": "raw_text"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1552,
+        -16
+      ],
+      "id": "6970be4a-7c9a-407f-8603-eef54fbfd11f",
+      "name": "Entrada de texto (jina.ai)"
+    },
+    {
+      "parameters": {
+        "amount": 1
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        3344,
+        64
+      ],
+      "id": "c6adb878-ff9a-4941-85f7-fb0aed6c42c3",
+      "name": "Wait",
+      "webhookId": "3294cfc8-5770-45eb-a890-a091d971cbcb"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://memorizedireito.com/api/law-articles",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3120,
+        64
+      ],
+      "id": "20505052-8bab-4d80-a903-0d0de0bcd793",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "formTitle": "Iniciar processo",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "=law_title",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "url",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        1152,
+        -16
+      ],
+      "id": "0f4bc774-0d1e-4c59-97fc-c0e4aa2ab1b1",
+      "name": "On form submission",
+      "webhookId": "e3c8cefd-8edb-4911-b440-df33bfcff48d"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://memorizedireito.com/api/n8n/legal-references",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "name",
+              "value": "={{ $json.law_title }}"
+            },
+            {
+              "name": "type",
+              "value": "law"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1344,
+        -16
+      ],
+      "id": "6bc99eb8-ee5a-48b3-ae43-d9fc8f80184d",
+      "name": "Adiciona a lei no endpoint"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Dividir lei em bloco": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items1": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Separar palavras1": {
+      "main": [
+        [
+          {
+            "node": "Organizar JSON1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait1": {
+      "main": [
+        [
+          {
+            "node": "Separar palavras1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Organizar JSON1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Entrada de texto": {
+      "main": [
+        [
+          {
+            "node": "Dividir lei em bloco",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Entrada de texto (jina.ai)": {
+      "main": [
+        [
+          {
+            "node": "Entrada de texto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Adiciona a lei no endpoint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Adiciona a lei no endpoint": {
+      "main": [
+        [
+          {
+            "node": "Entrada de texto (jina.ai)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "2a7383d7-4367-4073-aa2b-b3a4c85d2d75",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "51cc040d88657eeeeed661a4802d539726a1371e441918493f9e26c31775c68d"
+  },
+  "id": "FvAXucVo3KH3TZ2N",
+  "tags": []
+}

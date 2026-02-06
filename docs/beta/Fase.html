@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Jogo: Contexto Imediato - Memorize Direito</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;family=Merriweather:wght@300;400;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons|Material+Icons+Outlined" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#8B5CF6",
+                        secondary: "#3B82F6",
+                        brand: "#F59E0B",
+                        "background-light": "#F9FAFB",
+                        "background-dark": "#111827",
+                        "surface-light": "#FFFFFF",
+                        "surface-dark": "#1F2937",
+                    },
+                    fontFamily: {
+                        display: ["Inter", "sans-serif"],
+                        body: ["Merriweather", "serif"],
+                    },
+                    boxShadow: {
+                        'hard': '0 4px 0 0 rgba(0,0,0,0.15)',
+                        'hard-hover': '0 2px 0 0 rgba(0,0,0,0.15)',
+                        'solid-black': '4px 4px 0 0 #000000',
+                        'solid-black-sm': '2px 2px 0 0 #000000',
+                    }
+                },
+            },
+        };
+    </script>
+<style type="text/tailwindcss">
+        .hard-button {
+            @apply bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 font-bold text-gray-700 dark:text-gray-200 shadow-hard active:shadow-none active:translate-y-1 transition-all duration-100;
+        }
+        .hard-button:hover {
+            @apply bg-gray-50 dark:bg-gray-700 border-gray-400 dark:border-gray-500;
+        }
+        .action-button {
+            @apply bg-gray-500 text-white font-bold rounded-lg px-6 py-2 shadow-hard active:shadow-none active:translate-y-1 transition-all duration-100 border-2 border-gray-600;
+        }.option-button {
+            @apply bg-white dark:bg-gray-800 border-2 border-black dark:border-gray-100 rounded-lg px-5 py-2.5 font-bold text-gray-900 dark:text-white shadow-solid-black dark:shadow-white active:shadow-none active:translate-x-[2px] active:translate-y-[2px] transition-all duration-100 text-base md:text-lg hover:bg-gray-50 dark:hover:bg-gray-700;
+        }.word-hit {
+            @apply bg-green-100/60 dark:bg-green-900/30 text-green-700/70 dark:text-green-300/70 rounded-full px-2.5 py-0.5 font-bold mx-0.5 box-decoration-clone;
+        }
+        .word-miss {
+            @apply bg-red-100/60 dark:bg-red-900/30 text-red-700/70 dark:text-red-300/70 rounded-full px-2.5 py-0.5 font-bold mx-0.5 box-decoration-clone;
+        }.lacuna-placeholder {
+             @apply inline-block font-bold mx-1 select-none tracking-widest text-black dark:text-white border-b-2 border-black/20 px-1;
+        }
+    </style>
+</head>
+<body class="bg-white dark:bg-background-dark text-gray-800 dark:text-gray-100 font-display min-h-screen flex flex-col transition-colors duration-300 overflow-x-hidden selection:bg-primary/30">
+<header class="sticky top-0 z-50 bg-white/95 dark:bg-surface-dark/95 backdrop-blur-sm border-b border-gray-100 dark:border-gray-800 py-3 px-4">
+<div class="max-w-4xl mx-auto flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="flex flex-col leading-none select-none">
+<span class="font-black text-lg text-brand tracking-tighter uppercase drop-shadow-sm">Memorize</span>
+<span class="font-black text-lg text-brand tracking-tighter uppercase -mt-1 drop-shadow-sm">Direito</span>
+</div>
+</div>
+<div class="hidden md:flex items-center gap-4 text-sm font-medium">
+<div class="flex items-center gap-1.5 text-secondary bg-blue-50 dark:bg-blue-900/20 px-3 py-1.5 rounded-full border border-blue-100 dark:border-blue-900/30">
+<span class="material-icons text-lg font-bold">favorite</span>
+<span class="font-bold">∞</span>
+</div>
+<div class="flex items-center gap-1.5 text-primary bg-purple-50 dark:bg-purple-900/20 px-3 py-1.5 rounded-full border border-purple-100 dark:border-purple-900/30">
+<span class="text-[10px] font-black bg-primary text-white px-1 rounded uppercase tracking-wider font-display">XP</span>
+<span class="font-bold">6195</span>
+</div>
+<a class="flex items-center gap-1 text-secondary hover:text-blue-700 dark:hover:text-blue-400 transition-colors ml-2 font-semibold" href="#">
+<span class="material-icons-outlined text-lg">diamond</span>
+<span>Assine Premium</span>
+</a>
+</div>
+<div class="flex items-center gap-3">
+<div class="h-9 w-9 rounded-full bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-300 font-bold text-sm cursor-pointer hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+                R
+            </div>
+</div>
+</div>
+</header>
+<main class="flex-grow relative max-w-4xl mx-auto w-full flex flex-col pb-32 md:pb-36">
+<div class="w-full px-4 md:px-8 py-6">
+<div class="mb-8">
+<div class="flex items-center justify-between mb-4">
+<div>
+<h1 class="text-2xl font-extrabold text-gray-900 dark:text-white font-display tracking-tight">Fase 40</h1>
+<div class="flex items-center gap-2 mt-1">
+<span class="text-sm text-gray-500">Nível:</span>
+<span class="bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full uppercase tracking-wide">Básico</span>
+</div>
+</div>
+</div>
+<div class="h-2 w-full bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden mb-2">
+<div class="h-full bg-secondary w-3/4 rounded-full"></div>
+</div>
+<div class="text-center text-xs text-gray-400 font-medium">5 de 6 incisos completados</div>
+</div>
+<div class="flex justify-between items-center mb-10">
+<button class="hard-button text-sm flex items-center gap-1 !px-3">
+<span class="material-icons text-base">chevron_left</span> Anterior
+            </button>
+<span class="text-sm font-medium text-gray-500">Artigo 5º</span>
+<button class="hard-button text-sm flex items-center gap-1 !px-3" disabled="">
+                Próximo <span class="material-icons text-base">chevron_right</span>
+</button>
+</div>
+<section class="max-w-3xl mx-auto flex flex-col h-full">
+<div class="space-y-6 mb-8 select-none opacity-60 hover:opacity-100 transition-opacity duration-300">
+<p class="text-lg font-body leading-relaxed text-gray-400 dark:text-gray-600">
+<span class="font-bold text-gray-500 dark:text-gray-500">Art. 5º</span> Todos são iguais perante a lei, sem distinção de qualquer natureza, garantindo-se aos brasileiros e aos estrangeiros residentes no País a inviolabilidade do direito à <span class="word-hit">vida</span>, à liberdade, à igualdade, à segurança e à propriedade, nos termos seguintes:
+        </p>
+<p class="text-lg font-body leading-relaxed text-gray-400 dark:text-gray-600">
+<span class="font-bold text-gray-500 dark:text-gray-500">I</span> - homens e mulheres são <span class="word-hit">iguais</span> em direitos e obrigações, nos termos desta Constituição;
+        </p>
+<p class="text-lg font-body leading-relaxed text-gray-400 dark:text-gray-600">
+<span class="font-bold text-gray-500 dark:text-gray-500">II</span> - ninguém será obrigado a fazer ou deixar de fazer alguma coisa senão em virtude de <span class="word-miss">lei</span>;
+        </p>
+<p class="text-lg font-body leading-relaxed text-gray-400 dark:text-gray-600">
+<span class="font-bold text-gray-500 dark:text-gray-500">III</span> - ninguém será submetido a tortura nem a tratamento desumano ou <span class="word-hit">degradante</span>;
+        </p>
+<p class="text-lg font-body leading-relaxed text-gray-400 dark:text-gray-600">
+<span class="font-bold text-gray-500 dark:text-gray-500">IV</span> - é <span class="word-hit">livre</span> a manifestação do <span class="word-miss">pensamento</span>, sendo vedado o anonimato;
+        </p>
+<p class="text-lg font-body leading-relaxed text-gray-400 dark:text-gray-600">
+<span class="font-bold text-gray-500 dark:text-gray-500">V</span> - é assegurado o direito de <span class="word-hit">resposta</span>, proporcional ao agravo, além da indenização por dano material, moral ou à imagem;
+        </p>
+</div>
+<div class="relative bg-white dark:bg-background-dark py-6 mb-12" id="active-challenge">
+<div class="font-body text-xl md:text-2xl leading-relaxed text-gray-900 dark:text-white font-medium">
+<p>
+<span class="font-bold text-black dark:text-white">VI</span> - é <span class="lacuna-placeholder">_____</span> a liberdade de <span class="lacuna-placeholder">_____</span> e de <span class="lacuna-placeholder">_____</span>, sendo assegurado o livre exercício dos cultos religiosos e garantida, na forma da lei, a proteção aos locais de culto e a suas liturgias;
+            </p>
+</div>
+<div class="mt-8 flex flex-col items-center">
+<div class="flex flex-wrap gap-4 mb-8 justify-center w-full">
+<button class="option-button">inviolável</button>
+<button class="option-button">consciência</button>
+<button class="option-button">crença</button>
+<button class="option-button">cultos</button>
+<button class="option-button">liturgias</button>
+</div>
+<div class="flex justify-center gap-6 items-center w-full max-w-lg">
+<button class="hard-button text-gray-500 !border-gray-400 !border-2 flex items-center gap-2 !px-6 hover:!text-gray-700 dark:hover:!text-gray-200 dark:!border-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800">
+<span class="material-icons text-sm">refresh</span>
+                    Limpar
+                </button>
+<button class="action-button bg-gray-900 hover:bg-gray-800 dark:bg-white dark:text-gray-900 dark:border-gray-200 dark:hover:bg-gray-100 !border-black !text-white px-10 shadow-solid-black dark:shadow-white">
+                    Verificar
+                </button>
+</div>
+</div>
+</div>
+</section>
+</div>
+</main>
+<nav class="fixed bottom-0 left-0 w-full bg-white dark:bg-surface-dark border-t border-gray-200 dark:border-gray-800 z-50 pb-safe shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+<div class="max-w-md mx-auto flex justify-around items-end h-16 pb-2 px-4">
+<button class="group flex flex-col items-center justify-center w-16 text-primary transition-colors">
+<div class="p-1 rounded-full group-hover:bg-purple-50 dark:group-hover:bg-purple-900/30 transition-colors">
+<span class="material-icons text-2xl group-hover:scale-110 transition-transform">sports_esports</span>
+</div>
+<span class="text-[10px] mt-0.5 font-bold">Jogar</span>
+</button>
+<button class="group flex flex-col items-center justify-center w-16 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+<div class="p-1 rounded-full group-hover:bg-gray-50 dark:group-hover:bg-gray-800 transition-colors">
+<span class="material-icons-outlined text-2xl group-hover:scale-110 transition-transform">flag</span>
+</div>
+<span class="text-[10px] mt-0.5 font-medium">Desafios</span>
+</button>
+<button class="group flex flex-col items-center justify-center w-16 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+<div class="p-1 rounded-full group-hover:bg-gray-50 dark:group-hover:bg-gray-800 transition-colors">
+<span class="material-icons-outlined text-2xl group-hover:scale-110 transition-transform">emoji_events</span>
+</div>
+<span class="text-[10px] mt-0.5 font-medium">Ranking</span>
+</button>
+<button class="group flex flex-col items-center justify-center w-16 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+<div class="p-1 rounded-full group-hover:bg-gray-50 dark:group-hover:bg-gray-800 transition-colors">
+<span class="material-icons-outlined text-2xl group-hover:scale-110 transition-transform">menu_book</span>
+</div>
+<span class="text-[10px] mt-0.5 font-medium">Leis</span>
+</button>
+</div>
+</nav>
+
+</body></html>
