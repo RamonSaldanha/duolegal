@@ -43,7 +43,14 @@
       "Bash(del \"C:\\Users\\ramon\\Desktop\\code\\memorize\\README_STRIPE.md\" \"C:\\Users\\ramon\\Desktop\\code\\memorize\\INICIO_RAPIDO_STRIPE.md\" \"C:\\Users\\ramon\\Desktop\\code\\memorize\\STRIPE_SETUP.md\" \"C:\\Users\\ramon\\Desktop\\code\\memorize\\OBSERVACAO_PRECO.md\" \"C:\\Users\\ramon\\Desktop\\code\\memorize\\TROUBLESHOOTING_STRIPE.md\")",
       "Bash(git reset --soft HEAD~2)",
       "Bash(vendorbinpint --dirty)",
-      "Bash(npx vue-tsc:*)"
+      "Bash(npx vue-tsc:*)",
+      "Bash(del \"database\\\\migrations\\\\2026_02_06_000001_create_beta_legislations_table.php\")",
+      "Bash(del \"database\\\\migrations\\\\2026_02_06_000002_create_beta_segments_table.php\")",
+      "Bash(del \"database\\\\migrations\\\\2026_02_06_000003_create_beta_lacunas_table.php\")",
+      "Bash(del \"database\\\\migrations\\\\2026_02_06_000004_create_beta_user_block_progress_table.php\")",
+      "Bash(npx tsc:*)",
+      "Bash(find:*)",
+      "WebFetch(domain:r.jina.ai)"
     ],
     "deny": []
   },

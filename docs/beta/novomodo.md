@@ -4,7 +4,8 @@ Atualmente usamos o N8N para adicionar novos desafios.
 
 O workflow do N8n funciona mais ou menos assim:
 
-O usuário preenche um formulário com a URL de uma legislação; 
+O usuário preenche um formulário com a URL de uma legislação;
+
 A automação pega o texto completo da lei e fragmenta em MUITAS partes tendo como delimitação o início e um fim de um artigo, parágrafo, inciso ou alínea, criando um loop para cada intervalo deste (vale a pena você investigar como isso é feito a partir do endpoint do webhook e também o arquivo que está na pasta n8n/);
 
 O resultado pode ser algo do tipo:
@@ -28,3 +29,13 @@ No caso acima, o usuário vai resolver o inciso, mas não vai saber que ele deco
 4. Ele cria muitos desafios com textos repetidos, isso impede que tenhamos uma legislação que apesar de ser fragmentada em pequenas partes, caso se opte por exibi-la por completo, bastaria pegar todos fragmentos no banco de dados.
 
 5. A legislação já costuma ser longa, fica mais longa ainda quando os desafios possuem textos repetitivos, o que dificulta o progresso e desestimula o aprendizado.
+
+Solução que eu pretendo implementar:
+
+1. o cadastro da legislação vai se dá dentro deste mesmo projeto, usando o próprio laravel e vue para executar um script que cria artigo por artigo.
+2. o administrador vai selecionar a url de onde quer tirar o texto da lei.
+3. ele vai criando desafios continuamente (conforme está ilustrado no arquivo dentro da pasta /docs)
+4. o administrador pode ir editando os desafios criando, removendo, adicionando palavras, etc.
+5. o jogador que esterá resolvendo as lacunas conseguirá ver o contexto do texto da lei anterior em sua tela (existe também um template de conceito que coloquei na pasta /docs)
+
+por favor, analise os arquivos atuais como funciona a parte de Phase e também como se apresenta na pasta /docs e me diga se entendeu o fio da meada. Se você compreende a diferença entre o antigo e novo método.
