@@ -185,6 +185,97 @@ class LegislationPlayController extends Controller
     }
 
     /**
+     * Página de preferências de legislações (seleção + progresso).
+     */
+    public function preferences()
+    {
+        $user = Auth::user();
+
+        $legislations = Legislation::where('status', 'published')
+            ->orderBy('title')
+            ->get();
+
+        // Seleções atuais do usuário
+        $selectedIds = UserLegislationSelection::where('user_id', $user->id)
+            ->pluck('legislation_id')
+            ->toArray();
+
+        // Calcular progresso por legislação em batch
+        $legislationIds = $legislations->pluck('id')->toArray();
+
+        // Total de blocos por legislação
+        $totalBlocks = LegislationSegment::whereIn('legislation_id', $legislationIds)
+            ->where('is_block', true)
+            ->selectRaw('legislation_id, COUNT(*) as total')
+            ->groupBy('legislation_id')
+            ->pluck('total', 'legislation_id')
+            ->toArray();
+
+        // Blocos completados por legislação
+        $completedBlocks = LegislationSegment::whereIn('legislation_segments.legislation_id', $legislationIds)
+            ->where('legislation_segments.is_block', true)
+            ->join('user_segment_progress', function ($join) use ($user) {
+                $join->on('user_segment_progress.legislation_segment_id', '=', 'legislation_segments.id')
+                    ->where('user_segment_progress.user_id', '=', $user->id)
+                    ->where('user_segment_progress.is_completed', '=', true);
+            })
+            ->selectRaw('legislation_segments.legislation_id, COUNT(*) as completed')
+            ->groupBy('legislation_segments.legislation_id')
+            ->pluck('completed', 'legislation_id')
+            ->toArray();
+
+        $legislationsData = $legislations->map(function ($leg) use ($totalBlocks, $completedBlocks, $selectedIds) {
+            $total = $totalBlocks[$leg->id] ?? 0;
+            $completed = $completedBlocks[$leg->id] ?? 0;
+
+            return [
+                'id' => $leg->id,
+                'uuid' => $leg->uuid,
+                'title' => $leg->title,
+                'total_blocks' => $total,
+                'completed_blocks' => $completed,
+                'percentage' => $total > 0 ? round(($completed / $total) * 100) : 0,
+                'is_selected' => in_array($leg->id, $selectedIds),
+            ];
+        });
+
+        return Inertia::render('LegislationPlay/Preferences', [
+            'legislations' => $legislationsData,
+        ]);
+    }
+
+    /**
+     * Salvar preferências de legislações.
+     */
+    public function savePreferences(Request $request)
+    {
+        $validated = $request->validate([
+            'legislation_ids' => 'required|array|min:1',
+            'legislation_ids.*' => 'integer|exists:legislations,id',
+        ]);
+
+        $user = Auth::user();
+
+        // Verificar que são legislações publicadas
+        $validIds = Legislation::whereIn('id', $validated['legislation_ids'])
+            ->where('status', 'published')
+            ->pluck('id')
+            ->toArray();
+
+        // Sync: deletar existentes e inserir novos
+        UserLegislationSelection::where('user_id', $user->id)->delete();
+
+        foreach ($validIds as $legislationId) {
+            UserLegislationSelection::create([
+                'user_id' => $user->id,
+                'legislation_id' => $legislationId,
+            ]);
+        }
+
+        return redirect()->back();
+    }
+
+    /**
      * Jogar uma fase específica (grupo de blocos).
      */
     public function playPhase(int $phaseId, Request $request)

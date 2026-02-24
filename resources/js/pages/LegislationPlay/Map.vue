@@ -2,7 +2,7 @@
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { computed, ref, onMounted, onUnmounted, nextTick } from 'vue';
-import { Book, FileText, Bookmark, CheckCircle, Star, Lock } from 'lucide-vue-next';
+import { Book, FileText, Bookmark, CheckCircle, Star, Lock, Settings } from 'lucide-vue-next';
 import type { BetaPhase, BetaMapLegislation, PlayUserData, LoadMorePhasesResponse } from '@/types/legislation-play';
 import axios from 'axios';
 
@@ -33,8 +33,6 @@ const hasMoreAbove = ref(props.hasMoreAbove);
 const hasMoreBelow = ref(props.hasMoreBelow);
 const isLoadingAbove = ref(false);
 const isLoadingBelow = ref(false);
-const selectedUuids = ref<string[]>([...props.selectedLegislationUuids]);
-const isSavingFilter = ref(false);
 
 // Refs do DOM
 const scrollContainerRef = ref<HTMLElement | null>(null);
@@ -75,34 +73,6 @@ const getSegmentDashOffset = (totalSegments: number, segmentIndex: number): numb
     const circumference = 2 * Math.PI * 32;
     const segmentLength = circumference / totalSegments;
     return circumference - (segmentLength * segmentIndex);
-};
-
-// Filtro de legislações
-const isSelected = (uuid: string) => selectedUuids.value.includes(uuid);
-
-const toggleLegislation = async (uuid: string) => {
-    if (isSavingFilter.value) return;
-
-    const newSelection = isSelected(uuid)
-        ? selectedUuids.value.filter(u => u !== uuid)
-        : [...selectedUuids.value, uuid];
-
-    // Não permitir seleção vazia
-    if (newSelection.length === 0) return;
-
-    isSavingFilter.value = true;
-
-    try {
-        await axios.post(route('beta.map.filter'), {
-            legislation_uuids: newSelection,
-        });
-        // Recarregar a página com novo filtro
-        router.visit(route('beta.play.map'), { preserveState: false });
-    } catch {
-        // Silently fail
-    } finally {
-        isSavingFilter.value = false;
-    }
 };
 
 // Infinite scroll — carregar mais fases abaixo
@@ -249,32 +219,22 @@ onUnmounted(() => {
             <div class="max-w-4xl mx-auto">
 
                 <!-- Header -->
-                <div class="mb-6">
-                    <h1 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">
-                        Mapa de Estudos
-                    </h1>
-                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                        {{ totalPhases }} fases
-                    </p>
-                </div>
-
-                <!-- Filtro de legislações -->
-                <div v-if="legislations.length > 1" class="flex flex-wrap gap-2 mb-8">
-                    <button
-                        v-for="leg in legislations"
-                        :key="leg.uuid"
-                        @click="toggleLegislation(leg.uuid)"
-                        :disabled="isSavingFilter"
-                        :class="[
-                            'px-3 py-1.5 rounded-full text-xs font-medium transition-all border',
-                            isSelected(leg.uuid)
-                                ? 'bg-blue-500 text-white border-blue-600 shadow-sm'
-                                : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-300 dark:border-gray-600 hover:border-blue-400',
-                            isSavingFilter ? 'opacity-50 cursor-wait' : ''
-                        ]"
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                        <h1 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">
+                            Mapa de Estudos
+                        </h1>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                            {{ totalPhases }} fases
+                        </p>
+                    </div>
+                    <Link
+                        :href="route('beta.preferences')"
+                        class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                     >
-                        {{ leg.title }}
-                    </button>
+                        <Settings class="h-4 w-4" />
+                        <span class="hidden sm:inline">Legislações</span>
+                    </Link>
                 </div>
 
                 <!-- Botão flutuante "Ir para fase atual" -->

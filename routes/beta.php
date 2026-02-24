@@ -9,6 +9,8 @@ Route::middleware(['auth'])->prefix('beta')->group(function () {
     Route::get('map', [LegislationPlayController::class, 'map'])->name('beta.play.map');
     Route::get('map/phases', [LegislationPlayController::class, 'loadMapPhases'])->name('beta.map.phases');
     Route::post('map/filter', [LegislationPlayController::class, 'saveFilter'])->name('beta.map.filter');
+    Route::get('preferences', [LegislationPlayController::class, 'preferences'])->name('beta.preferences');
+    Route::post('preferences', [LegislationPlayController::class, 'savePreferences'])->name('beta.preferences.save');
     Route::get('play/phase/{phaseId}', [LegislationPlayController::class, 'playPhase'])->where('phaseId', '[0-9]+')->name('beta.play.phase');
     Route::get('play/{legislation:uuid}', [LegislationPlayController::class, 'play'])->name('beta.play.play');
     Route::get('play/{legislation:uuid}/completed', [LegislationPlayController::class, 'loadCompletedSegments'])->name('beta.play.completed');

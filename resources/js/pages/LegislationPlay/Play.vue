@@ -59,6 +59,17 @@ const { reward: confettiReward } = useReward('play-confetti', 'confetti', {
     spread: 80,
 });
 
+// Áudio de sucesso
+const playSuccessAudio = () => {
+    try {
+        const audio = new Audio('/bell-win.wav');
+        audio.volume = 0.7;
+        audio.play().catch(() => {});
+    } catch {
+        // Silently fail
+    }
+};
+
 // Scroll infinito para cima
 let observer: IntersectionObserver | null = null;
 
@@ -157,8 +168,9 @@ async function handleSubmit(data: {
         const passed = result.progress.percentage >= 70;
 
         if (passed) {
-            // Confetti
+            // Confetti + áudio
             confettiReward();
+            playSuccessAudio();
 
             // XP notification
             if (result.xp_gained > 0) {
@@ -304,35 +316,33 @@ function showXpGainedNotification(xpGained: number) {
                     </div>
 
                     <!-- Modal de conclusão -->
-                    <div
-                        v-if="showCompletionModal"
-                        class="py-12 text-center"
-                    >
-                        <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-100 dark:bg-green-900/40 mb-6">
-                            <Trophy class="h-10 w-10 text-green-600 dark:text-green-400" />
-                        </div>
-
+                    <div v-if="showCompletionModal" class="py-6 flex flex-col items-center">
                         <!-- Modo fase -->
                         <template v-if="isPhaseMode">
-                            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                                Fase Concluída!
-                            </h2>
-                            <p class="text-gray-500 dark:text-gray-400 mb-8">
-                                Você completou todos os blocos desta fase.
-                            </p>
-                            <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                            <div class="flex items-center gap-4 mb-4">
+                                <div class="shrink-0 flex items-center justify-center w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/40">
+                                    <Trophy class="h-6 w-6 text-green-600 dark:text-green-400" />
+                                </div>
+                                <div>
+                                    <h2 class="text-lg font-bold text-gray-900 dark:text-white">
+                                        Fase Concluída!
+                                    </h2>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                                        Você completou todos os blocos desta fase.
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="flex gap-3">
                                 <Link
                                     :href="route('beta.play.map')"
-                                    class="inline-flex items-center gap-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white font-bold px-8 py-3 rounded-lg border-4 border-gray-400 dark:border-gray-600 transition-all hover:translate-y-0.5"
-                                    style="box-shadow: 0 4px 0 #9ca3af"
+                                    class="inline-flex items-center gap-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white font-bold px-6 py-2.5 rounded-lg border-2 border-gray-400 dark:border-gray-600 transition-all text-sm btn-press btn-press-gray"
                                 >
                                     Voltar ao Mapa
                                 </Link>
                                 <Link
                                     v-if="nextPhaseId"
                                     :href="route('beta.play.phase', { phaseId: nextPhaseId })"
-                                    class="inline-flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white font-bold px-8 py-3 rounded-lg border-4 border-green-700 transition-all hover:translate-y-0.5"
-                                    style="box-shadow: 0 4px 0 #15803d"
+                                    class="inline-flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white font-bold px-6 py-2.5 rounded-lg border-2 border-green-700 transition-all text-sm btn-press btn-press-green"
                                 >
                                     Próxima Fase
                                 </Link>
@@ -341,16 +351,22 @@ function showXpGainedNotification(xpGained: number) {
 
                         <!-- Modo legislação (legacy) -->
                         <template v-else>
-                            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                                Legislação Concluída!
-                            </h2>
-                            <p class="text-gray-500 dark:text-gray-400 mb-8">
-                                Você completou todos os blocos desta legislação.
-                            </p>
+                            <div class="flex items-center gap-4 mb-4">
+                                <div class="shrink-0 flex items-center justify-center w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/40">
+                                    <Trophy class="h-6 w-6 text-green-600 dark:text-green-400" />
+                                </div>
+                                <div>
+                                    <h2 class="text-lg font-bold text-gray-900 dark:text-white">
+                                        Legislação Concluída!
+                                    </h2>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                                        Você completou todos os blocos desta legislação.
+                                    </p>
+                                </div>
+                            </div>
                             <Link
                                 :href="route('beta.play.map')"
-                                class="inline-flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white font-bold px-8 py-3 rounded-lg border-4 border-green-700 transition-all hover:translate-y-0.5"
-                                style="box-shadow: 0 4px 0 #15803d"
+                                class="inline-flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white font-bold px-6 py-2.5 rounded-lg border-2 border-green-700 transition-all text-sm btn-press btn-press-green"
                             >
                                 Voltar ao Mapa
                             </Link>
@@ -370,3 +386,25 @@ function showXpGainedNotification(xpGained: number) {
         <BottomNavigation />
     </div>
 </template>
+
+<style scoped>
+.btn-press {
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.btn-press-green {
+    box-shadow: 0 3px 0 #15803d;
+}
+.btn-press-green:hover {
+    transform: translateY(3px);
+    box-shadow: none;
+}
+
+.btn-press-gray {
+    box-shadow: 0 3px 0 #9ca3af;
+}
+.btn-press-gray:hover {
+    transform: translateY(3px);
+    box-shadow: none;
+}
+</style>

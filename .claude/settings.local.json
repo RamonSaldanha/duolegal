@@ -50,7 +50,8 @@
       "Bash(del \"database\\\\migrations\\\\2026_02_06_000004_create_beta_user_block_progress_table.php\")",
       "Bash(npx tsc:*)",
       "Bash(find:*)",
-      "WebFetch(domain:r.jina.ai)"
+      "WebFetch(domain:r.jina.ai)",
+      "Bash(grep:*)"
     ],
     "deny": []
   },
