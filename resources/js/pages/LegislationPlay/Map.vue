@@ -43,36 +43,79 @@ const bottomSentinelRef = ref<HTMLElement | null>(null);
 let topObserver: IntersectionObserver | null = null;
 let bottomObserver: IntersectionObserver | null = null;
 
+// === Layout constants ===
+const PHASE_SIZE = { current: 90, complete: 64, blocked: 58, default: 62 } as const;
+const TRAIL_WIDTH = 200;
+const VERTICAL_SPACING = 100;
+const X_PATTERN = [0, 35, 70, 105, 70, 35];
+const ROAD_STROKE_WIDTH = 24;
+
+// Responsividade
+const windowWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1024);
+const updateWindowWidth = () => { windowWidth.value = window.innerWidth; };
+
+const scaleFactor = computed(() => {
+    if (windowWidth.value < 400) return 0.7;
+    if (windowWidth.value < 640) return 0.82;
+    return 1;
+});
+
+const scaledTrailWidth = computed(() => TRAIL_WIDTH * scaleFactor.value);
+const scaledXPattern = computed(() => X_PATTERN.map(x => x * scaleFactor.value));
+const scaledVerticalSpacing = computed(() => VERTICAL_SPACING * scaleFactor.value);
+const scaledPhaseSize = computed(() => ({
+    current: PHASE_SIZE.current * scaleFactor.value,
+    complete: PHASE_SIZE.complete * scaleFactor.value,
+    blocked: PHASE_SIZE.blocked * scaleFactor.value,
+    default: PHASE_SIZE.default * scaleFactor.value,
+}));
+
+// Coordenadas absolutas de cada fase
+const phasePositions = computed(() => {
+    return phases.value.map((_phase, i) => {
+        const patternIdx = i % scaledXPattern.value.length;
+        const x = scaledXPattern.value[patternIdx] + scaledPhaseSize.value.current / 2;
+        const y = i * scaledVerticalSpacing.value + scaledVerticalSpacing.value;
+        return { x, y };
+    });
+});
+
+// Altura total da trilha
+const trailHeight = computed(() => {
+    if (phases.value.length === 0) return 0;
+    return phases.value.length * scaledVerticalSpacing.value + scaledVerticalSpacing.value * 2;
+});
+
+// SVG path da estrada
+const roadPath = computed((): string => {
+    const positions = phasePositions.value;
+    if (positions.length < 2) return '';
+
+    let d = `M ${positions[0].x} ${positions[0].y}`;
+    for (let i = 1; i < positions.length; i++) {
+        const prev = positions[i - 1];
+        const curr = positions[i];
+        const midY = (prev.y + curr.y) / 2;
+        d += ` C ${prev.x} ${midY}, ${curr.x} ${midY}, ${curr.x} ${curr.y}`;
+    }
+    return d;
+});
+
+// Tamanho da fase por estado
+const getPhaseSize = (phase: BetaPhase): number => {
+    if (phase.is_current) return scaledPhaseSize.value.current;
+    if (phase.is_complete) return scaledPhaseSize.value.complete;
+    if (phase.is_blocked) return scaledPhaseSize.value.blocked;
+    return scaledPhaseSize.value.default;
+};
+
+// Circunferência para anel de progresso da fase atual
+const progressCircumference = 2 * Math.PI * 44;
+
 // Ícones rotativos por fase
 const getPhaseIcon = (phaseId: number) => {
     const icons = [Book, FileText, Bookmark, Star, CheckCircle];
     return icons[(phaseId - 1) % icons.length];
-};
-
-// Verificar se fase está completa
-const isPhaseComplete = (phase: BetaPhase): boolean => {
-    return phase.is_complete;
-};
-
-// Padrão zigzag: 4 fases indo para direita, 4 voltando para esquerda
-const getPhaseXPosition = (globalIndex: number): number => {
-    const pattern = [0, 35, 70, 105, 70, 35];
-    return pattern[globalIndex % pattern.length];
-};
-
-// SVG Progress Ring
-const getSegmentDashArray = (totalSegments: number): string => {
-    const circumference = 2 * Math.PI * 32;
-    const segmentLength = circumference / totalSegments;
-    const gapLength = Math.max(3, segmentLength * 0.25);
-    const strokeLength = segmentLength - gapLength;
-    return `${strokeLength} ${circumference - strokeLength}`;
-};
-
-const getSegmentDashOffset = (totalSegments: number, segmentIndex: number): number => {
-    const circumference = 2 * Math.PI * 32;
-    const segmentLength = circumference / totalSegments;
-    return circumference - (segmentLength * segmentIndex);
 };
 
 // Infinite scroll — carregar mais fases abaixo
@@ -153,15 +196,6 @@ const goToCurrentPhase = () => {
     } else {
         router.visit(route('beta.play.map'));
     }
-};
-
-// Responsividade
-const windowWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1024);
-const updateWindowWidth = () => { windowWidth.value = window.innerWidth; };
-
-// Índice global para o zigzag (contínuo através de todas as fases)
-const getGlobalPhaseIndex = (phaseIndex: number): number => {
-    return phaseIndex;
 };
 
 onMounted(() => {
@@ -270,17 +304,44 @@ onUnmounted(() => {
                 </div>
 
                 <!-- Trilha de fases -->
-                <div v-else class="trail-path mx-auto flex flex-col">
+                <div
+                    v-else
+                    class="trail-path mx-auto relative"
+                    :style="{ width: `${scaledTrailWidth}px`, height: `${trailHeight}px` }"
+                >
+                    <!-- SVG Estrada -->
+                    <svg
+                        v-if="phasePositions.length >= 2"
+                        class="absolute top-0 left-0 w-full pointer-events-none"
+                        :height="trailHeight"
+                        :viewBox="`0 0 ${scaledTrailWidth} ${trailHeight}`"
+                        preserveAspectRatio="xMidYMid meet"
+                    >
+                        <!-- Estrada principal -->
+                        <path
+                            :d="roadPath"
+                            fill="none"
+                            class="road-main"
+                            :stroke-width="ROAD_STROKE_WIDTH * scaleFactor"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        />
+                    </svg>
+
+                    <!-- Fases -->
                     <template v-for="(phase, phaseIndex) in phases" :key="`phase-${phase.id}`">
 
                         <!-- Header sutil da legislação -->
                         <div
                             v-if="phase.show_legislation_header"
-                            class="flex items-center gap-3 my-6 w-full"
-                            :style="{ marginLeft: '-20px', width: 'calc(100% + 40px)' }"
+                            class="absolute left-1/2 -translate-x-1/2 flex items-center gap-3 z-20"
+                            :style="{
+                                top: `${phasePositions[phaseIndex].y - scaledVerticalSpacing / 2 - 10}px`,
+                                width: '280px',
+                            }"
                         >
                             <div class="flex-1 h-px bg-gray-300 dark:bg-gray-600"></div>
-                            <span class="text-xs font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap px-2">
+                            <span class="text-xs font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap px-2 bg-gray-50 dark:bg-gray-900">
                                 {{ phase.legislation_title }}
                             </span>
                             <div class="flex-1 h-px bg-gray-300 dark:bg-gray-600"></div>
@@ -289,15 +350,18 @@ onUnmounted(() => {
                         <!-- Fase (círculo) -->
                         <div
                             :data-phase-id="phase.id"
-                            class="phase-item"
+                            class="phase-item absolute"
                             :style="{
-                                transform: `translateX(${getPhaseXPosition(getGlobalPhaseIndex(phaseIndex))}px)`,
-                                marginBottom: '10px'
+                                left: `${phasePositions[phaseIndex].x}px`,
+                                top: `${phasePositions[phaseIndex].y}px`,
+                                transform: 'translate(-50%, -50%)',
+                                width: `${getPhaseSize(phase)}px`,
+                                height: `${getPhaseSize(phase)}px`,
                             }"
                         >
                             <Link
                                 :href="phase.is_blocked ? '#' : route('beta.play.phase', { phaseId: phase.id })"
-                                class="relative group transition-transform duration-300 block phase-link"
+                                class="relative group transition-transform duration-300 block w-full h-full"
                                 :class="{
                                     'cursor-not-allowed': phase.is_blocked,
                                     'hover:scale-110': !phase.is_blocked,
@@ -305,69 +369,92 @@ onUnmounted(() => {
                                 }"
                                 @click="phase.is_blocked ? $event.preventDefault() : null"
                             >
-                                <!-- Container com progresso circular -->
-                                <div class="relative flex items-center justify-center w-18 h-18">
-                                    <!-- SVG Progress Ring -->
-                                    <svg
-                                        v-if="phase.progress.block_status.length > 0"
-                                        class="absolute w-18 h-18 transform -rotate-90"
-                                        viewBox="0 0 72 72"
-                                    >
-                                        <!-- Background segments -->
+                                <!-- === FASE ATUAL === -->
+                                <div
+                                    v-if="phase.is_current"
+                                    class="relative flex items-center justify-center w-full h-full"
+                                >
+                                    <!-- Anel de progresso (levemente deslocado para baixo) -->
+                                    <svg class="absolute w-full h-full" style="top: 4px;" viewBox="0 0 100 100">
+                                        <!-- Track cinza do anel -->
                                         <circle
-                                            v-for="(status, segIdx) in phase.progress.block_status"
-                                            :key="`bg-${phase.id}-${segIdx}`"
-                                            cx="36" cy="36" r="32"
+                                            cx="50" cy="50" r="44"
                                             fill="none"
-                                            stroke="rgba(200,200,200,0.4)"
-                                            stroke-width="3"
-                                            stroke-linecap="round"
-                                            :stroke-dasharray="getSegmentDashArray(phase.progress.block_status.length)"
-                                            :stroke-dashoffset="getSegmentDashOffset(phase.progress.block_status.length, segIdx)"
-                                            :style="phase.is_blocked ? 'opacity: 0.6;' : ''"
+                                            class="stroke-gray-200 dark:stroke-gray-500"
+                                            stroke-width="7"
                                         />
-                                        <!-- Colored segments -->
+                                        <!-- Progresso azul -->
                                         <circle
-                                            v-for="(status, segIdx) in phase.progress.block_status"
-                                            :key="`seg-${phase.id}-${segIdx}`"
-                                            cx="36" cy="36" r="32"
+                                            cx="50" cy="50" r="44"
                                             fill="none"
-                                            :stroke="status === 'correct' ? '#22c55e' : status === 'incorrect' ? '#ef4444' : 'transparent'"
-                                            stroke-width="3"
+                                            class="stroke-blue-500"
+                                            stroke-width="7"
                                             stroke-linecap="round"
-                                            :stroke-dasharray="getSegmentDashArray(phase.progress.block_status.length)"
-                                            :stroke-dashoffset="getSegmentDashOffset(phase.progress.block_status.length, segIdx)"
-                                            :style="phase.is_blocked ? 'opacity: 0.6;' : ''"
+                                            :stroke-dasharray="progressCircumference"
+                                            :stroke-dashoffset="progressCircumference * (1 - phase.progress.percentage / 100)"
+                                            style="transition: stroke-dashoffset 0.6s ease; transform: rotate(-90deg); transform-origin: 50% 50%;"
                                         />
                                     </svg>
-
-                                    <!-- Bolinha da fase -->
-                                    <div
-                                        :class="[
-                                            'w-16 h-16 rounded-full flex items-center justify-center phase-circle relative z-10',
-                                            isPhaseComplete(phase) ? 'bg-green-500' :
-                                            phase.is_current ? 'bg-blue-500 animate-pulse' :
-                                            phase.is_blocked ? 'bg-gray-400/50' :
-                                            'bg-yellow-500'
-                                        ]"
-                                        :style="phase.is_blocked ? 'opacity: 0.6;' : ''"
+                                    <!-- Círculo azul com ícone play -->
+                                    <div class="phase-circle-current rounded-full bg-blue-500 flex items-center justify-center z-10"
+                                        :style="{ width: `${getPhaseSize(phase) * 0.68}px`, height: `${getPhaseSize(phase) * 0.68}px` }"
                                     >
-                                        <component
-                                            :is="isPhaseComplete(phase) ? CheckCircle : phase.is_blocked ? Lock : getPhaseIcon(phase.id)"
-                                            class="w-6 h-6 text-white"
-                                        />
+                                        <svg class="w-6 h-6 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M8 5v14l11-7z" />
+                                        </svg>
                                     </div>
                                 </div>
 
-                                <!-- Balão "Começar!" para fase atual -->
+                                <!-- === FASE COMPLETA === -->
+                                <div
+                                    v-else-if="phase.is_complete"
+                                    class="relative flex items-center justify-center w-full h-full"
+                                >
+                                    <!-- Base 3D -->
+                                    <div class="absolute w-full h-full rounded-full bg-green-700 dark:bg-green-800" style="top: 6px;"></div>
+                                    <div class="relative w-full h-full rounded-full bg-green-500 flex items-center justify-center">
+                                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                        </svg>
+                                    </div>
+                                </div>
+
+                                <!-- === FASE BLOQUEADA === -->
+                                <div
+                                    v-else-if="phase.is_blocked"
+                                    class="relative flex items-center justify-center w-full h-full"
+                                >
+                                    <!-- Base 3D -->
+                                    <div class="absolute w-full h-full rounded-full bg-gray-400 dark:bg-gray-700" style="top: 5px;"></div>
+                                    <div class="relative w-full h-full rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
+                                        <Lock class="w-6 h-6 text-gray-500 dark:text-gray-400" />
+                                    </div>
+                                </div>
+
+                                <!-- === FASE PADRÃO (em progresso, não atual) === -->
+                                <div
+                                    v-else
+                                    class="relative flex items-center justify-center w-full h-full"
+                                >
+                                    <!-- Base 3D -->
+                                    <div class="absolute w-full h-full rounded-full bg-yellow-700 dark:bg-yellow-800" style="top: 6px;"></div>
+                                    <div class="relative w-full h-full rounded-full bg-yellow-500 flex items-center justify-center">
+                                        <component :is="getPhaseIcon(phase.id)" class="w-6 h-6 text-white" />
+                                    </div>
+                                </div>
+
+                                <!-- Balão "Começar!" ACIMA da fase atual -->
                                 <div
                                     v-if="phase.is_current && !phase.is_blocked"
-                                    class="absolute -top-7 left-1/2 transform -translate-x-1/2 z-30 animate-bounce-slow"
+                                    class="absolute left-1/2 -translate-x-1/2 z-50 animate-bounce-slow"
+                                    :style="{ bottom: `${getPhaseSize(phase) * 0.5 + 32}px` }"
                                 >
-                                    <div class="relative bg-white text-gray-600 px-3 py-2 rounded-lg shadow-lg border-1 border-gray-500 font-bold text-sm whitespace-nowrap">
+                                    <div class="relative bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 font-bold text-sm whitespace-nowrap">
                                         Começar!
-                                        <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-6 border-r-6 border-t-8 border-l-transparent border-r-transparent border-t-gray-500"></div>
-                                        <div class="absolute top-full left-1/2 transform -translate-x-1/2 mt-[-1px] w-0 h-0 border-l-5 border-r-5 border-t-7 border-l-transparent border-r-transparent border-t-white"></div>
+                                        <!-- Seta apontando para baixo -->
+                                        <div class="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0
+                                            border-l-[8px] border-r-[8px] border-t-[10px]
+                                            border-l-transparent border-r-transparent border-t-white dark:border-t-gray-800"></div>
                                     </div>
                                 </div>
                             </Link>
@@ -389,92 +476,46 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-/* Tamanho 18 (72px) */
-.w-18 {
-    width: 4.5rem;
+/* Estrada — cores com suporte a dark mode */
+.road-main {
+    stroke: #d1d5db;
 }
-.h-18 {
-    height: 4.5rem;
+:root.dark .road-main,
+.dark .road-main {
+    stroke: #374151;
 }
 
-/* Animação de bounce lento */
+/* Fase atual — inner circle com sombra 3D sólida */
+.phase-circle-current {
+    box-shadow: 0 5px 0 0 #1e40af;
+}
+
+/* Item da fase */
+.phase-item {
+    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    z-index: 10;
+}
+
+/* Animação de bounce lento para o balão */
 @keyframes bounce-slow {
     0%, 20%, 53%, 80%, 100% {
         animation-timing-function: cubic-bezier(0.215, 0.610, 0.355, 1.000);
-        transform: translate3d(-50%, 0, 0);
+        transform: translate(-50%, 0);
     }
     40%, 43% {
         animation-timing-function: cubic-bezier(0.755, 0.050, 0.855, 0.060);
-        transform: translate3d(-50%, -8px, 0);
+        transform: translate(-50%, -8px);
     }
     70% {
         animation-timing-function: cubic-bezier(0.755, 0.050, 0.855, 0.060);
-        transform: translate3d(-50%, -4px, 0);
+        transform: translate(-50%, -4px);
     }
     90% {
-        transform: translate3d(-50%, -2px, 0);
+        transform: translate(-50%, -2px);
     }
 }
 
 .animate-bounce-slow {
     animation: bounce-slow 2s infinite;
-}
-
-/* Setas do balão */
-.border-t-8 { border-top-width: 8px; }
-.border-t-7 { border-top-width: 7px; }
-.border-l-6 { border-left-width: 6px; }
-.border-r-6 { border-right-width: 6px; }
-.border-l-5 { border-left-width: 5px; }
-.border-r-5 { border-right-width: 5px; }
-
-/* Bolinha com efeito 3D */
-.phase-circle {
-    box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.2), 0 3px 4px rgba(0, 0, 0, 0.1);
-    position: relative;
-    overflow: hidden;
-    width: 3.5rem !important;
-    height: 3.5rem !important;
-}
-
-.phase-circle svg {
-    width: 1.25rem !important;
-    height: 1.25rem !important;
-}
-
-/* Container da trilha */
-.trail-path {
-    position: relative;
-    padding: 20px 0;
-    width: 170px; /* 105px max offset + ~64px circle */
-    margin: 0 auto;
-}
-
-/* Item da fase */
-.phase-item {
-    position: relative;
-    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-}
-
-.phase-item:last-child {
-    margin-bottom: 0 !important;
-}
-
-.phase-link {
-    position: relative;
-    z-index: 10;
-    display: inline-block;
-}
-
-/* Responsividade mobile */
-@media (max-width: 640px) {
-    .trail-path {
-        width: 140px; /* Proporcionalmente menor */
-    }
-
-    /* Escalar posições para mobile */
-    .phase-item[style*="translateX(35px)"] { transform: translateX(25px) !important; }
-    .phase-item[style*="translateX(70px)"] { transform: translateX(50px) !important; }
-    .phase-item[style*="translateX(105px)"] { transform: translateX(75px) !important; }
 }
 </style>
