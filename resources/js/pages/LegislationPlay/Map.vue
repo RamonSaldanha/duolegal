@@ -2,7 +2,7 @@
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { computed, ref, onMounted, onUnmounted, nextTick } from 'vue';
-import { Book, FileText, Bookmark, CheckCircle, Star, Lock, Settings } from 'lucide-vue-next';
+import { Book, FileText, Bookmark, CheckCircle, Star, Lock } from 'lucide-vue-next';
 import type { BetaPhase, BetaMapLegislation, PlayUserData, LoadMorePhasesResponse } from '@/types/legislation-play';
 import axios from 'axios';
 
@@ -253,25 +253,6 @@ onUnmounted(() => {
     <AppLayout>
         <div ref="scrollContainerRef" class="container py-6 px-4">
             <div class="max-w-4xl mx-auto">
-
-                <!-- Header -->
-                <div class="flex items-center justify-between mb-6">
-                    <div>
-                        <h1 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">
-                            Mapa de Estudos
-                        </h1>
-                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                            {{ totalPhases }} fases
-                        </p>
-                    </div>
-                    <Link
-                        :href="route('beta.preferences')"
-                        class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                    >
-                        <Settings class="h-4 w-4" />
-                        <span class="hidden sm:inline">Legislações</span>
-                    </Link>
-                </div>
 
                 <!-- Botão flutuante "Ir para fase atual" -->
                 <div v-if="showScrollButton" class="fixed bottom-20 left-4 z-50">
