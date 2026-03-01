@@ -48,7 +48,7 @@ const PHASE_SIZE = { current: 90, complete: 64, blocked: 58, default: 62 } as co
 const TRAIL_WIDTH = 200;
 const VERTICAL_SPACING = 100;
 const X_PATTERN = [0, 35, 70, 105, 70, 35];
-const ROAD_STROKE_WIDTH = 24;
+const ROAD_STROKE_WIDTH = 16;
 
 // Responsividade
 const windowWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1024);
@@ -95,8 +95,10 @@ const roadPath = computed((): string => {
     for (let i = 1; i < positions.length; i++) {
         const prev = positions[i - 1];
         const curr = positions[i];
-        const midY = (prev.y + curr.y) / 2;
-        d += ` C ${prev.x} ${midY}, ${curr.x} ${midY}, ${curr.x} ${curr.y}`;
+        // Control points ficam mais perto do Y de cada fase para curvar mais
+        const cp1y = prev.y + (curr.y - prev.y) * 0.7;
+        const cp2y = prev.y + (curr.y - prev.y) * 0.3;
+        d += ` C ${prev.x} ${cp1y}, ${curr.x} ${cp2y}, ${curr.x} ${curr.y}`;
     }
     return d;
 });
@@ -478,7 +480,7 @@ onUnmounted(() => {
 <style scoped>
 /* Estrada — cores com suporte a dark mode */
 .road-main {
-    stroke: #d1d5db;
+    stroke: #e5e7eb;
 }
 :root.dark .road-main,
 .dark .road-main {
