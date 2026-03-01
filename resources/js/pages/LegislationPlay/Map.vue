@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { computed, ref, onMounted, onUnmounted, nextTick } from 'vue';
 import { Book, FileText, Bookmark, CheckCircle, Star, Lock } from 'lucide-vue-next';
@@ -15,16 +15,6 @@ const props = defineProps<{
     hasMoreBelow: boolean;
     totalPhases: number;
     user: PlayUserData;
-}>();
-
-const page = usePage<{
-    auth: {
-        user: {
-            id: number;
-            name: string;
-            is_admin: boolean;
-        } | null;
-    };
 }>();
 
 // Estado reativo
@@ -317,7 +307,7 @@ onUnmounted(() => {
                         <!-- Header sutil da legislação -->
                         <div
                             v-if="phase.show_legislation_header"
-                            class="absolute left-1/2 -translate-x-1/2 flex items-center gap-3 z-20"
+                            class="absolute left-1/2 -translate-x-1/2 flex items-center gap-3 z-[5]"
                             :style="{
                                 top: `${phasePositions[phaseIndex].y - scaledVerticalSpacing / 2 - 10}px`,
                                 width: '280px',
