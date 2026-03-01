@@ -136,6 +136,11 @@ Route::middleware(['auth'])->group(function () {
 
     // Rota de ranking
     Route::get('/ranking', [RankingController::class, 'index'])->name('ranking.index');
+
+    // Rota da loja
+    Route::get('/store', function () {
+        return \Inertia\Inertia::render('Store/Index');
+    })->name('store.index');
 });
 
 // Rota para o webhook do Stripe - sem verificação CSRF
