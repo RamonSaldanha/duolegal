@@ -45,8 +45,8 @@ const windowWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1024
 const updateWindowWidth = () => { windowWidth.value = window.innerWidth; };
 
 const scaleFactor = computed(() => {
-    if (windowWidth.value < 400) return 0.7;
-    if (windowWidth.value < 640) return 0.82;
+    if (windowWidth.value < 400) return 0.9;
+    if (windowWidth.value < 640) return 0.95;
     return 1;
 });
 
