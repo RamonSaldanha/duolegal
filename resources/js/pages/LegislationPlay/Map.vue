@@ -347,7 +347,7 @@ onUnmounted(() => {
                                 class="relative group transition-transform duration-300 block w-full h-full"
                                 :class="{
                                     'cursor-not-allowed': phase.is_blocked,
-                                    'hover:scale-110': !phase.is_blocked,
+                                    'phase-clickable': !phase.is_blocked,
                                     'cursor-pointer': !phase.is_blocked
                                 }"
                                 @click="phase.is_blocked ? $event.preventDefault() : null"
@@ -394,8 +394,8 @@ onUnmounted(() => {
                                     class="relative flex items-center justify-center w-full h-full"
                                 >
                                     <!-- Base 3D -->
-                                    <div class="absolute w-full h-full rounded-full bg-green-700 dark:bg-green-800" style="top: 6px;"></div>
-                                    <div class="relative w-full h-full rounded-full bg-green-500 flex items-center justify-center">
+                                    <div class="phase-3d-base absolute w-full h-full rounded-full bg-green-700 dark:bg-green-800" style="top: 6px;"></div>
+                                    <div class="phase-circle-complete relative w-full h-full rounded-full bg-green-500 flex items-center justify-center">
                                         <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                                         </svg>
@@ -408,8 +408,8 @@ onUnmounted(() => {
                                     class="relative flex items-center justify-center w-full h-full"
                                 >
                                     <!-- Base 3D -->
-                                    <div class="absolute w-full h-full rounded-full bg-gray-400 dark:bg-gray-700" style="top: 5px;"></div>
-                                    <div class="relative w-full h-full rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
+                                    <div class="phase-3d-base absolute w-full h-full rounded-full bg-gray-400 dark:bg-gray-700" style="top: 5px;"></div>
+                                    <div class="phase-circle-blocked relative w-full h-full rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
                                         <Lock class="w-6 h-6 text-gray-500 dark:text-gray-400" />
                                     </div>
                                 </div>
@@ -420,8 +420,8 @@ onUnmounted(() => {
                                     class="relative flex items-center justify-center w-full h-full"
                                 >
                                     <!-- Base 3D -->
-                                    <div class="absolute w-full h-full rounded-full bg-yellow-700 dark:bg-yellow-800" style="top: 6px;"></div>
-                                    <div class="relative w-full h-full rounded-full bg-yellow-500 flex items-center justify-center">
+                                    <div class="phase-3d-base absolute w-full h-full rounded-full bg-yellow-700 dark:bg-yellow-800" style="top: 6px;"></div>
+                                    <div class="phase-circle-default relative w-full h-full rounded-full bg-yellow-500 flex items-center justify-center">
                                         <component :is="getPhaseIcon(phase.id)" class="w-6 h-6 text-white" />
                                     </div>
                                 </div>
@@ -471,6 +471,45 @@ onUnmounted(() => {
 /* Fase atual — inner circle com sombra 3D sólida */
 .phase-circle-current {
     box-shadow: 0 5px 0 0 #1e40af;
+}
+
+/* Transições suaves para o efeito de pressionar */
+.phase-circle-current,
+.phase-circle-complete,
+.phase-circle-blocked,
+.phase-circle-default {
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+.phase-3d-base {
+    transition: opacity 0.1s ease;
+}
+
+/* Hover: reduz sombra pela metade — dedo encostou */
+.phase-clickable:hover .phase-circle-current {
+    box-shadow: 0 2px 0 0 #1e40af;
+    transform: translateY(3px);
+}
+.phase-clickable:hover .phase-circle-complete,
+.phase-clickable:hover .phase-circle-blocked,
+.phase-clickable:hover .phase-circle-default {
+    transform: translateY(3px);
+}
+.phase-clickable:hover .phase-3d-base {
+    opacity: 0.4;
+}
+
+/* Active: remove sombra totalmente — pressionou */
+.phase-clickable:active .phase-circle-current {
+    box-shadow: 0 0 0 0 #1e40af;
+    transform: translateY(6px);
+}
+.phase-clickable:active .phase-circle-complete,
+.phase-clickable:active .phase-circle-blocked,
+.phase-clickable:active .phase-circle-default {
+    transform: translateY(6px);
+}
+.phase-clickable:active .phase-3d-base {
+    opacity: 0;
 }
 
 /* Item da fase */
