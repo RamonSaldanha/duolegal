@@ -10,7 +10,7 @@ const breadcrumbs = [
     { title: 'Loja', href: '/store' },
 ];
 
-const coins = ref(2450);
+const coins = ref(20000);
 
 type Category = 'avatares' | 'insignias' | 'temas';
 const activeCategory = ref<Category>('avatares');
@@ -31,6 +31,7 @@ interface StoreItem {
     owned: boolean;
     equipped: boolean;
     colors?: { from: string; to: string };
+    themeImage?: string;
 }
 
 const avatars = ref<StoreItem[]>([
@@ -42,6 +43,16 @@ const avatars = ref<StoreItem[]>([
     { id: 6, name: 'Procurador', image: '/avatares/avatar-06.png', price: 1200, owned: false, equipped: false },
     { id: 7, name: 'Constitucionalista', image: '/avatares/avatar-07.png', price: 2000, owned: false, equipped: false },
     { id: 8, name: 'Legislador', image: '/avatares/avatar-08.png', price: 3000, owned: false, equipped: false },
+    { id: 9, name: 'Concurseiro', image: '/avatares/avatar-09.png', price: 1500, owned: false, equipped: false },
+    { id: 10, name: 'Hacker Jurídico', image: '/avatares/avatar-10.png', price: 1800, owned: false, equipped: false },
+    { id: 11, name: 'Advogada', image: '/avatares/avatar-11.png', price: 2200, owned: false, equipped: false },
+    { id: 13, name: 'Juíza Digital', image: '/avatares/avatar-13.png', price: 3500, owned: false, equipped: false },
+    { id: 14, name: 'Militar', image: '/avatares/avatar-14.png', price: 1500, owned: false, equipped: false },
+    { id: 15, name: 'Soldado', image: '/avatares/avatar-15.png', price: 1800, owned: false, equipped: false },
+    { id: 16, name: 'Universitária', image: '/avatares/avatar-16.png', price: 1000, owned: false, equipped: false },
+    { id: 17, name: 'Dedicado', image: '/avatares/avatar-17.png', price: 2200, owned: false, equipped: false },
+    { id: 18, name: 'Pensativo', image: '/avatares/avatar-18.png', price: 800, owned: false, equipped: false },
+    { id: 19, name: 'Policial Rodoviária', image: '/avatares/avatar-19.png', price: 2800, owned: false, equipped: false },
 ]);
 
 const badges = ref<StoreItem[]>([
@@ -63,6 +74,13 @@ const themes = ref<StoreItem[]>([
     { id: 204, name: 'Oceano', icon: Sparkles, iconColor: 'text-cyan-500', price: 800, owned: false, equipped: false, colors: { from: '#164e63', to: '#0e7490' } },
     { id: 205, name: 'Floresta', icon: Sparkles, iconColor: 'text-emerald-500', price: 1200, owned: false, equipped: false, colors: { from: '#064e3b', to: '#059669' } },
     { id: 206, name: 'Dourado Imperial', icon: Crown, iconColor: 'text-amber-500', price: 2500, owned: false, equipped: false, colors: { from: '#78350f', to: '#d97706' } },
+    { id: 207, name: 'Escritório', price: 600, owned: false, equipped: false, themeImage: '/paisagens/tema-escritorio.png' },
+    { id: 208, name: 'Tribunal', price: 1000, owned: false, equipped: false, themeImage: '/paisagens/tema-tribunal.png' },
+    { id: 209, name: 'Estrada', price: 800, owned: false, equipped: false, themeImage: '/paisagens/tema-estrada.png' },
+    { id: 210, name: 'Faculdade', price: 900, owned: false, equipped: false, themeImage: '/paisagens/tema-faculdade.png' },
+    { id: 211, name: 'Biblioteca', price: 1500, owned: false, equipped: false, themeImage: '/paisagens/tema-biblioteca.png' },
+    { id: 213, name: 'Acampamento', price: 2000, owned: false, equipped: false, themeImage: '/paisagens/tema-acampamento.png' },
+    { id: 214, name: 'Observatório', price: 3000, owned: false, equipped: false, themeImage: '/paisagens/tema-observatorio.png' },
 ]);
 
 const currentItems = computed(() => {
@@ -97,9 +115,10 @@ const confirmPurchase = () => {
 // Debug: add coins for testing
 const addCoins = () => { coins.value += 5000; };
 
+const isTheme = (item: StoreItem) => !!(item.colors || item.themeImage);
+
 const equipItem = (item: StoreItem) => {
-    // Determine which list based on the item's id range
-    const list = item.image ? avatars : item.colors ? themes : badges;
+    const list = isTheme(item) ? themes : item.image ? avatars : badges;
     list.value.forEach((i) => (i.equipped = false));
     item.equipped = true;
 };
@@ -139,23 +158,28 @@ const equippedTheme = computed(() => themes.value.find((i) => i.equipped));
                 <div class="relative">
                     <!-- Theme ring (outer) -->
                     <div
-                        class="flex h-28 w-28 items-center justify-center rounded-full p-1 transition-all"
+                        class="relative flex h-28 w-28 items-center justify-center rounded-full transition-all overflow-hidden"
                         :style="equippedTheme?.colors
                             ? { background: `linear-gradient(135deg, ${equippedTheme.colors.from}, ${equippedTheme.colors.to})` }
-                            : { background: '#e5e7eb' }"
+                            : !equippedTheme?.themeImage ? { background: '#e5e7eb' } : {}"
                     >
+                        <img
+                            v-if="equippedTheme?.themeImage"
+                            :src="equippedTheme.themeImage"
+                            class="absolute inset-0 h-full w-full object-cover"
+                        />
                         <!-- Avatar image (inner) -->
                         <img
                             v-if="equippedAvatar?.image"
                             :src="equippedAvatar.image"
                             :alt="equippedAvatar.name"
-                            class="h-full w-full rounded-full object-cover border-2 border-white dark:border-gray-900"
+                            class="relative z-10 h-full w-full rounded-full object-cover"
                         />
                     </div>
                     <!-- Badge icon (corner) -->
                     <div
                         v-if="equippedBadge?.icon"
-                        class="absolute -bottom-1 -right-1 flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-md border border-gray-200 dark:bg-gray-800 dark:border-gray-700"
+                        class="absolute -bottom-1 -right-1 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-md border border-gray-200 dark:bg-gray-800 dark:border-gray-700"
                     >
                         <component :is="equippedBadge.icon" class="h-5 w-5" :class="equippedBadge.iconColor" />
                     </div>
@@ -199,6 +223,14 @@ const equippedTheme = computed(() => themes.value.find((i) => i.equipped));
                             class="h-20 w-20 rounded-xl object-cover"
                             :class="!item.owned ? 'opacity-50 grayscale-[40%]' : ''"
                         />
+                        <!-- Theme image (landscape) -->
+                        <div
+                            v-else-if="item.themeImage"
+                            class="h-20 w-20 rounded-full overflow-hidden border border-gray-200 dark:border-gray-600"
+                            :class="!item.owned ? 'opacity-50 grayscale-[40%]' : ''"
+                        >
+                            <img :src="item.themeImage" :alt="item.name" class="h-full w-full object-cover" />
+                        </div>
                         <!-- Badge icon -->
                         <div
                             v-else-if="item.icon && !item.colors"
@@ -254,6 +286,9 @@ const equippedTheme = computed(() => themes.value.find((i) => i.equipped));
                             <!-- Item preview -->
                             <div class="flex items-center gap-3">
                                 <img v-if="selectedItem.image" :src="selectedItem.image" :alt="selectedItem.name" class="h-14 w-14 rounded-full object-cover" />
+                                <div v-else-if="selectedItem.themeImage" class="h-14 w-14 rounded-full overflow-hidden">
+                                    <img :src="selectedItem.themeImage" :alt="selectedItem.name" class="h-full w-full object-cover" />
+                                </div>
                                 <div v-else-if="selectedItem.icon && !selectedItem.colors" class="flex h-14 w-14 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700">
                                     <component :is="selectedItem.icon" class="h-7 w-7" :class="selectedItem.iconColor" />
                                 </div>
