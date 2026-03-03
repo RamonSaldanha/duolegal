@@ -25,11 +25,11 @@
             </button>
         </div>
         
-        <div class="container py-4 md:py-8 px-3 md:px-4">
+        <div class="container md:py-8 px-3 md:px-4 phase-mobile-container">
 
-            <div class="w-full sm:w-[95%] lg:w-[50rem] mx-auto">
+            <div class="w-full sm:w-[95%] lg:w-[50rem] mx-auto phase-mobile-inner">
                 <!-- Cabeçalho da fase - versão responsiva -->
-                <div class="mb-4 md:mb-4">
+                <div class="mb-2 md:mb-4 flex-shrink-0">
                     <!-- Mostrar apenas no desktop -->
                     <Link :href="props.is_challenge ? route('challenges.map', props.challenge?.uuid) : route('play.map')" class="hidden md:flex text-sm items-center text-primary hover:underline mb-4">
                         <ChevronLeft class="h-3 w-3 mr-1" />
@@ -95,7 +95,7 @@
                 </div>
 
                 <!-- Adicione este componente onde achar adequado no template -->
-                <div v-if="props.phase.is_review" class="mb-4 p-4 rounded-md border" 
+                <div v-if="props.phase.is_review" class="mb-4 p-4 rounded-md border flex-shrink-0" 
                      :class="hasArticlesToReview ? 'border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-900' : 'border-green-200 bg-green-50 dark:bg-green-950/30 dark:border-green-900'">
                   <div class="flex items-center gap-3">
                     <div v-if="hasArticlesToReview" class="flex h-8 w-8 items-center justify-center rounded-full bg-amber-200 dark:bg-amber-800">
@@ -119,7 +119,7 @@
                 </div>
 
                 <!-- Navegação entre artigos - apenas desktop -->
-                <div class="flex justify-between items-center mb-4" :class="{'hidden md:flex': !props.phase.is_review}">
+                <div class="flex justify-between items-center mb-4 flex-shrink-0" :class="{'hidden md:flex': !props.phase.is_review}">
                     <GameButton
                         :disabled="currentArticleIndex === 0"
                         @click="previousArticle"
@@ -146,12 +146,12 @@
                 </div>
 
                 <!-- Artigo atual -->
-                <Card v-if="currentArticle" class="mb-6 border-0 p-0">
-                    <CardHeader class="px-0">
+                <Card v-if="currentArticle" class="md:mb-6 border-0 p-0 phase-mobile-card">
+                    <CardHeader class="px-0 flex-shrink-0">
                         <CardTitle>Art. {{ currentArticle.article_reference }} - Leia e responda:</CardTitle>
                     </CardHeader>
 
-                    <CardContent class="px-0 pb-0">
+                    <CardContent class="px-0 pb-0 phase-mobile-card-content">
                         <!-- Para artigos revogados, mostrar apenas o aviso no lugar do texto -->
                         <div v-if="isRevokedArticle" class="rounded-md mb-7">
                             <div class="p-6 bg-amber-50 border border-amber-200 rounded-lg">
@@ -175,7 +175,7 @@
                         <div
                             v-else
                             ref="textContainerRef"
-                            class="rounded-md mb-7 text-xl md:text-lg leading-relaxed whitespace-pre-line overflow-hidden transition-all duration-300 font-medium"
+                            class="rounded-md mb-4 md:mb-7 text-xl md:text-lg leading-relaxed whitespace-pre-line overflow-hidden transition-all duration-300 font-medium phase-mobile-text"
                             :class="{ 'mobile-collapsed': isMobile && !allLacunasFilled }"
                             :style="isMobile ? { maxHeight: textContainerHeight + 'px' } : {}"
                             v-html="processedText"
@@ -184,7 +184,7 @@
                         <button
                             v-if="!isRevokedArticle && isMobile && hasHiddenLacunas"
                             @click="toggleTextContainer"
-                            class="md:hidden w-full py-2 text-sm text-primary flex items-center justify-center border-t border-primary/10 -mt-2 mb-4"
+                            class="md:hidden w-full py-2 text-sm text-primary flex items-center justify-center border-t border-primary/10 -mt-2 mb-4 flex-shrink-0"
                         >
                             <span v-if="isTextExpanded">Ver menos</span>
                             <span v-else>Expandir texto</span>
@@ -311,7 +311,7 @@
                         <!-- Resto do conteúdo sem alteração -->
                     </CardContent>
 
-                    <CardFooter class="px-0">
+                    <CardFooter class="px-0 flex-shrink-0">
                         <!-- Botões na parte inferior do card -->
                         <div v-if="!answered" class="w-full">
                             <!-- Opções de palavras - apenas para artigos válidos -->
@@ -574,6 +574,18 @@ onMounted(() => {
     const envValue = import.meta.env.VITE_AD_FREQUENCY;
     const frequency = envValue ? parseInt(envValue, 10) : 3;
     adFrequency.initialize(isNaN(frequency) ? 3 : frequency);
+
+    // Prevent page-level scrolling on mobile to keep buttons visible
+    if (window.innerWidth < 768) {
+        document.documentElement.style.overflow = 'hidden';
+        document.body.style.overflow = 'hidden';
+    }
+});
+
+onUnmounted(() => {
+    // Restore scrolling when leaving the page
+    document.documentElement.style.overflow = '';
+    document.body.style.overflow = '';
 });
 
 // Usar props para inicializar articlesArray
@@ -1838,6 +1850,50 @@ const reviewCompletionPercentage = computed(() => {
 </script>
 
 <style scoped>
+/* Mobile layout: fit everything within the visible viewport */
+@media (max-width: 767px) {
+    .phase-mobile-container {
+        display: flex;
+        flex-direction: column;
+        /* 100dvh minus header (64px) minus bottom nav (64px + safe area) */
+        height: calc(100dvh - 4rem - 4rem - env(safe-area-inset-bottom, 0px));
+        overflow: hidden;
+        padding-top: 0.5rem;
+        padding-bottom: 0 !important;
+        margin-bottom: 0;
+    }
+
+    .phase-mobile-inner {
+        display: flex;
+        flex-direction: column;
+        min-height: 0; /* Allow flex children to shrink below content size */
+        flex: 1;
+        overflow: hidden;
+    }
+
+    .phase-mobile-card {
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        flex: 1;
+        overflow: hidden;
+    }
+
+    .phase-mobile-card-content {
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        flex: 1;
+        overflow: hidden;
+    }
+
+    .phase-mobile-text {
+        flex: 1;
+        overflow-y: auto !important;
+        min-height: 0;
+    }
+}
+
 .offcanvas-container {
     position: fixed;
     bottom: 0;
@@ -1866,7 +1922,7 @@ const reviewCompletionPercentage = computed(() => {
     box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.1), 0 -2px 4px -1px rgba(0, 0, 0, 0.06);
     padding: 1.5rem;
     padding-bottom: 5rem; /* Espaço para o menu de navegação inferior */
-    max-height: 80vh;
+    max-height: 80dvh;
     overflow-y: auto;
     box-sizing: border-box; /* Garantir que padding não aumente largura */
     width: 100%;
