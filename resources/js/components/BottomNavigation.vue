@@ -24,7 +24,7 @@ const navItems = [
     },
     {
         title: 'Leis',
-        href: '/user/legal-references',
+        href: '/play/preferences',
         icon: BookOpen,
     },
 ];

@@ -184,7 +184,7 @@ const toggleReference = (referenceId: number) => {
 };
 
 const submit = () => {
-  form.post(route('user.legal-references.store'), {
+  form.post(route('legado.user.legal-references.store'), {
     preserveScroll: true,
     onSuccess: () => {
       toast({

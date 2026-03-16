@@ -1,17 +1,11 @@
 <?php
 
 // routes\web.php
-use App\Http\Controllers\Admin\LawArticleOptionController;
 use App\Http\Controllers\ChallengeController;
-use App\Http\Controllers\InfiniteMapController;
-use App\Http\Controllers\LearnChallengeController;
-use App\Http\Controllers\LearnController;
-use App\Http\Controllers\PlayController;
 use App\Http\Controllers\PublicController;
 use App\Http\Controllers\RankingController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\SubscriptionController;
-use App\Http\Controllers\UserLegalReferenceController;
 use App\Http\Controllers\WelcomeController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -61,45 +55,7 @@ Route::get('dashboard', function () {
     return redirect()->route('play.map');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
-// Rotas para law-article-options
-Route::get('/admin/law-article-options', [LawArticleOptionController::class, 'index'])
-    ->name('admin.law-article-options.index');
-
-// Adicionar esta linha para a nova rota de store
-Route::post('/admin/law-article-options', [LawArticleOptionController::class, 'store'])
-    ->name('admin.law-article-options.store');
-
-// Adicione esta rota ao seu arquivo de rotas
 Route::middleware(['auth'])->group(function () {
-    Route::get('/user/legal-references', [UserLegalReferenceController::class, 'index'])
-        ->name('user.legal-references.index');
-    Route::post('/user/legal-references', [UserLegalReferenceController::class, 'store'])
-        ->name('user.legal-references.store');
-
-    // Rotas de jogo (Play)
-    Route::get('/play', [PlayController::class, 'map'])->name('play.map');
-
-    // Nova rota otimizada para mapa de aprendizado
-    Route::get('/learn', [LearnController::class, 'map'])->name('learn.map');
-
-    // Novas rotas para mapa com scroll infinito
-    Route::get('/play/map/infinite', [InfiniteMapController::class, 'index'])->name('play.map.infinite');
-    Route::get('/play/map/infinite/load-more', [InfiniteMapController::class, 'loadMore'])->name('play.map.load-more');
-
-    Route::get('/play/no-lives', fn () => Inertia::render('Play/NoLives'))->name('play.nolives');
-    // ROTA MODIFICADA: Aceita apenas o ID global da fase
-    Route::get('/play/phase/{phaseId}', [PlayController::class, 'phase'])
-        ->where('phaseId', '[0-9]+') // Garante que phaseId seja numérico
-        ->name('play.phase'); // Manter o nome da rota, se preferir
-
-    // Rota de revisão continua aceitando UUID e phase ID (número global)
-    Route::get('/play/review/{referenceUuid}/{phase}', [PlayController::class, 'review'])
-        ->where('phase', '[0-9]+') // Garante que phase (ID global) seja numérico
-        ->name('play.review');
-
-    Route::post('/play/progress', [PlayController::class, 'saveProgress'])->name('play.progress');
-    Route::post('/play/reward-life', [PlayController::class, 'rewardLife'])->name('play.reward-life');
-
     // === ROTAS DE DESAFIOS ===
     // Desafios públicos
     Route::get('/challenges', [ChallengeController::class, 'index'])->name('challenges.index');
@@ -118,9 +74,6 @@ Route::middleware(['auth'])->group(function () {
     // Participação nos desafios
     Route::post('/challenges/{challenge:uuid}/join', [ChallengeController::class, 'join'])->name('challenges.join');
     Route::get('/challenges/{challenge:uuid}/map', [ChallengeController::class, 'map'])->name('challenges.map');
-
-    // Nova rota otimizada para mapa de desafios
-    Route::get('/learn/challenges/{challenge:uuid}/map', [LearnChallengeController::class, 'map'])->name('learn.challenges.map');
 
     Route::get('/challenges/{challenge:uuid}/phase/{phaseNumber}', [ChallengeController::class, 'phase'])
         ->where('phaseNumber', '[0-9]+')
@@ -153,3 +106,4 @@ require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';
 require __DIR__.'/admin.php';
 require __DIR__.'/beta.php';
+require __DIR__.'/legado.php';

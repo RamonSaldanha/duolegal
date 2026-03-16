@@ -23,7 +23,7 @@ const emit = defineEmits<{
 <template>
     <header class="h-14 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-4 flex-shrink-0">
         <div class="flex items-center gap-3">
-            <Link :href="route('beta.editor.index')" class="text-gray-400 hover:text-gray-600">
+            <Link :href="route('editor.index')" class="text-gray-400 hover:text-gray-600">
                 <ArrowLeft class="w-5 h-5" />
             </Link>
             <div>

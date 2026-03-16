@@ -30,7 +30,7 @@ const importForm = useForm({
 });
 
 function importText() {
-    importForm.post(route('beta.editor.import-text', props.legislation.uuid), {
+    importForm.post(route('editor.import-text', props.legislation.uuid), {
         preserveScroll: true,
     });
 }
@@ -49,7 +49,7 @@ async function autoCreate() {
     try {
         // 1. Detecta todas as boundaries (JSON, não Inertia)
         const response = await axios.post(
-            route('beta.editor.detect-boundaries', props.legislation.uuid),
+            route('editor.detect-boundaries', props.legislation.uuid),
         );
 
         const boundaries = response.data.boundaries;
@@ -68,7 +68,7 @@ async function autoCreate() {
 
             await new Promise<void>((resolve) => {
                 router.post(
-                    route('beta.editor.create-block', props.legislation.uuid),
+                    route('editor.create-block', props.legislation.uuid),
                     { char_start: boundaries[i].char_start, char_end: boundaries[i].char_end },
                     {
                         preserveScroll: true,
@@ -99,14 +99,14 @@ function stopAutoCreate() {
 
 function removeBlock(segmentUuid: string) {
     router.delete(
-        route('beta.editor.remove-block', segmentUuid),
+        route('editor.remove-block', segmentUuid),
         { preserveScroll: true },
     );
 }
 
 function toggleLacuna(segmentUuid: string, word: string, position: number) {
     router.post(
-        route('beta.editor.toggle-lacuna', segmentUuid),
+        route('editor.toggle-lacuna', segmentUuid),
         { word, word_position: position },
         { preserveScroll: true },
     );
@@ -114,7 +114,7 @@ function toggleLacuna(segmentUuid: string, word: string, position: number) {
 
 function removeLacuna(lacunaUuid: string) {
     router.delete(
-        route('beta.editor.remove-lacuna', lacunaUuid),
+        route('editor.remove-lacuna', lacunaUuid),
         { preserveScroll: true },
     );
 }
@@ -123,7 +123,7 @@ function togglePublish() {
     const newStatus = props.legislation.status === 'published' ? 'draft' : 'published';
     publishing.value = true;
     router.put(
-        route('beta.editor.update', props.legislation.uuid),
+        route('editor.update', props.legislation.uuid),
         { title: props.legislation.title, status: newStatus },
         {
             preserveScroll: true,

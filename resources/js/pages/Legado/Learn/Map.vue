@@ -237,7 +237,7 @@ const goToCurrentPhase = () => {
     if (hasCurrentPhaseInView.value) {
         scrollToCurrentPhase();
     } else {
-        window.location.href = route('learn.map');
+        window.location.href = route('legado.learn.map');
     }
 };
 
@@ -419,8 +419,8 @@ const totalPhasesCount = computed(() => {
                                                 : (props.is_challenge && props.challenge
                                                     ? route('challenges.phase', { challenge: props.challenge.uuid, phaseNumber: phase.id })
                                                     : (phase.is_review
-                                                        ? route('play.review', { referenceUuid: phase.reference_uuid, phase: phase.id })
-                                                        : route('play.phase', { phaseId: phase.id })))"
+                                                        ? route('legado.play.review', { referenceUuid: phase.reference_uuid, phase: phase.id })
+                                                        : route('legado.play.phase', { phaseId: phase.id })))"
                                             class="relative group transition-transform duration-300 block phase-link"
                                             :class="{
                                                 'cursor-not-allowed': phase.is_blocked,
@@ -527,8 +527,8 @@ const totalPhasesCount = computed(() => {
                                             : (props.is_challenge && props.challenge
                                                 ? route('challenges.phase', { challenge: props.challenge.uuid, phaseNumber: phase.id })
                                                 : (phase.is_review
-                                                    ? route('play.review', { referenceUuid: phase.reference_uuid, phase: phase.id })
-                                                    : route('play.phase', { phaseId: phase.id })))"
+                                                    ? route('legado.play.review', { referenceUuid: phase.reference_uuid, phase: phase.id })
+                                                    : route('legado.play.phase', { phaseId: phase.id })))"
                                         class="relative group transition-transform duration-300 block phase-link"
                                         :class="{
                                             'cursor-not-allowed': phase.is_blocked,
@@ -608,7 +608,7 @@ const totalPhasesCount = computed(() => {
                     <!-- Botão Jornada Anterior -->
                     <Link
                         v-if="props.journey.has_previous"
-                        :href="route('learn.map', { jornada: props.journey.current - 1 })"
+                        :href="route('legado.learn.map', { jornada: props.journey.current - 1 })"
                         class="w-full sm:w-auto inline-flex items-center justify-center px-3 py-1.5 bg-green-500 text-white rounded-lg border-4 border-green-700 shadow-[0_6px_0_theme(colors.green.700)] hover:shadow-[0_4px_0_theme(colors.green.700)] hover:translate-y-[2px] active:shadow-[0_2px_0_theme(colors.green.700)] active:translate-y-[4px] transition-all duration-150 font-bold text-sm"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16" class="mr-2">
@@ -626,7 +626,7 @@ const totalPhasesCount = computed(() => {
                     <!-- Botão Próxima Jornada -->
                     <Link
                         v-if="props.journey.has_next"
-                        :href="route('learn.map', { jornada: props.journey.current + 1 })"
+                        :href="route('legado.learn.map', { jornada: props.journey.current + 1 })"
                         class="w-full sm:w-auto inline-flex items-center justify-center px-3 py-1.5 bg-blue-500 text-white rounded-lg border-4 border-blue-700 shadow-[0_6px_0_theme(colors.blue.700)] hover:shadow-[0_4px_0_theme(colors.blue.700)] hover:translate-y-[2px] active:shadow-[0_2px_0_theme(colors.blue.700)] active:translate-y-[4px] transition-all duration-150 font-bold text-sm"
                     >
                         Próxima Jornada

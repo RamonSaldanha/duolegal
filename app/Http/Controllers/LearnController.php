@@ -45,7 +45,7 @@ class LearnController extends Controller
             });
         } else {
             if (! LegalReference::exists()) {
-                return redirect()->route('learn.map')->with('message', 'Nenhuma lei disponível no momento.');
+                return redirect()->route('legado.learn.map')->with('message', 'Nenhuma lei disponível no momento.');
             }
             $legalReferencesQuery = LegalReference::with(['articles' => function ($query) {
                 $query->orderByRaw('CAST(article_reference AS UNSIGNED) ASC')->where('is_active', true);
@@ -55,7 +55,7 @@ class LearnController extends Controller
         $legalReferences = $legalReferencesQuery->orderBy('id', 'asc')->get();
 
         if ($legalReferences->isEmpty()) {
-            return redirect()->route('user.legal-references.index')
+            return redirect()->route('legado.user.legal-references.index')
                 ->with('message', $hasPreferences ? 'Nenhuma das suas leis selecionadas está disponível ou ativa.' : 'Selecione as leis que deseja estudar.');
         }
 
@@ -254,7 +254,7 @@ class LearnController extends Controller
             'was_auto_detected' => $requestedJourney === null,
         ];
 
-        return Inertia::render('Learn/Map', [
+        return Inertia::render('Legado/Learn/Map', [
             'phases' => $journeyPhases,
             'modules' => $modulesData,
             'journey' => $journeyInfo,

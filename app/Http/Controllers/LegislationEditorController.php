@@ -62,7 +62,7 @@ class LegislationEditorController extends Controller
             'created_by' => Auth::id(),
         ]);
 
-        return redirect()->route('beta.editor.show', $legislation->uuid);
+        return redirect()->route('editor.show', $legislation->uuid);
     }
 
     /**
@@ -328,7 +328,7 @@ class LegislationEditorController extends Controller
     {
         $legislation->delete();
 
-        return redirect()->route('beta.editor.index');
+        return redirect()->route('editor.index');
     }
 
     /**

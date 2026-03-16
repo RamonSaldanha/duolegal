@@ -30,7 +30,7 @@ const mainNavItems = computed(() => [
     },
     {
         title: 'Preferências',
-        href: '/user/legal-references',
+        href: '/play/preferences',
         iconPath: '/icons/configuracoes.png',
     },
     ...(isAdmin.value
@@ -38,6 +38,15 @@ const mainNavItems = computed(() => [
             {
                 title: 'Criar artigo',
                 href: '/admin/create-lawarticle',
+                iconPath: '/icons/configuracoes.png',
+            },
+        ]
+        : []),
+    ...(isAdmin.value
+        ? [
+            {
+                title: 'Editor',
+                href: '/editor',
                 iconPath: '/icons/configuracoes.png',
             },
         ]

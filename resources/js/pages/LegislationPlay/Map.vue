@@ -117,7 +117,7 @@ async function loadMoreBelow() {
 
     try {
         const lastId = phases.value[phases.value.length - 1]?.id;
-        const { data } = await axios.get<LoadMorePhasesResponse>(route('beta.map.phases'), {
+        const { data } = await axios.get<LoadMorePhasesResponse>(route('play.map.phases'), {
             params: { direction: 'below', cursor: lastId, limit: 20 },
         });
 
@@ -144,7 +144,7 @@ async function loadMoreAbove() {
 
     try {
         const firstId = phases.value[0]?.id;
-        const { data } = await axios.get<LoadMorePhasesResponse>(route('beta.map.phases'), {
+        const { data } = await axios.get<LoadMorePhasesResponse>(route('play.map.phases'), {
             params: { direction: 'above', cursor: firstId, limit: 20 },
         });
 
@@ -186,7 +186,7 @@ const goToCurrentPhase = () => {
     if (hasCurrentPhaseInView.value) {
         scrollToCurrentPhase();
     } else {
-        router.visit(route('beta.play.map'));
+        router.visit(route('play.map'));
     }
 };
 
@@ -333,7 +333,7 @@ onUnmounted(() => {
                             }"
                         >
                             <Link
-                                :href="phase.is_blocked ? '#' : route('beta.play.phase', { phaseId: phase.id })"
+                                :href="phase.is_blocked ? '#' : route('play.phase', { phaseId: phase.id })"
                                 class="relative group transition-transform duration-300 block w-full h-full"
                                 :class="{
                                     'cursor-not-allowed': phase.is_blocked,

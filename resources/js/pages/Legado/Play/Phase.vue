@@ -31,7 +31,7 @@
                 <!-- Cabeçalho da fase - versão responsiva -->
                 <div class="mb-2 md:mb-4 flex-shrink-0">
                     <!-- Mostrar apenas no desktop -->
-                    <Link :href="props.is_challenge ? route('challenges.map', props.challenge?.uuid) : route('play.map')" class="hidden md:flex text-sm items-center text-primary hover:underline mb-4">
+                    <Link :href="props.is_challenge ? route('challenges.map', props.challenge?.uuid) : route('legado.play.map')" class="hidden md:flex text-sm items-center text-primary hover:underline mb-4">
                         <ChevronLeft class="h-3 w-3 mr-1" />
                         Voltar ao mapa
                     </Link>
@@ -79,7 +79,7 @@
                             
                             <!-- Botão de voltar para o mapa - apenas no mobile -->
                             <Link 
-                                :href="props.is_challenge ? route('challenges.map', props.challenge?.uuid) : route('play.map')" 
+                                :href="props.is_challenge ? route('challenges.map', props.challenge?.uuid) : route('legado.play.map')" 
                                 class="md:hidden ml-3 rounded-full p-1.5 bg-muted hover:bg-muted/80 transition-colors"
                             >
                                 <X class="h-4 w-4" />
@@ -1061,7 +1061,7 @@ const reviewCompletionPercentage = computed(() => {
         if (props.is_challenge && props.challenge) {
             return route('challenges.progress', props.challenge.uuid);
         }
-        return route('play.progress');
+        return route('legado.play.progress');
     };
 
     // Função para exibir notificação animada de XP ganho
@@ -1719,7 +1719,7 @@ const reviewCompletionPercentage = computed(() => {
                         phaseNumber: nextPhaseNumber
                     }));
                 } else {
-                    router.visit(route('play.phase', {
+                    router.visit(route('legado.play.phase', {
                         phaseId: nextPhaseNumber
                     }));
                 }
@@ -1736,7 +1736,7 @@ const reviewCompletionPercentage = computed(() => {
                         phaseNumber: nextPhaseNumber
                     }));
                 } else {
-                    router.visit(route('play.review', {
+                    router.visit(route('legado.play.review', {
                         referenceUuid: props.phase.reference_uuid,
                         phase: nextPhaseNumber
                     }));
@@ -1749,7 +1749,7 @@ const reviewCompletionPercentage = computed(() => {
                         phaseNumber: nextPhaseNumber
                     }));
                 } else {
-                    router.visit(route('play.phase', {
+                    router.visit(route('legado.play.phase', {
                         phaseId: nextPhaseNumber
                     }));
                 }
@@ -1760,7 +1760,7 @@ const reviewCompletionPercentage = computed(() => {
             if (props.is_challenge && props.challenge) {
                 router.visit(route('challenges.map', props.challenge.uuid));
             } else {
-                router.visit(route('play.map'));
+                router.visit(route('legado.play.map'));
             }
         }
     };

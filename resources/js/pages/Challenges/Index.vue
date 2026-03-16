@@ -103,7 +103,7 @@
                         <!-- Action Buttons -->
                         <div class="flex gap-2">
                             <GameButton
-                                :href="route('learn.challenges.map', challenge.uuid)"
+                                :href="route('legado.learn.challenges.map', challenge.uuid)"
                                 variant="green"
                                 class="flex-1"
                             >

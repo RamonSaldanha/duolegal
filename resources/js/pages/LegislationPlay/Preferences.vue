@@ -66,7 +66,7 @@ const submit = () => {
         return;
     }
 
-    form.post(route('beta.preferences.save'), {
+    form.post(route('play.preferences.save'), {
         preserveScroll: true,
         onSuccess: () => {
             toast({

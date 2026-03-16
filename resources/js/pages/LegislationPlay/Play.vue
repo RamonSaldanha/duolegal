@@ -105,7 +105,7 @@ async function loadMoreAbove() {
 
     try {
         const { data } = await axios.get(
-            route('beta.play.completed', props.legislation.uuid),
+            route('play.completed', props.legislation.uuid),
             { params: { before_position: firstPosition, limit: 5 } },
         );
 
@@ -144,7 +144,7 @@ async function handleSubmit(data: {
         }
 
         const response = await axios.post<SubmitAnswerResponse>(
-            route('beta.play.submit'),
+            route('play.submit'),
             submitPayload,
         );
 
@@ -334,14 +334,14 @@ function showXpGainedNotification(xpGained: number) {
                             </div>
                             <div class="flex gap-3">
                                 <Link
-                                    :href="route('beta.play.map')"
+                                    :href="route('play.map')"
                                     class="inline-flex items-center gap-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white font-bold px-6 py-2.5 rounded-lg border-2 border-gray-400 dark:border-gray-600 transition-all text-sm btn-press btn-press-gray"
                                 >
                                     Voltar ao Mapa
                                 </Link>
                                 <Link
                                     v-if="nextPhaseId"
-                                    :href="route('beta.play.phase', { phaseId: nextPhaseId })"
+                                    :href="route('play.phase', { phaseId: nextPhaseId })"
                                     class="inline-flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white font-bold px-6 py-2.5 rounded-lg border-2 border-green-700 transition-all text-sm btn-press btn-press-green"
                                 >
                                     Próxima Fase
@@ -365,7 +365,7 @@ function showXpGainedNotification(xpGained: number) {
                                 </div>
                             </div>
                             <Link
-                                :href="route('beta.play.map')"
+                                :href="route('play.map')"
                                 class="inline-flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white font-bold px-6 py-2.5 rounded-lg border-2 border-green-700 transition-all text-sm btn-press btn-press-green"
                             >
                                 Voltar ao Mapa

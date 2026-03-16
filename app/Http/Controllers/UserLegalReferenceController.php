@@ -20,7 +20,7 @@ class UserLegalReferenceController extends Controller
         // Busca as legislações já selecionadas pelo usuário
         $userReferences = Auth::user()->legalReferences->pluck('id')->toArray();
 
-        return Inertia::render('User/LegalReferences', [
+        return Inertia::render('Legado/User/LegalReferences', [
             'legalReferences' => $legalReferences,
             'userReferences' => $userReferences,
         ]);

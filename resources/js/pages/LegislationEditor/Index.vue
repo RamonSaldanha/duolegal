@@ -23,7 +23,7 @@ const form = useForm({
 });
 
 function submit() {
-    form.post(route('beta.editor.store'), {
+    form.post(route('editor.store'), {
         onSuccess: () => {
             showCreateDialog.value = false;
             form.reset();
@@ -33,7 +33,7 @@ function submit() {
 
 function deleteLegislation(uuid: string) {
     if (confirm('Tem certeza que deseja excluir esta legislação?')) {
-        router.delete(route('beta.editor.destroy', uuid));
+        router.delete(route('editor.destroy', uuid));
     }
 }
 </script>
@@ -80,7 +80,7 @@ function deleteLegislation(uuid: string) {
                             <TableRow v-for="leg in legislations" :key="leg.uuid">
                                 <TableCell>
                                     <Link
-                                        :href="route('beta.editor.show', leg.uuid)"
+                                        :href="route('editor.show', leg.uuid)"
                                         class="font-medium text-gray-900 dark:text-white hover:underline"
                                     >
                                         {{ leg.title }}

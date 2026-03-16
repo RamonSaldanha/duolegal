@@ -181,7 +181,7 @@ class LegislationPlayController extends Controller
             ]);
         }
 
-        return redirect()->route('beta.play.map');
+        return redirect()->route('play.map');
     }
 
     /**
@@ -311,12 +311,12 @@ class LegislationPlayController extends Controller
         }
 
         if (! $phase) {
-            return redirect()->route('beta.play.map');
+            return redirect()->route('play.map');
         }
 
         // Verificar se não está bloqueada (exceto se é a atual)
         if ($phase['is_blocked'] && ! $phase['is_current']) {
-            return redirect()->route('beta.play.map');
+            return redirect()->route('play.map');
         }
 
         // Carregar blocos da fase com lacunas
@@ -327,7 +327,7 @@ class LegislationPlayController extends Controller
             ->get();
 
         if ($blocks->isEmpty()) {
-            return redirect()->route('beta.play.map');
+            return redirect()->route('play.map');
         }
 
         // Progresso do usuário para os blocos da fase
@@ -429,7 +429,7 @@ class LegislationPlayController extends Controller
         }
 
         if ($legislation->status !== 'published') {
-            return redirect()->route('beta.play.map');
+            return redirect()->route('play.map');
         }
 
         $blocks = $legislation->segments()
@@ -439,7 +439,7 @@ class LegislationPlayController extends Controller
             ->get();
 
         if ($blocks->isEmpty()) {
-            return redirect()->route('beta.play.map');
+            return redirect()->route('play.map');
         }
 
         $blockIds = $blocks->pluck('id');

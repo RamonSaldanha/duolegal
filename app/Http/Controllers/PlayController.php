@@ -61,7 +61,7 @@ class PlayController extends Controller
             });
         } else {
              if (!LegalReference::exists()) {
-                 return redirect()->route('play.map')->with('message', 'Nenhuma lei disponível no momento.');
+                 return redirect()->route('legado.play.map')->with('message', 'Nenhuma lei disponível no momento.');
              }
              $legalReferencesQuery = LegalReference::with(['articles' => function($query) {
                  $query->orderByRaw('CAST(article_reference AS UNSIGNED) ASC')->where('is_active', true);
@@ -71,7 +71,7 @@ class PlayController extends Controller
         $legalReferences = $legalReferencesQuery->orderBy('id', 'asc')->get();
 
         if ($legalReferences->isEmpty()) {
-             return redirect()->route('user.legal-references.index')
+             return redirect()->route('legado.user.legal-references.index')
                     ->with('message', $hasPreferences ? 'Nenhuma das suas leis selecionadas está disponível ou ativa.' : 'Selecione as leis que deseja estudar.');
         }
 
@@ -350,7 +350,7 @@ class PlayController extends Controller
             'was_auto_detected' => $requestedJourney === null // Flag para indicar se foi detectado automaticamente
         ];
         
-        return Inertia::render('Play/Map', [
+        return Inertia::render('Legado/Play/Map', [
             'phases' => $journeyPhases,
             'modules' => $modulesData,
             'journey' => $journeyInfo,
@@ -637,20 +637,20 @@ class PlayController extends Controller
 
          if (!$phaseDetails) {
             //  Log::warning("[Phase Route] Fase não encontrada para ID global: " . $phaseId);
-             return redirect()->route('play.map')->with('message', 'Fase não encontrada.');
+             return redirect()->route('legado.play.map')->with('message', 'Fase não encontrada.');
          }
 
          // Verificar bloqueio (segurança extra)
           if ($phaseDetails['is_blocked'] && !$phaseDetails['is_current']) {
             //    Log::warning("[Phase Route] Acesso bloqueado à fase: " . $phaseId . " por usuário: " . $userId);
-               return redirect()->route('play.map')->with('message', 'Esta fase está bloqueada.');
+               return redirect()->route('legado.play.map')->with('message', 'Esta fase está bloqueada.');
           }
 
 
          // Redirecionar para review se for o caso (deveria ser pego pela rota, mas como fallback)
          if ($phaseDetails['is_review']) {
            //   Log::warning("[Phase Route] Tentativa de acessar fase de revisão ID {$phaseId} pela rota de fase regular. Redirecionando.");
-             return redirect()->route('play.review', [
+             return redirect()->route('legado.play.review', [
                  'referenceUuid' => $phaseDetails['reference_uuid'],
                  'phase' => $phaseId // Passa ID global
              ]);
@@ -660,7 +660,7 @@ class PlayController extends Controller
          // Verificar se é uma fase regular válida (deve ter chunk_index)
          if (!isset($phaseDetails['chunk_index'])) {
              Log::error("[Phase Route] Fase regular ID {$phaseId} não possui chunk_index válido.");
-             return redirect()->route('play.map')->with('message', 'Erro na estrutura da fase.');
+             return redirect()->route('legado.play.map')->with('message', 'Erro na estrutura da fase.');
          }
 
          $reference = LegalReference::where('uuid', $phaseDetails['reference_uuid'])->firstOrFail();
@@ -671,14 +671,14 @@ class PlayController extends Controller
          $chunkedArticles = $allArticles->chunk(self::ARTICLES_PER_PHASE);
          $chunkIndex = $phaseDetails['chunk_index'];         if (!isset($chunkedArticles[$chunkIndex]) || $chunkedArticles[$chunkIndex]->isEmpty()) {
             //   Log::error("[Phase Route] Chunk de artigos não encontrado para fase regular: " . $phaseId . " chunk: " . $chunkIndex);
-             return redirect()->route('play.map')->with('message', 'Erro ao carregar artigos da fase.');
+             return redirect()->route('legado.play.map')->with('message', 'Erro ao carregar artigos da fase.');
          }
 
          $phaseArticles = $chunkedArticles[$chunkIndex];
          $articlesWithProgress = $this->getArticlesWithProgress($userId, $phaseArticles);
          $nextPhaseDetails = $this->findNextPhase($phaseId, $allPhasesList);
          
-         return Inertia::render('Play/Phase', [
+         return Inertia::render('Legado/Play/Phase', [
              'phase' => [
                  'title' => $phaseDetails['title'], // Título já formatado
                  'reference_name' => $reference->name,
@@ -709,12 +709,12 @@ class PlayController extends Controller
          list($phaseDetails, $allPhasesList) = $this->findPhaseDetailsById($userId, $phaseId);
 
           if (!$phaseDetails || !$phaseDetails['is_review'] || $phaseDetails['reference_uuid'] !== $referenceUuid) {
-               return redirect()->route('play.map')->with('message', 'Fase de revisão não encontrada ou inválida.');
+               return redirect()->route('legado.play.map')->with('message', 'Fase de revisão não encontrada ou inválida.');
            }
            
            // Verificar bloqueio
            if ($phaseDetails['is_blocked'] && !$phaseDetails['is_current']) {
-               return redirect()->route('play.map')->with('message', 'Esta fase está bloqueada.');
+               return redirect()->route('legado.play.map')->with('message', 'Esta fase está bloqueada.');
            }
 
          $reference = LegalReference::where('uuid', $referenceUuid)->firstOrFail();
@@ -760,24 +760,24 @@ class PlayController extends Controller
              if ($nextPhaseDetails) {
                  // Construir a rota correta para a próxima fase
                  $nextRoute = $nextPhaseDetails['is_review']
-                     ? route('play.review', ['referenceUuid' => $nextPhaseDetails['reference_uuid'], 'phase' => $nextPhaseDetails['id']])
-                     : route('play.phase', ['phaseId' => $nextPhaseDetails['id']]);
+                     ? route('legado.play.review', ['referenceUuid' => $nextPhaseDetails['reference_uuid'], 'phase' => $nextPhaseDetails['id']])
+                     : route('legado.play.phase', ['phaseId' => $nextPhaseDetails['id']]);
 
                   // Validação extra: a próxima fase calculada não deveria estar bloqueada
                   if (isset($nextPhaseDetails['is_blocked']) && $nextPhaseDetails['is_blocked']) {
-                      return redirect()->route('play.map')->with('message', 'Erro ao determinar a próxima fase.');
+                      return redirect()->route('legado.play.map')->with('message', 'Erro ao determinar a próxima fase.');
                   }
 
                   return redirect($nextRoute);
               } else {
-                   return redirect()->route('play.map')->with('message', 'Parabéns, você completou esta seção!');
+                   return redirect()->route('legado.play.map')->with('message', 'Parabéns, você completou esta seção!');
               }
          }
 
          // Se há artigos para revisar, renderiza a página de revisão
          $nextPhaseDetails = $this->findNextPhase($phaseId, $allPhasesList);
 
-         return Inertia::render('Play/Phase', [ // Reutiliza o componente Phase
+         return Inertia::render('Legado/Play/Phase', [ // Reutiliza o componente Phase
              'phase' => [
                  'title' => $phaseDetails['title'], // Título já formatado
                  'reference_name' => $reference->name,
