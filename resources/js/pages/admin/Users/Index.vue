@@ -1,21 +1,134 @@
 <template>
   <AppLayout title="Usuários">
-    <div class="container py-4 md:py-8 px-3 md:px-4">
-      <div class="w-full mx-auto">
+    <div class="px-3 py-4 md:px-6 md:py-8">
+      <div class="mx-auto w-full max-w-[1920px] space-y-6">
         <Breadcrumbs :breadcrumbs="breadcrumbs" class="mb-4" />
 
-        <Card>
+        <div class="grid gap-4 md:grid-cols-2">
+          <Card class="shadow-none">
+            <CardHeader class="pb-3">
+              <CardDescription>Total de usuários</CardDescription>
+              <CardTitle class="flex items-center gap-2 text-3xl font-bold">
+                <Users class="h-6 w-6 text-primary" />
+                {{ stats.total_users }}
+              </CardTitle>
+            </CardHeader>
+          </Card>
+
+          <Card class="shadow-none">
+            <CardHeader class="pb-3">
+              <CardDescription>Usuários pagantes ativos</CardDescription>
+              <CardTitle class="flex items-center gap-2 text-3xl font-bold">
+                <Crown class="h-6 w-6 text-amber-500" />
+                {{ stats.paying_users }}
+              </CardTitle>
+            </CardHeader>
+          </Card>
+        </div>
+
+        <Card class="shadow-none">
           <CardHeader>
-            <CardTitle class="text-2xl font-bold">Usuários Cadastrados</CardTitle>
+            <CardTitle class="text-2xl font-bold">Crescimento nos últimos 20 dias</CardTitle>
             <CardDescription>
-              Visualize todos os usuários cadastrados, status de assinatura e vidas
+              Um gráfico com novos usuários por dia e novos pagantes por dia.
             </CardDescription>
           </CardHeader>
 
           <CardContent>
-            <!-- Campo de pesquisa -->
+            <div class="space-y-4">
+              <div class="flex flex-wrap items-center gap-4 text-sm">
+                <div class="flex items-center gap-2">
+                  <span class="h-2.5 w-2.5 rounded-full bg-primary" />
+                  <span>Usuários</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="h-2.5 w-2.5 rounded-full bg-amber-500" />
+                  <span>Pagantes</span>
+                </div>
+              </div>
+
+              <div class="w-full overflow-x-auto rounded-lg border bg-muted/20 p-3 md:overflow-x-visible">
+                <svg
+                  v-if="chartData.length > 0"
+                  class="h-[200px] min-w-[720px] w-full md:min-w-0"
+                  viewBox="0 0 900 200"
+                  preserveAspectRatio="none"
+                >
+                  <line
+                    v-for="step in 5"
+                    :key="`grid-${step}`"
+                    :x1="chartPadding.left"
+                    :x2="chartWidth - chartPadding.right"
+                    :y1="chartPadding.top + ((chartHeight - chartPadding.top - chartPadding.bottom) * (step - 1)) / 4"
+                    :y2="chartPadding.top + ((chartHeight - chartPadding.top - chartPadding.bottom) * (step - 1)) / 4"
+                    stroke="hsl(var(--border))"
+                    stroke-width="1"
+                  />
+
+                  <polyline
+                    :points="usersLinePoints"
+                    fill="none"
+                    stroke="hsl(var(--primary))"
+                    stroke-width="2.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+
+                  <polyline
+                    :points="payingLinePoints"
+                    fill="none"
+                    stroke="#f59e0b"
+                    stroke-width="2.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+
+                  <g v-for="(item, index) in chartData" :key="item.date">
+                    <circle
+                      :cx="xPosition(index)"
+                      :cy="yPosition(item.users)"
+                      r="3"
+                      fill="hsl(var(--primary))"
+                    >
+                      <title>{{ item.label }} | Usuários: {{ item.users }}</title>
+                    </circle>
+                    <circle
+                      :cx="xPosition(index)"
+                      :cy="yPosition(item.paying_users)"
+                      r="3"
+                      fill="#f59e0b"
+                    >
+                      <title>{{ item.label }} | Pagantes: {{ item.paying_users }}</title>
+                    </circle>
+                  </g>
+                </svg>
+
+                <div v-else class="flex h-[200px] items-center justify-center text-sm text-muted-foreground">
+                  Não há dados suficientes para o período.
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card class="shadow-none">
+          <CardHeader class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <CardTitle class="text-2xl font-bold">Usuários Cadastrados</CardTitle>
+              <CardDescription>
+                Visualize todos os usuários cadastrados, status de assinatura e vidas.
+              </CardDescription>
+            </div>
+
+            <Button @click="exportBrevoContacts" class="gap-2">
+              <Download class="h-4 w-4" />
+              Exportar contatos (Brevo)
+            </Button>
+          </CardHeader>
+
+          <CardContent>
             <div class="mb-6">
-              <div class="relative">
+              <div class="relative max-w-md">
                 <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   v-model="searchQuery"
@@ -26,9 +139,8 @@
               </div>
             </div>
 
-            <!-- Tabela de usuários -->
-            <div class="overflow-x-auto">
-              <Table>
+            <div class="w-full overflow-x-auto rounded-lg border md:overflow-x-visible">
+              <Table class="w-full min-w-[760px] md:min-w-0">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Nome</TableHead>
@@ -43,16 +155,16 @@
                 <TableBody>
                   <TableRow v-for="user in filteredUsers" :key="user.id">
                     <TableCell>{{ user.name }}</TableCell>
-                    <TableCell>{{ user.email }}</TableCell>
+                    <TableCell class="break-all">{{ user.email }}</TableCell>
                     <TableCell>
                       <div class="flex items-center">
                         <span v-if="user.is_premium" class="flex items-center">
-                          <Infinity class="h-4 w-4 mr-1 text-primary" />
+                          <Infinity class="mr-1 h-4 w-4 text-primary" />
                           Ilimitadas
                         </span>
                         <span v-else class="flex items-center">
-                          <Heart 
-                            class="h-4 w-4 mr-1 text-red-500 cursor-pointer hover:scale-110 transition-transform" 
+                          <Heart
+                            class="mr-1 h-4 w-4 cursor-pointer text-red-500 transition-transform hover:scale-110"
                             @click="addLives(user)"
                             :title="'Clique para adicionar vidas a ' + user.name"
                           />
@@ -62,7 +174,7 @@
                     </TableCell>
                     <TableCell>
                       <div class="flex items-center">
-                        <span class="text-purple-500 font-medium">{{ user.xp || 0 }} XP</span>
+                        <span class="font-medium text-purple-500">{{ user.xp || 0 }} XP</span>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -76,9 +188,9 @@
                     <TableCell>{{ user.created_at }}</TableCell>
                   </TableRow>
                   <TableRow v-if="filteredUsers.length === 0">
-                    <TableCell colspan="7" class="text-center py-4">
+                    <TableCell colspan="7" class="py-4 text-center">
                       <div class="text-muted-foreground">
-                        <UserSearch class="h-12 w-12 mx-auto mb-3" />
+                        <UserSearch class="mx-auto mb-3 h-12 w-12" />
                         <p>Nenhum usuário encontrado para "{{ searchQuery }}"</p>
                       </div>
                     </TableCell>
@@ -103,7 +215,8 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Search, UserSearch, Heart, Infinity } from 'lucide-vue-next';
+import { Button } from '@/components/ui/button';
+import { Search, UserSearch, Heart, Infinity, Users, Crown, Download } from 'lucide-vue-next';
 import { useToast } from '@/components/ui/toast/use-toast';
 import Toaster from '@/components/ui/toast/Toaster.vue';
 
@@ -118,6 +231,18 @@ interface User {
   created_at: string;
 }
 
+interface Stats {
+  total_users: number;
+  paying_users: number;
+}
+
+interface DailyGrowth {
+  date: string;
+  label: string;
+  users: number;
+  paying_users: number;
+}
+
 interface BreadcrumbItem {
   title: string;
   href: string;
@@ -128,6 +253,8 @@ const { toast } = useToast();
 
 const props = defineProps<{
   users?: User[];
+  stats?: Stats;
+  daily_growth?: DailyGrowth[];
 }>();
 
 // Define os breadcrumbs para navegação
@@ -144,6 +271,58 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 // Campo de pesquisa
 const searchQuery = ref('');
+
+const stats = computed<Stats>(() => ({
+  total_users: props.stats?.total_users ?? 0,
+  paying_users: props.stats?.paying_users ?? 0,
+}));
+
+const chartData = computed(() => props.daily_growth ?? []);
+const chartWidth = 900;
+const chartHeight = 200;
+const chartPadding = {
+  top: 16,
+  right: 24,
+  bottom: 24,
+  left: 24,
+};
+
+const chartMax = computed(() => {
+  if (chartData.value.length === 0) {
+    return 1;
+  }
+
+  return Math.max(
+    1,
+    ...chartData.value.map((item) => Math.max(item.users, item.paying_users)),
+  );
+});
+
+const xPosition = (index: number): number => {
+  const count = chartData.value.length;
+
+  if (count <= 1) {
+    return chartWidth / 2;
+  }
+
+  const plotWidth = chartWidth - chartPadding.left - chartPadding.right;
+
+  return chartPadding.left + (plotWidth * index) / (count - 1);
+};
+
+const yPosition = (value: number): number => {
+  const plotHeight = chartHeight - chartPadding.top - chartPadding.bottom;
+  const normalized = value / chartMax.value;
+
+  return chartHeight - chartPadding.bottom - normalized * plotHeight;
+};
+
+const buildLinePoints = (key: 'users' | 'paying_users'): string => {
+  return chartData.value.map((item, index) => `${xPosition(index)},${yPosition(item[key])}`).join(' ');
+};
+
+const usersLinePoints = computed(() => buildLinePoints('users'));
+const payingLinePoints = computed(() => buildLinePoints('paying_users'));
 
 // Filtragem de usuários baseada na pesquisa
 const filteredUsers = computed(() => {
@@ -186,5 +365,9 @@ const addLives = (user: User) => {
       });
     }
   });
+};
+
+const exportBrevoContacts = () => {
+  window.location.href = route('admin.users.export-brevo') as string;
 };
 </script>

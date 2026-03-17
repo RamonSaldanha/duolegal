@@ -1,12 +1,10 @@
 <?php
 
 use App\Http\Controllers\Admin\LawArticleController;
-use App\Http\Controllers\Admin\LegalReferenceController;
 use App\Http\Controllers\Admin\LawArticleOptionController;
+use App\Http\Controllers\Admin\LegalReferenceController;
 use App\Http\Controllers\Admin\UserController;
 use Illuminate\Support\Facades\Route;
-
-
 
 Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     // Rotas para referências legais
@@ -37,7 +35,10 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
 
     // Rota para visualização de usuários
     Route::get('users', [UserController::class, 'index'])->name('admin.users.index');
-    
+
+    // Rota para exportação de contatos para Brevo
+    Route::get('users/export-brevo', [UserController::class, 'exportBrevoContacts'])->name('admin.users.export-brevo');
+
     // Rota para adicionar vidas a um usuário
     Route::post('users/{user}/add-lives', [UserController::class, 'addLives'])->name('admin.users.add-lives');
 });
