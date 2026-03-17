@@ -30,6 +30,7 @@
         "@vueup/vue-quill": "^1.2.0",
         "@vueuse/core": "^12.7.0",
         "autoprefixer": "^10.4.20",
+        "chart.js": "^4.5.1",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
         "concurrently": "^9.0.1",
@@ -45,6 +46,7 @@
         "typescript": "^5.2.2",
         "vite": "^6.2.0",
         "vue": "^3.5.13",
+        "vue-chartjs": "^5.3.3",
         "vue-rewards": "^1.0.1",
         "vue3-google-adsense": "^1.2.2",
         "ziggy-js": "^2.4.2"

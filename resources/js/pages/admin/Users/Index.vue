@@ -47,61 +47,10 @@
                 </div>
               </div>
 
-              <div class="w-full overflow-x-auto rounded-lg border bg-muted/20 p-3 md:overflow-x-visible">
-                <svg
-                  v-if="chartData.length > 0"
-                  class="h-[200px] min-w-[720px] w-full md:min-w-0"
-                  viewBox="0 0 900 200"
-                  preserveAspectRatio="none"
-                >
-                  <line
-                    v-for="step in 5"
-                    :key="`grid-${step}`"
-                    :x1="chartPadding.left"
-                    :x2="chartWidth - chartPadding.right"
-                    :y1="chartPadding.top + ((chartHeight - chartPadding.top - chartPadding.bottom) * (step - 1)) / 4"
-                    :y2="chartPadding.top + ((chartHeight - chartPadding.top - chartPadding.bottom) * (step - 1)) / 4"
-                    stroke="hsl(var(--border))"
-                    stroke-width="1"
-                  />
-
-                  <polyline
-                    :points="usersLinePoints"
-                    fill="none"
-                    stroke="hsl(var(--primary))"
-                    stroke-width="2.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-
-                  <polyline
-                    :points="payingLinePoints"
-                    fill="none"
-                    stroke="#f59e0b"
-                    stroke-width="2.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-
-                  <g v-for="(item, index) in chartData" :key="item.date">
-                    <circle
-                      :cx="xPosition(index)"
-                      :cy="yPosition(item.users)"
-                      r="3"
-                      fill="hsl(var(--primary))"
-                    >
-                      <title>{{ item.label }} | Usuários: {{ item.users }}</title>
-                    </circle>
-                    <circle
-                      :cx="xPosition(index)"
-                      :cy="yPosition(item.paying_users)"
-                      r="3"
-                      fill="#f59e0b"
-                    >
-                      <title>{{ item.label }} | Pagantes: {{ item.paying_users }}</title>
-                    </circle>
-                  </g>
-                </svg>
+              <div class="w-full rounded-lg border bg-muted/20 p-3">
+                <div v-if="chartData.length > 0" class="h-[200px] w-full">
+                  <Line :data="lineChartData" :options="lineChartOptions" />
+                </div>
 
                 <div v-else class="flex h-[200px] items-center justify-center text-sm text-muted-foreground">
                   Não há dados suficientes para o período.
@@ -209,6 +158,18 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { router } from '@inertiajs/vue3';
+import {
+  CategoryScale,
+  Chart as ChartJS,
+  Filler,
+  Legend,
+  LineElement,
+  LinearScale,
+  PointElement,
+  Tooltip,
+  type ChartOptions,
+} from 'chart.js';
+import { Line } from 'vue-chartjs';
 import AppLayout from '@/layouts/AppLayout.vue';
 import Breadcrumbs from '@/components/Breadcrumbs.vue';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
@@ -242,6 +203,8 @@ interface DailyGrowth {
   users: number;
   paying_users: number;
 }
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend, Filler);
 
 interface BreadcrumbItem {
   title: string;
@@ -278,51 +241,80 @@ const stats = computed<Stats>(() => ({
 }));
 
 const chartData = computed(() => props.daily_growth ?? []);
-const chartWidth = 900;
-const chartHeight = 200;
-const chartPadding = {
-  top: 16,
-  right: 24,
-  bottom: 24,
-  left: 24,
+
+const lineChartData = computed(() => ({
+  labels: chartData.value.map((item) => item.label),
+  datasets: [
+    {
+      label: 'Usuários',
+      data: chartData.value.map((item) => item.users),
+      borderColor: 'hsl(var(--primary))',
+      backgroundColor: 'hsl(var(--primary))',
+      pointBackgroundColor: 'hsl(var(--primary))',
+      pointBorderColor: 'hsl(var(--background))',
+      pointBorderWidth: 1,
+      pointRadius: 3,
+      pointHoverRadius: 5,
+      tension: 0.3,
+    },
+    {
+      label: 'Pagantes',
+      data: chartData.value.map((item) => item.paying_users),
+      borderColor: '#f59e0b',
+      backgroundColor: '#f59e0b',
+      pointBackgroundColor: '#f59e0b',
+      pointBorderColor: 'hsl(var(--background))',
+      pointBorderWidth: 1,
+      pointRadius: 3,
+      pointHoverRadius: 5,
+      tension: 0.3,
+    },
+  ],
+}));
+
+const lineChartOptions: ChartOptions<'line'> = {
+  responsive: true,
+  maintainAspectRatio: false,
+  interaction: {
+    mode: 'index',
+    intersect: false,
+  },
+  plugins: {
+    legend: {
+      display: false,
+    },
+    tooltip: {
+      enabled: true,
+      callbacks: {
+        label(context) {
+          const value = context.parsed.y ?? 0;
+          return `${context.dataset.label}: ${value}`;
+        },
+      },
+    },
+  },
+  scales: {
+    x: {
+      grid: {
+        display: false,
+      },
+      ticks: {
+        maxRotation: 0,
+        autoSkip: true,
+        maxTicksLimit: 10,
+      },
+    },
+    y: {
+      beginAtZero: true,
+      ticks: {
+        precision: 0,
+      },
+      grid: {
+        color: 'hsl(var(--border))',
+      },
+    },
+  },
 };
-
-const chartMax = computed(() => {
-  if (chartData.value.length === 0) {
-    return 1;
-  }
-
-  return Math.max(
-    1,
-    ...chartData.value.map((item) => Math.max(item.users, item.paying_users)),
-  );
-});
-
-const xPosition = (index: number): number => {
-  const count = chartData.value.length;
-
-  if (count <= 1) {
-    return chartWidth / 2;
-  }
-
-  const plotWidth = chartWidth - chartPadding.left - chartPadding.right;
-
-  return chartPadding.left + (plotWidth * index) / (count - 1);
-};
-
-const yPosition = (value: number): number => {
-  const plotHeight = chartHeight - chartPadding.top - chartPadding.bottom;
-  const normalized = value / chartMax.value;
-
-  return chartHeight - chartPadding.bottom - normalized * plotHeight;
-};
-
-const buildLinePoints = (key: 'users' | 'paying_users'): string => {
-  return chartData.value.map((item, index) => `${xPosition(index)},${yPosition(item[key])}`).join(' ');
-};
-
-const usersLinePoints = computed(() => buildLinePoints('users'));
-const payingLinePoints = computed(() => buildLinePoints('paying_users'));
 
 // Filtragem de usuários baseada na pesquisa
 const filteredUsers = computed(() => {
