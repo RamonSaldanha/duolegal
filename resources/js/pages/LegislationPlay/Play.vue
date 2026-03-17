@@ -276,7 +276,7 @@ function showXpGainedNotification(xpGained: number) {
 <template>
     <Head :title="legislation.title" />
 
-    <div class="flex h-screen w-full flex-col overflow-hidden bg-white dark:bg-gray-900">
+    <div class="flex h-dvh w-full flex-col overflow-hidden bg-white dark:bg-gray-900">
         <Toaster position="top-right" class="z-[200]" />
         <span id="play-confetti" class="fixed top-1/2 left-1/2 z-[100] pointer-events-none"></span>
 
@@ -376,7 +376,7 @@ function showXpGainedNotification(xpGained: number) {
             </div>
 
             <!-- Área de controles fixa (teleport target) -->
-            <div class="shrink-0 px-3 md:px-4 pb-2">
+            <div class="shrink-0 px-3 md:px-4 pb-4">
                 <div id="play-controls" class="w-full sm:w-[95%] lg:w-[50rem] mx-auto" />
             </div>
         </div>
