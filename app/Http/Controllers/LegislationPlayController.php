@@ -579,7 +579,7 @@ class LegislationPlayController extends Controller
         if ($percentage >= 70 && ! $wasAlreadyCompleted) {
             $gapsCount = $segment->lacunas()->where('is_correct', true)->count();
             $xpGained = max(10, $gapsCount * 5);
-            $user->addXp($xpGained);
+            $user->addXp($xpGained, 'legislation', $segment->id, $segment->legislation_id);
         }
 
         // Próximo segmento — escopo limitado à fase se phase_block_uuids fornecido

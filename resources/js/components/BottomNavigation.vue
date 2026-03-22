@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
-import { Gamepad2, Flag, Trophy, BookOpen } from 'lucide-vue-next';
+import { Gamepad2, Trophy, BookOpen, GraduationCap } from 'lucide-vue-next';
 import { computed } from 'vue';
 
 const page = usePage();
@@ -13,9 +13,9 @@ const navItems = [
         icon: Gamepad2,
     },
     {
-        title: 'Desafios',
-        href: '/challenges',
-        icon: Flag,
+        title: 'Conquistas',
+        href: '/disciplines',
+        icon: GraduationCap,
     },
     {
         title: 'Ranking',

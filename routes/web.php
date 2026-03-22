@@ -3,6 +3,7 @@
 // routes\web.php
 use App\Http\Controllers\ChallengeController;
 use App\Http\Controllers\PublicController;
+use App\Http\Controllers\DisciplineProgressController;
 use App\Http\Controllers\RankingController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\SubscriptionController;
@@ -89,6 +90,9 @@ Route::middleware(['auth'])->group(function () {
 
     // Rota de ranking
     Route::get('/ranking', [RankingController::class, 'index'])->name('ranking.index');
+
+    // Rota de progresso por disciplina
+    Route::get('/disciplines', [DisciplineProgressController::class, 'index'])->name('disciplines.index');
 
     // Rota da loja
     Route::get('/store', function () {

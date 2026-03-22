@@ -49,7 +49,8 @@ class HandleInertiaRequests extends Middleware
             ],
             'auth' => [
                 'user' => $request->user()
-                    ? array_merge($request->user()->only('id', 'name', 'email', 'lives', 'xp'), [
+                    ? array_merge($request->user()->only('id', 'name', 'email', 'lives'), [
+                        'xp' => $request->user()->xp,
                         'is_admin' => $request->user()->isAdmin(),
                         'has_infinite_lives' => $request->user()->hasActiveSubscription(),
                         // Informações de depuração apenas para administradores

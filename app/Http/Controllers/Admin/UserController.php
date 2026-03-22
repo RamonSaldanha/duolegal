@@ -31,7 +31,7 @@ class UserController extends Controller
             ->pluck('user_id');
 
         $users = User::query()
-            ->select('id', 'name', 'email', 'lives', 'xp', 'is_admin', 'created_at')
+            ->select('id', 'name', 'email', 'lives', 'is_admin', 'created_at')
             ->orderBy('created_at', 'desc')
             ->get()
             ->map(function (User $user) use ($activeSubscriptionUserIds) {

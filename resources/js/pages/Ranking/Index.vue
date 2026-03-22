@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import AppHeaderLayout from '@/layouts/app/AppHeaderLayout.vue';
-import { Head } from '@inertiajs/vue3';
-import { Trophy, Medal, Award, Crown, Star } from 'lucide-vue-next';
+import { Head, router } from '@inertiajs/vue3';
+import { Trophy, Crown, Medal, Flame, TrendingUp, Zap } from 'lucide-vue-next';
 import { computed } from 'vue';
 
 interface User {
@@ -16,6 +16,7 @@ interface Props {
     topUsers: User[];
     currentUserPosition: number | null;
     currentUserData: User | null;
+    period: string;
 }
 
 const props = defineProps<Props>();
@@ -25,16 +26,11 @@ const breadcrumbs = [
     { title: 'Ranking', href: '/ranking' },
 ];
 
-const top3Users = computed(() => props.topUsers.slice(0, 3));
-
 const remainingUsers = computed(() => {
-    const users = props.topUsers.slice(3);
-
-    // Se o usuário está fora do top 20, adiciona no final
+    const users = [...props.topUsers];
     if (props.currentUserData && props.currentUserPosition && props.currentUserPosition > 20) {
         return [...users, props.currentUserData];
     }
-
     return users;
 });
 
@@ -45,174 +41,177 @@ const pageTitle = computed(() => {
     return 'Ranking';
 });
 
-const isCurrentUserInTop20 = computed(() => {
-    return props.currentUserPosition && props.currentUserPosition <= 20;
-});
+const isCurrentUser = (userId: number) => props.currentUserData?.id === userId;
+
+const changePeriod = (period: string) => {
+    router.get(route('ranking.index'), { period }, { preserveScroll: true });
+};
+
+const tabs = [
+    { value: 'daily', label: 'Hoje', icon: Flame },
+    { value: 'weekly', label: 'Semana', icon: TrendingUp },
+    { value: 'all', label: 'Geral', icon: Trophy },
+];
+
+const activePeriod = computed(() => props.period || 'all');
+
+const getInitials = (firstName: string, lastName: string) => {
+    return (firstName[0] + (lastName?.[0] || '')).toUpperCase();
+};
+
+const getPositionStyle = (position: number) => {
+    if (position === 1) return {
+        badge: 'bg-yellow-500 text-white',
+        ring: 'ring-2 ring-yellow-400/40',
+        avatar: 'bg-yellow-100 text-yellow-700 ring-2 ring-yellow-400',
+        text: 'text-yellow-600',
+    };
+    if (position === 2) return {
+        badge: 'bg-blue-500 text-white',
+        ring: 'ring-2 ring-blue-400/30',
+        avatar: 'bg-blue-100 text-blue-700 ring-2 ring-blue-400',
+        text: 'text-blue-600',
+    };
+    if (position === 3) return {
+        badge: 'bg-purple-500 text-white',
+        ring: 'ring-2 ring-purple-400/30',
+        avatar: 'bg-purple-100 text-purple-700 ring-2 ring-purple-400',
+        text: 'text-purple-600',
+    };
+    return {
+        badge: 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300',
+        ring: '',
+        avatar: 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300',
+        text: 'text-gray-500',
+    };
+};
 
 const getPositionIcon = (position: number) => {
-    switch (position) {
-        case 1:
-            return Crown;
-        case 2:
-            return Medal;
-        case 3:
-            return Award;
-        default:
-            return Star;
-    }
+    if (position === 1) return Crown;
+    if (position <= 3) return Medal;
+    return null;
 };
-
-const isCurrentUser = (userId: number) => {
-    return props.currentUserData?.id === userId;
-};
-
 </script>
 
 <template>
     <Head :title="pageTitle" />
 
     <AppHeaderLayout :breadcrumbs="breadcrumbs">
-        <div class="mx-auto max-w-4xl space-y-6">
-            <!-- Cabeçalho -->
-            <div class="text-center space-y-2 mt-5">
-                <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Ranking de XP</h1>
-                <p class="text-sm text-gray-600 dark:text-gray-400">Os melhores estudantes de direito do Memorize</p>
+        <div class="mx-auto max-w-2xl space-y-5 px-4 pb-8">
+
+            <!-- Header -->
+            <div class="text-center pt-5">
+                <h1 class="text-xl font-bold text-gray-900 dark:text-white tracking-tight">Ranking</h1>
             </div>
 
-            <!-- Top 3 em destaque -->
-            <div v-if="top3Users.length > 0" class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div
-                    v-for="user in top3Users"
-                    :key="user.id"
-                    class="relative"
-                >
-                    <div
-                        class="rounded-lg p-4 text-center space-y-3 border-2 transition-all"
+            <!-- Period tabs -->
+            <div class="flex justify-center">
+                <div class="inline-flex bg-gray-100 dark:bg-gray-800/80 rounded-full p-1 gap-0.5">
+                    <button
+                        v-for="tab in tabs"
+                        :key="tab.value"
+                        @click="changePeriod(tab.value)"
+                        class="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-full transition-all duration-200"
                         :class="[
-                            isCurrentUser(user.id) ? 'ring-4 ring-blue-500 ring-offset-2 dark:ring-offset-gray-900 scale-105' : '',
-                            user.position === 1 ? 'border-yellow-400 bg-yellow-50 dark:bg-yellow-900/10' :
-                            user.position === 2 ? 'border-gray-400 bg-gray-50 dark:bg-gray-800/10' :
-                            'border-orange-400 bg-orange-50 dark:bg-orange-900/10'
+                            activePeriod === tab.value
+                                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                         ]"
                     >
-                        <!-- Posição -->
-                        <div class="flex justify-center">
-                            <div
-                                class="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg"
-                                :class="[
-                                    user.position === 1 ? 'bg-yellow-500' :
-                                    user.position === 2 ? 'bg-gray-500' :
-                                    'bg-orange-500'
-                                ]"
-                            >
-                                {{ user.position }}
-                            </div>
-                        </div>
-
-                        <!-- Ícone da posição -->
-                        <div class="flex justify-center">
-                            <component
-                                :is="getPositionIcon(user.position)"
-                                class="h-8 w-8"
-                                :class="[
-                                    user.position === 1 ? 'text-yellow-500' :
-                                    user.position === 2 ? 'text-gray-400' :
-                                    'text-orange-600'
-                                ]"
-                            />
-                        </div>
-
-                        <!-- Nome -->
-                        <div class="space-y-0">
-                            <h3 class="text-lg font-bold text-gray-900 dark:text-white leading-tight">
-                                {{ user.first_name }}
-                            </h3>
-                            <p v-if="user.last_name" class="text-base font-medium text-gray-700 dark:text-gray-300 leading-tight">
-                                {{ user.last_name }}
-                            </p>
-                        </div>
-
-                        <!-- XP -->
-                        <div>
-                            <div
-                                class="inline-flex items-center gap-1 px-3 py-1 rounded-full font-bold text-sm"
-                                :class="[
-                                    user.position === 1 ? 'bg-yellow-500 text-white' :
-                                    user.position === 2 ? 'bg-gray-500 text-white' :
-                                    'bg-orange-500 text-white'
-                                ]"
-                            >
-                                <Star class="h-4 w-4" />
-                                {{ user.xp.toLocaleString() }} XP
-                            </div>
-                        </div>
-                    </div>
+                        <component :is="tab.icon" class="h-3.5 w-3.5" />
+                        {{ tab.label }}
+                    </button>
                 </div>
             </div>
 
-            <!-- Resto do ranking (4º ao 20º) -->
-            <div v-if="remainingUsers.length > 0" class="space-y-3 pt-4 pb-6">
-                <h2 class="text-xl font-bold text-gray-900 dark:text-white text-center">
-                    Demais Posições
-                </h2>
+            <!-- Users list -->
+            <div v-if="remainingUsers.length > 0" class="space-y-2">
+                <template v-for="user in remainingUsers" :key="user.id">
+                    <!-- Gap separator for current user outside top 20 -->
+                    <div
+                        v-if="isCurrentUser(user.id) && user.position > 20"
+                        class="flex items-center gap-3 py-1.5"
+                    >
+                        <div class="flex-1 border-t border-dashed border-gray-300 dark:border-gray-600"></div>
+                        <span class="text-xs text-gray-400 font-medium">...</span>
+                        <div class="flex-1 border-t border-dashed border-gray-300 dark:border-gray-600"></div>
+                    </div>
 
-                <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-                    <template v-for="(user, index) in remainingUsers" :key="user.id">
-                        <!-- Separador visual quando o usuário está fora do top 20 -->
-                        <div
-                            v-if="isCurrentUser(user.id) && user.position > 20"
-                            class="flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-700/50 border-y border-gray-200 dark:border-gray-600"
-                        >
-                            <div class="flex-1 h-px bg-gray-300 dark:bg-gray-600"></div>
-                            <span class="text-xs font-semibold text-gray-500 dark:text-gray-400">...</span>
-                            <div class="flex-1 h-px bg-gray-300 dark:bg-gray-600"></div>
-                        </div>
-
-                        <div
-                            class="flex items-center justify-between p-3 border-b border-gray-100 dark:border-gray-700 last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all"
-                            :class="[
-                                isCurrentUser(user.id) ? 'bg-blue-50 dark:bg-blue-900/20 ring-2 ring-inset ring-blue-500 dark:ring-blue-400' : ''
-                            ]"
-                        >
-                        <!-- Posição e Nome -->
-                        <div class="flex items-center gap-3">
+                    <div
+                        class="flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all"
+                        :class="[
+                            isCurrentUser(user.id)
+                                ? 'bg-blue-50 dark:bg-blue-950/30 ring-1 ring-blue-400/50'
+                                : user.position <= 3
+                                    ? 'bg-white dark:bg-gray-800/80 border border-gray-100 dark:border-gray-700/50 ' + getPositionStyle(user.position).ring
+                                    : 'bg-white dark:bg-gray-800/60 hover:bg-gray-50 dark:hover:bg-gray-800'
+                        ]"
+                    >
+                        <!-- Position -->
+                        <div class="flex-shrink-0 w-9 flex justify-center">
                             <div
-                                class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-white text-sm"
-                                :class="[
-                                    'bg-purple-500'
-                                ]"
+                                v-if="user.position <= 3"
+                                class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-black"
+                                :class="getPositionStyle(user.position).badge"
                             >
                                 {{ user.position }}
                             </div>
+                            <span v-else class="text-sm font-bold text-gray-400 dark:text-gray-500 tabular-nums">
+                                {{ user.position }}
+                            </span>
+                        </div>
 
-                            <div>
-                                <h4 class="font-semibold text-gray-900 dark:text-white text-sm leading-tight">
+                        <!-- Avatar -->
+                        <div
+                            class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
+                            :class="getPositionStyle(user.position).avatar"
+                        >
+                            {{ getInitials(user.first_name, user.last_name) }}
+                        </div>
+
+                        <!-- Name + position icon -->
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-1.5">
+                                <component
+                                    v-if="getPositionIcon(user.position)"
+                                    :is="getPositionIcon(user.position)"
+                                    class="h-4 w-4 flex-shrink-0"
+                                    :class="getPositionStyle(user.position).text"
+                                />
+                                <p class="text-sm font-semibold text-gray-900 dark:text-white truncate leading-tight">
                                     {{ user.first_name }}
-                                    <span v-if="user.last_name">{{ user.last_name }}</span>
-                                </h4>
+                                    <span v-if="user.last_name" class="font-normal text-gray-500 dark:text-gray-400">{{ user.last_name }}</span>
+                                </p>
+                                <span
+                                    v-if="isCurrentUser(user.id)"
+                                    class="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/50 px-1.5 py-0.5 rounded-full flex-shrink-0"
+                                >Você</span>
                             </div>
                         </div>
 
                         <!-- XP -->
-                        <div class="flex items-center gap-1">
-                            <Star class="h-4 w-4 text-purple-500" />
-                            <span class="font-bold text-purple-600 dark:text-purple-400 text-sm">
-                                {{ user.xp.toLocaleString() }} XP
+                        <div class="flex items-center gap-1 flex-shrink-0">
+                            <Zap class="h-3.5 w-3.5 text-yellow-500" />
+                            <span class="text-sm font-bold text-gray-700 dark:text-gray-300 tabular-nums">
+                                {{ user.xp.toLocaleString() }}
                             </span>
                         </div>
                     </div>
-                    </template>
-                </div>
+                </template>
             </div>
 
-            <!-- Mensagem caso não haja usuários -->
-            <div v-if="topUsers.length === 0" class="text-center py-8">
-                <Trophy class="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                <h3 class="text-lg font-semibold text-gray-600 dark:text-gray-400 mb-1">
-                    Nenhum ranking disponível
+            <!-- Empty state -->
+            <div v-if="topUsers.length === 0" class="text-center py-16">
+                <div class="w-16 h-16 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center mx-auto mb-4">
+                    <Trophy class="h-8 w-8 text-gray-400" />
+                </div>
+                <h3 class="text-base font-bold text-gray-600 dark:text-gray-400 mb-1">
+                    Nenhum ranking disponivel
                 </h3>
-                <p class="text-sm text-gray-500 dark:text-gray-500">
-                    Seja o primeiro a aparecer no ranking estudando direito!
+                <p class="text-sm text-gray-500 max-w-[260px] mx-auto">
+                    {{ activePeriod === 'daily' ? 'Ninguem ganhou XP hoje ainda. Seja o primeiro!' :
+                       activePeriod === 'weekly' ? 'Ninguem ganhou XP esta semana. Seja o primeiro!' :
+                       'Comece a estudar para aparecer no ranking!' }}
                 </p>
             </div>
         </div>

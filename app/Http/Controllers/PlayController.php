@@ -1127,7 +1127,7 @@ class PlayController extends Controller
         $xpGained = 0;
         if ($percentage >= 70 && !$wasAlreadyCompleted) {
             $xpGained = \App\Models\User::calculateXpGain($article->difficulty_level);
-            $user->addXp($xpGained);
+            $user->addXp($xpGained, 'play', $article->id);
         }
 
         return response()->json([

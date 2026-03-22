@@ -44,4 +44,22 @@ export interface User {
     };
 }
 
+export interface Discipline {
+    id: number;
+    uuid: string;
+    name: string;
+    slug: string;
+    description?: string;
+    legal_references_count?: number;
+}
+
+export interface DisciplineProgress {
+    discipline: Discipline;
+    total_xp: number;
+    level: number;
+    current_xp_in_level: number;
+    xp_for_next_level: number;
+    progress_percent: number;
+}
+
 export type BreadcrumbItemType = BreadcrumbItem;

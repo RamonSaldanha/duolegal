@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\DisciplineController;
 use App\Http\Controllers\Admin\LawArticleController;
 use App\Http\Controllers\Admin\LawArticleOptionController;
 use App\Http\Controllers\Admin\LegalReferenceController;
@@ -41,4 +42,12 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
 
     // Rota para adicionar vidas a um usuário
     Route::post('users/{user}/add-lives', [UserController::class, 'addLives'])->name('admin.users.add-lives');
+
+    // Rotas para disciplinas
+    Route::get('disciplines', [DisciplineController::class, 'index'])->name('admin.disciplines.index');
+    Route::get('disciplines/create', [DisciplineController::class, 'create'])->name('admin.disciplines.create');
+    Route::post('disciplines', [DisciplineController::class, 'store'])->name('admin.disciplines.store');
+    Route::get('disciplines/{discipline}/edit', [DisciplineController::class, 'edit'])->name('admin.disciplines.edit');
+    Route::put('disciplines/{discipline}', [DisciplineController::class, 'update'])->name('admin.disciplines.update');
+    Route::delete('disciplines/{discipline}', [DisciplineController::class, 'destroy'])->name('admin.disciplines.destroy');
 });

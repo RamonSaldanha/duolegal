@@ -19,8 +19,8 @@ const mainNavItems = computed(() => [
         iconPath: '/icons/livro.png',
     },
     {
-        title: 'Desafios',
-        href: '/challenges',
+        title: 'Conquistas',
+        href: '/disciplines',
         iconPath: '/icons/trofeu.png',
     },
     {
@@ -45,17 +45,8 @@ const mainNavItems = computed(() => [
     ...(isAdmin.value
         ? [
             {
-                title: 'Editor',
-                href: '/editor',
-                iconPath: '/icons/configuracoes.png',
-            },
-        ]
-        : []),
-    ...(isAdmin.value
-        ? [
-            {
                 title: 'Legislações',
-                href: '/admin/legislations',
+                href: '/editor',
                 iconPath: '/icons/configuracoes.png',
             },
         ]
@@ -65,6 +56,15 @@ const mainNavItems = computed(() => [
             {
                 title: 'Usuários',
                 href: '/admin/users',
+                iconPath: '/icons/configuracoes.png',
+            },
+        ]
+        : []),
+    ...(isAdmin.value
+        ? [
+            {
+                title: 'Disciplinas (Admin)',
+                href: '/admin/disciplines',
                 iconPath: '/icons/configuracoes.png',
             },
         ]

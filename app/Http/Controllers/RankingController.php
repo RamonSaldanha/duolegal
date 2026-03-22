@@ -2,20 +2,24 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
+use App\Services\XpService;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class RankingController extends Controller
 {
-    public function index(): Response
+    public function __construct(
+        private XpService $xpService
+    ) {}
+
+    public function index(Request $request): Response
     {
+        $period = $request->get('period', 'all');
         $currentUser = auth()->user();
 
-        $topUsers = User::select('id', 'name', 'xp')
-            ->orderByDesc('xp')
-            ->limit(20)
-            ->get()
+        $topUsers = $this->xpService->getRanking($period, 20)
+            ->values()
             ->map(function ($user, $index) {
                 return [
                     'id' => $user->id,
@@ -23,34 +27,28 @@ class RankingController extends Controller
                     'last_name' => count(explode(' ', trim($user->name))) > 1
                         ? explode(' ', trim($user->name))[count(explode(' ', trim($user->name))) - 1]
                         : '',
-                    'xp' => $user->xp,
+                    'xp' => (int) $user->total_xp,
                     'position' => $index + 1,
                 ];
             });
 
-        // Calcular posição do usuário atual
         $currentUserPosition = null;
         $currentUserData = null;
 
         if ($currentUser) {
-            $allUsers = User::select('id', 'name', 'xp')
-                ->orderByDesc('xp')
-                ->get();
+            $currentUserPosition = $this->xpService->getUserPositionInRanking($currentUser->id, $period);
+            $userXp = $this->xpService->getUserXpForPeriod($currentUser->id, $period);
 
-            foreach ($allUsers as $index => $user) {
-                if ($user->id === $currentUser->id) {
-                    $currentUserPosition = $index + 1;
-                    $currentUserData = [
-                        'id' => $user->id,
-                        'first_name' => explode(' ', trim($user->name))[0],
-                        'last_name' => count(explode(' ', trim($user->name))) > 1
-                            ? explode(' ', trim($user->name))[count(explode(' ', trim($user->name))) - 1]
-                            : '',
-                        'xp' => $user->xp,
-                        'position' => $currentUserPosition,
-                    ];
-                    break;
-                }
+            if ($userXp > 0) {
+                $currentUserData = [
+                    'id' => $currentUser->id,
+                    'first_name' => explode(' ', trim($currentUser->name))[0],
+                    'last_name' => count(explode(' ', trim($currentUser->name))) > 1
+                        ? explode(' ', trim($currentUser->name))[count(explode(' ', trim($currentUser->name))) - 1]
+                        : '',
+                    'xp' => $userXp,
+                    'position' => $currentUserPosition,
+                ];
             }
         }
 
@@ -58,6 +56,7 @@ class RankingController extends Controller
             'topUsers' => $topUsers,
             'currentUserPosition' => $currentUserPosition,
             'currentUserData' => $currentUserData,
+            'period' => $period,
         ]);
     }
 }

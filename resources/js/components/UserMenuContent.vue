@@ -3,7 +3,7 @@ import UserInfo from '@/components/UserInfo.vue';
 import { DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import type { User } from '@/types';
 import { Link } from '@inertiajs/vue3';
-import { LogOut, Settings, FileText, Scale, Users } from 'lucide-vue-next';
+import { LogOut, Settings, FileText, Scale, Users, GraduationCap } from 'lucide-vue-next';
 
 interface Props {
     user: User;
@@ -38,9 +38,15 @@ defineProps<Props>();
                 </Link>
             </DropdownMenuItem>
             <DropdownMenuItem :as-child="true">
-                <Link class="block w-full" href="/admin/legislations" as="button">
+                <Link class="block w-full" href="/editor" as="button">
                     <Scale class="mr-2 h-4 w-4" />
                     Legislações
+                </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem :as-child="true">
+                <Link class="block w-full" href="/admin/disciplines" as="button">
+                    <GraduationCap class="mr-2 h-4 w-4" />
+                    Disciplinas
                 </Link>
             </DropdownMenuItem>
             <DropdownMenuItem :as-child="true">
