@@ -25,7 +25,6 @@ const isLoadingAbove = ref(false);
 const isLoadingBelow = ref(false);
 
 // Refs do DOM
-const scrollContainerRef = ref<HTMLElement | null>(null);
 const topSentinelRef = ref<HTMLElement | null>(null);
 const bottomSentinelRef = ref<HTMLElement | null>(null);
 
@@ -139,8 +138,7 @@ async function loadMoreAbove() {
     if (isLoadingAbove.value || !hasMoreAbove.value || phases.value.length === 0) return;
     isLoadingAbove.value = true;
 
-    const container = scrollContainerRef.value!;
-    const oldScrollHeight = container.scrollHeight;
+    const oldDocHeight = document.documentElement.scrollHeight;
 
     try {
         const firstId = phases.value[0]?.id;
@@ -152,9 +150,10 @@ async function loadMoreAbove() {
             phases.value.unshift(...data.phases);
             hasMoreAbove.value = data.hasMore;
 
-            // Preservar posição do scroll
+            // Preservar posição visual do scroll compensando na janela
             await nextTick();
-            container.scrollTop += container.scrollHeight - oldScrollHeight;
+            const delta = document.documentElement.scrollHeight - oldDocHeight;
+            window.scrollBy({ top: delta, behavior: 'instant' as ScrollBehavior });
         } else {
             hasMoreAbove.value = false;
         }
@@ -166,13 +165,21 @@ async function loadMoreAbove() {
 }
 
 // Auto-scroll para a fase atual
-const scrollToCurrentPhase = () => {
-    if (!props.currentPhaseId) return;
+const scrollToCurrentPhase = (): boolean => {
+    if (!props.currentPhaseId) return false;
     const el = document.querySelector(`[data-phase-id="${props.currentPhaseId}"]`);
     if (el) {
         el.scrollIntoView({ block: 'center', inline: 'center' });
+        return true;
     }
+    return false;
 };
+
+// Aguarda dois frames para garantir que o layout foi aplicado antes de rolar
+const waitForLayout = () =>
+    new Promise<void>((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+    });
 
 // Verificar se fase atual está visível
 const hasCurrentPhaseInView = computed(() => {
@@ -190,13 +197,20 @@ const goToCurrentPhase = () => {
     }
 };
 
-onMounted(() => {
+onMounted(async () => {
     window.addEventListener('resize', updateWindowWidth);
 
-    // Auto-scroll para fase atual
-    nextTick(() => {
-        setTimeout(() => scrollToCurrentPhase(), 300);
-    });
+    // 1) Esperar Vue montar e o browser aplicar o layout (2 frames)
+    await nextTick();
+    await waitForLayout();
+
+    // 2) Rolar para a fase atual ANTES de anexar os observers —
+    //    caso contrário o topSentinel fica visível em scrollY=0 e dispara
+    //    loadMoreAbove() enquanto o auto-scroll ainda está em curso.
+    scrollToCurrentPhase();
+
+    // 3) Esperar mais um frame para o scroll ter efeito antes de observar
+    await waitForLayout();
 
     // Observer para scroll para baixo
     if (bottomSentinelRef.value) {
@@ -241,7 +255,7 @@ onUnmounted(() => {
     <Head title="Mapa de Estudos" />
 
     <AppLayout>
-        <div ref="scrollContainerRef" class="container py-6 px-4">
+        <div class="container py-6 px-4">
             <div class="max-w-4xl mx-auto">
 
                 <!-- Botão flutuante "Ir para fase atual" -->
