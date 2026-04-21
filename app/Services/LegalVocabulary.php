@@ -138,7 +138,7 @@ class LegalVocabulary
         'i', 'ii', 'iii', 'iv', 'v', 'vi', 'vii', 'viii', 'ix', 'x',
         'xi', 'xii', 'xiii', 'xiv', 'xv', 'xvi', 'xvii', 'xviii', 'xix', 'xx',
         // Termos estruturais
-        'art', 'artigo', '§', 'paragrafo', '[...]',
+        'art', 'artigo', '§', 'paragrafo', 'parágrafo', '[...]',
         // Outros
         'não', 'mais', 'também', 'já', 'ainda', 'mesmo', 'só', 'apenas',
     ];
