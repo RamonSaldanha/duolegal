@@ -4,116 +4,109 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a gamified law study application called "Memorize Direito" built with Laravel 12 and Vue.js. The application helps law students memorize legal articles through a Duolingo/Anki-style system where users complete missing text in law articles to progress through phases.
+Gamified law study application ("Memorize Direito") built with Laravel 12 and Vue 3. Law students memorize legal articles through Duolingo/Anki-style fill-in-the-blank exercises, progressing through phases with lives and XP.
 
 ## Development Commands
 
-### Frontend Development
-- `npm run dev` - Start development server with Vite hot reload
-- `npm run build` - Build for production
-- `npm run build:ssr` - Build with SSR support
-- `npm run lint` - Run ESLint with auto-fix
-- `npm run format` - Format code with Prettier
-- `npm run format:check` - Check code formatting
-
-### Backend Development
-- `composer run dev` - Start all services (Laravel server, queue worker, Vite) concurrently
-- `php artisan serve` - Start Laravel development server
-- `php artisan queue:listen --tries=1` - Start queue worker
-- `php artisan migrate` - Run database migrations
-- `php artisan migrate:fresh --seed` - Fresh migration with seeding
-
-### Testing
-- `php artisan test` - Run all tests (uses Pest as default)
-- `php artisan test tests/Feature/ExampleTest.php` - Run specific test file
-- `php artisan test --filter=testName` - Run specific test by name
-- `vendor/bin/pest` - Run Pest tests directly (preferred testing framework)
-
-### Code Quality
-- `vendor/bin/pint` - Run Laravel Pint (PHP CS Fixer)
+```bash
+composer run dev          # Start all services (Laravel + queue + Vite) concurrently
+php artisan migrate       # Run database migrations
+php artisan migrate:fresh --seed  # Fresh migration with seeding
+vendor/bin/pest           # Run Pest tests (preferred over php artisan test)
+php artisan test --filter=testName  # Run specific test
+vendor/bin/pint           # Run Laravel Pint (PHP CS Fixer)
+npm run dev               # Start Vite dev server (HMR)
+npm run build             # Build for production
+npm run lint              # ESLint with auto-fix
+npm run format            # Prettier formatting
+```
 
 ## Architecture Overview
 
-### Tech Stack
-- **Backend**: Laravel 12 with PHP 8.2+
-- **Frontend**: Vue 3 with TypeScript and Inertia.js
-- **UI Framework**: Tailwind CSS with shadcn-vue components
-- **Database**: SQLite (development), supports MySQL/PostgreSQL
-- **Queue System**: Laravel Queue for background processing
-- **Payment**: Laravel Cashier (Stripe integration)
-- **State Management**: Composables with Vue 3 Composition API
+**Tech Stack:** Laravel 12 / PHP 8.2+, Vue 3 + TypeScript + Inertia.js, Tailwind CSS + shadcn-vue, SQLite (dev), Laravel Cashier (Stripe), Laravel Queue.
 
-### Key Models & Relationships
-- **User**: Has lives, XP, subscriptions, and progress tracking via Laravel Cashier
-- **LegalReference**: Legal documents/laws that users can study
-- **LawArticle**: Individual articles within legal references with practice content
-- **LawArticleOption**: Multiple choice options for fill-in-the-blank exercises
-- **UserProgress**: Tracks user performance and completion status per article
-- **Challenge**: User-created challenges and custom exercises
-- **ChallengeProgress**: Tracks progress on challenges
-- **UserArticleProgress**: Additional granular progress tracking for articles
+**No API pattern:** Inertia.js renders data directly from controllers — no separate REST API endpoints. All data flows through `Inertia::render()` responses and `router.post()` form submissions.
 
-### Game Mechanics
-- **Lives System**: Users lose lives on incorrect answers, can be replenished
-- **XP System**: Experience points earned for correct answers and completion
-- **Phase System**: Articles are grouped into phases with progressive difficulty
-- **Review System**: Spaced repetition with review phases every 3 regular phases
-- **Subscription Model**: Freemium with Stripe payment integration
+### Dual System Architecture
 
-### Frontend Architecture
-- **Layouts**: AppLayout (main), AuthLayout (authentication)
-- **Pages**: 
-  - `Play/Phase.vue` - Main game interface with fill-in-the-blank exercises and debug tools
-  - `Play/Map.vue` - Progress map showing available phases with journey system
-  - `Play/DebugPanel.vue` - Administrative debugging interface
-  - `Dashboard.vue` - User dashboard and statistics
-  - `Subscription/Index.vue` - Stripe subscription management
-  - `User/LegalReferences.vue` - User preference selection for laws to study
-- **Components**: 
-  - shadcn-vue UI components in `components/ui/` with full TypeScript support
-  - Custom game components like `GameButton.vue`
-  - Admin components for content management
-- **Composables**: 
-  - `useAppearance.ts` - Theme management with dark mode support
-  - `useInitials.ts` - User avatar utilities
-- **TypeScript**: Full type safety with custom types in `types/index.ts` and Ziggy route types
+There are two coexisting game systems:
 
-### Key Features Implementation
-- **Gap-filling Exercise**: Uses practice_content with `____` placeholders replaced by user selections
-- **Progress Tracking**: Real-time updates with Vue reactivity and Laravel backend sync
-- **Mobile Responsive**: Optimized mobile experience with collapsible text and touch-friendly interface
-- **Gamification**: Confetti rewards, XP notifications, progress bars with visual feedback
+- **Legacy system** (`/legado` prefix, `routes/legado.php`): Original phase-based game using `PlayController` and `LearnController`. Most active users are here.
+- **New system** (root routes, `routes/web.php`): Challenges, subscriptions, disciplines, and newer legislation editor/player features.
 
-### Database Structure
-- Articles are ordered by `CAST(article_reference AS UNSIGNED) ASC` for proper numeric sorting
-- Phase generation uses configurable constants:
-  - `ARTICLES_PER_PHASE = 6` articles per regular phase
-  - `REVIEW_PHASE_INTERVAL = 3` - review phase every 3 regular phases
-  - `PHASES_PER_MODULE_PER_LAW = 6` for law intercalation
-- UUID-based routing for security and clean URLs
+### Route Files
 
-### Configuration Files
-- `vite.config.ts` - Vite configuration with Vue plugin and path aliases
-- `tailwind.config.js` - Tailwind configuration with custom color scheme and dark mode
-- `components.json` - shadcn-vue component configuration
-- `tsconfig.json` - TypeScript configuration with Vue support
+| File                  | Purpose                                                       |
+| --------------------- | ------------------------------------------------------------- |
+| `routes/web.php`      | Public pages, challenges, subscriptions, ranking, disciplines |
+| `routes/legado.php`   | Legacy game: map, phase, review, progress, lives              |
+| `routes/admin.php`    | Content management (behind AdminMiddleware)                   |
+| `routes/settings.php` | User profile and password settings                            |
+| `routes/auth.php`     | Authentication scaffolding (Breeze)                           |
+| `routes/beta.php`     | Experimental features                                         |
 
-### Development Patterns
-- Use Inertia.js for SPA-like experience without API complexity
-- Prefer Composition API over Options API in Vue components
-- Follow Laravel conventions for controllers, models, and routes
-- Use Pest for testing over PHPUnit where possible
-- Implement proper error handling with user-friendly feedback
-- Use TypeScript interfaces for type safety in Vue components
+### Core Game Logic — `PlayController.php`
 
-### Important Constants & Configuration
-- Phase generation is controlled by constants in `PlayController.php`:
-  - `ARTICLES_PER_PHASE = 6` - Articles per regular phase
-  - `REVIEW_PHASE_INTERVAL = 3` - Review phase every 3 regular phases
-  - `PHASES_PER_MODULE_PER_LAW = 6` - Max regular phases per law per module (controls intercalation)
-  - `PHASES_PER_JOURNEY = 24` - Max phases per journey for UI organization
-- Difficulty levels: 1=Iniciante, 2=Básico, 3=Intermediário, 4=Avançado, 5=Especialista
-- Success threshold: 70% correct answers to pass an article
-- Perfect score for reviews: 100% required to advance from review phases
-- XP calculation: `difficultyLevel * 5` (5-25 XP per article based on difficulty)
-- Lives system: Users start with finite lives, subscribers get infinite lives
+This is the most complex file. The phase system is **fully stateless** — phases are recalculated from articles and constants on every request, never stored in the database.
+
+**Phase generation constants:**
+
+```php
+const ARTICLES_PER_PHASE = 6;         // Articles per regular phase
+const REVIEW_PHASE_INTERVAL = 3;      // Insert review phase every N regular phases
+const PHASES_PER_MODULE_PER_LAW = 6;  // Max regular phases per law per module (intercalation control)
+const PHASES_PER_JOURNEY = 24;        // UI pagination — phases per journey
+```
+
+**Critical pattern — double calculation:** The `map()` method and `findPhaseDetailsById()` both contain identical PASSO 1 (structure building) + PASSO 2 (progress calculation) logic. If you change phase generation in one place, you **must** update both. This duplication is intentional — `findPhaseDetailsById()` recalculates from scratch for individual phase/review routes without needing the full map context.
+
+**Phase structure algorithm:**
+
+1. **PASSO 1:** Build phase structure with law intercalation. Phases distribute across modules so users alternate between multiple laws rather than completing one law fully before starting another.
+2. **PASSO 2:** Walk phases sequentially: calculate progress per phase, find the first incomplete unblocked phase (marked `is_current`), block all phases after it. Regular phases require all articles attempted; review phases require all in-scope articles ≥ 100%.
+
+**Revoked article handling:** Articles containing only a header like "Art. 123." (no content, no gaps) auto-complete as 100%. This handles repealed Brazilian legal articles without requiring deletion.
+
+**Progress rules:**
+
+- Pass threshold: ≥ 70% correct → `UserProgress.is_completed = true`, life preserved
+- Fail: < 70% → decrement life (unless subscriber with infinite lives)
+- XP awarded only on first pass (not retakes): `difficulty_level * 5` = 5–25 XP
+- Review phases require 100% on all in-scope articles to advance
+
+### Key Models
+
+**User:** `hasLives()`, `hasInfiniteLives()` (active subscriber), `decrementLife()`, `incrementLife()` (max 5). XP stored as immutable `xp_transactions` records; the `xp` attribute sums them. `addXp($amount, $sourceType, $sourceId)` creates transactions.
+
+**LawArticle:** `practice_content` uses `_____` placeholders for fill-in gaps. `article_reference` is a string (e.g., "45-A") always queried with `CAST(article_reference AS UNSIGNED) ASC` for proper numeric ordering — never sort articles alphabetically.
+
+**UserProgress:** `updateProgress()` static method increments `attempts`, tracks `wrong_answers`, sets `is_completed` at ≥70%, increments `revisions` on subsequent passes of already-completed articles.
+
+**Challenge:** `selected_articles` is a JSON array of article IDs. Participants tracked via pivot table with per-article scores. Separate from global `UserProgress` records.
+
+**Legislation / LegislationSegment:** Newer model for full legislation text with "lacunas" (gaps). Editor and player components exist in `components/legislation-editor/` and `components/legislation-play/` but system is still in development.
+
+### Shared Data via Middleware
+
+`HandleInertiaRequests.php` injects into every Vue page via `usePage().props`:
+
+- User object: `id`, `name`, `email`, `lives`, `xp`, `is_admin`, `has_infinite_lives`
+- Flash messages: `success`, `error`, `info`
+- Daily quote
+
+### Frontend Pages
+
+| Page        | Path                         | Purpose                                                                       |
+| ----------- | ---------------------------- | ----------------------------------------------------------------------------- |
+| Map         | `Legado/Play/Map.vue`        | Phase list with journey pagination, progress display, auto-scroll to current  |
+| Phase       | `Legado/Play/Phase.vue`      | Fill-in-the-blank game loop with XP/life notifications                        |
+| DebugPanel  | `Legado/Play/DebugPanel.vue` | Admin tool showing phase structure and progress details                       |
+| Challenges  | `Challenges/`                | Create, browse, join custom article challenges                                |
+| Disciplines | `Disciplines/Index.vue`      | Completion % by legal topic                                                   |
+
+### Database Conventions
+
+- Always filter with `.where('is_active', true)` on articles and legal references
+- Always order articles with `CAST(article_reference AS UNSIGNED) ASC`
+- UUIDs used in routes for security (no sequential guessing); slugs used for public SEO URLs
+- Stripe subscription data managed entirely by Laravel Cashier; check `User::subscribed('default')` for active subscription
