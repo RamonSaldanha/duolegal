@@ -6,15 +6,18 @@ use App\Models\Legislation;
 use App\Models\LegislationSegment;
 use App\Models\UserLegislationSelection;
 use App\Models\UserSegmentProgress;
+use App\Services\PhaseGenerationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 class LegislationPlayController extends Controller
 {
-    const BLOCKS_PER_PHASE = 15;
-    const PHASES_PER_LEGISLATION_SWITCH = 4;
-    const PHASES_PER_PAGE = 30;
+    const BLOCKS_PER_PHASE = PhaseGenerationService::BLOCKS_PER_PHASE;
+    const PHASES_PER_LEGISLATION_SWITCH = PhaseGenerationService::PHASES_PER_LEGISLATION_SWITCH;
+    const PHASES_PER_PAGE = PhaseGenerationService::PHASES_PER_PAGE;
+
+    public function __construct(private PhaseGenerationService $phaseService) {}
 
     /**
      * Mapa com trilha intercalada de legislações.
@@ -45,7 +48,7 @@ class LegislationPlayController extends Controller
         }
 
         // Gerar lista de fases intercaladas
-        $allPhases = $this->generatePhaseList($user, $selectedUuids);
+        $allPhases = $this->phaseService->generatePhaseList($user, $selectedUuids);
 
         // Encontrar a fase atual
         $currentPhaseId = null;
@@ -77,7 +80,7 @@ class LegislationPlayController extends Controller
         $initialSlice = array_values(array_slice($allPhases, $startIndex, $endIndex - $startIndex));
 
         // Remover block_ids do payload enviado ao frontend
-        $initialSlice = array_map(fn ($p) => $this->stripBlockIds($p), $initialSlice);
+        $initialSlice = array_map(fn ($p) => $this->phaseService->stripBlockIds($p), $initialSlice);
 
         return Inertia::render('LegislationPlay/Map', [
             'phases' => $initialSlice,
@@ -119,7 +122,7 @@ class LegislationPlayController extends Controller
             $selectedUuids = Legislation::where('status', 'published')->pluck('uuid')->toArray();
         }
 
-        $allPhases = $this->generatePhaseList($user, $selectedUuids);
+        $allPhases = $this->phaseService->generatePhaseList($user, $selectedUuids);
 
         // Encontrar posição do cursor
         $cursorIndex = null;
@@ -145,7 +148,7 @@ class LegislationPlayController extends Controller
             $hasMore = $startIndex > 0;
         }
 
-        $slice = array_map(fn ($p) => $this->stripBlockIds($p), array_values($slice));
+        $slice = array_map(fn ($p) => $this->phaseService->stripBlockIds($p), array_values($slice));
 
         return response()->json([
             'phases' => $slice,
@@ -297,7 +300,7 @@ class LegislationPlayController extends Controller
         }
 
         // Gerar lista de fases
-        $allPhases = $this->generatePhaseList($user, $selectedUuids);
+        $allPhases = $this->phaseService->generatePhaseList($user, $selectedUuids);
 
         // Encontrar a fase solicitada
         $phase = null;
@@ -628,142 +631,6 @@ class LegislationPlayController extends Controller
     }
 
     // ==================== PRIVATE METHODS ====================
-
-    /**
-     * Gera a lista intercalada de fases a partir das legislações selecionadas.
-     */
-    private function generatePhaseList($user, array $selectedUuids = []): array
-    {
-        // 1. Buscar legislações com seus blocos
-        $query = Legislation::where('status', 'published')
-            ->with(['segments' => fn ($q) => $q->where('is_block', true)->orderBy('char_start')]);
-
-        if (! empty($selectedUuids)) {
-            $query->whereIn('uuid', $selectedUuids);
-        }
-
-        $legislations = $query->orderBy('id')->get();
-
-        if ($legislations->isEmpty()) {
-            return [];
-        }
-
-        // 2. Dividir blocos em chunks por legislação
-        $lawChunks = [];
-        foreach ($legislations as $leg) {
-            $chunks = $leg->segments->chunk(self::BLOCKS_PER_PHASE)->values();
-            if ($chunks->isNotEmpty()) {
-                $lawChunks[$leg->uuid] = [
-                    'legislation' => $leg,
-                    'chunks' => $chunks,
-                    'cursor' => 0,
-                ];
-            }
-        }
-
-        if (empty($lawChunks)) {
-            return [];
-        }
-
-        // 3. Intercalar chunks entre legislações
-        $phaseList = [];
-        $phaseId = 0;
-        $prevLegUuid = null;
-
-        while (true) {
-            $addedAny = false;
-
-            foreach ($lawChunks as $uuid => &$data) {
-                $added = 0;
-
-                while ($added < self::PHASES_PER_LEGISLATION_SWITCH && $data['cursor'] < $data['chunks']->count()) {
-                    $phaseId++;
-                    $chunk = $data['chunks'][$data['cursor']];
-
-                    $phaseList[] = [
-                        'id' => $phaseId,
-                        'legislation_uuid' => $uuid,
-                        'legislation_title' => $data['legislation']->title,
-                        'block_ids' => $chunk->pluck('id')->toArray(),
-                        'block_count' => $chunk->count(),
-                        'show_legislation_header' => ($uuid !== $prevLegUuid),
-                    ];
-
-                    $prevLegUuid = $uuid;
-                    $data['cursor']++;
-                    $added++;
-                    $addedAny = true;
-                }
-            }
-            unset($data);
-
-            if (! $addedAny) {
-                break;
-            }
-        }
-
-        // 4. Calcular progresso e bloqueio (query única)
-        $allBlockIds = collect($phaseList)->pluck('block_ids')->flatten()->unique()->toArray();
-
-        $allProgress = UserSegmentProgress::where('user_id', $user->id)
-            ->whereIn('legislation_segment_id', $allBlockIds)
-            ->get()
-            ->keyBy('legislation_segment_id');
-
-        $previousComplete = true;
-        $currentFound = false;
-
-        foreach ($phaseList as &$phase) {
-            $completedCount = 0;
-            $blockStatus = [];
-
-            foreach ($phase['block_ids'] as $blockId) {
-                $progress = $allProgress->get($blockId);
-
-                if ($progress && $progress->is_completed) {
-                    $completedCount++;
-                    $blockStatus[] = ($progress->best_score >= 100) ? 'correct' : 'correct';
-                } elseif ($progress && $progress->attempts > 0) {
-                    $blockStatus[] = 'incorrect';
-                } else {
-                    $blockStatus[] = 'pending';
-                }
-            }
-
-            $total = $phase['block_count'];
-            $isComplete = $completedCount >= $total && $total > 0;
-
-            $phase['is_complete'] = $isComplete;
-            $phase['is_blocked'] = $currentFound || ! $previousComplete;
-            $phase['is_current'] = ! $phase['is_blocked'] && ! $isComplete && ! $currentFound;
-
-            if ($phase['is_current']) {
-                $currentFound = true;
-            }
-
-            $phase['progress'] = [
-                'completed' => $completedCount,
-                'total' => $total,
-                'percentage' => $total > 0 ? round(($completedCount / $total) * 100) : 0,
-                'block_status' => $blockStatus,
-            ];
-
-            $previousComplete = $isComplete;
-        }
-        unset($phase);
-
-        return $phaseList;
-    }
-
-    /**
-     * Remove block_ids do payload enviado ao frontend (dados internos).
-     */
-    private function stripBlockIds(array $phase): array
-    {
-        unset($phase['block_ids']);
-
-        return $phase;
-    }
 
     /**
      * Formata segmento completado com dados de progresso do usuário.
