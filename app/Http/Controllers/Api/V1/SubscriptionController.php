@@ -7,6 +7,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Laravel\Cashier\Exceptions\IncompletePayment;
+use Stripe\Checkout\Session as StripeCheckoutSession;
 use Stripe\EphemeralKey;
 use Stripe\PromotionCode;
 use Stripe\Stripe;
@@ -164,6 +165,75 @@ class SubscriptionController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * POST /v1/subscription/checkout-session
+     * Cria uma Stripe Checkout Session (página hospedada) e devolve a URL para
+     * abrir num browser in-app. Compatível com Expo Go (sem módulo nativo do Stripe).
+     */
+    public function checkoutSession(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'price_id' => 'required|string',
+            'success_url' => 'nullable|string',
+            'cancel_url' => 'nullable|string',
+        ]);
+
+        $user = $request->user();
+
+        if ($user->hasActiveSubscription()) {
+            return response()->json([
+                'message' => 'Você já possui uma assinatura ativa.',
+            ], 422);
+        }
+
+        $validPrices = array_values(config('subscription.plans', []));
+        if (! empty($validPrices) && ! in_array($validated['price_id'], $validPrices)) {
+            return response()->json(['message' => 'Plano inválido.'], 422);
+        }
+
+        try {
+            if (empty($user->stripe_id)) {
+                $user->createOrGetStripeCustomer();
+                $user = $user->fresh();
+            }
+
+            Stripe::setApiKey(config('cashier.secret'));
+
+            $successUrl = $validated['success_url']
+                ?? 'memorize://subscription/return?status=success&session_id={CHECKOUT_SESSION_ID}';
+            $cancelUrl = $validated['cancel_url']
+                ?? 'memorize://subscription/return?status=cancelled';
+
+            $session = StripeCheckoutSession::create([
+                'mode' => 'subscription',
+                'customer' => $user->stripe_id,
+                'line_items' => [[
+                    'price' => $validated['price_id'],
+                    'quantity' => 1,
+                ]],
+                'allow_promotion_codes' => true,
+                'success_url' => $successUrl,
+                'cancel_url' => $cancelUrl,
+                'metadata' => [
+                    'user_id' => $user->id,
+                    'source' => 'mobile_app',
+                ],
+            ]);
+
+            return response()->json(['url' => $session->url]);
+        } catch (\Exception $e) {
+            Log::error('Erro ao criar Checkout Session', [
+                'user_id' => $user->id,
+                'price_id' => $validated['price_id'],
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'message' => 'Não foi possível iniciar o checkout.',
             ], 500);
         }
     }

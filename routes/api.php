@@ -64,6 +64,7 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'throttle:120,1'])->group(funct
     Route::get('/subscription/status', [SubscriptionController::class, 'status']);
     Route::post('/subscription/setup-intent', [SubscriptionController::class, 'setupIntent']);
     Route::post('/subscription/confirm', [SubscriptionController::class, 'confirm']);
+    Route::post('/subscription/checkout-session', [SubscriptionController::class, 'checkoutSession']);
     Route::post('/subscription/cancel', [SubscriptionController::class, 'cancel']);
     Route::post('/subscription/resume', [SubscriptionController::class, 'resume']);
     Route::post('/subscription/validate-coupon', [SubscriptionController::class, 'validateCoupon']);
