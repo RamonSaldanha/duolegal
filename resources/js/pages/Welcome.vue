@@ -272,7 +272,7 @@ const getLawUrl = (law: { uuid: string; slug?: string }) => {
                                 Gamificação que transforma o estudo jurídico em uma jornada envolvente.
                             </p>
                             
-                            <div class="flex flex-wrap gap-3 pt-4 justify-center">
+                            <div class="flex flex-wrap gap-3 pt-4 justify-center lg:justify-start">
                                 <Link
                                     v-if="!page.props.auth.user"
                                     :href="route('play.map')"
