@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { Head, Link, usePage } from '@inertiajs/vue3';
-import { Book, Download, PlayCircle, Menu, X, ChevronRight, Target, CheckCircle, Trophy, Smartphone, Gamepad2, Zap, TrendingUp } from 'lucide-vue-next';
+import { Book, Download, Play, Menu, X, ChevronRight, Target, CheckCircle, Trophy, Smartphone, Gamepad2, Zap, TrendingUp } from 'lucide-vue-next';
 
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
 import GameButton from '@/components/ui/GameButton.vue';
 import { useAppearance } from '@/composables/useAppearance';
@@ -15,6 +15,28 @@ const page = usePage<{
 }>();
 
 const { logoTheme } = useAppearance();
+
+const typedDark = ref('');
+const typedBlue = ref('');
+const darkPart = 'Domine a legislação. ';
+const bluePart = 'Jogando.';
+const typingDone = ref(false);
+
+onMounted(() => {
+    let i = 0;
+    const totalLength = darkPart.length + bluePart.length;
+    const interval = setInterval(() => {
+        if (i < darkPart.length) {
+            typedDark.value += darkPart[i];
+        } else if (i < totalLength) {
+            typedBlue.value += bluePart[i - darkPart.length];
+        } else {
+            typingDone.value = true;
+            clearInterval(interval);
+        }
+        i++;
+    }, 60);
+});
 
 const toggleMobileMenu = () => {
     mobileMenuOpen.value = !mobileMenuOpen.value;
@@ -235,15 +257,14 @@ const getLawUrl = (law: { uuid: string; slug?: string }) => {
         </header>
 
         <!-- Hero Section -->
-        <section class="w-full py-20 md:py-24 bg-gradient-to-br from-slate-50 to-gray-100 dark:from-gray-900 dark:to-black" id="hero">
+        <section class="w-full py-10 md:py-24 bg-gradient-to-br from-slate-50 to-gray-100 dark:from-gray-900 dark:to-black" id="hero">
             <div class="mx-auto max-w-7xl px-4 sm:px-6">
                 <div class="flex flex-col lg:flex-row items-center gap-16 lg:gap-20">
                     <!-- Conteúdo Principal -->
                     <div class="w-full lg:w-[60%] text-center lg:text-left">
                         <div class="space-y-6">
-                            <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold heading-font text-gray-900 dark:text-white leading-tight">
-                                Lei seca 
-                                <span class="text-gray-700 dark:text-gray-300">gamificada</span>
+                            <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold heading-font text-gray-900 dark:text-white leading-tight min-h-[1.2em]">
+                                {{ typedDark }}{{ typedBlue }}<span v-if="!typingDone" class="inline-block w-0.5 h-[0.85em] bg-gray-900 dark:bg-white align-middle animate-pulse ml-0.5"></span>
                             </h1>
                             
                             <p class="text-lg sm:text-xl text-gray-600 dark:text-gray-300 leading-relaxed max-w-2xl">
@@ -251,31 +272,38 @@ const getLawUrl = (law: { uuid: string; slug?: string }) => {
                                 Gamificação que transforma o estudo jurídico em uma jornada envolvente.
                             </p>
                             
-                            <div class="flex flex-col sm:flex-row gap-4 pt-4">
+                            <div class="flex flex-wrap gap-3 pt-4 justify-center">
                                 <Link
                                     v-if="!page.props.auth.user"
                                     :href="route('play.map')"
-                                    class="w-full sm:w-auto flex items-center justify-center"
+                                    class="flex items-center justify-center"
                                 >
-                                    <GameButton variant="blue" size="lg" class="w-full sm:w-auto px-8 py-4 text-xl flex items-center gap-3">
-                                        <PlayCircle class="h-6 w-6" />
-                                        Começar gratuitamente
+                                    <GameButton variant="blue" size="md" class="flex items-center gap-2">
+                                        <Play class="h-5 w-5" />
+                                        Jogar
                                     </GameButton>
                                 </Link>
                                 <Link
                                     v-else
                                     :href="route('play.map')"
-                                    class="w-full sm:w-auto flex items-center justify-center"
+                                    class="flex items-center justify-center"
                                 >
-                                    <GameButton variant="blue" size="lg" class="w-full sm:w-auto px-8 py-4 text-xl flex items-center gap-3">
-                                        <PlayCircle class="h-6 w-6" />
+                                    <GameButton variant="blue" size="md" class="flex items-center gap-2">
+                                        <Play class="h-5 w-5" />
                                         Continuar Estudando
                                     </GameButton>
                                 </Link>
                                 
-                                <a href="#features" class="w-full sm:w-auto flex items-center justify-center">
-                                    <GameButton variant="white" size="lg" class="w-full sm:w-auto px-8 py-4 text-xl flex items-center gap-3">
-                                        Entenda mais
+                                <a href="#app-android" class="flex items-center justify-center">
+                                    <GameButton variant="white" size="md" class="flex items-center gap-2">
+                                        <Smartphone class="h-5 w-5" />
+                                        Android (Beta)
+                                    </GameButton>
+                                </a>
+
+                                <a href="#features" class="flex items-center justify-center">
+                                    <GameButton variant="white" size="md" class="flex items-center gap-2">
+                                        Saiba mais
                                     </GameButton>
                                 </a>
                             </div>
@@ -292,7 +320,7 @@ const getLawUrl = (law: { uuid: string; slug?: string }) => {
                                     <div class="p-2 bg-gray-200 dark:bg-gray-800 rounded-lg">
                                         <Trophy class="h-5 w-5 text-gray-700 dark:text-gray-300" />
                                     </div>
-                                    <span class="font-medium">Sistema de XP e níveis</span>
+                                    <span class="font-medium">Sistema de XP e Conquistas</span>
                                 </div>
                             </div>
                         </div>
