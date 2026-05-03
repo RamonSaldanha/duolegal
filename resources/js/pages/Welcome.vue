@@ -100,9 +100,9 @@ const getLawUrl = (law: { uuid: string; slug?: string }) => {
                     <Link :href="route('public.laws')" class="text-gray-600 dark:text-gray-300 hover:text-green-600 font-medium transition-colors">
                         Todas as Leis
                     </Link>
-                    <a href="/memorize-app.apk" download class="inline-flex items-center gap-1.5 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium transition-colors">
-                        <Download class="h-4 w-4" />
-                        Baixar App
+                    <a href="#app-android" class="inline-flex items-center gap-1.5 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium transition-colors">
+                        <Smartphone class="h-4 w-4" />
+                        Android (novo)
                     </a>
                     
                     <div class="h-5 w-px bg-gray-300 dark:bg-gray-700"></div>
@@ -192,13 +192,12 @@ const getLawUrl = (law: { uuid: string; slug?: string }) => {
                         <ChevronRight class="h-5 w-5 text-gray-500 dark:text-gray-400" />
                     </Link>
                     <a 
-                        href="/memorize-app.apk" 
-                        download
+                        href="#app-android"
                         class="flex items-center justify-between py-2 px-4 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900"
                         @click="closeMenu"
                     >
-                        <span class="font-medium text-blue-600 dark:text-blue-400">Baixar App Android</span>
-                        <Download class="h-5 w-5 text-blue-500 dark:text-blue-400" />
+                        <span class="font-medium text-blue-600 dark:text-blue-400">Android (novo)</span>
+                        <Smartphone class="h-5 w-5 text-blue-500 dark:text-blue-400" />
                     </a>
                     
                     <div class="h-px w-full bg-gray-200 dark:bg-gray-800 my-2"></div>
@@ -328,7 +327,7 @@ const getLawUrl = (law: { uuid: string; slug?: string }) => {
                             </div>
                             
                             <!-- Elemento decorativo de fundo -->
-                            <div class="absolute inset-0 -z-10 overflow-hidden">
+                            <div class="absolute inset-0 -z-10 overflow-hidden" >
                                 <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-72 h-72 sm:w-96 sm:h-96 bg-gradient-to-br from-gray-200/30 to-gray-300/30 dark:from-gray-800/20 dark:to-black/20 rounded-full blur-3xl"></div>
                             </div>
                         </div>
@@ -338,33 +337,36 @@ const getLawUrl = (law: { uuid: string; slug?: string }) => {
         </section>
 
         <!-- App Android Section -->
-        <section class="w-full py-16 bg-blue-50 dark:bg-blue-950">
-            <div class="mx-auto max-w-7xl px-4 sm:px-6">
-                <div class="flex flex-col lg:flex-row items-center gap-10">
+        <section class="w-full py-16 bg-blue-50 dark:bg-blue-950"  id="app-android">
+            <div class="mx-auto max-w-5xl px-4 sm:px-6">
+                <div class="flex flex-col lg:flex-row items-center gap-8 text-center lg:text-left">
                     <div class="flex-shrink-0">
-                        <div class="w-28 h-28 sm:w-36 sm:h-36 bg-blue-100 dark:bg-blue-900 rounded-3xl flex items-center justify-center">
-                            <Smartphone class="h-16 w-16 sm:h-20 sm:w-20 text-blue-600 dark:text-blue-400" />
+                        <div class="w-24 h-24 sm:w-32 sm:h-32 bg-blue-100 dark:bg-blue-900 rounded-3xl flex items-center justify-center">
+                            <Smartphone class="h-14 w-14 sm:h-16 sm:w-16 text-blue-600 dark:text-blue-400" />
                         </div>
                     </div>
-                    <div class="flex-1 text-center lg:text-left">
-                        <h2 class="text-3xl sm:text-4xl font-bold heading-font mb-3 text-gray-800 dark:text-white">
-                            App Android disponível
-                        </h2>
-                        <p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl">
-                            Baixe o Memorize Direito para o seu celular Android e estude legislação brasileira onde quiser, mesmo sem internet.
-                        </p>
-                        <div class="mt-5">
-                            <a
-                                href="/memorize-app.apk"
-                                download
-                                class="w-full sm:w-auto flex items-center justify-center"
-                            >
-                                <GameButton variant="blue" size="lg" class="flex items-center gap-3">
-                                    <Download class="h-6 w-6" />
-                                    Baixar Memorize App
-                                </GameButton>
-                            </a>
+                    <div class="flex-1 space-y-3">
+                        <div class="flex items-center gap-3 justify-center lg:justify-start">
+                            <h2 class="text-2xl sm:text-3xl font-bold heading-font text-gray-800 dark:text-white">
+                                App Android disponível
+                            </h2>
+                            <span class="px-2.5 py-0.5 bg-blue-200 dark:bg-blue-800 text-blue-700 dark:text-blue-300 text-xs font-semibold rounded-full">Beta</span>
                         </div>
+                        <p class="text-base sm:text-lg text-gray-600 dark:text-gray-300 max-w-xl">
+                            Baixe o Memorize Direito para o seu celular Android e estude legislação brasileira onde quiser, mesmo sem internet. Primeira versão em testes, sua opinião é bem-vinda!
+                        </p>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <a
+                            href="/memorize-app.apk"
+                            download
+                            class="w-full sm:w-auto flex items-center justify-center"
+                        >
+                            <GameButton variant="blue" size="lg" class="flex items-center gap-3">
+                                <Download class="h-6 w-6" />
+                                Baixar Grátis
+                            </GameButton>
+                        </a>
                     </div>
                 </div>
             </div>
@@ -647,12 +649,11 @@ const getLawUrl = (law: { uuid: string; slug?: string }) => {
                         <div class="px-6 pb-6 text-gray-600 dark:text-gray-300 space-y-4">
                             <p>Sim! Nossa plataforma é totalmente responsiva e funciona perfeitamente em celulares, tablets e computadores. Você pode estudar onde e quando quiser.</p>
                             <a
-                                href="/memorize-app.apk"
-                                download
-                                class="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors"
+                                href="#app-android"
+                                class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
                             >
-                                <Download class="h-4 w-4" />
-                                Baixar App Android
+                                <Smartphone class="h-4 w-4" />
+                                Android (novo)
                             </a>
                         </div>
                     </details>
@@ -774,12 +775,11 @@ const getLawUrl = (law: { uuid: string; slug?: string }) => {
                             </a>
                         </div>
                         <a
-                            href="/memorize-app.apk"
-                            download
+                            href="#app-android"
                             class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-sm transition-colors"
                         >
-                            <Download class="h-4 w-4" />
-                            Baixar App Android
+                            <Smartphone class="h-4 w-4" />
+                            Android (novo)
                         </a>
                     </div>
                 </div>
