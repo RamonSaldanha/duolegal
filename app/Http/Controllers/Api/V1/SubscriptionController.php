@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Services\StripeSubscriptionSync;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -234,6 +235,54 @@ class SubscriptionController extends Controller
 
             return response()->json([
                 'message' => 'Não foi possível iniciar o checkout.',
+            ], 500);
+        }
+    }
+
+    /**
+     * POST /v1/subscription/sync
+     * Sincroniza a assinatura criada via Checkout Session para o banco local,
+     * a partir do session_id recebido no deep-link de retorno do app.
+     * Garante o status premium imediato, sem depender do webhook.
+     */
+    public function syncFromCheckout(Request $request, StripeSubscriptionSync $sync): JsonResponse
+    {
+        $validated = $request->validate([
+            'session_id' => 'required|string',
+        ]);
+
+        $user = $request->user();
+
+        try {
+            Stripe::setApiKey(config('cashier.secret'));
+
+            $session = StripeCheckoutSession::retrieve($validated['session_id']);
+
+            // Garante que a sessão pertence ao usuário autenticado.
+            $belongsToUser = $session->customer === $user->stripe_id
+                || (string) ($session->metadata->user_id ?? '') === (string) $user->id;
+
+            if (! $belongsToUser) {
+                return response()->json(['message' => 'Sessão não pertence ao usuário.'], 403);
+            }
+
+            if ($session->mode === 'subscription' && $session->subscription) {
+                $sync->syncById($session->subscription);
+            }
+
+            return response()->json([
+                'success' => true,
+                'has_active_subscription' => $user->fresh()->hasActiveSubscription(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Erro ao sincronizar assinatura do checkout', [
+                'user_id' => $user->id,
+                'session_id' => $validated['session_id'],
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'message' => 'Não foi possível sincronizar a assinatura.',
             ], 500);
         }
     }

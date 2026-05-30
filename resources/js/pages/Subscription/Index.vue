@@ -600,7 +600,7 @@ const applyCoupon = async () => {
     try {
         const response = await axios.post(route('subscription.validate-coupon'), {
             coupon_code: couponCode.value.trim(),
-            price: getPlanPrice(selectedPlan.value),
+            price_id: getPlanPriceId(selectedPlan.value),
         });
 
         if (response.data.valid) {
@@ -612,6 +612,9 @@ const applyCoupon = async () => {
                 amount_off: response.data.amount_off,
                 promotion_code_id: response.data.promotion_code_id,
             };
+            // Garante o desconto correto sobre o preço do plano selecionado,
+            // sem depender do valor calculado no backend.
+            recalculateDiscount();
         } else {
             couponError.value = response.data.message || 'Cupom inválido';
         }

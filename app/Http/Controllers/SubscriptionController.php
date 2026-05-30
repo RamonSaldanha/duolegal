@@ -186,6 +186,7 @@ class SubscriptionController extends Controller
     {
         $request->validate([
             'coupon_code' => 'required|string|max:50',
+            'price_id' => 'nullable|string',
         ]);
 
         try {
@@ -226,9 +227,16 @@ class SubscriptionController extends Controller
                 ]);
             }
 
-            // Calcula o desconto
-            $priceInfo = $this->getPriceInfo();
-            $originalPrice = $priceInfo['price'];
+            // Calcula o desconto sobre o preço do plano selecionado (não o mensal fixo)
+            $priceId = $request->price_id ?: config('subscription.plans.monthly');
+            $originalPrice = 0;
+            if ($priceId) {
+                try {
+                    $originalPrice = \Stripe\Price::retrieve($priceId)->unit_amount;
+                } catch (\Exception $e) {
+                    // Fallback silencioso: mantém 0 se o preço não puder ser recuperado
+                }
+            }
             $discountAmount = 0;
             $description = '';
 

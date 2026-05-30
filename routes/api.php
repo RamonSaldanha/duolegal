@@ -1,13 +1,13 @@
 <?php
 
+use App\Http\Controllers\Admin\LegalReferenceController as AdminLegalReferenceController;
 use App\Http\Controllers\Api\LawArticleApiController;
 use App\Http\Controllers\Api\V1\AuthController;
-use App\Http\Controllers\Api\V1\PlayController;
-use App\Http\Controllers\Api\V1\RankingController;
 use App\Http\Controllers\Api\V1\DisciplineProgressController;
 use App\Http\Controllers\Api\V1\LegalReferenceController;
+use App\Http\Controllers\Api\V1\PlayController;
+use App\Http\Controllers\Api\V1\RankingController;
 use App\Http\Controllers\Api\V1\SubscriptionController;
-use App\Http\Controllers\Admin\LegalReferenceController as AdminLegalReferenceController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -65,6 +65,7 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'throttle:120,1'])->group(funct
     Route::post('/subscription/setup-intent', [SubscriptionController::class, 'setupIntent']);
     Route::post('/subscription/confirm', [SubscriptionController::class, 'confirm']);
     Route::post('/subscription/checkout-session', [SubscriptionController::class, 'checkoutSession']);
+    Route::post('/subscription/sync', [SubscriptionController::class, 'syncFromCheckout']);
     Route::post('/subscription/cancel', [SubscriptionController::class, 'cancel']);
     Route::post('/subscription/resume', [SubscriptionController::class, 'resume']);
     Route::post('/subscription/validate-coupon', [SubscriptionController::class, 'validateCoupon']);
