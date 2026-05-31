@@ -6,6 +6,7 @@ use App\Http\Controllers\PublicController;
 use App\Http\Controllers\DisciplineProgressController;
 use App\Http\Controllers\RankingController;
 use App\Http\Controllers\SitemapController;
+use App\Http\Controllers\StreakController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\WelcomeController;
 use Illuminate\Support\Facades\Route;
@@ -90,6 +91,9 @@ Route::middleware(['auth'])->group(function () {
 
     // Rota de ranking
     Route::get('/ranking', [RankingController::class, 'index'])->name('ranking.index');
+
+    // Rota de ofensiva (streak)
+    Route::get('/ofensiva', [StreakController::class, 'index'])->name('ofensiva.index');
 
     // Rota de progresso por disciplina
     Route::get('/disciplines', [DisciplineProgressController::class, 'index'])->name('disciplines.index');

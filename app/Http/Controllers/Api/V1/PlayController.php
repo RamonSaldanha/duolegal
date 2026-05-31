@@ -8,12 +8,16 @@ use App\Models\LegislationSegment;
 use App\Models\UserLegislationSelection;
 use App\Models\UserSegmentProgress;
 use App\Services\PhaseGenerationService;
+use App\Services\StreakService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class PlayController extends Controller
 {
-    public function __construct(private PhaseGenerationService $phaseService) {}
+    public function __construct(
+        private PhaseGenerationService $phaseService,
+        private StreakService $streakService,
+    ) {}
 
     /**
      * GET /v1/play/map
@@ -355,6 +359,8 @@ class PlayController extends Controller
             $xpGained = max(10, $gapsCount * 5);
             $user->addXp($xpGained, 'legislation', $segment->id, $segment->legislation_id);
         }
+        // A ofensiva é derivada das XpTransactions (ver StreakService); o addXp
+        // acima já registra o "dia estudado" automaticamente.
 
         $nextSegment = null;
         $phaseBlockUuids = $validated['phase_block_uuids'] ?? null;
@@ -534,6 +540,8 @@ class PlayController extends Controller
             'lives' => $user->lives,
             'has_infinite_lives' => $user->hasInfiniteLives(),
             'xp' => $user->xp,
+            'current_streak' => $this->streakService->currentStreak($user->id),
+            'longest_streak' => $this->streakService->longestStreak($user->id),
         ];
     }
 

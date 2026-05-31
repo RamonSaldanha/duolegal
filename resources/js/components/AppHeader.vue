@@ -6,7 +6,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/compon
 import UserMenuContent from '@/components/UserMenuContent.vue';
 import { getInitials } from '@/composables/useInitials';
 import { Link, usePage } from '@inertiajs/vue3';
-import { Heart, Gem, Infinity } from 'lucide-vue-next';
+import { Heart, Gem, Infinity, Flame } from 'lucide-vue-next';
 import { computed, watch } from 'vue';
 
 const page = usePage<{
@@ -18,11 +18,15 @@ const page = usePage<{
             is_admin: boolean;
             lives: number;
             xp: number;
+            current_streak?: number;
+            longest_streak?: number;
             avatar?: string;
             has_infinite_lives?: boolean;
         } | null;
     };
 }>();
+
+const currentStreak = computed(() => page.props.auth.user?.current_streak ?? 0);
 
 const auth = computed(() => page.props.auth);
 const isAdmin = computed(() => page.props.auth.user?.is_admin ?? false);
@@ -79,6 +83,23 @@ watch(userLives, (newValue, oldValue) => {
                         </template>
                     </div>
                 </div>
+
+                <!-- Ofensiva (streak) -->
+                <Link
+                    v-if="auth.user"
+                    :href="route('ofensiva.index')"
+                    class="flex items-center gap-1.5 rounded-full bg-orange-50 px-3 py-1.5 transition-colors hover:bg-orange-100 dark:bg-orange-900/20 dark:hover:bg-orange-900/30"
+                    :title="`Ofensiva: ${currentStreak} ${currentStreak === 1 ? 'dia' : 'dias'}`"
+                >
+                    <Flame
+                        class="h-5 w-5"
+                        :class="currentStreak > 0 ? 'text-orange-500' : 'text-gray-400'"
+                        fill="currentColor"
+                    />
+                    <span class="font-bold" :class="currentStreak > 0 ? 'text-orange-500' : 'text-gray-400'">
+                        {{ currentStreak }}
+                    </span>
+                </Link>
 
                 <!-- XP Counter -->
                 <div v-if="auth.user?.xp !== undefined" class="flex items-center gap-1">

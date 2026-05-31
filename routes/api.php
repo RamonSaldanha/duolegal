@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\DisciplineProgressController;
 use App\Http\Controllers\Api\V1\LegalReferenceController;
 use App\Http\Controllers\Api\V1\PlayController;
 use App\Http\Controllers\Api\V1\RankingController;
+use App\Http\Controllers\Api\V1\StreakController;
 use App\Http\Controllers\Api\V1\SubscriptionController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -52,6 +53,9 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'throttle:120,1'])->group(funct
 
     // Ranking
     Route::get('/ranking', [RankingController::class, 'index']);
+
+    // Ofensiva (streak de dias consecutivos)
+    Route::get('/streak', [StreakController::class, 'show']);
 
     // Conquistas / Disciplinas
     Route::get('/disciplines', [DisciplineProgressController::class, 'index']);

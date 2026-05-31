@@ -182,4 +182,29 @@ class User extends Authenticatable
     {
         return $difficultyLevel * 5;
     }
+
+    /**
+     * Ofensiva atual (dias consecutivos de estudo), calculada a partir das
+     * XpTransactions do usuário. Ver App\Services\StreakService.
+     */
+    public function effectiveStreak(): int
+    {
+        return app(\App\Services\StreakService::class)->currentStreak($this->id);
+    }
+
+    /**
+     * Maior sequência de dias consecutivos já alcançada (histórico completo).
+     */
+    public function longestStreak(): int
+    {
+        return app(\App\Services\StreakService::class)->longestStreak($this->id);
+    }
+
+    /**
+     * Indica se o usuário já concluiu um exercício hoje (no fuso da ofensiva).
+     */
+    public function playedToday(): bool
+    {
+        return app(\App\Services\StreakService::class)->playedToday($this->id);
+    }
 }

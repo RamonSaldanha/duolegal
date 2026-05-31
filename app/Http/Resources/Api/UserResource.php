@@ -16,6 +16,8 @@ class UserResource extends JsonResource
             'lives' => $this->lives,
             'has_infinite_lives' => $this->hasInfiniteLives(),
             'xp' => $this->xp,
+            'current_streak' => $this->effectiveStreak(),
+            'longest_streak' => $this->longestStreak(),
             'is_admin' => $this->is_admin,
             'email_verified_at' => $this->email_verified_at,
         ];
