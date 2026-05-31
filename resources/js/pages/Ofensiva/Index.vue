@@ -236,11 +236,11 @@ async function shareCard() {
         <!-- Card vertical 9:16 para stories (renderizado fora da tela, só p/ captura) -->
         <div style="position: fixed; left: -10000px; top: 0; pointer-events: none;" aria-hidden="true">
             <div ref="shareCardRef" class="flex flex-col bg-white" style="width: 360px; height: 640px;">
-                <div class="bg-orange-500 py-5 text-center">
-                    <p class="text-sm font-extrabold uppercase tracking-[0.2em] text-white">Memorize Direito</p>
+                <div class="flex justify-center overflow-hidden border-b border-gray-200 bg-white" style="padding-top: 2px; padding-bottom: 6px;">
+                    <img src="/img/logomemorizeblack.svg" alt="Memorize Direito" style="height: 96px; width: auto; margin-top: -16px; margin-bottom: -4px;" />
                 </div>
 
-                <div class="flex flex-1 flex-col items-center justify-center gap-6 px-7">
+                <div class="flex flex-1 flex-col items-center justify-start gap-7 px-7 pt-8">
                     <Flame class="h-24 w-24 text-orange-500" fill="currentColor" />
                     <div class="text-center">
                         <div class="text-7xl font-black leading-none text-orange-500">{{ current_streak }}</div>
@@ -282,7 +282,7 @@ async function shareCard() {
 
                 <div class="px-7 py-5 text-center">
                     <p class="text-sm font-semibold text-gray-500">{{ subtitle }}</p>
-                    <p class="mt-1 text-xs font-medium text-orange-400">memorizedireito.com</p>
+                    <p class="mt-1 text-sm font-bold text-blue-500">memorizedireito.com</p>
                 </div>
             </div>
         </div>
