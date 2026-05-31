@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import AppHeaderLayout from '@/layouts/app/AppHeaderLayout.vue';
 import { Head } from '@inertiajs/vue3';
-import { BookOpen, Zap } from 'lucide-vue-next';
+import { BookOpen, TrendingUp } from 'lucide-vue-next';
 import DisciplineBadge from '@/components/DisciplineBadge.vue';
 import { computed } from 'vue';
 
@@ -58,33 +58,45 @@ const inactiveDisciplines = computed(() =>
 
             <!-- Header with global level -->
             <div class="pt-5 space-y-4">
-                <div class="text-center">
-                    <h1 class="text-xl font-bold text-gray-900 dark:text-white tracking-tight">Conquistas</h1>
-                </div>
+                <h1 class="text-center text-xl font-bold text-gray-900 dark:text-white tracking-tight">Conquistas</h1>
 
                 <!-- Global stats -->
-                <div class="flex items-center gap-4 bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-200 dark:border-gray-700 p-4">
-                    <div class="relative flex-shrink-0">
-                        <svg class="w-16 h-16 -rotate-90" viewBox="0 0 64 64">
-                            <circle cx="32" cy="32" r="28" fill="none" stroke="currentColor" stroke-width="4" class="text-gray-100 dark:text-gray-700" />
-                            <circle cx="32" cy="32" r="28" fill="none" stroke="#22C55E" stroke-width="4" stroke-linecap="round"
-                                :stroke-dasharray="175.93"
-                                :stroke-dashoffset="175.93 - (175.93 * globalLevel.progress_percent / 100)"
-                            />
-                        </svg>
-                        <div class="absolute inset-0 flex items-center justify-center">
-                            <span class="text-lg font-black text-gray-900 dark:text-white">{{ globalLevel.level }}</span>
+                <div class="flex flex-col gap-4 rounded-2xl border border-gray-200 bg-white p-4 dark:border-transparent dark:bg-gray-900">
+                    <div class="flex items-center gap-4">
+                        <div class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-purple-600 text-white">
+                            <span class="text-xl font-bold">{{ globalLevel.level }}</span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="mb-1.5 flex items-end justify-between gap-2">
+                                <p class="text-lg font-bold text-gray-900 dark:text-white">Nível Global</p>
+                                <span class="text-[10px] font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                                    {{ globalLevel.progress_percent }}% concluído
+                                </span>
+                            </div>
+                            <div class="h-3 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+                                <div
+                                    class="h-full rounded-full bg-green-600 transition-all duration-700 ease-out"
+                                    :style="{ width: Math.max(globalLevel.progress_percent, 2) + '%' }"
+                                ></div>
+                            </div>
                         </div>
                     </div>
-                    <div class="flex-1 min-w-0">
-                        <p class="text-sm font-bold text-gray-900 dark:text-white">Nivel Global</p>
-                        <div class="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                            <Zap class="h-3 w-3 text-yellow-500" />
-                            {{ totalXp.toLocaleString() }} XP acumulados
+
+                    <div class="grid grid-cols-2 gap-4 border-t border-gray-200 pt-3 dark:border-gray-700">
+                        <div class="flex flex-col">
+                            <span class="mb-0.5 text-[10px] font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500">XP acumulado</span>
+                            <p class="text-base font-bold text-gray-900 dark:text-white">{{ totalXp.toLocaleString() }}</p>
                         </div>
-                        <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-1">
-                            {{ globalLevel.current_xp_in_level }} / {{ globalLevel.xp_for_next_level }} XP para o nivel {{ globalLevel.level + 1 }}
-                        </p>
+                        <div class="flex flex-col items-end">
+                            <div class="mb-0.5 flex items-center gap-1.5">
+                                <span class="text-[10px] font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500">Para o nível {{ globalLevel.level + 1 }}</span>
+                                <TrendingUp class="h-3.5 w-3.5 text-gray-400 dark:text-gray-500" />
+                            </div>
+                            <p class="text-base font-bold text-gray-900 dark:text-white">
+                                {{ globalLevel.xp_for_next_level.toLocaleString() }}
+                                <span class="text-sm font-normal text-gray-500 dark:text-gray-400">XP</span>
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -97,7 +109,7 @@ const inactiveDisciplines = computed(() =>
                     <div
                         v-for="discipline in activeDisciplines"
                         :key="discipline.id"
-                        class="flex flex-col items-center p-4 pb-3 rounded-2xl bg-white dark:bg-gray-800/80 border border-gray-100 dark:border-gray-700/50 transition-all hover:shadow-sm"
+                        class="flex flex-col items-center rounded-2xl border border-gray-200 bg-white p-4 transition-all dark:border-transparent dark:bg-gray-900"
                     >
                         <DisciplineBadge
                             :icon="discipline.icon"
@@ -105,13 +117,13 @@ const inactiveDisciplines = computed(() =>
                             :level="discipline.level"
                         />
 
-                        <p class="text-sm font-bold text-gray-900 dark:text-white text-center leading-tight mt-3">
+                        <p class="mt-3 text-center text-base font-bold leading-tight text-gray-900 dark:text-white">
                             {{ discipline.name }}
                         </p>
 
                         <!-- Progress bar -->
-                        <div class="w-full mt-2">
-                            <div class="h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                        <div class="mt-3 w-full">
+                            <div class="h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
                                 <div
                                     class="h-full rounded-full transition-all duration-700 ease-out"
                                     :style="{ width: Math.max(discipline.progress_percent, 3) + '%', backgroundColor: discipline.color }"
@@ -119,8 +131,8 @@ const inactiveDisciplines = computed(() =>
                             </div>
                         </div>
 
-                        <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-1">
-                            {{ discipline.current_xp_in_level }} XP / {{ discipline.xp_for_next_level }} XP
+                        <p class="mt-2 text-xs font-medium text-gray-500 dark:text-gray-400">
+                            {{ discipline.current_xp_in_level }} / {{ discipline.xp_for_next_level }} XP
                         </p>
                     </div>
                 </div>
@@ -134,7 +146,7 @@ const inactiveDisciplines = computed(() =>
                     <div
                         v-for="discipline in inactiveDisciplines"
                         :key="discipline.id"
-                        class="flex flex-col items-center p-4 pb-3 rounded-2xl bg-gray-50 dark:bg-gray-800/40 border border-dashed border-gray-200 dark:border-gray-700 opacity-60"
+                        class="flex flex-col items-center rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-4 opacity-60 dark:border-transparent dark:bg-gray-900"
                     >
                         <DisciplineBadge
                             :icon="discipline.icon"
@@ -143,16 +155,16 @@ const inactiveDisciplines = computed(() =>
                             :locked="true"
                         />
 
-                        <p class="text-sm font-medium text-gray-400 dark:text-gray-500 text-center leading-tight mt-3">
+                        <p class="mt-3 text-center text-base font-medium leading-tight text-gray-400 dark:text-gray-500">
                             {{ discipline.name }}
                         </p>
 
-                        <div class="w-full mt-2">
-                            <div class="h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden"></div>
+                        <div class="mt-3 w-full">
+                            <div class="h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700"></div>
                         </div>
 
-                        <p class="text-[11px] text-gray-300 dark:text-gray-600 mt-1">
-                            0 XP / {{ discipline.xp_for_next_level }} XP
+                        <p class="mt-2 text-xs font-medium text-gray-300 dark:text-gray-600">
+                            0 / {{ discipline.xp_for_next_level }} XP
                         </p>
                     </div>
                 </div>

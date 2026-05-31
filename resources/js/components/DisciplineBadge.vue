@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import Icon from '@/components/Icon.vue';
+import { useAppearance } from '@/composables/useAppearance';
+import { computed } from 'vue';
 
 interface Props {
     icon: string;
@@ -14,6 +16,8 @@ const props = withDefaults(defineProps<Props>(), {
     locked: false,
     size: 'md',
 });
+
+const { isDark } = useAppearance();
 
 const hexToRgb = (hex: string) => {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -30,9 +34,9 @@ const lighten = (hex: string, amount: number) => {
     return `rgb(${Math.round(Math.min(255, r + (255 - r) * amount))}, ${Math.round(Math.min(255, g + (255 - g) * amount))}, ${Math.round(Math.min(255, b + (255 - b) * amount))})`;
 };
 
-const darken = (hex: string, amount: number) => {
+const tint = (hex: string, opacity: number) => {
     const { r, g, b } = hexToRgb(hex);
-    return `rgb(${Math.round(r * (1 - amount))}, ${Math.round(g * (1 - amount))}, ${Math.round(b * (1 - amount))})`;
+    return `rgba(${r}, ${g}, ${b}, ${opacity})`;
 };
 
 const sizeMap = {
@@ -51,6 +55,32 @@ const grey = {
     shieldBorder: '#D1D5DB',
     shieldFill: '#E5E7EB',
 };
+
+const greyDark = {
+    band: '#2D2D2D',
+    fill: '#1F1F1F',
+    shieldBorder: '#3A3A3A',
+    shieldFill: '#2D2D2D',
+};
+
+// Theme-aware fills: on dark backgrounds the lightened (near-white) fills are
+// replaced with subtle tints of the discipline color.
+const bandFill = computed(() =>
+    props.locked
+        ? (isDark.value ? greyDark.band : grey.band)
+        : (isDark.value ? tint(props.color, 0.18) : lighten(props.color, 0.82)),
+);
+const innerFill = computed(() =>
+    props.locked
+        ? (isDark.value ? greyDark.fill : grey.fill)
+        : (isDark.value ? tint(props.color, 0.1) : lighten(props.color, 0.93)),
+);
+const iconColor = computed(() =>
+    props.locked ? '#9CA3AF' : (isDark.value ? '#F3F4F6' : '#1F2937'),
+);
+const shieldInnerFill = computed(() =>
+    isDark.value ? tint(props.color, 0.35) : lighten(props.color, 0.7),
+);
 </script>
 
 <template>
@@ -61,17 +91,17 @@ const grey = {
                 <!-- Outer thick ring -->
                 <circle cx="56" cy="56" r="53" fill="none" :stroke="color" stroke-width="5" />
                 <!-- Middle light band -->
-                <circle cx="56" cy="56" r="48" :fill="lighten(color, 0.82)" />
+                <circle cx="56" cy="56" r="48" :fill="bandFill" />
                 <!-- Inner ring -->
                 <circle cx="56" cy="56" r="42" fill="none" :stroke="color" stroke-width="2" />
                 <!-- Inner circle fill -->
-                <circle cx="56" cy="56" r="40" :fill="lighten(color, 0.93)" />
+                <circle cx="56" cy="56" r="40" :fill="innerFill" />
             </template>
             <template v-else>
                 <circle cx="56" cy="56" r="53" fill="none" :stroke="grey.outer" stroke-width="5" />
-                <circle cx="56" cy="56" r="48" :fill="grey.band" />
+                <circle cx="56" cy="56" r="48" :fill="bandFill" />
                 <circle cx="56" cy="56" r="42" fill="none" :stroke="grey.inner" stroke-width="2" />
-                <circle cx="56" cy="56" r="40" :fill="grey.fill" />
+                <circle cx="56" cy="56" r="40" :fill="innerFill" />
             </template>
         </svg>
 
@@ -81,9 +111,9 @@ const grey = {
                 v-if="!locked"
                 :name="icon"
                 :size="s.icon"
-                color="#1F2937"
+                :color="iconColor"
                 :stroke-width="1.5"
-                class="!h-auto !w-auto dark:!text-gray-200"
+                class="!h-auto !w-auto"
             />
             <Icon
                 v-else
@@ -109,7 +139,7 @@ const grey = {
                     <!-- Shield inner fill -->
                     <path
                         d="M18 4.5 L31 9.5 L31 18 Q31 30 18 36 Q5 30 5 18 L5 9.5 Z"
-                        :fill="lighten(color, 0.7)"
+                        :fill="shieldInnerFill"
                         :stroke="color"
                         stroke-width="0.8"
                     />
@@ -117,20 +147,20 @@ const grey = {
                 <template v-else>
                     <path
                         d="M18 1 L34 7 L34 18 Q34 32 18 39 Q2 32 2 18 L2 7 Z"
-                        :fill="grey.shieldBorder"
+                        :fill="isDark ? greyDark.shieldBorder : grey.shieldBorder"
                         stroke="#9CA3AF"
                         stroke-width="1.5"
                     />
                     <path
                         d="M18 4.5 L31 9.5 L31 18 Q31 30 18 36 Q5 30 5 18 L5 9.5 Z"
-                        :fill="grey.shieldFill"
+                        :fill="isDark ? greyDark.shieldFill : grey.shieldFill"
                         stroke="#9CA3AF"
                         stroke-width="0.8"
                     />
                 </template>
             </svg>
             <span
-                class="absolute inset-0 flex items-center justify-center text-gray-900 font-black"
+                class="absolute inset-0 flex items-center justify-center font-black text-gray-900 dark:text-white"
                 :class="s.shieldText"
                 style="padding-bottom: 1px;"
             >{{ level }}</span>

@@ -88,7 +88,7 @@ watch(userLives, (newValue, oldValue) => {
                 <Link
                     v-if="auth.user"
                     :href="route('ofensiva.index')"
-                    class="flex items-end gap-1 sm:gap-1.5 rounded-full bg-orange-50 px-2 py-1 sm:px-3 sm:py-1.5 transition-colors hover:bg-orange-100 dark:bg-orange-900/20 dark:hover:bg-orange-900/30"
+                    class="flex items-center gap-1 sm:gap-1.5 rounded-full bg-orange-50 px-2 py-1 sm:px-3 sm:py-1.5 transition-colors hover:bg-orange-100 dark:bg-orange-900/20 dark:hover:bg-orange-900/30"
                     :title="`Ofensiva: ${currentStreak} ${currentStreak === 1 ? 'dia' : 'dias'}`"
                 >
                     <Flame
