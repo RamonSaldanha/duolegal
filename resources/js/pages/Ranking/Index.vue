@@ -97,7 +97,7 @@ const getPositionIcon = (position: number) => {
     <Head :title="pageTitle" />
 
     <AppHeaderLayout :breadcrumbs="breadcrumbs">
-        <div class="mx-auto max-w-2xl space-y-5 px-4 pb-8">
+        <div class="mx-auto w-full max-w-2xl space-y-5 px-4 pb-8">
 
             <!-- Header -->
             <div class="text-center pt-5">
@@ -111,7 +111,7 @@ const getPositionIcon = (position: number) => {
                         v-for="tab in tabs"
                         :key="tab.value"
                         @click="changePeriod(tab.value)"
-                        class="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-full transition-all duration-200"
+                        class="flex items-center gap-1.5 px-3 py-2 sm:px-4 text-sm font-semibold rounded-full transition-all duration-200"
                         :class="[
                             activePeriod === tab.value
                                 ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
@@ -125,7 +125,7 @@ const getPositionIcon = (position: number) => {
             </div>
 
             <!-- Users list -->
-            <div v-if="remainingUsers.length > 0" class="space-y-2">
+            <div v-if="remainingUsers.length > 0" class="space-y-2" style="width: 100% !important;">
                 <template v-for="user in remainingUsers" :key="user.id">
                     <!-- Gap separator for current user outside top 20 -->
                     <div
@@ -171,14 +171,14 @@ const getPositionIcon = (position: number) => {
 
                         <!-- Name + position icon -->
                         <div class="flex-1 min-w-0">
-                            <div class="flex items-center gap-1.5">
+                            <div class="flex items-center gap-1.5 min-w-0">
                                 <component
                                     v-if="getPositionIcon(user.position)"
                                     :is="getPositionIcon(user.position)"
                                     class="h-4 w-4 flex-shrink-0"
                                     :class="getPositionStyle(user.position).text"
                                 />
-                                <p class="text-sm font-semibold text-gray-900 dark:text-white truncate leading-tight">
+                                <p class="user-name min-w-0 text-sm font-semibold text-gray-900 dark:text-white truncate leading-tight">
                                     {{ user.first_name }}
                                     <span v-if="user.last_name" class="font-normal text-gray-500 dark:text-gray-400">{{ user.last_name }}</span>
                                 </p>
@@ -217,3 +217,11 @@ const getPositionIcon = (position: number) => {
         </div>
     </AppHeaderLayout>
 </template>
+
+<style scoped>
+@media (max-width: 419px) {
+    .user-name {
+        max-width: 100px;
+    }
+}
+</style>

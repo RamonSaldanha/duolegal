@@ -53,17 +53,17 @@ watch(userLives, (newValue, oldValue) => {
 
 <template>
     <div class="border-b border-sidebar-border/80">
-        <div class="mx-auto flex h-16 items-center justify-between px-4 max-w-4xl">
+        <div class="mx-auto flex h-16 justify-between px-3 sm:px-4 max-w-4xl">
             <!-- Logo (Desktop only) -->
             <Link :href="route('play.map')" class="hidden lg:flex items-center">
                 <AppLogo />
             </Link>
 
             <!-- Stats Container - Centered on mobile, right on desktop -->
-            <div class="flex flex-1 items-center justify-center gap-6 lg:flex-none lg:justify-end lg:gap-8">
+            <div class="flex flex-1 items-center justify-left gap-2 sm:gap-4 lg:flex-none lg:justify-end lg:gap-8">
                 <!-- Lives Counter -->
                 <div v-if="auth.user?.lives !== undefined" class="flex items-center">
-                    <div class="flex items-center gap-1.5 rounded-full bg-pink-50 px-3 py-1.5 dark:bg-pink-900/20">
+                    <div class="flex items-center gap-1 sm:gap-1.5 rounded-full bg-pink-50 px-2 py-1 sm:px-3 sm:py-1.5 dark:bg-pink-900/20">
                         <template v-if="!hasSubscription">
                             <Heart
                                 class="h-5 w-5 transition-transform animate-pulse-once"
@@ -88,7 +88,7 @@ watch(userLives, (newValue, oldValue) => {
                 <Link
                     v-if="auth.user"
                     :href="route('ofensiva.index')"
-                    class="flex items-center gap-1.5 rounded-full bg-orange-50 px-3 py-1.5 transition-colors hover:bg-orange-100 dark:bg-orange-900/20 dark:hover:bg-orange-900/30"
+                    class="flex items-end gap-1 sm:gap-1.5 rounded-full bg-orange-50 px-2 py-1 sm:px-3 sm:py-1.5 transition-colors hover:bg-orange-100 dark:bg-orange-900/20 dark:hover:bg-orange-900/30"
                     :title="`Ofensiva: ${currentStreak} ${currentStreak === 1 ? 'dia' : 'dias'}`"
                 >
                     <Flame
@@ -104,7 +104,7 @@ watch(userLives, (newValue, oldValue) => {
                 <!-- XP Counter -->
                 <div v-if="auth.user?.xp !== undefined" class="flex items-center gap-1">
                     <span class="rounded bg-purple-100 px-2 py-1 text-xs font-bold text-purple-500 dark:bg-purple-900/30">XP</span>
-                    <span class="font-bold text-purple-500">{{ auth.user.xp }}</span>
+                    <span class="font-bold text-purple-500 text-sm sm:text-base whitespace-nowrap">{{ auth.user.xp }}</span>
                 </div>
 
                 <!-- Diamond / Premium -->
@@ -112,7 +112,7 @@ watch(userLives, (newValue, oldValue) => {
                     :href="route('subscription.index')"
                     class="flex items-center gap-2 text-blue-500 transition-colors hover:text-blue-600"
                 >
-                    <Gem class="h-6 w-6" />
+                    <Gem class="h-5 w-5 sm:h-6 sm:w-6" />
                     <span class="hidden lg:inline font-medium text-sm">Assine Premium</span>
                 </Link>
 
@@ -122,9 +122,9 @@ watch(userLives, (newValue, oldValue) => {
                         <Button
                             variant="ghost"
                             size="icon"
-                            class="relative size-10 w-auto rounded-full p-1 focus-within:ring-2 focus-within:ring-primary"
+                            class="relative size-9 sm:size-10 w-auto rounded-full p-1 focus-within:ring-2 focus-within:ring-primary ml-auto"
                         >
-                            <Avatar class="h-10 w-10 overflow-hidden rounded-full border-2 border-gray-200 dark:border-gray-700">
+                            <Avatar class="h-9 w-9 sm:h-10 sm:w-10 overflow-hidden rounded-full border-2 border-gray-200 dark:border-gray-700">
                                 <AvatarImage v-if="auth.user?.avatar" :src="auth.user.avatar" :alt="auth.user.name" />
                                 <AvatarFallback class="rounded-full bg-neutral-200 font-semibold text-black dark:bg-neutral-700 dark:text-white">
                                     {{ getInitials(auth.user.name) }}
