@@ -13,7 +13,7 @@ const emit = defineEmits<{
 
 let timer: ReturnType<typeof setTimeout> | null = null;
 
-// Auto-dismiss: o overlay aparece, segura e some sozinho em ~5.5s (não exige clique).
+// Auto-dismiss: o overlay aparece, segura e some sozinho em ~5s (não exige clique).
 watch(
     () => props.levelUp,
     (value) => {
@@ -22,7 +22,7 @@ watch(
             timer = null;
         }
         if (value) {
-            timer = setTimeout(() => emit('done'), 10000);
+            timer = setTimeout(() => emit('done'), 5000);
         }
     },
 );
@@ -37,7 +37,7 @@ watch(
             class="level-up-card flex w-[82%] max-w-[360px] flex-col items-center rounded-3xl px-6 pt-6 pb-7"
             :style="{ borderColor: levelUp.color }"
         >
-            <p class="text-center text-xl font-bold leading-snug text-gray-800 dark:text-gray-100">
+            <p class="level-up-text text-center text-2xl font-bold leading-snug text-white">
                 Você subiu de nível!
             </p>
 
@@ -50,7 +50,7 @@ watch(
                 />
             </div>
 
-            <p class="text-center text-md font-bold leading-snug text-gray-800 dark:text-gray-100">
+            <p class="level-up-text text-center text-lg font-bold leading-snug text-white">
                 Especialista nível {{ levelUp.new_level }} em {{ levelUp.discipline_name }}
             </p>
         </div>
@@ -58,26 +58,30 @@ watch(
 </template>
 
 <style scoped>
+.level-up-text {
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.7);
+}
+
 .level-up-overlay {
-    animation: lvOverlay 3s ease forwards;
+    animation: lvOverlay 5s ease forwards;
 }
 
 .level-up-card {
-    animation: lvCard 3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    animation: lvCard 5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
 @keyframes lvOverlay {
     0% { opacity: 0; }
-    8% { opacity: 1; }
-    88% { opacity: 1; }
+    4% { opacity: 1; }
+    93% { opacity: 1; }
     100% { opacity: 0; }
 }
 
 @keyframes lvCard {
     0% { opacity: 0; transform: scale(0.7) translateY(12px); }
-    10% { opacity: 1; transform: scale(1.05) translateY(0); }
-    16% { transform: scale(1); }
-    86% { opacity: 1; transform: scale(1); }
+    5% { opacity: 1; transform: scale(1.05) translateY(0); }
+    8% { transform: scale(1); }
+    93% { opacity: 1; transform: scale(1); }
     100% { opacity: 0; transform: scale(0.92); }
 }
 </style>
