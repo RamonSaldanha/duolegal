@@ -71,16 +71,16 @@ function goToMonth(month: string | null) {
     router.get(route('ofensiva.index'), { month }, { preserveScroll: true, preserveState: false });
 }
 
-// ===== Compartilhamento (captura o card de resumo como PNG) =====
-const cardRef = ref<HTMLElement | null>(null);
+// ===== Compartilhamento (captura um card vertical 9:16 para stories) =====
+const shareCardRef = ref<HTMLElement | null>(null);
 const sharing = ref(false);
 
 async function shareCard() {
-    if (!cardRef.value || sharing.value) return;
+    if (!shareCardRef.value || sharing.value) return;
     sharing.value = true;
     try {
         const { toPng } = await import('html-to-image');
-        const dataUrl = await toPng(cardRef.value, { pixelRatio: 2, cacheBust: true, backgroundColor: '#ffffff' });
+        const dataUrl = await toPng(shareCardRef.value, { pixelRatio: 3, cacheBust: true, backgroundColor: '#ffffff' });
         const blob = await (await fetch(dataUrl)).blob();
         const file = new File([blob], 'ofensiva-memorize.png', { type: 'image/png' });
 
@@ -115,9 +115,8 @@ async function shareCard() {
         <div class="mx-auto flex max-w-md flex-col gap-6 px-4 pb-10 pt-6">
             <h1 class="text-center text-xl font-bold tracking-tight text-gray-900 dark:text-white">Ofensiva</h1>
 
-            <!-- Card de resumo (compartilhável) -->
+            <!-- Card de resumo (exibição) -->
             <div
-                ref="cardRef"
                 class="flex flex-col items-center gap-5 rounded-3xl border border-orange-100 bg-white px-6 py-7 shadow-sm dark:border-gray-700 dark:bg-gray-900"
             >
                 <div class="text-center">
@@ -230,6 +229,60 @@ async function shareCard() {
                     <span class="h-3 w-3 rounded bg-orange-400"></span>
                     <span class="h-3 w-3 rounded bg-orange-600"></span>
                     <span>Mais</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card vertical 9:16 para stories (renderizado fora da tela, só p/ captura) -->
+        <div style="position: fixed; left: -10000px; top: 0; pointer-events: none;" aria-hidden="true">
+            <div ref="shareCardRef" class="flex flex-col bg-white" style="width: 360px; height: 640px;">
+                <div class="bg-orange-500 py-5 text-center">
+                    <p class="text-sm font-extrabold uppercase tracking-[0.2em] text-white">Memorize Direito</p>
+                </div>
+
+                <div class="flex flex-1 flex-col items-center justify-center gap-6 px-7">
+                    <Flame class="h-24 w-24 text-orange-500" fill="currentColor" />
+                    <div class="text-center">
+                        <div class="text-7xl font-black leading-none text-orange-500">{{ current_streak }}</div>
+                        <div class="mt-1 text-lg font-bold text-gray-700">{{ dayLabel(current_streak) }} seguidos de estudos</div>
+                    </div>
+
+                    <div class="flex w-full justify-between gap-1.5">
+                        <div
+                            v-for="day in week"
+                            :key="'s-' + day.date"
+                            class="flex flex-1 flex-col items-center gap-1.5 rounded-2xl px-1 py-2"
+                            :class="day.studied ? 'bg-amber-100' : 'bg-gray-100'"
+                        >
+                            <span class="text-xs font-bold" :class="day.studied ? 'text-orange-600' : 'text-gray-400'">{{ day.weekday }}</span>
+                            <span
+                                class="flex h-6 w-6 items-center justify-center rounded-full"
+                                :class="day.studied ? 'bg-yellow-400' : 'border-2 border-gray-300'"
+                            >
+                                <Check v-if="day.studied" class="h-4 w-4 text-white" :stroke-width="3" />
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="grid w-full grid-cols-2 gap-3">
+                        <div class="flex flex-col items-center gap-1 rounded-2xl bg-orange-50 py-3">
+                            <span class="text-[11px] font-bold uppercase tracking-wide text-gray-500">Sequência atual</span>
+                            <span class="flex items-center gap-1.5 text-lg font-extrabold text-orange-500">
+                                <Flame class="h-5 w-5" fill="currentColor" />{{ current_streak }} {{ dayLabel(current_streak) }}
+                            </span>
+                        </div>
+                        <div class="flex flex-col items-center gap-1 rounded-2xl bg-orange-50 py-3">
+                            <span class="text-[11px] font-bold uppercase tracking-wide text-gray-500">Seu recorde</span>
+                            <span class="flex items-center gap-1.5 text-lg font-extrabold text-orange-600">
+                                <Trophy class="h-5 w-5" />{{ longest_streak }} {{ dayLabel(longest_streak) }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="px-7 py-5 text-center">
+                    <p class="text-sm font-semibold text-gray-500">{{ subtitle }}</p>
+                    <p class="mt-1 text-xs font-medium text-orange-400">memorizedireito.com</p>
                 </div>
             </div>
         </div>
