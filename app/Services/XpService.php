@@ -118,6 +118,52 @@ class XpService
         }
     }
 
+    /**
+     * Detecta se a(s) disciplina(s) ligada(s) a esta legislação subiram de nível
+     * por causa do XP recém-creditado. Deve ser chamado DEPOIS de $user->addXp(...),
+     * pois compara o total atual (que já inclui o ganho) com o total anterior.
+     *
+     * Retorna null se não houve level-up, ou um array com os dados da disciplina
+     * para o frontend renderizar a celebração (badge + nível).
+     */
+    public function detectDisciplineLevelUp(User $user, ?int $legislationId, int $xpGained): ?array
+    {
+        if ($xpGained <= 0 || $legislationId === null) {
+            return null;
+        }
+
+        $disciplines = DB::table('discipline_legislation')
+            ->join('disciplines', 'disciplines.id', '=', 'discipline_legislation.discipline_id')
+            ->where('discipline_legislation.legislation_id', $legislationId)
+            ->select('disciplines.id', 'disciplines.name', 'disciplines.icon', 'disciplines.color')
+            ->get();
+
+        foreach ($disciplines as $d) {
+            // Total atual da disciplina (já inclui o XP recém-creditado).
+            $newTotal = (int) DB::table('xp_transactions')
+                ->join('discipline_legislation', 'discipline_legislation.legislation_id', '=', 'xp_transactions.legislation_id')
+                ->where('discipline_legislation.discipline_id', $d->id)
+                ->where('xp_transactions.user_id', $user->id)
+                ->sum('xp_transactions.amount');
+
+            $oldLevel = $this->calculateLevel(max(0, $newTotal - $xpGained))['level'];
+            $newLevel = $this->calculateLevel($newTotal)['level'];
+
+            if ($newLevel > $oldLevel) {
+                return [
+                    'discipline_id' => $d->id,
+                    'discipline_name' => $d->name,
+                    'icon' => $d->icon,
+                    'color' => $d->color,
+                    'old_level' => $oldLevel,
+                    'new_level' => $newLevel,
+                ];
+            }
+        }
+
+        return null;
+    }
+
     private function applyPeriodFilter($query, string $period): void
     {
         if ($period === 'daily') {

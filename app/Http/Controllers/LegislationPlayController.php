@@ -579,10 +579,15 @@ class LegislationPlayController extends Controller
 
         // XP na primeira conclusão
         $xpGained = 0;
+        $levelUp = null;
         if ($percentage >= 70 && ! $wasAlreadyCompleted) {
             $gapsCount = $segment->lacunas()->where('is_correct', true)->count();
             $xpGained = max(10, $gapsCount * 5);
             $user->addXp($xpGained, 'legislation', $segment->id, $segment->legislation_id);
+
+            // Detecta subida de nível na disciplina (após creditar o XP).
+            $levelUp = app(\App\Services\XpService::class)
+                ->detectDisciplineLevelUp($user, $segment->legislation_id, $xpGained);
         }
 
         // Próximo segmento — escopo limitado à fase se phase_block_uuids fornecido
@@ -624,6 +629,7 @@ class LegislationPlayController extends Controller
                 'has_infinite_lives' => $user->hasInfiniteLives(),
             ],
             'xp_gained' => $xpGained,
+            'discipline_level_up' => $levelUp,
             'lost_life' => $lostLife,
             'should_redirect' => ! $user->hasInfiniteLives() && $user->lives <= 0,
             'redirect_url' => ! $user->hasInfiniteLives() && $user->lives <= 0 ? route('play.nolives') : null,

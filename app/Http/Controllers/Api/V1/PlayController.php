@@ -354,10 +354,15 @@ class PlayController extends Controller
         );
 
         $xpGained = 0;
+        $levelUp = null;
         if ($percentage >= 70 && ! $wasAlreadyCompleted) {
             $gapsCount = $segment->lacunas()->where('is_correct', true)->count();
             $xpGained = max(10, $gapsCount * 5);
             $user->addXp($xpGained, 'legislation', $segment->id, $segment->legislation_id);
+
+            // Detecta subida de nível na disciplina (após creditar o XP).
+            $levelUp = app(\App\Services\XpService::class)
+                ->detectDisciplineLevelUp($user, $segment->legislation_id, $xpGained);
         }
         // A ofensiva é derivada das XpTransactions (ver StreakService); o addXp
         // acima já registra o "dia estudado" automaticamente.
@@ -396,6 +401,7 @@ class PlayController extends Controller
             'next_segment' => $nextSegment ? $this->formatSegmentForChallenge($nextSegment) : null,
             'user' => $this->userPayload($user),
             'xp_gained' => $xpGained,
+            'discipline_level_up' => $levelUp,
             'lost_life' => $lostLife,
             'should_redirect' => $shouldRedirect,
             'redirect_url' => $shouldRedirect ? '/play/nolives' : null,

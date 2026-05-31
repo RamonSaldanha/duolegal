@@ -8,7 +8,9 @@ import type {
     PlayProgress,
     SubmitAnswerResponse,
     SegmentAnswer,
+    DisciplineLevelUp,
 } from '@/types/legislation-play';
+import LevelUpOverlay from '@/components/LevelUpOverlay.vue';
 import { ref, onMounted, nextTick } from 'vue';
 import { Trophy } from 'lucide-vue-next';
 import { useToast } from '@/components/ui/toast/use-toast';
@@ -45,6 +47,7 @@ const hasMore = ref(props.hasMoreAbove);
 const isLoadingMore = ref(false);
 const isSubmitting = ref(false);
 const showCompletionModal = ref(props.allComplete);
+const levelUp = ref<DisciplineLevelUp | null>(null);
 const activeChallengeRef = ref<InstanceType<typeof ActiveChallenge> | null>(null);
 
 // Refs do DOM
@@ -218,6 +221,12 @@ async function handleSubmit(data: {
                 progress.value.percentage = 100;
                 showCompletionModal.value = true;
             }
+
+            // Celebração de subida de nível na disciplina (overlay auto-dismiss)
+            if (result.discipline_level_up) {
+                levelUp.value = result.discipline_level_up;
+                confettiReward();
+            }
         } else {
             // Falhou — pode tentar novamente
             if (result.lost_life) {
@@ -279,6 +288,7 @@ function showXpGainedNotification(xpGained: number) {
     <div class="flex h-dvh w-full flex-col overflow-hidden bg-white dark:bg-gray-900">
         <Toaster position="top-right" class="z-[200]" />
         <span id="play-confetti" class="fixed top-1/2 left-1/2 z-[100] pointer-events-none"></span>
+        <LevelUpOverlay :level-up="levelUp" @done="levelUp = null" />
 
         <!-- Header -->
         <div class="shrink-0 z-50 bg-white dark:bg-gray-900">

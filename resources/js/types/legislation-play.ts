@@ -57,6 +57,15 @@ export interface PlayUserData {
     xp: number;
 }
 
+export interface DisciplineLevelUp {
+    discipline_id: number;
+    discipline_name: string;
+    icon: string;
+    color: string;
+    old_level: number;
+    new_level: number;
+}
+
 export interface SubmitAnswerResponse {
     success: boolean;
     progress: {
@@ -69,6 +78,7 @@ export interface SubmitAnswerResponse {
     next_segment: ActiveSegmentData | null;
     user: PlayUserData;
     xp_gained: number;
+    discipline_level_up: DisciplineLevelUp | null;
     lost_life: boolean;
     should_redirect: boolean;
     redirect_url: string | null;
