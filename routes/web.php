@@ -97,11 +97,6 @@ Route::middleware(['auth'])->group(function () {
 
     // Rota de progresso por disciplina
     Route::get('/disciplines', [DisciplineProgressController::class, 'index'])->name('disciplines.index');
-
-    // Rota da loja
-    Route::get('/store', function () {
-        return \Inertia\Inertia::render('Store/Index');
-    })->name('store.index');
 });
 
 // Rota para o webhook do Stripe - sem verificação CSRF

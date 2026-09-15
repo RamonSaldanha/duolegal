@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import UserAvatar from '@/components/UserAvatar.vue';
 import AppHeaderLayout from '@/layouts/app/AppHeaderLayout.vue';
+import type { AvatarConfig } from '@/lib/avatar';
 import { Head, router } from '@inertiajs/vue3';
 import { Trophy, Crown, Medal, Flame, TrendingUp, Zap } from 'lucide-vue-next';
 import { computed } from 'vue';
@@ -10,6 +12,7 @@ interface User {
     last_name: string;
     xp: number;
     position: number;
+    avatar_config?: AvatarConfig | null;
 }
 
 interface Props {
@@ -54,10 +57,6 @@ const tabs = [
 ];
 
 const activePeriod = computed(() => props.period || 'all');
-
-const getInitials = (firstName: string, lastName: string) => {
-    return (firstName[0] + (lastName?.[0] || '')).toUpperCase();
-};
 
 const getPositionStyle = (position: number) => {
     if (position === 1) return {
@@ -162,12 +161,13 @@ const getPositionIcon = (position: number) => {
                         </div>
 
                         <!-- Avatar -->
-                        <div
-                            class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
-                            :class="getPositionStyle(user.position).avatar"
-                        >
-                            {{ getInitials(user.first_name, user.last_name) }}
-                        </div>
+                        <UserAvatar
+                            :config="user.avatar_config"
+                            :name="`${user.first_name} ${user.last_name}`"
+                            :fallback-class="getPositionStyle(user.position).avatar"
+                            class="h-10 w-10 rounded-full text-sm"
+                            :class="getPositionStyle(user.position).ring"
+                        />
 
                         <!-- Name + position icon -->
                         <div class="flex-1 min-w-0">

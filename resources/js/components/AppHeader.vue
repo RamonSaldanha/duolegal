@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import AppLogo from '@/components/AppLogo.vue';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import UserAvatar from '@/components/UserAvatar.vue';
 import UserMenuContent from '@/components/UserMenuContent.vue';
-import { getInitials } from '@/composables/useInitials';
+import type { AvatarConfig } from '@/lib/avatar';
 import { Link, usePage } from '@inertiajs/vue3';
 import { Heart, Gem, Infinity, Flame } from 'lucide-vue-next';
 import { computed, watch } from 'vue';
@@ -20,7 +20,7 @@ const page = usePage<{
             xp: number;
             current_streak?: number;
             longest_streak?: number;
-            avatar?: string;
+            avatar_config?: AvatarConfig | null;
             has_infinite_lives?: boolean;
         } | null;
     };
@@ -124,12 +124,11 @@ watch(userLives, (newValue, oldValue) => {
                             size="icon"
                             class="relative size-9 sm:size-10 w-auto rounded-full p-1 focus-within:ring-2 focus-within:ring-primary ml-auto"
                         >
-                            <Avatar class="h-9 w-9 sm:h-10 sm:w-10 overflow-hidden rounded-full border-2 border-gray-200 dark:border-gray-700">
-                                <AvatarImage v-if="auth.user?.avatar" :src="auth.user.avatar" :alt="auth.user.name" />
-                                <AvatarFallback class="rounded-full bg-neutral-200 font-semibold text-black dark:bg-neutral-700 dark:text-white">
-                                    {{ getInitials(auth.user.name) }}
-                                </AvatarFallback>
-                            </Avatar>
+                            <UserAvatar
+                                :config="auth.user.avatar_config"
+                                :name="auth.user.name"
+                                class="h-9 w-9 rounded-full border-2 border-gray-200 text-sm dark:border-gray-700 sm:h-10 sm:w-10"
+                            />
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" class="w-56">

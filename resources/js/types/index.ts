@@ -1,5 +1,6 @@
 import type { PageProps } from '@inertiajs/core';
 import type { LucideIcon } from 'lucide-vue-next';
+import type { AvatarConfig } from '@/lib/avatar';
 
 export interface Auth {
     user: User;
@@ -29,7 +30,10 @@ export interface User {
     name: string;
     email: string;
     avatar?: string;
+    /** Avatar montado no criador. Nulo para quem nunca editou. */
+    avatar_config?: AvatarConfig | null;
     email_verified_at?: string | null;
+    current_streak?: number;
     created_at?: string;
     updated_at?: string;
     lives?: number;

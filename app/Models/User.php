@@ -37,6 +37,11 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        // Fica oculto de propósito: `GET /api/user` devolve o model cru e o
+        // ChallengeController serializa o criador inteiro. O avatar é exposto
+        // só onde a gente quer — hoje, no share do Inertia. Quando o app Android
+        // for renderizar avatares, é só acrescentar o campo no UserResource.
+        'avatar_config',
     ];
 
     /**
@@ -51,6 +56,7 @@ class User extends Authenticatable
         'lives' => 'integer',
         'has_infinite_lives' => 'boolean',
         'trial_ends_at' => 'datetime',
+        'avatar_config' => 'array',
     ];
 
     /**

@@ -12,7 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->integer('xp')->default(0)->after('lives');
+            // Sem `after('lives')`: a coluna `lives` só é criada em
+            // 2025_03_09_191917, então migrar do zero quebrava aqui. A ordem das
+            // colunas é cosmética e esta coluna é removida em 2026_03_22_000004.
+            $table->integer('xp')->default(0);
         });
     }
 
