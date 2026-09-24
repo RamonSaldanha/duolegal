@@ -2,6 +2,7 @@
     "private": true,
     "type": "module",
     "scripts": {
+        "avatar:gallery": "node scripts/avatar-gallery.js",
         "build": "vite build",
         "build:ssr": "vite build && vite build --ssr",
         "dev": "vite",
