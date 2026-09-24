@@ -119,16 +119,17 @@ watch(userLives, (newValue, oldValue) => {
                 <!-- User Avatar with Dropdown -->
                 <DropdownMenu v-if="auth.user">
                     <DropdownMenuTrigger :as-child="true">
+                        <!--
+                            `p-0`: o avatar ocupa o botão inteiro. Com o `p-1` que havia
+                            aqui a caixa de conteúdo ficava 8px menor que o avatar, que
+                            então transbordava o botão pelos quatro lados.
+                        -->
                         <Button
                             variant="ghost"
                             size="icon"
-                            class="relative size-9 sm:size-10 w-auto rounded-full p-1 focus-within:ring-2 focus-within:ring-primary ml-auto"
+                            class="relative ml-auto size-[38px] rounded-full p-0 focus-within:ring-2 focus-within:ring-primary sm:size-[42px]"
                         >
-                            <UserAvatar
-                                :config="auth.user.avatar_config"
-                                :name="auth.user.name"
-                                class="h-9 w-9 rounded-full border-2 border-gray-200 text-sm dark:border-gray-700 sm:h-10 sm:w-10"
-                            />
+                            <UserAvatar :config="auth.user.avatar_config" :name="auth.user.name" class="size-full rounded-full text-sm" />
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" class="w-56">

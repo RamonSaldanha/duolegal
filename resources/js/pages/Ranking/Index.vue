@@ -58,23 +58,29 @@ const tabs = [
 
 const activePeriod = computed(() => props.period || 'all');
 
+/**
+ * `ring` aqui é o contorno da **linha** do pódio, não do avatar — avatar não leva
+ * borda em lugar nenhum. A posição já é dita três vezes na linha (o número no
+ * disco, o ícone de medalha ao lado do nome e o próprio contorno da linha), então
+ * tirar o anel do avatar não esconde informação de ninguém.
+ */
 const getPositionStyle = (position: number) => {
     if (position === 1) return {
         badge: 'bg-yellow-500 text-white',
         ring: 'ring-2 ring-yellow-400/40',
-        avatar: 'bg-yellow-100 text-yellow-700 ring-2 ring-yellow-400',
+        avatar: 'bg-yellow-100 text-yellow-700',
         text: 'text-yellow-600',
     };
     if (position === 2) return {
         badge: 'bg-blue-500 text-white',
         ring: 'ring-2 ring-blue-400/30',
-        avatar: 'bg-blue-100 text-blue-700 ring-2 ring-blue-400',
+        avatar: 'bg-blue-100 text-blue-700',
         text: 'text-blue-600',
     };
     if (position === 3) return {
         badge: 'bg-purple-500 text-white',
         ring: 'ring-2 ring-purple-400/30',
-        avatar: 'bg-purple-100 text-purple-700 ring-2 ring-purple-400',
+        avatar: 'bg-purple-100 text-purple-700',
         text: 'text-purple-600',
     };
     return {
@@ -165,8 +171,7 @@ const getPositionIcon = (position: number) => {
                             :config="user.avatar_config"
                             :name="`${user.first_name} ${user.last_name}`"
                             :fallback-class="getPositionStyle(user.position).avatar"
-                            class="h-10 w-10 rounded-full text-sm"
-                            :class="getPositionStyle(user.position).ring"
+                            class="size-[42px] rounded-full text-sm"
                         />
 
                         <!-- Name + position icon -->

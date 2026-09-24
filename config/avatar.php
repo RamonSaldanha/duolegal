@@ -12,6 +12,10 @@
 | acrescentar uma peça nova, atualize os dois lados: a lista aqui e o catálogo
 | em resources/js/lib/avatar/options.ts.
 |
+| Atenção: toda chave de forma daqui vira regra `required`. Um grupo novo só
+| pode entrar junto com DEFAULT_AVATAR, SHAPE_IDS e randomAvatarConfig() do
+| lado do cliente, senão o editor passa a mandar payload incompleto.
+|
 | As cores não têm lista fixa de propósito: o servidor só exige o formato
 | `#rrggbb`. Assim dá para mexer nas paletas da interface sem mexer no backend.
 |
@@ -20,15 +24,21 @@
 return [
     'shapes' => [
         'body' => ['magro', 'gordo'],
-        'hair' => ['nenhum', 'comprido'],
-        'brows' => ['reta', 'arqueada'],
+        'hair' => ['nenhum', 'curto', 'comprido'],
+        // `cilios` desenha a sobrancelha e os cílios na mesma opção.
+        'brows' => ['reta', 'arqueada', 'cilios'],
+        'earrings' => ['nenhum', 'argola', 'simples'],
+        'glasses' => ['nenhum', 'grau', 'sol'],
     ],
 
     'colors' => [
         'skin',
-        // Cabelo e sobrancelha; a barba vai usar a mesma cor.
+        // Cabelo, sobrancelha e cílio.
         'hairColor',
         'clothesColor',
+        'earringColor',
+        // No óculos de grau pinta o aro; no de sol pinta a lente.
+        'glassesColor',
         'background',
     ],
 ];

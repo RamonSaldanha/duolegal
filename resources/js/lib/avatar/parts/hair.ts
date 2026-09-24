@@ -1,26 +1,25 @@
 /**
  * Cabelo.
  *
- * Traçado a partir do SVG de referência, adaptado à grade daqui — o rosto de lá
- * é mais largo que alto (112x94) e o daqui é o contrário (94x132), então as
- * curvas foram remapeadas em proporção da cabeça, não copiadas em escala.
+ * Dois cortes, cada um com a sua própria lógica de camada:
  *
- * Sai em duas camadas:
+ *   comprido  sai em **duas** camadas. A massa (`back`) é maciça e vai antes do
+ *             pescoço e da roupa, então a gola passa por cima dela — é o cabelo
+ *             cobrindo a nuca e saindo por trás da roupa. A cortina (`front`)
+ *             cai sobre a testa e vai depois da cabeça, senão o rosto a cobre.
+ *   curto     só `front`. Ele para no alto da orelha, então não existe nada
+ *             dele atrás do pescoço para desenhar.
  *
- *   `back`  — a massa. Maciça, sem recorte: cobre toda a parte de trás do
- *             pescoço. Vai **antes** do pescoço e da roupa, então a gola passa
- *             por cima dela, como na referência.
- *   `front` — a cortina que cai sobre a testa. Vai **depois** da cabeça, senão o
- *             rosto cobre tudo.
+ * Os dois foram traçados a partir de imagens de referência, adaptados à grade
+ * daqui — o rosto das referências é mais largo que alto e o daqui é o contrário
+ * (94x132), então as curvas foram remapeadas em proporção da cabeça, não
+ * copiadas em escala.
  *
- * Duas coisas dão o caráter da referência e não podem ser simplificadas:
- *
- *   A silhueta **ondula**. Os lados não são um arco: saem e voltam três vezes
- *   entre o alto e o pé do desenho. É o que separa "cabelo comprido" de "capuz".
- *
- *   A franja é uma **cortina**, não um bico simétrico. Ela desce do centro da
- *   testa varrendo na diagonal até a lateral do rosto, na altura do olho, e o
- *   bico no meio é só onde as duas metades se encontram.
+ * O limite que vale para qualquer corte novo: **a franja não pode passar de
+ * y 46**. A sobrancelha é desenhada depois do cabelo, então franja que desça
+ * sobre a faixa dela (y 49..62) faz a sobrancelha reaparecer por cima do cabelo,
+ * o que lê como erro de camada. Nas referências isso não é problema porque
+ * nenhuma delas tem sobrancelha desenhada.
  */
 
 import type { HairStyle } from '../types';
@@ -77,13 +76,53 @@ const CURTAIN =
     'M30,76C28,58 32,50 38,42C48,16 76,0 100,8C124,0 152,16 162,42C168,50 172,58 170,72' +
     'L147,72C142,58 136,53 128,47C118,33 110,28 104,43C97,27 88,32 75,46C65,52 59,58 53,76Z';
 
+
+/**
+ * Curto.
+ *
+ * Capacete que sobra para fora da cabeça dos dois lados, desce até encostar no
+ * alto da orelha (y 78) e termina em costeleta de ponta arredondada.
+ *
+ * O que dá o caráter não é a silhueta de fora, é a **franja recortada**: a linha
+ * do cabelo não é um arco, é uma sequência de lobos arredondados pendurados,
+ * separados por entalhes que sobem em ponta. Franja lisa no mesmo contorno vira
+ * touca de natação.
+ *
+ * Três medidas mandam aqui:
+ *
+ *   **O pé da franja para em y 46.** A faixa da sobrancelha começa em 49, e a
+ *   sobrancelha é desenhada DEPOIS do cabelo — descer mais e ela reapareceria
+ *   por cima da franja, o que lê como erro de camada.
+ *
+ *   **A costeleta para em y 76.** A orelha começa em 78; passar disso cobre o
+ *   alto dela e o corte perde a referência de tamanho.
+ *
+ *   **O topete.** Uma mecha em pé fora do eixo, à esquerda. É o único ponto
+ *   assimétrico de propósito do desenho; sem ele o capacete fica cabeça de lego.
+ */
+const CAP =
+    // Contorno de fora: costeleta esquerda, lado, topete, coroa, lado, costeleta direita.
+    'M57,72C57,79 50,83 45,76C40,62 40,43 49,30C54,22 61,16 68,13' +
+    'L67,4C71,6 74,8 77,10C90,3 114,3 128,13C144,22 157,35 157,52' +
+    'C157,67 152,76 147,79C142,81 140,75 140,68' +
+    // Franja, da direita para a esquerda: varredura longa, entalhe, lobo, entalhe, lobo.
+    'C139,57 133,46 126,47C118,48 108,46 103,41' +
+    'C101,39 99,37 98,34C95,39 91,45 86,45' +
+    'C81,45 77,41 74,36C71,41 69,46 66,46C62,46 58,54 57,72Z';
+
 export function hair(style: HairStyle, color: string): HairLayers {
-    if (style !== 'comprido') {
-        return EMPTY;
+    if (style === 'comprido') {
+        return {
+            back: `<path d="${MASS}" fill="${color}"/>`,
+            front: `<path d="${CURTAIN}" fill="${color}"/>`,
+        };
     }
 
-    return {
-        back: `<path d="${MASS}" fill="${color}"/>`,
-        front: `<path d="${CURTAIN}" fill="${color}"/>`,
-    };
+    // O curto não tem camada de trás: ele para no alto da orelha, então não há
+    // nada dele atrás do pescoço nem da roupa.
+    if (style === 'curto') {
+        return { back: '', front: `<path d="${CAP}" fill="${color}"/>` };
+    }
+
+    return EMPTY;
 }

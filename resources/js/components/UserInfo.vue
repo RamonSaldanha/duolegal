@@ -11,7 +11,7 @@ defineProps<Props>();
 </script>
 
 <template>
-    <UserAvatar :config="user.avatar_config" :name="user.name" class="h-8 w-8 rounded-full text-xs" />
+    <UserAvatar :config="user.avatar_config" :name="user.name" class="size-[34px] rounded-full text-xs" />
 
     <div class="grid flex-1 text-left text-sm leading-tight">
         <span class="truncate font-medium">{{ user.name }}</span>

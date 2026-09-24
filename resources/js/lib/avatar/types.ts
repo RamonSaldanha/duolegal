@@ -1,32 +1,40 @@
 /**
  * Tipos do sistema de avatar.
  *
- * O avatar é guardado como um objeto de ids + cores hex (~120 bytes). O desenho
+ * O avatar é guardado como um objeto de ids + cores hex (~200 bytes). O desenho
  * nunca é persistido: é sempre reconstruído a partir desta configuração, o que
  * permite que o app Android renderize o mesmo avatar mais adiante.
  *
- * Catálogo: uma cabeça, dois corpos, uma roupa, dois cabelos e duas
- * sobrancelhas. Cada peça nova soma um id aqui, o desenho em `parts/` e a mesma
- * lista em `config/avatar.php`.
+ * Catálogo: uma cabeça, dois corpos, uma roupa, três cabelos, três sobrancelhas,
+ * dois brincos e dois óculos. Cada peça nova soma um id aqui, o desenho em
+ * `parts/` e a mesma lista em `config/avatar.php`.
  */
 
 export type BodyShape = 'magro' | 'gordo';
-export type HairStyle = 'nenhum' | 'comprido';
-export type BrowStyle = 'reta' | 'arqueada';
+export type HairStyle = 'nenhum' | 'curto' | 'comprido';
+export type BrowStyle = 'reta' | 'arqueada' | 'cilios';
+export type EarringStyle = 'nenhum' | 'argola' | 'simples';
+export type GlassesStyle = 'nenhum' | 'grau' | 'sol';
 
 export interface AvatarConfig {
     body: BodyShape;
     hair: HairStyle;
+    /** `cilios` desenha a sobrancelha **e** os cílios; ver `parts/face.ts`. */
     brows: BrowStyle;
+    earrings: EarringStyle;
+    glasses: GlassesStyle;
     skin: string;
-    /** Pinta o cabelo e a sobrancelha; a barba vai usar a mesma cor. */
+    /** Pinta o cabelo, a sobrancelha e o cílio. */
     hairColor: string;
     clothesColor: string;
+    earringColor: string;
+    /** No óculos de grau pinta o aro; no de sol pinta a lente, e o aro sai dela. */
+    glassesColor: string;
     background: string;
 }
 
 /** Chaves cujo valor é uma cor hex (`#rrggbb`), e não um id de opção. */
-export const AVATAR_COLOR_KEYS = ['skin', 'hairColor', 'clothesColor', 'background'] as const;
+export const AVATAR_COLOR_KEYS = ['skin', 'hairColor', 'clothesColor', 'earringColor', 'glassesColor', 'background'] as const;
 
 export type AvatarColorKey = (typeof AVATAR_COLOR_KEYS)[number];
 export type AvatarShapeKey = Exclude<keyof AvatarConfig, AvatarColorKey>;

@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { TransitionRoot } from '@headlessui/vue';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
+import { Pencil } from 'lucide-vue-next';
 
+import AvatarPreview from '@/components/avatar-editor/AvatarPreview.vue';
 import DeleteUser from '@/components/DeleteUser.vue';
 import HeadingSmall from '@/components/HeadingSmall.vue';
 import InputError from '@/components/InputError.vue';
@@ -46,6 +48,19 @@ const submit = () => {
         <Head title="Configurações de perfil" />
 
         <SettingsLayout>
+            <div class="flex flex-col space-y-4">
+                <HeadingSmall title="Meu avatar" description="É ele que aparece no menu do topo e no ranking." />
+
+                <AvatarPreview :config="user.avatar_config" :name="user.name">
+                    <Button variant="secondary" size="sm" as-child>
+                        <Link :href="route('avatar.edit')">
+                            <Pencil class="h-4 w-4" />
+                            Editar
+                        </Link>
+                    </Button>
+                </AvatarPreview>
+            </div>
+
             <div class="flex flex-col space-y-6">
                 <HeadingSmall title="Informações do perfil" description="Atualize seu nome e endereço de email" />
 

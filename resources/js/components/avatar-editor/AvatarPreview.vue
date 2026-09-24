@@ -1,30 +1,65 @@
 <script setup lang="ts">
-import { buildAvatarSvg, type AvatarConfig } from '@/lib/avatar';
-import { Shuffle } from 'lucide-vue-next';
+import UserAvatar from '@/components/UserAvatar.vue';
+import { hasAvatar, normalizeAvatarConfig, type AvatarConfig } from '@/lib/avatar';
 import { computed } from 'vue';
 
 interface Props {
-    config: AvatarConfig;
+    config?: Partial<AvatarConfig> | null;
+    name?: string;
+    /**
+     * Gruda no topo ao rolar. Só o editor precisa: lá o palco tem de acompanhar
+     * quem está rolando a lista de peças.
+     */
+    sticky?: boolean;
 }
 
-const props = defineProps<Props>();
-const emit = defineEmits<{ shuffle: [] }>();
+const props = withDefaults(defineProps<Props>(), { config: null, name: '', sticky: false });
 
-const svg = computed(() => buildAvatarSvg(props.config, { uid: 'palco' }));
+const drawn = computed(() => hasAvatar(props.config));
+
+/**
+ * A cor de fundo escolhida pinta o palco **inteiro**, não só o quadrado do meio —
+ * senão ela vira um selo no meio de uma faixa cinza e a pessoa não consegue julgar
+ * a cor que acabou de escolher.
+ *
+ * Quem nunca salvou um avatar não tem cor escolhida: aí o palco fica neutro e o
+ * UserAvatar cai nas iniciais. Pintar de uma cor que o usuário nunca escolheu seria
+ * inventar uma preferência que não existe.
+ */
+const stageColor = computed(() => (drawn.value ? normalizeAvatarConfig(props.config).background : null));
 </script>
 
 <template>
-    <div class="sticky top-0 z-10 -mx-4 flex items-center justify-center border-b border-gray-200 bg-gray-50 px-4 py-4 dark:border-gray-800 dark:bg-gray-900">
-        <!-- eslint-disable-next-line vue/no-v-html -- SVG gerado pelo app a partir de um config já normalizado -->
-        <div class="w-40 max-w-[45vw] overflow-hidden rounded-3xl [&>svg]:block [&>svg]:w-full" v-html="svg" />
+    <!--
+        O boneco encosta no **pé** do palco (`items-end` sem padding embaixo), não
+        no meio dele.
 
-        <button
-            type="button"
-            class="absolute right-0 top-4 flex items-center gap-1.5 rounded-full border-2 border-gray-200 bg-white px-3.5 py-2 text-xs font-bold text-gray-600 transition-colors hover:border-purple-400 hover:text-purple-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-purple-400 dark:hover:text-purple-300"
-            @click="emit('shuffle')"
-        >
-            <Shuffle class="h-4 w-4" />
-            Sortear
-        </button>
+        O desenho é um quadrado de 200x200 em que o tronco vai até a linha 200, ou
+        seja, ele termina cortado por projeto — é ombro, não corpo inteiro. Centrado
+        no palco esse corte fica no ar, com fundo embaixo, e lê como desenho
+        decepado. Encostando na borda de baixo o corte sai da vista: o tronco
+        simplesmente continua para fora do cartão.
+
+        Daí o `overflow-hidden` junto do arredondamento: é ele que apara o tronco na
+        curva do cartão.
+
+        Sem avatar salvo não há tronco nenhum, só as iniciais — nesse caso o bloco
+        volta a ser centrado, senão as letras ficariam grudadas na borda.
+    -->
+    <div
+        class="relative flex justify-center overflow-hidden rounded-2xl px-4"
+        :class="[
+            sticky ? 'sticky top-0 z-10' : '',
+            drawn ? 'items-end pt-6' : 'items-center py-6',
+            stageColor ? '' : 'bg-gray-50 dark:bg-gray-900',
+        ]"
+        :style="stageColor ? { backgroundColor: stageColor } : undefined"
+    >
+        <UserAvatar :config="config" :name="name" class="aspect-square w-40 max-w-[45vw] text-3xl" :class="drawn ? '' : 'rounded-3xl'" />
+
+        <!-- Ação do canto superior direito: sortear no editor, editar no perfil. -->
+        <div class="absolute right-4 top-4">
+            <slot />
+        </div>
     </div>
 </template>

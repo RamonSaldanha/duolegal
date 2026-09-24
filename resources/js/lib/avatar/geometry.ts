@@ -77,6 +77,42 @@ export const MOUTH_Y = 123;
 export const MOUTH_W = 27;
 export const MOUTH_DROP = 10;
 
+/**
+ * Cílios: três traços curtos no canto de fora e de cima da cápsula do olho.
+ *
+ * O vão é apertado de propósito — sobram 9px entre a cápsula (x 62) e a borda da
+ * cabeça (x 53), e 6px entre o topo da cápsula (y 68) e o pé da faixa da
+ * sobrancelha (y 62). Por isso os traços são curtos: cílio furando a silhueta lê
+ * como defeito de render, não como cílio.
+ */
+export const LASH_T = 3;
+
+/**
+ * Brinco: pendurado no lóbulo, que é o canto de baixo da orelha (x 38..58,
+ * y 78..107). O `cx` fica dentro da silhueta da orelha para a peça nascer nela.
+ */
+export const EARRING_X = 47;
+export const STUD_Y = 99;
+export const STUD_R = 4.5;
+/** Medidas da argola da referência, divididas por 5. Ocupa y 103..121. */
+export const HOOP_Y = 112;
+export const HOOP_R = 9;
+export const HOOP_T = 4.5;
+
+/**
+ * Óculos. As duas armações partem da cápsula do olho (x 62..85, y 68..95) e
+ * precisam cobri-la por inteiro: lente de sol com o branco do olho vazando por
+ * cima lê como erro de render, não como óculos. O traçado de cada armação fica
+ * em `parts/accessories.ts`, que é onde elas divergem.
+ *
+ * A ponte fica em y 71,8..76,3 — o topo da listra do nariz é y 80, então sobram
+ * quase 4px entre as duas. Com menos que isso elas se encostam no render de 40px.
+ */
+export const BRIDGE_Y = 74;
+/** Onde a haste encosta no alto da orelha. As duas armações terminam aqui. */
+export const TEMPLE_END_X = 44;
+export const TEMPLE_END_Y = 80;
+
 /** Começa atrás da cabeça; o trecho visível é só o vão até a gola. */
 export const NECK_TOP = 134;
 

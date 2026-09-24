@@ -28,7 +28,13 @@ const currentPath = window.location.pathname;
 </script>
 
 <template>
-    <div class="px-4 py-6">
+    <!--
+        Centralizado: sem o `mx-auto` o bloco inteiro de Preferências ficava colado
+        na borda esquerda em tela larga, com metade da página vazia à direita.
+        `max-w-5xl` porque a barra lateral (12rem) mais o conteúdo (max-w-2xl) mais
+        o vão de 3rem não cabem em 4xl sem espremer a coluna de conteúdo.
+    -->
+    <div class="mx-auto w-full max-w-5xl px-4 py-6">
         <Heading title="Preferências" description="Modifique suas configurações de aparência." />
 
         <div class="flex flex-col space-y-8 md:space-y-0 lg:flex-row lg:space-x-12 lg:space-y-0">
