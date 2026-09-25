@@ -21,7 +21,20 @@ const output = fileURLToPath(new URL('../public/avatar-gallery.html', import.met
 
 // `configFile: false` de propósito: a lib só tem imports relativos e não precisa
 // dos plugins do projeto (o do Laravel escreveria o `public/hot`).
-const vite = await createServer({ root, configFile: false, logLevel: 'error', server: { middlewareMode: true }, appType: 'custom' });
+//
+// O cache e a otimização de dependências ficam isolados. Sem isso, este servidor
+// sem plugins usa o mesmo `node_modules/.vite` do `npm run dev`, não enxerga as
+// dependências dos `.vue` e regrava o cache vazio: o dev server em execução
+// passa a responder 504 (Outdated Optimize Dep) e as páginas param de carregar.
+const vite = await createServer({
+    root,
+    configFile: false,
+    cacheDir: 'node_modules/.vite-avatar-gallery',
+    optimizeDeps: { noDiscovery: true, include: [] },
+    logLevel: 'error',
+    server: { middlewareMode: true },
+    appType: 'custom',
+});
 
 try {
     const A = await vite.ssrLoadModule('/resources/js/lib/avatar/index.ts');
