@@ -18,9 +18,6 @@ import {
     EYE_Y,
     INK,
     LASH_T,
-    MOUTH_DROP,
-    MOUTH_W,
-    MOUTH_Y,
     NOSE_H,
     NOSE_W,
     NOSE_Y,
@@ -129,32 +126,45 @@ export function nose(skin: string): string {
     return `<path d="${d}" fill="${skinInk(skin, 0.2)}"/>`;
 }
 
-/**
- * Boca aberta, com língua — a da referência da barba.
+/*
+ * Bocas, **decalcadas das imagens de referência**.
  *
- * Tem dois tons fixos, o fundo escuro e a língua clara, e não depende da pele.
- * Por isso é a boca que aparece melhor sobre a barba grossa: pelo menos um dos
- * tons destoa de todas as cores de cabelo da paleta. Ocupa o mesmo lugar do
- * sorriso (x 85..115, y 121..138).
+ * As duas referências têm o mesmo zoom (nariz de 42px, olho de 97px). A escala
+ * veio da largura do olho, que ocupa a mesma fração do rosto lá e aqui, e foi
+ * aumentada em 25%: na escala exata a boca ficava pequena ao lado do nariz
+ * daqui, que é mais largo que o de lá. A posição é contada a partir do fim do
+ * nariz (100,114).
+ *
+ * Como nas referências, as duas ficam **deslocadas para a esquerda** do nariz,
+ * e não centradas no rosto.
  */
-const OPEN_MOUTH = 'M85,121Q100,126 115,121C115,131.5 108,138 100,138C92,138 85,131.5 85,121Z';
-const TONGUE = 'M90.5,132.5C93,129.5 107,129.5 109.5,132.5C107.5,136 104,138 100,138C96,138 92.5,136 90.5,132.5Z';
-const MOUTH_INSIDE = '#8E2A36';
-const TONGUE_COLOR = '#D9545F';
 
 /**
- * `sorriso` é um arco raso, do mesmo tom do nariz, para não competir com ele.
- * `aberta` é a boca aberta de cima.
+ * Sorriso: meio sorriso. Sobe à esquerda, ao lado do nariz, e termina reto logo
+ * abaixo dele — nada do arco simétrico e fundo de antes. Traço grosso de ponta
+ * redonda, na pele escurecida em 69%: é o tom da linha da referência, e escuro o
+ * bastante para aparecer também sobre a barba, como lá.
  */
+const SMILE = 'M78.13,113C82.5,117.75 92.5,124.63 105.5,124.63';
+
+/**
+ * Boca aberta, **sem ponta nenhuma**: lóbulo redondo à esquerda, fundo em U e
+ * ponta direita redonda. A língua ocupa a parte de baixo à esquerda, e a borda
+ * de baixo dela é o mesmo trecho da borda da boca, então não sobra filete escuro
+ * embaixo. Os dois tons são fixos, os da referência.
+ */
+const OPEN_MOUTH =
+    'M79.25,115C79.25,112.25 81.75,110.5 85,110.5C89.5,110.5 91.75,118.5 97.5,118.5C102,118.5 106.38,119.5 106.38,122.63' +
+    'C106.38,126.5 102,128.88 96.88,128.88C88.13,128.88 79.25,122.13 79.25,115Z';
+const TONGUE =
+    'M81.4,121.14C82.38,119 83.75,118.13 86.25,118.13C91.88,118.13 96.88,122.75 99.1,128.7L96.88,128.88C90.75,128.88 84.56,125.56 81.4,121.14Z';
+const MOUTH_INSIDE = '#96282B';
+const TONGUE_COLOR = '#CB4B4F';
+
 export function mouth(style: MouthStyle, skin: string): string {
     if (style === 'aberta') {
         return `<path d="${OPEN_MOUTH}" fill="${MOUTH_INSIDE}"/><path d="${TONGUE}" fill="${TONGUE_COLOR}"/>`;
     }
 
-    const x = 100 - MOUTH_W / 2;
-
-    return (
-        `<path d="M${x},${MOUTH_Y}Q100,${MOUTH_Y + MOUTH_DROP * 2} ${x + MOUTH_W},${MOUTH_Y}"` +
-        ` fill="none" stroke="${skinInk(skin, 0.26)}" stroke-width="5" stroke-linecap="round"/>`
-    );
+    return `<path d="${SMILE}" fill="none" stroke="${skinInk(skin, 0.69)}" stroke-width="5.4" stroke-linecap="round"/>`;
 }

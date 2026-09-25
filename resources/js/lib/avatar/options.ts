@@ -34,8 +34,8 @@ export const EAR_CROP: AvatarCrop = [30, 44, 140, 100];
  */
 export const BEARD_CROP: AvatarCrop = [30, 64, 140, 116];
 /**
- * Enquadra do nariz ao queixo. A boca fica em y 121..138, abaixo de onde o
- * `FACE_CROP` termina.
+ * Enquadra do nariz ao queixo. A boca desce até y 129, abaixo de onde o
+ * `FACE_CROP` termina (y 120).
  */
 export const MOUTH_CROP: AvatarCrop = [54, 82, 92, 76];
 
@@ -51,9 +51,12 @@ export const BODIES_OPTIONS: ShapeOption<BodyShape>[] = [
 
 export const HAIRS: ShapeOption<HairStyle>[] = [
     { id: 'nenhum', label: 'Careca' },
+    { id: 'calvo', label: 'Calvo' },
     { id: 'curto', label: 'Curto' },
+    { id: 'afro', label: 'Afro curto' },
     { id: 'chanel', label: 'Chanel' },
     { id: 'comprido', label: 'Comprido' },
+    { id: 'liso', label: 'Liso' },
 ];
 
 export const BROWS: ShapeOption<BrowStyle>[] = [

@@ -1,18 +1,20 @@
 /**
  * Cabelo.
  *
- * Três cortes, cada um com a sua própria lógica de camada:
+ * Seis cortes, cada um com a sua própria lógica de camada:
  *
  *   comprido  sai em **duas** camadas. A massa (`back`) é maciça e vai antes do
  *             pescoço e da roupa, então a gola passa por cima dela — é o cabelo
  *             cobrindo a nuca e saindo por trás da roupa. A cortina (`front`)
  *             cai sobre a testa e vai depois da cabeça, senão o rosto a cobre.
+ *   liso      as mesmas duas camadas do comprido, com a massa reta dos lados.
  *   chanel    as mesmas duas camadas, mas a massa termina na altura do queixo,
  *             antes de chegar à roupa, e a cortina é uma franja lateral.
  *   curto     só `front`. Ele para no alto da orelha, então não existe nada
- *             dele atrás do pescoço para desenhar.
+ *   afro      dele atrás do pescoço para desenhar. Vale para os três.
+ *   calvo
  *
- * Os três foram traçados a partir de imagens de referência, adaptados à grade
+ * Todos foram traçados a partir de imagens de referência, adaptados à grade
  * daqui — o rosto das referências é mais largo que alto e o daqui é o contrário
  * (94x132), então as curvas foram remapeadas em proporção da cabeça, não
  * copiadas em escala.
@@ -22,7 +24,7 @@
  * cor dele, então só existem dois jeitos certos:
  *
  *   parar acima da faixa dela (y 49..62), com a borda em y 46 no máximo — é o
- *   que o curto e o comprido fazem;
+ *   que o curto, o afro, o calvo, o comprido e o liso fazem;
  *
  *   descer abaixo dela e cobri-la inteira, a partir de y 63 — ela some na cor
  *   do cabelo. É o que a franja do chanel faz do lado esquerdo.
@@ -143,6 +145,42 @@ const BOB_MASS =
 const BOB_FRINGE = CROWN + 'L147,62C147,46 134,33 118,33C108,41 97,56 88,63C80,68 64,68 53,67Z';
 
 /**
+ * Coroa do liso, **decalcada da imagem de referência** (798x795, cabeça em
+ * x 213..618): dois lóbulos largos, com topo em y 5 e um entalhe raso no meio
+ * (y 9,4), que descem num ombro cheio até as laterais retas em x 35,7 / 164,3.
+ * As laterais ficam 17px para fora da cabeça, como na referência.
+ *
+ * Na vertical o decalque foi mapeado em trechos, porque a cabeça daqui é mais
+ * alta que a de lá: a coroa e a testa numa escala de 0,31, a lateral do rosto
+ * até o alto da orelha, o corpo até o queixo e o pé até a borda da tela — assim
+ * os cantos arredondados de baixo continuam à vista, como na referência.
+ *
+ * Vai do lado esquerdo, na altura do alto da orelha (y 77,5), ao direito. A
+ * massa e a franja começam por ela, então as duas camadas se encaixam sem
+ * emenda.
+ */
+const STRAIGHT_CROWN = 'M35.7,77.5C35.7,32 52,5.04 84,5.04C90,5.04 96.5,6.6 100,9.35' + 'C103.5,6.6 110,5.04 116,5.04C148,5.04 164.3,32 164.3,77.5';
+
+/** Massa do liso: a coroa, as laterais retas e os cantos de baixo, que entram atrás dos ombros. */
+const STRAIGHT_MASS = STRAIGHT_CROWN + 'L164.2,165C164.2,178 156,192 145,200L55,200C44,192 35.8,178 35.8,165Z';
+
+/**
+ * Franja do liso: linha da testa reta em y 42,6, com a risca no meio (ápice em
+ * y 32). Nas laterais ela cobre a borda do rosto até o alto da orelha (y 77,5),
+ * onde a orelha passa a ficar por cima do cabelo. A borda de dentro fica em
+ * x 57, a mesma folga do afro: nenhum estilo de sobrancelha nem o cílio encosta
+ * nela (conferido ponto a ponto).
+ *
+ * Sem quina viva: a risca sai da linha da testa na horizontal antes de subir ao
+ * ápice (só o ápice é pontudo, como na referência), e a faixa da lateral acaba
+ * num quarto de círculo que encontra a borda da cabeça no alto da orelha.
+ */
+const STRAIGHT_FRINGE =
+    STRAIGHT_CROWN +
+    'L147,77.5C144.8,77.5 143,75.7 143,73.5L143,62C143,50 137,42.6 129,42.6L114,42.6C108,42.6 103.5,37.5 100,32' +
+    'C96.5,37.5 92,42.6 86,42.6L71,42.6C63,42.6 57,50 57,62L57,73.5C57,75.7 55.2,77.5 53,77.5Z';
+
+/**
  * Curto.
  *
  * Capacete que sobra para fora da cabeça dos dois lados, desce até encostar no
@@ -175,11 +213,74 @@ const CAP =
     'C101,39 99,37 98,34C95,39 91,45 86,45' +
     'C81,45 77,41 74,36C71,41 69,46 66,46C62,46 58,54 57,72Z';
 
+/**
+ * Afro curto, **decalcado da imagem de referência**.
+ *
+ * O contorno foi extraído dos pixels da referência (596x773, cabeça em
+ * x 146..475) e trazido para esta grade, com a linha da testa em y 44 e escala
+ * vertical de 0,33. Com essa escala o fim da lateral de lá cai logo acima da
+ * orelha daqui, como na referência.
+ *
+ * Lá o cabelo sai para fora da cabeça dos dois lados. Aqui **não**: as laterais
+ * ficam rente à linha da cabeça, e a coroa foi redistribuída nessa largura
+ * (x comprimido em 0,82, alturas mantidas). Mais largo que o rosto, o afro
+ * parecia um capacete.
+ *
+ *   coroa     cinco lóbulos com vales em ponta entre eles: o do meio mais alto
+ *             (y 8,5), os vizinhos em y 11,4 e os de fora em y 19,6.
+ *   lado      em x 52,5 / 147,5 — meio pixel para fora da cabeça, para a pele
+ *             não vazar na borda.
+ *   costeleta dentro do rosto, em x 52,5..57, com ponta em meio círculo em
+ *             y 73,3, acima da orelha (78). É estreita para não encostar no
+ *             cílio de fora, que chega a x 57,5.
+ *   testa     reta em y 44, com cantos arredondados que descem até a costeleta.
+ *             Nenhum estilo de sobrancelha nem o cílio encosta na borda
+ *             (conferido ponto a ponto).
+ */
+const AFRO =
+    'M57,71C57,72.24 56,73.25 54.75,73.25C53.5,73.25 52.5,72.24 52.5,71L52.5,34' +
+    // Coroa, da esquerda para a direita.
+    'C52.5,24 58,19.6 65,19.6C67.4,19.6 69.1,20.3 69.8,21.2C71.1,14.5 76.1,11.4 81.9,11.4C85.2,11.4 88,12.8 89.2,15' +
+    'C90.9,10.5 95.1,8.5 100,8.5C104.9,8.5 109.1,10.5 110.8,15C112,12.8 114.8,11.4 118.1,11.4C123.9,11.4 128.9,14.5 130.2,21.2' +
+    'C130.9,20.3 132.6,19.6 135,19.6C142,19.6 147.5,24 147.5,34L147.5,71' +
+    'C147.5,72.24 146.5,73.25 145.25,73.25C144,73.25 143,72.24 143,71' +
+    // Linha da testa, da direita para a esquerda.
+    'L143,60C143,50 138,44 131,44L69,44C62,44 57,50 57,60Z';
+
+/**
+ * Calvo, **decalcado da imagem de referência**.
+ *
+ * Lá o cabelo é uma faixa em degradê colada ao topo da cabeça, e o contorno foi
+ * tirado no meio do degradê. Aqui a faixa é chapada e acompanha o contorno da
+ * cabeça, 0,7px para fora, para a pele não vazar na borda.
+ *
+ * A borda de baixo faz um **M**: a faixa chega a y 30 no meio e quase some nas
+ * entradas (x≈74 / 126), onde fica com 2,7px. É esse recuo que faz ler
+ * como calvície, e não como touca. Nos cantos a faixa desce pela curva da
+ * cabeça e termina na lateral em y 54, onde a curva acaba.
+ *
+ * A cabeça daqui é bem mais arredondada que a da referência (canto de raio 34
+ * numa largura de 94, contra 70 em 368), então a faixa foi desenhada sobre o
+ * contorno daqui, não copiada em escala.
+ */
+const BALDING =
+    'M52.3,54C52.3,34.84 67.84,19.3 87,19.3L113,19.3C132.16,19.3 147.7,34.84 147.7,54' +
+    // Borda de baixo, da direita para a esquerda: entrada, meio, entrada.
+    'C147.2,52 145.6,51 144.4,51C143.3,39.8 136.3,30 126,25.3C120.5,22.8 107,30 100,30' +
+    'C93,30 79.5,22.8 74,25.3C63.7,30 56.7,39.8 55.6,51C54.4,51 52.8,52 52.3,54Z';
+
 export function hair(style: HairStyle, color: string): HairLayers {
     if (style === 'comprido') {
         return {
             back: `<path d="${LONG_MASS}" fill="${color}"/>`,
             front: `<path d="${LONG_CURTAIN}" fill="${color}"/>`,
+        };
+    }
+
+    if (style === 'liso') {
+        return {
+            back: `<path d="${STRAIGHT_MASS}" fill="${color}"/>`,
+            front: `<path d="${STRAIGHT_FRINGE}" fill="${color}"/>`,
         };
     }
 
@@ -190,10 +291,18 @@ export function hair(style: HairStyle, color: string): HairLayers {
         };
     }
 
-    // O curto não tem camada de trás: ele para no alto da orelha, então não há
-    // nada dele atrás do pescoço nem da roupa.
+    // Curto, afro e calvo não têm camada de trás: param no alto da orelha, então
+    // não há nada deles atrás do pescoço nem da roupa.
     if (style === 'curto') {
         return { back: '', front: `<path d="${CAP}" fill="${color}"/>` };
+    }
+
+    if (style === 'afro') {
+        return { back: '', front: `<path d="${AFRO}" fill="${color}"/>` };
+    }
+
+    if (style === 'calvo') {
+        return { back: '', front: `<path d="${BALDING}" fill="${color}"/>` };
     }
 
     return EMPTY;

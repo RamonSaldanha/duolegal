@@ -69,16 +69,11 @@ export const PUPIL_R = 6;
 
 /**
  * Nariz: gota — topo estreito e arredondado entre os olhos, base redonda de
- * raio NOSE_W / 2. Termina em y 114, acima do bigode e da boca.
+ * raio NOSE_W / 2. Termina em y 114; as bocas partem daí (ver `parts/face.ts`).
  */
 export const NOSE_W = 16;
 export const NOSE_Y = 90;
 export const NOSE_H = 24;
-
-/** Boca: arco raso, bem acima do queixo. */
-export const MOUTH_Y = 123;
-export const MOUTH_W = 27;
-export const MOUTH_DROP = 10;
 
 /**
  * Cílios: três traços curtos no canto de fora e de cima da cápsula do olho.

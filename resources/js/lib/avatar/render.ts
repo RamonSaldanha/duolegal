@@ -24,6 +24,7 @@ export function buildAvatarSvg(raw: Partial<AvatarConfig> | null | undefined, op
 
     const viewBox = crop ? crop.join(' ') : '0 0 200 200';
     const locks = hair(c.hair, c.hairColor);
+    const whiskers = beard(c.beard, c.hairColor);
     const face = brows(c.brows, c.hairColor);
 
     // Ordem de empilhamento, de trás para frente. A massa do cabelo (comprido e
@@ -41,7 +42,9 @@ export function buildAvatarSvg(raw: Partial<AvatarConfig> | null | undefined, op
     //           pedaço do aro que passa por cima dele — é isso que faz a argola
     //           atravessar o lóbulo em vez de ficar colada na bochecha.
     //   barba   depois da cabeça e da cortina, por cima da orelha, como na
-    //           referência. O nariz e a boca passam por cima dela.
+    //           referência. A barba grossa vem antes da boca, que a atravessa;
+    //           o bigode vem depois, e o sorriso sai por baixo dele. O nariz
+    //           passa por cima dos dois.
     //   cílio   depois do olho, senão a cápsula branca o cobre.
     //   óculos  depois da barba, para a armação passar por cima da costeleta.
     const scene =
@@ -52,13 +55,14 @@ export function buildAvatarSvg(raw: Partial<AvatarConfig> | null | undefined, op
         earrings(c.earrings, c.earringColor) +
         head(c.skin) +
         locks.front +
-        beard(c.beard, c.hairColor) +
+        whiskers.under +
         face.brow +
         eyes() +
         face.lashes +
+        mouth(c.mouth, c.skin) +
+        whiskers.over +
         nose(c.skin) +
-        glasses(c.glasses, c.glassesColor) +
-        mouth(c.mouth, c.skin);
+        glasses(c.glasses, c.glassesColor);
 
     const backdrop = background ? `<rect x="0" y="0" width="200" height="200" fill="${c.background}"/>` : '';
 

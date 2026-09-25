@@ -1,14 +1,23 @@
 /**
  * Barba: bigode e barba grossa.
  *
- * As duas peças usam a cor do cabelo, como a sobrancelha, e são desenhadas logo
- * depois do cabelo da frente — por cima da cabeça e da orelha. O nariz e a boca
- * vêm depois delas e passam por cima, como nas referências.
+ * As duas peças usam a cor do cabelo, como a sobrancelha, e ficam por cima da
+ * cabeça e da orelha. O nariz passa por cima das duas, como nas referências.
+ *
+ * Com a boca, cada uma vai de um lado — por isso saem em camadas separadas:
+ *
+ *   under  a barba grossa, que a boca atravessa: a boca é desenhada por cima;
+ *   over   o bigode, que fica por cima da boca: o sorriso sai por baixo dele.
  *
  * A barba não muda a boca: a boca é um grupo à parte, escolhido no editor.
  */
 
 import type { BeardStyle } from '../types';
+
+export interface BeardLayers {
+    under: string;
+    over: string;
+}
 
 /**
  * Bigode cheio, de dois lóbulos, com as pontas caindo para fora.
@@ -17,10 +26,10 @@ import type { BeardStyle } from '../types';
  * y 114): o nariz é desenhado depois e cobre o meio de cima, e é isso que o
  * prende embaixo do nariz em vez de deixá-lo boiando na boca.
  *
- * A borda de baixo tem duas alturas. Sobre a boca (x 84..116) ela fica em
- * y≈119, acima do topo do traço da boca (y 120,5), então a boca aparece inteira
- * embaixo. Fora dessa faixa as pontas descem até y 125 — é a queda das pontas
- * que faz o bigode ler como bigode, e não como uma faixa.
+ * A borda de baixo tem duas alturas: y≈119 no meio e y 125 nas pontas. É a
+ * queda das pontas que faz o bigode ler como bigode, e não como uma faixa. Ele
+ * vem depois da boca, então cobre a parte dela que sobe ao lado do nariz — a
+ * boca aparece saindo por baixo dele.
  */
 const MUSTACHE =
     'M100,106C103,101 107,100 111,100C120,100 127,105 128,113C129,120 127,125 123,125C119,125 117,120 113,119C107,118 103,117 100,114.5' +
@@ -71,14 +80,14 @@ const FULL_BEARD =
     'C148.2,81.58 146.72,80.1 144.9,80.1C143.08,80.1 141.6,81.58 141.6,83.4' +
     'L141.2,91.6C140.4,97.5 136,103.5 133.3,104Z';
 
-export function beard(style: BeardStyle, color: string): string {
+export function beard(style: BeardStyle, color: string): BeardLayers {
     if (style === 'bigode') {
-        return `<path d="${MUSTACHE}" fill="${color}"/>`;
+        return { under: '', over: `<path d="${MUSTACHE}" fill="${color}"/>` };
     }
 
     if (style === 'grossa') {
-        return `<path d="${FULL_BEARD}" fill="${color}"/>`;
+        return { under: `<path d="${FULL_BEARD}" fill="${color}"/>`, over: '' };
     }
 
-    return '';
+    return { under: '', over: '' };
 }
