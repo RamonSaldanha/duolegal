@@ -34,48 +34,56 @@ const EMPTY: HairLayers = { back: '', front: '' };
 /**
  * Massa.
  *
- * O lado direito é o traçado da referência ao pé da letra, só dividido por 5.
- * O que faz a onda aparecer é o trecho **reto**: a silhueta desce quase vertical
- * em x≈173 de y 80 a 110 e só então abre para 184 e 192. Sem esse platô entre
- * as duas aberturas a borda vira um arco liso — foi o que eu tinha feito antes,
- * suavizando exatamente os pontos de controle que criam a onda.
+ * O que dá a fluidez é a **tangente contínua em toda junção**: cada trecho sai
+ * na mesma direção em que o anterior chegou, então a silhueta nunca quebra. A
+ * única quina de propósito é o entalhe do alto. A versão anterior tinha platôs
+ * retos e aberturas bruscas, e lia como capacete.
  *
- * O lado esquerdo **não é o espelho**: segura o estreitamento mais para baixo
- * (até y 130, contra 124) e abre mais tarde. Cabelo espelhado ponto a ponto lê
- * como forma geométrica, não como cabelo.
+ * O alto são dois lóbulos redondos, como na referência. O esquerdo é maior e
+ * mais alto, com pico em (74,3). O direito tem pico em (138,9), e o entalhe
+ * entre os dois fica em (112,14), fora do centro. Cada lóbulo é quase um quarto
+ * de círculo: com raio muito diferente na horizontal e na vertical, ele vira
+ * canto de caixa arredondado.
  *
- *   esquerda  30@60 · 26@82 · 27@99 · 27@115 · 20@130 · 12@146 · 10@163 · 4@200
- *   direita  170@60 · 174@80 · 173@96 · 175@110 · 184@124 · 192@140 · 196@200
+ * As laterais são uma onda só, quase espelhada; a assimetria fica no alto.
  *
- * A cúpula do alto é adaptada, não copiada: a cabeça daqui é mais alta, então a
- * da referência não caberia. Sobe até y 3, dentro do círculo inscrito, para não
- * ser decepada no recorte redondo.
+ *   bojo     x 12 / 188, em y≈105 — na altura da orelha, que aparece por cima
+ *   cintura  x 31 / 169, em y≈155 — no queixo
+ *   pé       x 6 / 194 — volta a abrir e sai pela borda do canvas
+ *
+ * No bojo e na cintura, o lado direito fica 2px abaixo do esquerdo: o bastante
+ * para não sair como carimbo espelhado.
+ *
+ * Recorte redondo: os lóbulos encostam no círculo inscrito e perdem no máximo
+ * 1–3px. O bojo e a cintura ficam dentro dele, então a onda sobrevive no avatar
+ * de 40px do header. Só a abertura do pé é cortada.
  */
 const MASS =
-    'M100,6C72,-4 42,14 30,60C20,92 36,110 20,130C2,150 16,176 4,200' +
-    'L196,200C180,170 204,144 184,124C164,104 180,90 170,60C158,14 128,-4 100,6Z';
+    'M112,14C104,4 90,1 74,3C52,5 33,24 30,52C28,76 12,84 12,104C12,128 31,132 31,154C31,174 12,184 6,200' +
+    'L194,200C188,184 169,174 169,156C169,134 188,130 188,106C188,86 174,72 172,48C170,24 156,9 138,9C126,9 117,10 112,14Z';
 
 /**
- * Cortina. A borda de baixo sai do bico, sobe ao alto do arco em y 32 e daí
- * varre na diagonal até encostar na lateral do rosto, cobrindo a ponta de fora
- * da sobrancelha — que é da mesma cor e some sob a linha do cabelo, como cabelo
- * de verdade faz.
+ * Cortina: a parte do cabelo que cobre o alto da cabeça.
  *
- * A risca fica em x 104, fora do centro: a metade esquerda é mais larga e desce
- * mais (até y 76, contra 72). Isso compensa a massa, que é mais cheia do lado
- * direito — as duas assimetrias se equilibram em vez de somar.
+ * O contorno de cima **reaproveita as curvas da massa**, dos dois lóbulos e do
+ * entalhe, ponto por ponto. Assim não existe emenda entre as camadas, e nenhum
+ * canto do rosto vaza entre elas num risco de pele.
  *
- * A varredura é mais curta que a da referência, e isso é limite da cabeça, não
- * do traçado: lá os olhos ocupam 53% da largura do rosto e aqui ocupam 81%, de
- * modo que qualquer cortina mais longa entra no branco do olho.
+ * A borda de baixo é a linha do cabelo, com a risca no meio e o vértice em
+ * (100,23). Cada metade desce íngreme perto da risca, atravessa a testa em
+ * y≈39–45 e desce pela lateral do rosto. É isso que faz as duas metades
+ * parecerem cabelo caindo para os lados, não uma faixa. Sobre a sobrancelha
+ * (x 62–85), o ponto mais baixo é y≈44,7, na ponta de fora — dentro do limite
+ * de y 46.
  *
- * O contorno de cima corre por dentro da massa. Fechar a faixa mais para dentro
- * deixa os cantos do rosto vazarem por cima do cabelo, num risco claro de pele.
+ * Nas laterais a cortina fecha por dentro da massa, onde a emenda é invisível,
+ * e desce só até y 64. A orelha começa em 78 e aparece por cima do cabelo, então
+ * a cortina não pode descer até ela.
  */
 const CURTAIN =
-    'M30,76C28,58 32,50 38,42C48,16 76,0 100,8C124,0 152,16 162,42C168,50 172,58 170,72' +
-    'L147,72C142,58 136,53 128,47C118,33 110,28 104,43C97,27 88,32 75,46C65,52 59,58 53,76Z';
-
+    'M30,52C33,24 52,5 74,3C90,1 104,4 112,14C117,10 126,9 138,9C156,9 170,24 172,48' +
+    'L147,64C147,58 146,54 144,50C140,42 128,42 118,39C109,36 103,30 100,23' +
+    'C97,30 91,36 82,39C72,42 60,42 56,50C54,54 53,58 53,64Z';
 
 /**
  * Curto.

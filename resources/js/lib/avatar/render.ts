@@ -25,25 +25,24 @@ export function buildAvatarSvg(raw: Partial<AvatarConfig> | null | undefined, op
     const locks = hair(c.hair, c.hairColor);
     const face = brows(c.brows, c.hairColor);
 
-    // Ordem de empilhamento, de trás para frente. A orelha vai no fundo, para a
-    // cabeça cobrir a parte de dentro e sobrar só a silhueta — e, com cabelo
-    // comprido, para a massa escondê-la por inteiro. A massa vem em seguida, de
-    // modo que o pescoço e a roupa passem por cima dela: é o cabelo cobrindo
-    // toda a parte de trás do pescoço e saindo por trás da gola. A cortina só
-    // pode vir depois da cabeça, senão o rosto a cobre.
+    // Ordem de empilhamento, de trás para frente. A massa do cabelo comprido vai
+    // no fundo, de modo que o pescoço e a roupa passem por cima dela: é o cabelo
+    // cobrindo toda a parte de trás do pescoço e saindo por trás da gola. A
+    // cortina só pode vir depois da cabeça, senão o rosto a cobre.
     //
-    // Os três encaixes que não são óbvios:
+    // Os quatro encaixes que não são óbvios:
     //
-    //   brinco  entre a roupa e a cabeça. Depois da massa do cabelo, senão a
-    //           argola fica enterrada junto com a orelha; e antes da cabeça,
-    //           para o rosto cobrir o pedaço do aro que passa por cima dele —
-    //           é isso que faz a argola atravessar o lóbulo em vez de ficar
-    //           colada na bochecha.
+    //   orelha  depois da massa, para aparecer por cima do cabelo comprido, como
+    //           na referência; e antes da cabeça, para o rosto cobrir a parte de
+    //           dentro e sobrar só a silhueta.
+    //   brinco  entre a roupa e a cabeça. Pendura na orelha, e o rosto cobre o
+    //           pedaço do aro que passa por cima dele — é isso que faz a argola
+    //           atravessar o lóbulo em vez de ficar colada na bochecha.
     //   cílio   depois do olho, senão a cápsula branca o cobre.
     //   óculos  depois do nariz, para a ponte passar por cima da listra.
     const scene =
-        ears(c.skin) +
         locks.back +
+        ears(c.skin) +
         neck(c.body, c.skin) +
         clothes(c.body, c.clothesColor, c.skin) +
         earrings(c.earrings, c.earringColor) +

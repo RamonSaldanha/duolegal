@@ -33,8 +33,6 @@ try {
 
 function page(A) {
     const base = A.DEFAULT_AVATAR;
-    // Com cabelo comprido a massa cobre a orelha, e o brinco quase some.
-    const showEars = { hair: 'curto' };
 
     const tile = (label, cfg) => `<figure><div class="art">${A.buildAvatarSvg(cfg)}</div><figcaption>${label}</figcaption></figure>`;
     const section = (title, tiles, small = false) =>
@@ -44,7 +42,7 @@ function page(A) {
         ['Corpo', 'body', A.BODIES_OPTIONS],
         ['Cabelo', 'hair', A.HAIRS],
         ['Sobrancelha', 'brows', A.BROWS],
-        ['Brinco', 'earrings', A.EARRINGS, showEars],
+        ['Brinco', 'earrings', A.EARRINGS],
         ['Óculos', 'glasses', A.GLASSES],
     ];
 
@@ -52,7 +50,7 @@ function page(A) {
         ['Tom da pele', 'skin', A.SKIN_COLORS],
         ['Cor do cabelo e da sobrancelha', 'hairColor', A.HAIR_COLORS],
         ['Cor da roupa', 'clothesColor', A.CLOTHES_COLORS],
-        ['Cor do brinco', 'earringColor', A.EARRING_COLORS, { ...showEars, earrings: 'argola' }],
+        ['Cor do brinco', 'earringColor', A.EARRING_COLORS, { earrings: 'argola' }],
         ['Cor dos óculos (de sol: pinta a lente)', 'glassesColor', A.GLASSES_COLORS, { glasses: 'sol' }],
         ['Cor do fundo', 'background', A.BACKGROUND_COLORS],
     ];
@@ -77,7 +75,7 @@ function page(A) {
     body += '<h2>Combinações</h2>';
     body += section(
         'Óculos × brinco',
-        A.GLASSES.flatMap((g) => A.EARRINGS.map((e) => tile(`${g.id} + ${e.id}`, { ...base, ...showEars, glasses: g.id, earrings: e.id }))),
+        A.GLASSES.flatMap((g) => A.EARRINGS.map((e) => tile(`${g.id} + ${e.id}`, { ...base, glasses: g.id, earrings: e.id }))),
     );
     body += section(
         'Sorteios (<code>randomAvatarConfig</code>)',

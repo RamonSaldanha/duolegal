@@ -28,8 +28,8 @@ import { both } from './svg';
  * A ordem importa mais aqui do que o traçado, e ela é uma fatia estreita: **entre
  * a roupa e a cabeça**.
  *
- *   Depois da massa do cabelo, porque a orelha é desenhada lá no fundo e some
- *   inteira sob ela — sem isso a argola não aparece com cabelo comprido.
+ *   Depois da orelha, que por sua vez vem depois da massa do cabelo — então o
+ *   brinco pendura na orelha visível mesmo com cabelo comprido.
  *
  *   Antes da cabeça, porque a argola é mais larga que a orelha e avança até
  *   x 58, cinco pixels por cima da silhueta do rosto (que começa em 53).
