@@ -25,15 +25,16 @@ export function buildAvatarSvg(raw: Partial<AvatarConfig> | null | undefined, op
     const locks = hair(c.hair, c.hairColor);
     const face = brows(c.brows, c.hairColor);
 
-    // Ordem de empilhamento, de trás para frente. A massa do cabelo comprido vai
-    // no fundo, de modo que o pescoço e a roupa passem por cima dela: é o cabelo
-    // cobrindo toda a parte de trás do pescoço e saindo por trás da gola. A
-    // cortina só pode vir depois da cabeça, senão o rosto a cobre.
+    // Ordem de empilhamento, de trás para frente. A massa do cabelo (comprido e
+    // chanel) vai no fundo, de modo que o pescoço e a roupa passem por cima
+    // dela: no comprido, é o cabelo cobrindo toda a parte de trás do pescoço e
+    // saindo por trás da gola. A cortina só pode vir depois da cabeça, senão o
+    // rosto a cobre.
     //
     // Os quatro encaixes que não são óbvios:
     //
-    //   orelha  depois da massa, para aparecer por cima do cabelo comprido, como
-    //           na referência; e antes da cabeça, para o rosto cobrir a parte de
+    //   orelha  depois da massa, para aparecer por cima do cabelo, como nas
+    //           referências; e antes da cabeça, para o rosto cobrir a parte de
     //           dentro e sobrar só a silhueta.
     //   brinco  entre a roupa e a cabeça. Pendura na orelha, e o rosto cobre o
     //           pedaço do aro que passa por cima dele — é isso que faz a argola

@@ -29,7 +29,7 @@ import { both } from './svg';
  * a roupa e a cabeça**.
  *
  *   Depois da orelha, que por sua vez vem depois da massa do cabelo — então o
- *   brinco pendura na orelha visível mesmo com cabelo comprido.
+ *   brinco pendura na orelha visível mesmo com cabelo comprido ou chanel.
  *
  *   Antes da cabeça, porque a argola é mais larga que a orelha e avança até
  *   x 58, cinco pixels por cima da silhueta do rosto (que começa em 53).

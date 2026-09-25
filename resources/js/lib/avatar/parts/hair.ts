@@ -1,25 +1,36 @@
 /**
  * Cabelo.
  *
- * Dois cortes, cada um com a sua própria lógica de camada:
+ * Três cortes, cada um com a sua própria lógica de camada:
  *
  *   comprido  sai em **duas** camadas. A massa (`back`) é maciça e vai antes do
  *             pescoço e da roupa, então a gola passa por cima dela — é o cabelo
  *             cobrindo a nuca e saindo por trás da roupa. A cortina (`front`)
  *             cai sobre a testa e vai depois da cabeça, senão o rosto a cobre.
+ *   chanel    as mesmas duas camadas, mas a massa termina na altura do queixo,
+ *             antes de chegar à roupa, e a cortina é uma franja lateral.
  *   curto     só `front`. Ele para no alto da orelha, então não existe nada
  *             dele atrás do pescoço para desenhar.
  *
- * Os dois foram traçados a partir de imagens de referência, adaptados à grade
+ * Os três foram traçados a partir de imagens de referência, adaptados à grade
  * daqui — o rosto das referências é mais largo que alto e o daqui é o contrário
  * (94x132), então as curvas foram remapeadas em proporção da cabeça, não
  * copiadas em escala.
  *
- * O limite que vale para qualquer corte novo: **a franja não pode passar de
- * y 46**. A sobrancelha é desenhada depois do cabelo, então franja que desça
- * sobre a faixa dela (y 49..62) faz a sobrancelha reaparecer por cima do cabelo,
- * o que lê como erro de camada. Nas referências isso não é problema porque
- * nenhuma delas tem sobrancelha desenhada.
+ * O limite que vale para qualquer corte novo: **a franja não pode cortar a
+ * sobrancelha ao meio**. A sobrancelha é desenhada depois do cabelo e na mesma
+ * cor dele, então só existem dois jeitos certos:
+ *
+ *   parar acima da faixa dela (y 49..62), com a borda em y 46 no máximo — é o
+ *   que o curto e o comprido fazem;
+ *
+ *   descer abaixo dela e cobri-la inteira, a partir de y 63 — ela some na cor
+ *   do cabelo. É o que a franja do chanel faz do lado esquerdo.
+ *
+ * Borda no meio da faixa faz a parte de baixo da sobrancelha reaparecer grudada
+ * na franja, o que lê como erro de camada. E nenhuma franja pode chegar ao olho
+ * (y 68): ele também é desenhado depois e apareceria por cima do cabelo. As
+ * referências não têm sobrancelha e deixam a franja cobrir o olho; aqui não dá.
  */
 
 import type { HairStyle } from '../types';
@@ -32,20 +43,31 @@ export interface HairLayers {
 const EMPTY: HairLayers = { back: '', front: '' };
 
 /**
- * Massa.
+ * Coroa do comprido e do chanel: dois lóbulos redondos, como nas referências.
+ * O esquerdo é maior e mais alto, com pico em (74,3); o direito tem pico em
+ * (138,9), e o entalhe entre os dois fica em (112,14), fora do centro. Cada
+ * lóbulo é quase um quarto de círculo: com raio muito diferente na horizontal e
+ * na vertical, ele vira canto de caixa arredondado.
+ *
+ * Vai da lateral esquerda (30,52) à direita (172,48) passando por cima da
+ * cabeça. A massa e a cortina de cada corte começam por ela, então as duas
+ * camadas têm o mesmo contorno de cima: não existe emenda entre elas, e nenhum
+ * canto do rosto vaza no meio num risco de pele.
+ *
+ * No recorte redondo os lóbulos encostam no círculo inscrito e perdem no máximo
+ * 1–3px.
+ */
+const CROWN = 'M30,52C33,24 52,5 74,3C90,1 104,4 112,14C117,10 126,9 138,9C156,9 170,24 172,48';
+
+/**
+ * Massa do comprido.
  *
  * O que dá a fluidez é a **tangente contínua em toda junção**: cada trecho sai
  * na mesma direção em que o anterior chegou, então a silhueta nunca quebra. A
- * única quina de propósito é o entalhe do alto. A versão anterior tinha platôs
+ * única quina de propósito é o entalhe da coroa. A versão anterior tinha platôs
  * retos e aberturas bruscas, e lia como capacete.
  *
- * O alto são dois lóbulos redondos, como na referência. O esquerdo é maior e
- * mais alto, com pico em (74,3). O direito tem pico em (138,9), e o entalhe
- * entre os dois fica em (112,14), fora do centro. Cada lóbulo é quase um quarto
- * de círculo: com raio muito diferente na horizontal e na vertical, ele vira
- * canto de caixa arredondado.
- *
- * As laterais são uma onda só, quase espelhada; a assimetria fica no alto.
+ * As laterais são uma onda só, quase espelhada; a assimetria fica na coroa.
  *
  *   bojo     x 12 / 188, em y≈105 — na altura da orelha, que aparece por cima
  *   cintura  x 31 / 169, em y≈155 — no queixo
@@ -54,20 +76,16 @@ const EMPTY: HairLayers = { back: '', front: '' };
  * No bojo e na cintura, o lado direito fica 2px abaixo do esquerdo: o bastante
  * para não sair como carimbo espelhado.
  *
- * Recorte redondo: os lóbulos encostam no círculo inscrito e perdem no máximo
- * 1–3px. O bojo e a cintura ficam dentro dele, então a onda sobrevive no avatar
- * de 40px do header. Só a abertura do pé é cortada.
+ * No recorte redondo o bojo e a cintura ficam dentro do círculo, então a onda
+ * sobrevive no avatar de 40px do header. Só a abertura do pé é cortada.
  */
-const MASS =
-    'M112,14C104,4 90,1 74,3C52,5 33,24 30,52C28,76 12,84 12,104C12,128 31,132 31,154C31,174 12,184 6,200' +
-    'L194,200C188,184 169,174 169,156C169,134 188,130 188,106C188,86 174,72 172,48C170,24 156,9 138,9C126,9 117,10 112,14Z';
+const LONG_MASS =
+    CROWN +
+    'C174,72 188,86 188,106C188,130 169,134 169,156C169,174 188,184 194,200' +
+    'L6,200C12,184 31,174 31,154C31,132 12,128 12,104C12,84 28,76 30,52Z';
 
 /**
- * Cortina: a parte do cabelo que cobre o alto da cabeça.
- *
- * O contorno de cima **reaproveita as curvas da massa**, dos dois lóbulos e do
- * entalhe, ponto por ponto. Assim não existe emenda entre as camadas, e nenhum
- * canto do rosto vaza entre elas num risco de pele.
+ * Cortina do comprido: a parte do cabelo que cobre o alto da cabeça.
  *
  * A borda de baixo é a linha do cabelo, com a risca no meio e o vértice em
  * (100,23). Cada metade desce íngreme perto da risca, atravessa a testa em
@@ -80,10 +98,49 @@ const MASS =
  * e desce só até y 64. A orelha começa em 78 e aparece por cima do cabelo, então
  * a cortina não pode descer até ela.
  */
-const CURTAIN =
-    'M30,52C33,24 52,5 74,3C90,1 104,4 112,14C117,10 126,9 138,9C156,9 170,24 172,48' +
-    'L147,64C147,58 146,54 144,50C140,42 128,42 118,39C109,36 103,30 100,23' +
-    'C97,30 91,36 82,39C72,42 60,42 56,50C54,54 53,58 53,64Z';
+const LONG_CURTAIN =
+    CROWN + 'L147,64C147,58 146,54 144,50C140,42 128,42 118,39C109,36 103,30 100,23' + 'C97,30 91,36 82,39C72,42 60,42 56,50C54,54 53,58 53,64Z';
+
+/**
+ * Massa do chanel.
+ *
+ * Mesma coroa do comprido, mas as laterais descem cheias e param um pouco acima
+ * do queixo, sem chegar à roupa:
+ *
+ *   bojo  x 21 / 179, em y 100 — atrás da orelha
+ *   pé    y 145, 7px acima do queixo (152)
+ *
+ * **Sem ponta nenhuma**, como na referência: o pé é um canto arredondado. A
+ * lateral recolhe um pouco depois do bojo (x 26 / 174 em y 137) e dobra numa
+ * curva de raio ~9 até a borda de baixo, que corre quase reta.
+ *
+ * Do canto, a borda de baixo sobe de leve até sumir atrás da mandíbula, em
+ * (62,140) e (138,140). Entre esses dois pontos ela corre escondida atrás da
+ * cabeça.
+ */
+const BOB_MASS =
+    CROWN +
+    'C174,70 179,82 179,100C179,118 176,131 174,137C172,143 169,145 164,145C156,145 146,142 138,140' +
+    'L62,140C54,142 44,145 36,145C31,145 28,143 26,137C24,131 21,118 21,100C21,82 28,70 30,52Z';
+
+/**
+ * Franja do chanel: lateral, pesada do lado esquerdo e subindo na diagonal.
+ *
+ * Do lado esquerdo ela **cobre a sobrancelha inteira**, o segundo jeito certo da
+ * regra do cabeçalho: sobre a faixa dela (x 62–85) a borda fica entre y 64,5 e
+ * 67,5 — abaixo do pé da sobrancelha (62,75) e acima do olho (68). A folga é
+ * apertada de propósito: é o que deixa a franja pesada e rente ao olho, como na
+ * referência.
+ *
+ * Em x 88 a borda vira e sobe na diagonal até o entalhe em (118,33). Dali para a
+ * direita não tem ponta: a borda contorna o canto do rosto num quarto de
+ * círculo de raio 29 e encontra a lateral da cabeça em (147,62) já na vertical,
+ * então o canto de pele que sobra embaixo é arredondado. O arco passa pelo
+ * menos 8px acima da sobrancelha direita em toda a largura dela.
+ *
+ * Como no comprido, a franja fecha por dentro da massa e para acima da orelha.
+ */
+const BOB_FRINGE = CROWN + 'L147,62C147,46 134,33 118,33C108,41 97,56 88,63C80,68 64,68 53,67Z';
 
 /**
  * Curto.
@@ -121,8 +178,15 @@ const CAP =
 export function hair(style: HairStyle, color: string): HairLayers {
     if (style === 'comprido') {
         return {
-            back: `<path d="${MASS}" fill="${color}"/>`,
-            front: `<path d="${CURTAIN}" fill="${color}"/>`,
+            back: `<path d="${LONG_MASS}" fill="${color}"/>`,
+            front: `<path d="${LONG_CURTAIN}" fill="${color}"/>`,
+        };
+    }
+
+    if (style === 'chanel') {
+        return {
+            back: `<path d="${BOB_MASS}" fill="${color}"/>`,
+            front: `<path d="${BOB_FRINGE}" fill="${color}"/>`,
         };
     }
 

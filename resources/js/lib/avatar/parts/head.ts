@@ -33,7 +33,7 @@ export function head(skin: string): string {
  * da cabeça. O que faz a peça funcionar é a ordem — por cima ela vira uma asa
  * colada no rosto; por trás, sobra só a parte de fora encostando na silhueta.
  *
- * Vem depois da massa do cabelo comprido, então aparece por cima dele.
+ * Vem depois da massa do cabelo (comprido e chanel), então aparece por cima dela.
  */
 export function ears(skin: string): string {
     return both(`<path d="${roundedRect(EAR_X, EAR_Y, EAR_W, EAR_H, EAR_R)}" fill="${skinInk(skin, 0.14)}"/>`);

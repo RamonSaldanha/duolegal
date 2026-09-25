@@ -5,13 +5,13 @@
  * nunca é persistido: é sempre reconstruído a partir desta configuração, o que
  * permite que o app Android renderize o mesmo avatar mais adiante.
  *
- * Catálogo: uma cabeça, dois corpos, uma roupa, três cabelos, três sobrancelhas,
+ * Catálogo: uma cabeça, dois corpos, uma roupa, quatro cabelos, três sobrancelhas,
  * dois brincos e dois óculos. Cada peça nova soma um id aqui, o desenho em
  * `parts/` e a mesma lista em `config/avatar.php`.
  */
 
 export type BodyShape = 'magro' | 'gordo';
-export type HairStyle = 'nenhum' | 'curto' | 'comprido';
+export type HairStyle = 'nenhum' | 'curto' | 'chanel' | 'comprido';
 export type BrowStyle = 'reta' | 'arqueada' | 'cilios';
 export type EarringStyle = 'nenhum' | 'argola' | 'simples';
 export type GlassesStyle = 'nenhum' | 'grau' | 'sol';

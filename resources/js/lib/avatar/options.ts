@@ -42,6 +42,7 @@ export const BODIES_OPTIONS: ShapeOption<BodyShape>[] = [
 export const HAIRS: ShapeOption<HairStyle>[] = [
     { id: 'nenhum', label: 'Careca' },
     { id: 'curto', label: 'Curto' },
+    { id: 'chanel', label: 'Chanel' },
     { id: 'comprido', label: 'Comprido' },
 ];
 
