@@ -12,7 +12,18 @@
  * paletas são sugestões da interface, então dá para mexer nelas à vontade.
  */
 
-import type { AvatarConfig, AvatarCrop, BeardStyle, BodyShape, BrowStyle, EarringStyle, GlassesStyle, HairStyle, MouthStyle } from './types';
+import type {
+    AvatarConfig,
+    AvatarCrop,
+    BeardStyle,
+    BodyShape,
+    BrowStyle,
+    EarringStyle,
+    GlassesStyle,
+    HairStyle,
+    MouthStyle,
+    OutfitStyle,
+} from './types';
 
 /**
  * Recorte das miniaturas do editor. Corpo e cabelo mudam a silhueta inteira,
@@ -42,6 +53,12 @@ export const MOUTH_CROP: AvatarCrop = [54, 82, 92, 76];
 export interface ShapeOption<T extends string> {
     id: T;
     label: string;
+    /**
+     * Exclusiva de assinante. O editor mostra com cadeado para quem não assina,
+     * e o servidor recusa salvar — a mesma lista fica em `premium` no
+     * `config/avatar.php`, que é quem vale de verdade.
+     */
+    premium?: boolean;
 }
 
 export const BODIES_OPTIONS: ShapeOption<BodyShape>[] = [
@@ -68,6 +85,13 @@ export const BROWS: ShapeOption<BrowStyle>[] = [
 export const MOUTHS: ShapeOption<MouthStyle>[] = [
     { id: 'sorriso', label: 'Sorriso' },
     { id: 'aberta', label: 'Aberta' },
+];
+
+/** Fantasias: cobrem o corpo inteiro, como skin de jogo. */
+export const OUTFITS: ShapeOption<OutfitStyle>[] = [
+    { id: 'nenhum', label: 'Nenhuma' },
+    { id: 'toga', label: 'Toga de juiz', premium: true },
+    { id: 'astronauta', label: 'Astronauta', premium: true },
 ];
 
 export const EARRINGS: ShapeOption<EarringStyle>[] = [
@@ -154,6 +178,7 @@ export const DEFAULT_AVATAR: AvatarConfig = {
     earrings: 'nenhum',
     glasses: 'nenhum',
     beard: 'nenhum',
+    outfit: 'nenhum',
     skin: '#EFC09A',
     hairColor: '#3A2C22',
     clothesColor: '#2A9D8F',
@@ -171,4 +196,5 @@ export const SHAPE_IDS = {
     earrings: EARRINGS.map((o) => o.id),
     glasses: GLASSES.map((o) => o.id),
     beard: BEARDS.map((o) => o.id),
+    outfit: OUTFITS.map((o) => o.id),
 } as const;

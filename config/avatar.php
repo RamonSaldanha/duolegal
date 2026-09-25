@@ -19,6 +19,11 @@
 | As cores não têm lista fixa de propósito: o servidor só exige o formato
 | `#rrggbb`. Assim dá para mexer nas paletas da interface sem mexer no backend.
 |
+| `premium` lista, por grupo, os ids exclusivos de assinante (plano `default`
+| ativo). Quem não assina não consegue salvá-los, e quem deixou de assinar para
+| de exibi-los — ver User::publicAvatarConfig(). O primeiro id de cada grupo
+| nunca pode ser premium: é para ele que a peça volta.
+|
 */
 
 return [
@@ -32,6 +37,13 @@ return [
         'glasses' => ['nenhum', 'grau', 'sol'],
         // Sem cor própria: a barba usa `hairColor`.
         'beard' => ['nenhum', 'bigode', 'grossa'],
+        // Fantasia: cobre o corpo inteiro no lugar da roupa (a de astronauta,
+        // também a cabeça).
+        'outfit' => ['nenhum', 'toga', 'astronauta'],
+    ],
+
+    'premium' => [
+        'outfit' => ['toga', 'astronauta'],
     ],
 
     'colors' => [

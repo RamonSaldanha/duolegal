@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { TransitionRoot } from '@headlessui/vue';
-import { Head, useForm, usePage } from '@inertiajs/vue3';
-import { Shuffle } from 'lucide-vue-next';
-import { computed } from 'vue';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
+import { Lock, Shuffle } from 'lucide-vue-next';
+import { computed, ref } from 'vue';
 
 import AvatarPreview from '@/components/avatar-editor/AvatarPreview.vue';
 import ColorSwatches from '@/components/avatar-editor/ColorSwatches.vue';
@@ -30,6 +30,7 @@ import {
     HAIR_COLORS,
     MOUTHS,
     MOUTH_CROP,
+    OUTFITS,
     SKIN_COLORS,
     normalizeAvatarConfig,
     randomAvatarConfig,
@@ -106,19 +107,54 @@ const tabs: Tab[] = [
             { kind: 'color', key: 'glassesColor', label: 'Cor dos óculos', colors: GLASSES_COLORS },
         ],
     },
+    {
+        // Por último: a fantasia cobre o corpo inteiro por cima de tudo que
+        // foi montado nas outras abas.
+        id: 'fantasia',
+        label: 'Fantasia',
+        groups: [{ kind: 'shape', key: 'outfit', label: 'Fantasia', options: OUTFITS, crop: FULL_CROP }],
+    },
 ];
 
-/** Config do avatar com uma peça trocada, para desenhar a miniatura da opção. */
-function previewWith(key: AvatarShapeKey, optionId: string): AvatarConfig {
-    return { ...form.avatar, [key]: optionId } as AvatarConfig;
+/**
+ * Assinatura ativa. É só para a interface: o servidor recusa sozinho uma peça
+ * exclusiva salva por quem não assina.
+ */
+const isSubscriber = computed(() => !!page.props.auth.user?.has_infinite_lives);
+
+/** Opção exclusiva que a pessoa tentou escolher sem assinar; abre o convite. */
+const lockedPick = ref<string | null>(null);
+
+function isLocked(option: ShapeOption<string>): boolean {
+    return !!option.premium && !isSubscriber.value;
 }
 
-function select(key: AvatarShapeKey, optionId: string) {
-    (form.avatar as Record<string, unknown>)[key] = optionId;
+/**
+ * Config do avatar com uma peça trocada, para desenhar a miniatura da opção.
+ *
+ * As miniaturas recortadas no rosto saem sem fantasia: o capacete e a toga
+ * mudam o tamanho e a altura da cabeça, e o rosto sairia do recorte.
+ */
+function previewWith(key: AvatarShapeKey, optionId: string, crop: AvatarCrop): AvatarConfig {
+    const config = { ...form.avatar, [key]: optionId } as AvatarConfig;
+
+    return crop === FULL_CROP ? config : { ...config, outfit: 'nenhum' };
 }
 
+function select(key: AvatarShapeKey, option: ShapeOption<string>) {
+    if (isLocked(option)) {
+        lockedPick.value = option.label;
+        return;
+    }
+
+    lockedPick.value = null;
+    (form.avatar as Record<string, unknown>)[key] = option.id;
+}
+
+// O sorteio troca o personagem, mas mantém a fantasia: ela é escolha de
+// assinante, não algo para sair e entrar ao acaso.
 function shuffle() {
-    form.avatar = randomAvatarConfig();
+    form.avatar = { ...randomAvatarConfig(), outfit: form.avatar.outfit };
 }
 
 const firstError = computed(() => Object.values(form.errors)[0]);
@@ -146,7 +182,7 @@ const submit = () => form.put(route('avatar.update'), { preserveScroll: true });
                 </AvatarPreview>
 
                 <Tabs default-value="corpo" class="w-full">
-                    <TabsList class="grid w-full grid-cols-4">
+                    <TabsList class="grid w-full grid-cols-5">
                         <TabsTrigger v-for="tab in tabs" :key="tab.id" :value="tab.id" class="text-xs sm:text-sm">
                             {{ tab.label }}
                         </TabsTrigger>
@@ -171,10 +207,24 @@ const submit = () => form.put(route('avatar.update'), { preserveScroll: true });
                                     :label="option.label"
                                     :crop="group.crop"
                                     :uid="`${group.key}-${option.id}`"
-                                    :preview="previewWith(group.key, option.id)"
+                                    :preview="previewWith(group.key, option.id, group.crop)"
                                     :selected="form.avatar[group.key] === option.id"
-                                    @click="select(group.key, option.id)"
+                                    :locked="isLocked(option)"
+                                    @click="select(group.key, option)"
                                 />
+                            </div>
+
+                            <div
+                                v-if="group.kind === 'shape' && lockedPick && group.options.some((o) => o.premium)"
+                                class="mt-3 flex items-start gap-3 rounded-2xl border-2 border-amber-200 bg-amber-50 p-3 dark:border-amber-500/40 dark:bg-amber-500/10"
+                            >
+                                <Lock class="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden="true" />
+                                <p class="text-sm text-amber-900 dark:text-amber-100">
+                                    “{{ lockedPick }}” é exclusiva para assinantes.
+                                    <Link :href="route('subscription.index')" class="font-bold underline underline-offset-2"
+                                        >Assinar para desbloquear</Link
+                                    >
+                                </p>
                             </div>
                         </section>
                     </TabsContent>

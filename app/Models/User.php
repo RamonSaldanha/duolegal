@@ -156,6 +156,35 @@ class User extends Authenticatable
         }
     }
 
+    /**
+     * O avatar como deve ser exibido: sem as peças exclusivas de assinante
+     * (`avatar.premium`) se a assinatura não está mais ativa. Cada uma volta para
+     * o primeiro id do grupo, que nunca é premium.
+     *
+     * O que está salvo não muda: se a pessoa voltar a assinar, a fantasia volta.
+     * Use este método — e não o atributo cru — em tudo que manda o avatar para a
+     * tela. Ao buscar vários usuários, carregue `subscriptions` junto para não
+     * fazer uma consulta por usuário.
+     *
+     * @return array<string, string>|null
+     */
+    public function publicAvatarConfig(): ?array
+    {
+        $config = $this->avatar_config;
+
+        if (! is_array($config) || $this->hasActiveSubscription()) {
+            return $config;
+        }
+
+        foreach (config('avatar.premium', []) as $key => $ids) {
+            if (isset($config[$key]) && in_array($config[$key], $ids, true)) {
+                $config[$key] = config("avatar.shapes.{$key}")[0];
+            }
+        }
+
+        return $config;
+    }
+
     public function xpTransactions(): HasMany
     {
         return $this->hasMany(XpTransaction::class);

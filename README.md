@@ -25,4 +25,6 @@ Gera `public/avatar-gallery.html` (fora do git). Com o Laravel rodando, abra `ht
 
 Grupo novo (como foi a barba) também precisa de uma aba em `resources/js/pages/settings/Avatar.vue` e de uma linha na lista `shapes` de `scripts/avatar-gallery.js`.
 
+Peça exclusiva de assinante (como a toga, no grupo de fantasias): marque `premium: true` na opção em `options.ts` e ponha o id em `premium` no `config/avatar.php`. O servidor recusa salvar para quem não assina, e `User::publicAvatarConfig()` tira a peça da exibição de quem deixou de assinar — use esse método, e não o atributo `avatar_config`, em tudo que manda o avatar para a tela.
+
 Cores não precisam de passo 4: o servidor só exige o formato `#rrggbb`.

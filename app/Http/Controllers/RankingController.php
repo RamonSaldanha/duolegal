@@ -55,7 +55,7 @@ class RankingController extends Controller
                         : '',
                     'xp' => $userXp,
                     'position' => $currentUserPosition,
-                    'avatar_config' => $currentUser->avatar_config,
+                    'avatar_config' => $currentUser->publicAvatarConfig(),
                 ];
             }
         }
@@ -71,6 +71,9 @@ class RankingController extends Controller
     /**
      * Avatares dos usuários do ranking, indexados por id.
      *
+     * Passam por publicAvatarConfig(), que tira a fantasia de quem deixou de
+     * assinar; as assinaturas vêm junto para não fazer uma consulta por usuário.
+     *
      * @param  \Illuminate\Support\Collection<int, int>  $ids
      * @return \Illuminate\Support\Collection<int, array<string, string>|null>
      */
@@ -80,8 +83,9 @@ class RankingController extends Controller
             return collect();
         }
 
-        return User::whereIn('id', $ids)
-            ->pluck('avatar_config', 'id')
-            ->map(fn ($config) => is_string($config) ? json_decode($config, true) : $config);
+        return User::with('subscriptions')
+            ->whereIn('id', $ids)
+            ->get(['id', 'avatar_config'])
+            ->mapWithKeys(fn (User $user) => [$user->id => $user->publicAvatarConfig()]);
     }
 }

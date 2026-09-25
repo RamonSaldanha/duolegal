@@ -55,6 +55,8 @@ export function randomAvatarConfig(): AvatarConfig {
         earrings: pickAccessory(EARRINGS, 0.4),
         glasses: pickAccessory(GLASSES, 0.3),
         beard: pickAccessory(BEARDS, 0.25),
+        // Fantasia não entra no sorteio: é exclusiva de assinante e escolha dele.
+        outfit: 'nenhum',
         skin,
         hairColor: pick(contrastingWith(skin, HAIR_COLORS)),
         clothesColor: pick(CLOTHES_COLORS),

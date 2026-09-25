@@ -60,6 +60,7 @@ function page(A) {
         ['Brinco', 'earrings', A.EARRINGS],
         ['Óculos', 'glasses', A.GLASSES],
         ['Barba', 'beard', A.BEARDS],
+        ['Fantasia (assinantes)', 'outfit', A.OUTFITS],
     ];
 
     const colors = [

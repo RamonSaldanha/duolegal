@@ -52,7 +52,7 @@ class HandleInertiaRequests extends Middleware
                     ? array_merge($request->user()->only('id', 'name', 'email', 'lives'), [
                         'xp' => $request->user()->xp,
                         'current_streak' => $request->user()->effectiveStreak(),
-                        'avatar_config' => $request->user()->avatar_config,
+                        'avatar_config' => $request->user()->publicAvatarConfig(),
                         'is_admin' => $request->user()->isAdmin(),
                         'has_infinite_lives' => $request->user()->hasActiveSubscription(),
                         // Informações de depuração apenas para administradores

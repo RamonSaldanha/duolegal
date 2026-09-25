@@ -75,6 +75,9 @@ const CROWN = 'M30,52C33,24 52,5 74,3C90,1 104,4 112,14C117,10 126,9 138,9C156,9
  *   cintura  x 31 / 169, em y≈155 — no queixo
  *   pé       x 6 / 194 — volta a abrir e sai pela borda do canvas
  *
+ * O pé continua abrindo até y 232, fora da tela. Não aparece aqui, mas a toga
+ * encolhe a cena inteira e traz esse trecho para dentro — ver `parts/outfit.ts`.
+ *
  * No bojo e na cintura, o lado direito fica 2px abaixo do esquerdo: o bastante
  * para não sair como carimbo espelhado.
  *
@@ -84,7 +87,7 @@ const CROWN = 'M30,52C33,24 52,5 74,3C90,1 104,4 112,14C117,10 126,9 138,9C156,9
 const LONG_MASS =
     CROWN +
     'C174,72 188,86 188,106C188,130 169,134 169,156C169,174 188,184 194,200' +
-    'L6,200C12,184 31,174 31,154C31,132 12,128 12,104C12,84 28,76 30,52Z';
+    'L206,232H-6L6,200C12,184 31,174 31,154C31,132 12,128 12,104C12,84 28,76 30,52Z';
 
 /**
  * Cortina do comprido: a parte do cabelo que cobre o alto da cabeça.
