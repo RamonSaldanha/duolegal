@@ -7,7 +7,8 @@
  * em http://localhost:8000/avatar-gallery.html — sem login.
  *
  * Lê `resources/js/lib/avatar` direto do código-fonte pelo Vite, então a galeria
- * sempre mostra o catálogo atual: peça nova em `options.ts` aparece aqui sozinha.
+ * sempre mostra o catálogo atual: opção nova num grupo que já existe aparece aqui
+ * sozinha; grupo novo precisa entrar na lista `shapes` de `page()`.
  * Por isso não existe bundle versionado da lib — ele ficaria desatualizado.
  */
 
@@ -42,8 +43,10 @@ function page(A) {
         ['Corpo', 'body', A.BODIES_OPTIONS],
         ['Cabelo', 'hair', A.HAIRS],
         ['Sobrancelha', 'brows', A.BROWS],
+        ['Boca', 'mouth', A.MOUTHS],
         ['Brinco', 'earrings', A.EARRINGS],
         ['Óculos', 'glasses', A.GLASSES],
+        ['Barba', 'beard', A.BEARDS],
     ];
 
     const colors = [

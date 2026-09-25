@@ -1,6 +1,7 @@
 import { luminance } from './color';
 import {
     BACKGROUND_COLORS,
+    BEARDS,
     BODIES_OPTIONS,
     BROWS,
     CLOTHES_COLORS,
@@ -10,6 +11,7 @@ import {
     GLASSES_COLORS,
     HAIRS,
     HAIR_COLORS,
+    MOUTHS,
     SKIN_COLORS,
     type ShapeOption,
 } from './options';
@@ -49,8 +51,10 @@ export function randomAvatarConfig(): AvatarConfig {
         body: pick(BODIES_OPTIONS).id,
         hair: pick(HAIRS).id,
         brows: pick(BROWS).id,
+        mouth: pick(MOUTHS).id,
         earrings: pickAccessory(EARRINGS, 0.4),
         glasses: pickAccessory(GLASSES, 0.3),
+        beard: pickAccessory(BEARDS, 0.25),
         skin,
         hairColor: pick(contrastingWith(skin, HAIR_COLORS)),
         clothesColor: pick(CLOTHES_COLORS),

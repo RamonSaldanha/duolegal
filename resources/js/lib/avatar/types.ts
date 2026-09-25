@@ -6,25 +6,30 @@
  * permite que o app Android renderize o mesmo avatar mais adiante.
  *
  * Catálogo: uma cabeça, dois corpos, uma roupa, quatro cabelos, três sobrancelhas,
- * dois brincos e dois óculos. Cada peça nova soma um id aqui, o desenho em
- * `parts/` e a mesma lista em `config/avatar.php`.
+ * duas bocas, dois brincos, dois óculos, um bigode e uma barba. Cada peça nova
+ * soma um id aqui, o desenho em `parts/` e a mesma lista em `config/avatar.php`.
  */
 
 export type BodyShape = 'magro' | 'gordo';
 export type HairStyle = 'nenhum' | 'curto' | 'chanel' | 'comprido';
 export type BrowStyle = 'reta' | 'arqueada' | 'cilios';
+export type MouthStyle = 'sorriso' | 'aberta';
 export type EarringStyle = 'nenhum' | 'argola' | 'simples';
 export type GlassesStyle = 'nenhum' | 'grau' | 'sol';
+export type BeardStyle = 'nenhum' | 'bigode' | 'grossa';
 
 export interface AvatarConfig {
     body: BodyShape;
     hair: HairStyle;
     /** `cilios` desenha a sobrancelha **e** os cílios; ver `parts/face.ts`. */
     brows: BrowStyle;
+    mouth: MouthStyle;
     earrings: EarringStyle;
     glasses: GlassesStyle;
+    /** Sem cor própria: usa `hairColor`. */
+    beard: BeardStyle;
     skin: string;
-    /** Pinta o cabelo, a sobrancelha e o cílio. */
+    /** Pinta o cabelo, a sobrancelha, o cílio e a barba. */
     hairColor: string;
     clothesColor: string;
     earringColor: string;

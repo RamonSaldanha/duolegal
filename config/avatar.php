@@ -27,13 +27,16 @@ return [
         'hair' => ['nenhum', 'curto', 'chanel', 'comprido'],
         // `cilios` desenha a sobrancelha e os cílios na mesma opção.
         'brows' => ['reta', 'arqueada', 'cilios'],
+        'mouth' => ['sorriso', 'aberta'],
         'earrings' => ['nenhum', 'argola', 'simples'],
         'glasses' => ['nenhum', 'grau', 'sol'],
+        // Sem cor própria: a barba usa `hairColor`.
+        'beard' => ['nenhum', 'bigode', 'grossa'],
     ],
 
     'colors' => [
         'skin',
-        // Cabelo, sobrancelha e cílio.
+        // Cabelo, sobrancelha, cílio e barba.
         'hairColor',
         'clothesColor',
         'earringColor',

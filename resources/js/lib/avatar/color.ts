@@ -40,7 +40,7 @@ export function luminance(hex: string): number {
 }
 
 /**
- * Tom de contraste sobre a pele — orelha, pescoço, listra do nariz e boca.
+ * Tom de contraste sobre a pele — orelha, pescoço, nariz e boca.
  *
  * Sempre escurece, em toda a paleta. Nos tons retintos isso deixa o traço bem
  * discreto (no `#45291D` o nariz quase encosta no tom da pele), e a alternativa

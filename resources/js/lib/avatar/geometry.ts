@@ -9,7 +9,7 @@
  *
  *   cabeça      largura ≈ 0,72 da altura      (retângulo bem arredondado)
  *   orelha      sobra ≈ 0,15 da largura da cabeça, o resto fica atrás
- *   nariz       largura ≈ 0,12 da largura da cabeça, altura ≈ 2,8x a largura
+ *   nariz       gota de 16x24, com a base redonda
  *
  * O SVG não tem moldura: o fundo sangra o quadrado inteiro e quem recorta é o
  * container onde o avatar aparece. Por isso a cabeça inteira fica dentro do
@@ -55,8 +55,8 @@ export const BROW_T = 9;
 /**
  * Olho: cápsula branca com pupila escura por cima.
  *
- * Os olhos ficam bem afastados de propósito — a listra do nariz desce entre
- * eles a partir da altura do olho, e sem esse vão as três peças se encostam.
+ * Os olhos ficam bem afastados de propósito — o nariz fica entre eles, e sem
+ * esse vão as três peças se encostam.
  */
 export const EYE_X = 62;
 export const EYE_Y = 68;
@@ -67,10 +67,13 @@ export const PUPIL_X = 76;
 export const PUPIL_Y = 84;
 export const PUPIL_R = 6;
 
-/** Nariz: listra reta e grossa, sem curva nenhuma. Começa na altura do olho. */
-export const NOSE_W = 13;
-export const NOSE_Y = 80;
-export const NOSE_H = 34;
+/**
+ * Nariz: gota — topo estreito e arredondado entre os olhos, base redonda de
+ * raio NOSE_W / 2. Termina em y 114, acima do bigode e da boca.
+ */
+export const NOSE_W = 16;
+export const NOSE_Y = 90;
+export const NOSE_H = 24;
 
 /** Boca: arco raso, bem acima do queixo. */
 export const MOUTH_Y = 123;
@@ -105,8 +108,7 @@ export const HOOP_T = 4.5;
  * cima lê como erro de render, não como óculos. O traçado de cada armação fica
  * em `parts/accessories.ts`, que é onde elas divergem.
  *
- * A ponte fica em y 71,8..76,3 — o topo da listra do nariz é y 80, então sobram
- * quase 4px entre as duas. Com menos que isso elas se encostam no render de 40px.
+ * A ponte fica em y 71,8..76,3, bem acima do nariz, que começa em y 90.
  */
 export const BRIDGE_Y = 74;
 /** Onde a haste encosta no alto da orelha. As duas armações terminam aqui. */

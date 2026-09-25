@@ -2,8 +2,8 @@
  * Traços do rosto: sobrancelha, cílio, olho, nariz e boca.
  *
  * Tudo chapado e sem contorno. Dois pontos são a assinatura do estilo e não têm
- * variação: o olho tem parte branca com pupila por cima, e o nariz é uma listra
- * reta e grossa — nada de "L", de curva ou de triangulinho.
+ * variação: o olho tem parte branca com pupila por cima, e o nariz é uma gota
+ * de base redonda.
  */
 
 import { skinInk } from '../color';
@@ -29,7 +29,7 @@ import {
     PUPIL_Y,
     roundedRect,
 } from '../geometry';
-import type { BrowStyle } from '../types';
+import type { BrowStyle, MouthStyle } from '../types';
 import { both } from './svg';
 
 /**
@@ -111,15 +111,46 @@ export function eyes(): string {
 }
 
 /**
- * Listra reta e grossa, num tom de contraste da pele. Começa na altura do olho
- * e desce entre os dois, como nas referências.
+ * Gota num tom de contraste da pele: topo estreito e arredondado entre os
+ * olhos, alargando até a base, que é um meio círculo.
  */
 export function nose(skin: string): string {
-    return `<path d="${roundedRect(100 - NOSE_W / 2, NOSE_Y, NOSE_W, NOSE_H, NOSE_W / 2)}" fill="${skinInk(skin, 0.2)}"/>`;
+    const r = NOSE_W / 2;
+    const top = NOSE_Y;
+    const base = NOSE_Y + NOSE_H - r; // centro do meio círculo da base
+    const k = r * 0.55; // alça de Bézier de um quarto de círculo
+
+    const d =
+        `M100,${top}C${100 + r / 2},${top} ${100 + r},${base - 7} ${100 + r},${base}` +
+        `C${100 + r},${base + k} ${100 + k},${base + r} 100,${base + r}` +
+        `C${100 - k},${base + r} ${100 - r},${base + k} ${100 - r},${base}` +
+        `C${100 - r},${base - 7} ${100 - r / 2},${top} 100,${top}Z`;
+
+    return `<path d="${d}" fill="${skinInk(skin, 0.2)}"/>`;
 }
 
-/** Arco raso, do mesmo tom da listra do nariz, para não competir com ela. */
-export function mouth(skin: string): string {
+/**
+ * Boca aberta, com língua — a da referência da barba.
+ *
+ * Tem dois tons fixos, o fundo escuro e a língua clara, e não depende da pele.
+ * Por isso é a boca que aparece melhor sobre a barba grossa: pelo menos um dos
+ * tons destoa de todas as cores de cabelo da paleta. Ocupa o mesmo lugar do
+ * sorriso (x 85..115, y 121..138).
+ */
+const OPEN_MOUTH = 'M85,121Q100,126 115,121C115,131.5 108,138 100,138C92,138 85,131.5 85,121Z';
+const TONGUE = 'M90.5,132.5C93,129.5 107,129.5 109.5,132.5C107.5,136 104,138 100,138C96,138 92.5,136 90.5,132.5Z';
+const MOUTH_INSIDE = '#8E2A36';
+const TONGUE_COLOR = '#D9545F';
+
+/**
+ * `sorriso` é um arco raso, do mesmo tom do nariz, para não competir com ele.
+ * `aberta` é a boca aberta de cima.
+ */
+export function mouth(style: MouthStyle, skin: string): string {
+    if (style === 'aberta') {
+        return `<path d="${OPEN_MOUTH}" fill="${MOUTH_INSIDE}"/><path d="${TONGUE}" fill="${TONGUE_COLOR}"/>`;
+    }
+
     const x = 100 - MOUTH_W / 2;
 
     return (

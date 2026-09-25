@@ -12,7 +12,7 @@
  * paletas são sugestões da interface, então dá para mexer nelas à vontade.
  */
 
-import type { AvatarConfig, AvatarCrop, BodyShape, BrowStyle, EarringStyle, GlassesStyle, HairStyle } from './types';
+import type { AvatarConfig, AvatarCrop, BeardStyle, BodyShape, BrowStyle, EarringStyle, GlassesStyle, HairStyle, MouthStyle } from './types';
 
 /**
  * Recorte das miniaturas do editor. Corpo e cabelo mudam a silhueta inteira,
@@ -28,6 +28,16 @@ export const FACE_CROP: AvatarCrop = [36, 12, 128, 108];
  * brinco pequeno demais para se distinguir numa miniatura.
  */
 export const EAR_CROP: AvatarCrop = [30, 44, 140, 100];
+/**
+ * Enquadra a metade de baixo do rosto. A barba grossa desce até y 168 e abre até
+ * x 46 / 154, então nenhum dos outros recortes a mostra inteira.
+ */
+export const BEARD_CROP: AvatarCrop = [30, 64, 140, 116];
+/**
+ * Enquadra do nariz ao queixo. A boca fica em y 121..138, abaixo de onde o
+ * `FACE_CROP` termina.
+ */
+export const MOUTH_CROP: AvatarCrop = [54, 82, 92, 76];
 
 export interface ShapeOption<T extends string> {
     id: T;
@@ -52,6 +62,11 @@ export const BROWS: ShapeOption<BrowStyle>[] = [
     { id: 'cilios', label: 'Cílios' },
 ];
 
+export const MOUTHS: ShapeOption<MouthStyle>[] = [
+    { id: 'sorriso', label: 'Sorriso' },
+    { id: 'aberta', label: 'Aberta' },
+];
+
 export const EARRINGS: ShapeOption<EarringStyle>[] = [
     { id: 'nenhum', label: 'Nenhum' },
     { id: 'argola', label: 'Argola' },
@@ -64,9 +79,15 @@ export const GLASSES: ShapeOption<GlassesStyle>[] = [
     { id: 'sol', label: 'De sol' },
 ];
 
+export const BEARDS: ShapeOption<BeardStyle>[] = [
+    { id: 'nenhum', label: 'Nenhuma' },
+    { id: 'bigode', label: 'Bigode' },
+    { id: 'grossa', label: 'Barba grossa' },
+];
+
 export const SKIN_COLORS = ['#FBDCC2', '#F5DCC0', '#EFC09A', '#F0B489', '#EE8B72', '#DD7B5E', '#C6694E', '#A9563F', '#8C4633', '#45291D'];
 
-/** Cabelo, sobrancelha e cílio. */
+/** Cabelo, sobrancelha, cílio e barba. */
 export const HAIR_COLORS = [
     '#2B2C5E',
     '#241F1F',
@@ -126,8 +147,10 @@ export const DEFAULT_AVATAR: AvatarConfig = {
     body: 'magro',
     hair: 'comprido',
     brows: 'reta',
+    mouth: 'sorriso',
     earrings: 'nenhum',
     glasses: 'nenhum',
+    beard: 'nenhum',
     skin: '#EFC09A',
     hairColor: '#3A2C22',
     clothesColor: '#2A9D8F',
@@ -141,6 +164,8 @@ export const SHAPE_IDS = {
     body: BODIES_OPTIONS.map((o) => o.id),
     hair: HAIRS.map((o) => o.id),
     brows: BROWS.map((o) => o.id),
+    mouth: MOUTHS.map((o) => o.id),
     earrings: EARRINGS.map((o) => o.id),
     glasses: GLASSES.map((o) => o.id),
+    beard: BEARDS.map((o) => o.id),
 } as const;

@@ -10,6 +10,7 @@
  */
 
 import { earrings, glasses } from './parts/accessories';
+import { beard } from './parts/beard';
 import { clothes } from './parts/clothes';
 import { brows, eyes, mouth, nose } from './parts/face';
 import { hair } from './parts/hair';
@@ -31,7 +32,7 @@ export function buildAvatarSvg(raw: Partial<AvatarConfig> | null | undefined, op
     // saindo por trás da gola. A cortina só pode vir depois da cabeça, senão o
     // rosto a cobre.
     //
-    // Os quatro encaixes que não são óbvios:
+    // Os cinco encaixes que não são óbvios:
     //
     //   orelha  depois da massa, para aparecer por cima do cabelo, como nas
     //           referências; e antes da cabeça, para o rosto cobrir a parte de
@@ -39,8 +40,10 @@ export function buildAvatarSvg(raw: Partial<AvatarConfig> | null | undefined, op
     //   brinco  entre a roupa e a cabeça. Pendura na orelha, e o rosto cobre o
     //           pedaço do aro que passa por cima dele — é isso que faz a argola
     //           atravessar o lóbulo em vez de ficar colada na bochecha.
+    //   barba   depois da cabeça e da cortina, por cima da orelha, como na
+    //           referência. O nariz e a boca passam por cima dela.
     //   cílio   depois do olho, senão a cápsula branca o cobre.
-    //   óculos  depois do nariz, para a ponte passar por cima da listra.
+    //   óculos  depois da barba, para a armação passar por cima da costeleta.
     const scene =
         locks.back +
         ears(c.skin) +
@@ -49,12 +52,13 @@ export function buildAvatarSvg(raw: Partial<AvatarConfig> | null | undefined, op
         earrings(c.earrings, c.earringColor) +
         head(c.skin) +
         locks.front +
+        beard(c.beard, c.hairColor) +
         face.brow +
         eyes() +
         face.lashes +
         nose(c.skin) +
         glasses(c.glasses, c.glassesColor) +
-        mouth(c.skin);
+        mouth(c.mouth, c.skin);
 
     const backdrop = background ? `<rect x="0" y="0" width="200" height="200" fill="${c.background}"/>` : '';
 

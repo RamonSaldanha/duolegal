@@ -14,6 +14,8 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import SettingsLayout from '@/layouts/settings/Layout.vue';
 import {
     BACKGROUND_COLORS,
+    BEARDS,
+    BEARD_CROP,
     BODIES_OPTIONS,
     BROWS,
     CLOTHES_COLORS,
@@ -26,6 +28,8 @@ import {
     GLASSES_COLORS,
     HAIRS,
     HAIR_COLORS,
+    MOUTHS,
+    MOUTH_CROP,
     SKIN_COLORS,
     normalizeAvatarConfig,
     randomAvatarConfig,
@@ -79,6 +83,7 @@ const tabs: Tab[] = [
         groups: [
             { kind: 'color', key: 'skin', label: 'Tom da pele', colors: SKIN_COLORS },
             { kind: 'shape', key: 'brows', label: 'Sobrancelha', options: BROWS, crop: FACE_CROP },
+            { kind: 'shape', key: 'mouth', label: 'Boca', options: MOUTHS, crop: MOUTH_CROP },
         ],
     },
     {
@@ -86,7 +91,9 @@ const tabs: Tab[] = [
         label: 'Cabelo',
         groups: [
             { kind: 'shape', key: 'hair', label: 'Cabelo', options: HAIRS, crop: FULL_CROP },
-            { kind: 'color', key: 'hairColor', label: 'Cor do cabelo e da sobrancelha', colors: HAIR_COLORS },
+            // A barba fica aqui, e não em "Rosto", porque a cor dela é a do cabelo.
+            { kind: 'shape', key: 'beard', label: 'Barba', options: BEARDS, crop: BEARD_CROP },
+            { kind: 'color', key: 'hairColor', label: 'Cor do cabelo, da sobrancelha e da barba', colors: HAIR_COLORS },
         ],
     },
     {

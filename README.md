@@ -23,4 +23,6 @@ Gera `public/avatar-gallery.html` (fora do git). Com o Laravel rodando, abra `ht
 3. Opção e rótulo em `resources/js/lib/avatar/options.ts` (grupo novo também entra em `DEFAULT_AVATAR`, `SHAPE_IDS` e `random.ts`).
 4. O mesmo id em `config/avatar.php` — é o que o servidor aceita ao salvar.
 
+Grupo novo (como foi a barba) também precisa de uma aba em `resources/js/pages/settings/Avatar.vue` e de uma linha na lista `shapes` de `scripts/avatar-gallery.js`.
+
 Cores não precisam de passo 4: o servidor só exige o formato `#rrggbb`.
