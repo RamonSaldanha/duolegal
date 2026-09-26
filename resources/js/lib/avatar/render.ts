@@ -88,10 +88,23 @@ export function buildAvatarSvg(raw: Partial<AvatarConfig> | null | undefined, op
             costume.body + glass + `<g clip-path="url(#${id})"><g transform="${transform}">${headBehind + earring + headAbove}</g></g>` + costume.top;
     } else {
         scene = headBehind + (costume.body || clothes(c.body, c.clothesColor, c.skin)) + earring + headAbove + costume.top;
+
+        // O coque passa do topo da tela, e a cena inteira encolhe para ele
+        // caber. Só no avatar inteiro: as miniaturas do editor recortadas no
+        // rosto esperam a cabeça no lugar de sempre, e o recorte já cortaria o
+        // alto do coque de qualquer jeito. Com capacete também não: a cabeça vai
+        // para dentro do visor, que corta o coque.
+        const partial = !!crop && (crop[2] < 200 || crop[3] < 200);
+
+        if (locks.fit && !partial) {
+            scene = `<g transform="${locks.fit}">${scene}</g>`;
+        }
     }
 
     // A toga é desenhada na grade normal e passa do fundo da tela: a cena
-    // inteira encolhe junto para ela caber, e o fundo continua sangrando.
+    // inteira encolhe junto para ela caber, e o fundo continua sangrando. Com o
+    // coque, os dois encaixes se somam: a cena fica a 83%, o topo do coque em
+    // y 1,4 e a barra da toga ainda abaixo do pé da tela.
     if (costume.fit) {
         scene = `<g transform="${costume.fit}">${scene}</g>`;
     }

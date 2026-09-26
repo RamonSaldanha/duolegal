@@ -29,7 +29,7 @@
 return [
     'shapes' => [
         'body' => ['magro', 'gordo'],
-        'hair' => ['nenhum', 'calvo', 'curto', 'afro', 'chanel', 'comprido', 'liso'],
+        'hair' => ['nenhum', 'calvo', 'curto', 'afro', 'chanel', 'comprido', 'liso', 'coque'],
         // `cilios` desenha a sobrancelha e os cílios na mesma opção.
         'brows' => ['reta', 'arqueada', 'cilios'],
         'mouth' => ['sorriso', 'aberta'],

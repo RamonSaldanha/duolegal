@@ -74,6 +74,7 @@ export const HAIRS: ShapeOption<HairStyle>[] = [
     { id: 'chanel', label: 'Chanel' },
     { id: 'comprido', label: 'Comprido' },
     { id: 'liso', label: 'Liso' },
+    { id: 'coque', label: 'Coque' },
 ];
 
 export const BROWS: ShapeOption<BrowStyle>[] = [

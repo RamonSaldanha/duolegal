@@ -1,7 +1,7 @@
 /**
  * Cabelo.
  *
- * Seis cortes, cada um com a sua própria lógica de camada:
+ * Sete cortes, cada um com a sua própria lógica de camada:
  *
  *   comprido  sai em **duas** camadas. A massa (`back`) é maciça e vai antes do
  *             pescoço e da roupa, então a gola passa por cima dela — é o cabelo
@@ -13,6 +13,9 @@
  *   curto     só `front`. Ele para no alto da orelha, então não existe nada
  *   afro      dele atrás do pescoço para desenhar. Vale para os três.
  *   calvo
+ *   coque     só `front`, e as mechas passam por cima da orelha. É o único que
+ *             mexe na cena: o coque não cabe acima da cabeça, então a cena
+ *             inteira encolhe para ele caber (`fit`).
  *
  * Todos foram traçados a partir de imagens de referência, adaptados à grade
  * daqui — o rosto das referências é mais largo que alto e o daqui é o contrário
@@ -24,7 +27,9 @@
  * cor dele, então só existem dois jeitos certos:
  *
  *   parar acima da faixa dela (y 49..62), com a borda em y 46 no máximo — é o
- *   que o curto, o afro, o calvo, o comprido e o liso fazem;
+ *   que o curto, o afro, o calvo, o comprido e o liso fazem. O coque desce
+ *   mais perto das pontas, onde a sobrancelha é mais baixa, mas fica a pelo
+ *   menos 2,2 de qualquer estilo dela: a mesma folga do liso e do afro;
  *
  *   descer abaixo dela e cobri-la inteira, a partir de y 63 — ela some na cor
  *   do cabelo. É o que a franja do chanel faz do lado esquerdo.
@@ -35,11 +40,17 @@
  * referências não têm sobrancelha e deixam a franja cobrir o olho; aqui não dá.
  */
 
+import { sheen } from '../color';
 import type { HairStyle } from '../types';
 
 export interface HairLayers {
     back: string;
     front: string;
+    /**
+     * Encaixe da cena inteira, para o corte caber na tela — hoje, só o coque.
+     * A mesma ideia do `fit` das fantasias (ver `parts/outfit.ts`).
+     */
+    fit?: string;
 }
 
 const EMPTY: HairLayers = { back: '', front: '' };
@@ -272,6 +283,68 @@ const BALDING =
     'C147.2,52 145.6,51 144.4,51C143.3,39.8 136.3,30 126,25.3C120.5,22.8 107,30 100,30' +
     'C93,30 79.5,22.8 74,25.3C63.7,30 56.7,39.8 55.6,51C54.4,51 52.8,52 52.3,54Z';
 
+/**
+ * Coque, **decalcado da imagem de referência** (1254x1254) e do SVG que veio
+ * com ela, que é o contorno da mesma imagem.
+ *
+ * A referência é o próprio avatar. A largura do rosto de lá (553px) vira a da
+ * cabeça daqui (94), centrada em x 100, e o topo da sobrancelha fica em y 53
+ * nas duas. Acima da sobrancelha a escala é a mesma nos dois eixos, para o
+ * coque continuar redondo; abaixo, a vertical estica 9,5%, porque o rosto daqui
+ * é mais comprido. Assim a ponta das mechas cai no meio da orelha, como lá.
+ *
+ *   coque   quase um círculo de raio 30, deslocado para a direita (x 76..136)
+ *   domo    abre até x 43,7 / 155,2, na altura da sobrancelha
+ *   risca   à esquerda do centro, com o vértice em (88,5,26,3)
+ *   franja  a metade direita varre a testa na diagonal; a esquerda desce
+ *           direto para a mecha
+ *   mechas  emolduram o rosto por fora e terminam em ponta em y 92,9, por
+ *           cima da orelha
+ *
+ * Fora das pontas da sobrancelha, o contorno fica em média a 0,13 do da
+ * referência. Nas pontas ele se afasta de propósito: lá a franja direita
+ * encosta na sobrancelha e a mecha esquerda passa rente a ela, e aqui o arco
+ * dos cílios sobe até y 49,2 e ficaria grudado no cabelo. As duas contornam a
+ * ponta da sobrancelha a pelo menos 2,2 de qualquer estilo dela (ver o
+ * cabeçalho).
+ *
+ * Nessa grade o topo do coque fica em y -16,4, fora da tela: ver `BUN_FIT`.
+ */
+const BUN =
+    // Do entalhe entre o coque e o domo, à esquerda: por fora do domo e da mecha, até a ponta.
+    'M76,7.2C70.9,10.3 69.2,9.9 62.9,14.8C58.9,17.9 55.3,21.9 52.4,26.1C47.1,34 43.7,44.8 43.7,54.4' +
+    'C43.7,61.8 45.5,64.8 47.5,71.2C49.1,76.5 51.1,89.5 54.6,92.9' +
+    // Por dentro da mecha e pela franja esquerda, contornando a ponta da sobrancelha, até a risca.
+    'C54.8,91.2 54.4,85.5 54.4,83.3C54.4,80.2 54.8,76.7 55.2,73.5C55.6,69.7 56.5,58.4 57.7,55.8' +
+    'C60.6,49.7 69.2,49 72.8,46.8C74.7,45.5 80.1,39.4 81.7,37.3C84.1,34.1 87.7,27.3 88.5,26.3' +
+    // Franja direita, contornando a outra ponta, e mecha direita por dentro, até a ponta.
+    'C92.4,33.9 95.7,40 104.4,44C111.2,47.1 117.8,46.5 124.9,46.9C131.3,47.2 135.8,49 140.1,54' +
+    'C144.4,58.9 144.2,64 144.3,70.4C144.4,74.5 144.8,78.2 144.8,81.6C144.8,83.8 144.5,91.6 144.8,92.9' +
+    // Por fora da mecha e do domo, até o entalhe da direita.
+    'C147.5,89.6 149.6,80.5 150.9,76.2C153.7,66.8 155.2,63.2 155.2,52.9C155.2,46 153.6,39.8 150.8,33.5' +
+    'C149.1,29.9 147,26.5 144.4,23.4C140.7,19.1 137.8,17.6 135.5,15.1' +
+    // Coque, da direita para a esquerda.
+    'C136.6,5.8 136.4,-0.7 128.9,-8.1C122.4,-14.6 114.8,-16.4 105.9,-16.4C99.4,-16.4 91.8,-14.2 86.6,-10.2C79.8,-5 78.4,-0.2 76,7.2Z';
+
+/**
+ * Fios claros, também decalcados: quatro crescentes com a ponta em quina e
+ * cada lado numa curva só. Um no alto do coque, um no domo logo abaixo dele,
+ * um na lateral direita e um na mecha esquerda. A cor sai de `sheen`.
+ */
+const BUN_SHINE =
+    'M89,4C103.8,-8.6 121,-6.9 127.1,10.8C126.3,-9.4 98.8,-12.1 89,4Z' +
+    'M62.5,25.3C74.8,11.9 91.2,6.2 109.1,8.6C92.6,3 71,9.4 62.5,25.3Z' +
+    'M120.8,18.1C135.5,25.4 143.7,36.8 149.2,51.6C147.6,36.7 136.2,21.1 120.8,18.1Z' +
+    'M49.1,72.7C51.9,62.7 54.7,53.5 61,44.8C52.8,50.3 48.6,63.3 49.1,72.7Z';
+
+/**
+ * Encaixe da cena para o coque caber. A cena inteira (cabeça, corpo e roupa)
+ * encolhe para 91,3% em torno do pé da tela, e o topo do coque desce de y -16,4
+ * para 2,4. É a composição da referência, onde o rosto também fica menor e
+ * mais baixo que nos outros cortes para o coque caber no quadro.
+ */
+const BUN_FIT = 'translate(100,200) scale(0.913) translate(-100,-200)';
+
 export function hair(style: HairStyle, color: string): HairLayers {
     if (style === 'comprido') {
         return {
@@ -306,6 +379,16 @@ export function hair(style: HairStyle, color: string): HairLayers {
 
     if (style === 'calvo') {
         return { back: '', front: `<path d="${BALDING}" fill="${color}"/>` };
+    }
+
+    // O coque também não tem camada de trás: o cabelo sobe todo para ele, e as
+    // mechas terminam no meio da orelha.
+    if (style === 'coque') {
+        return {
+            back: '',
+            front: `<path d="${BUN}" fill="${color}"/><path d="${BUN_SHINE}" fill="${sheen(color)}"/>`,
+            fit: BUN_FIT,
+        };
     }
 
     return EMPTY;
