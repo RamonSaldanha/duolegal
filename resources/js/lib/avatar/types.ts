@@ -67,4 +67,10 @@ export interface BuildOptions {
     crop?: AvatarCrop;
     /** Pinta o fundo. Desligado nas miniaturas de peça. */
     background?: boolean;
+    /**
+     * Desenha os ganchos da animação de troca de peça do editor: as classes
+     * `avatar-head` e `avatar-body` e a pálpebra `avatar-lid`. O desenho parado
+     * é o mesmo; quem anima é o CSS de `AvatarPreview.vue`.
+     */
+    animated?: boolean;
 }

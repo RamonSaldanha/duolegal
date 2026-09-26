@@ -170,7 +170,7 @@ const submit = () => form.put(route('avatar.update'), { preserveScroll: true });
             <div class="flex flex-col space-y-6">
                 <HeadingSmall title="Meu avatar" description="Monte o personagem que representa você no ranking e no perfil." />
 
-                <AvatarPreview :config="form.avatar" :name="page.props.auth.user?.name" sticky>
+                <AvatarPreview :config="form.avatar" :name="page.props.auth.user?.name" sticky animate-changes>
                     <button
                         type="button"
                         class="flex items-center gap-1.5 rounded-full border-2 border-gray-200 bg-white px-3.5 py-2 text-xs font-bold text-gray-600 transition-colors hover:border-purple-400 hover:text-purple-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-purple-400 dark:hover:text-purple-300"

@@ -108,6 +108,32 @@ export function eyes(): string {
 }
 
 /**
+ * Pálpebra da animação de troca de peça do editor (ver `AvatarPreview.vue`).
+ *
+ * É uma faixa da cor da pele recortada no formato dos dois olhos. Parada, ela
+ * fica 3 acima deles e não aparece. A animação a desce 31 sobre os olhos, que
+ * somem, e a sobe de volta: o olho reabre de baixo para cima, com a borda de
+ * cima reta, como no vídeo de referência. Encolher o olho, em vez disso, faria
+ * ele abrir do centro para cima e para baixo.
+ *
+ * O recorte é 0,75 maior que o olho em volta: do mesmo tamanho, a borda
+ * suavizada do branco vazava em volta da pálpebra fechada, num contorno claro.
+ * A folga não encosta em nada: o mais perto é a franja do chanel, que sobre o
+ * alto do olho fica em y 67, e o recorte começa em 67,25.
+ *
+ * Vai logo depois do olho, então o cílio e os óculos continuam por cima dela.
+ */
+export function eyelid(skin: string, clipId: string): { clip: string; lid: string } {
+    const bleed = 0.75;
+    const eye = (x: number) => roundedRect(x - bleed, EYE_Y - bleed, EYE_W + 2 * bleed, EYE_H + 2 * bleed, EYE_W / 2 + bleed);
+
+    return {
+        clip: `<clipPath id="${clipId}"><path d="${eye(EYE_X) + eye(200 - EYE_X - EYE_W)}"/></clipPath>`,
+        lid: `<g clip-path="url(#${clipId})"><path class="avatar-lid" d="M${EYE_X - 2},${EYE_Y - 33}H${200 - EYE_X + 2}V${EYE_Y - 3}H${EYE_X - 2}Z" fill="${skin}"/></g>`,
+    };
+}
+
+/**
  * Gota num tom de contraste da pele: topo estreito e arredondado entre os
  * olhos, alargando até a base, que é um meio círculo.
  */

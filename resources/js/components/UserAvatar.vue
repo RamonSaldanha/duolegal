@@ -9,19 +9,22 @@ interface Props {
     name?: string;
     /** Classes do fallback de iniciais (o ranking usa cor por posição). */
     fallbackClass?: string;
+    /** Desenha os ganchos da animação de troca de peça — ver `AvatarPreview.vue`. */
+    animated?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     config: null,
     name: '',
     fallbackClass: 'bg-neutral-200 text-black dark:bg-neutral-700 dark:text-white',
+    animated: false,
 });
 
 // Cada SVG na página precisa de ids de clipPath próprios, senão um recorta o outro.
 const uid = Math.random().toString(36).slice(2, 9);
 
 const drawn = computed(() => hasAvatar(props.config));
-const svg = computed(() => (drawn.value ? buildAvatarSvg(props.config, { uid }) : ''));
+const svg = computed(() => (drawn.value ? buildAvatarSvg(props.config, { uid, animated: props.animated }) : ''));
 </script>
 
 <template>

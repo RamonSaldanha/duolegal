@@ -37,6 +37,11 @@ export interface OutfitLayers {
     helmet?: HelmetLayers;
     /** Transformação aplicada à cena inteira, menos o fundo. */
     fit?: string;
+    /**
+     * Topo do corpo da fantasia, onde ele encontra o pescoço. A animação do
+     * editor usa para amassar o corpo na medida da cabeça (ver `render.ts`).
+     */
+    neckline?: number;
 }
 
 const NONE: OutfitLayers = { body: '', top: '' };
@@ -117,6 +122,8 @@ function toga(body: BodyShape): OutfitLayers {
         body: body === 'gordo' ? `<g transform="${WIDEN_FOR_GORDO}">${robe}</g>` : robe,
         top: '',
         fit: TOGA_FIT,
+        // A quina de cima da aba da gola.
+        neckline: 157.4,
     };
 }
 

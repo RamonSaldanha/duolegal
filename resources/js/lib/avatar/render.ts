@@ -9,11 +9,12 @@
  * palco do editor.
  */
 
+import { BODIES } from './geometry';
 import { normalizeAvatarConfig } from './normalize';
 import { earrings, glasses } from './parts/accessories';
 import { beard } from './parts/beard';
 import { clothes } from './parts/clothes';
-import { brows, eyes, mouth, nose } from './parts/face';
+import { brows, eyelid, eyes, mouth, nose } from './parts/face';
 import { hair } from './parts/hair';
 import { ears, head, neck } from './parts/head';
 import { outfit } from './parts/outfit';
@@ -24,7 +25,7 @@ let idSequence = 0;
 
 export function buildAvatarSvg(raw: Partial<AvatarConfig> | null | undefined, options: BuildOptions = {}): string {
     const c = normalizeAvatarConfig(raw);
-    const { crop, background = true } = options;
+    const { crop, background = true, animated = false } = options;
 
     const viewBox = crop ? crop.join(' ') : '0 0 200 200';
     const costume = outfit(c.outfit, c.body);
@@ -32,6 +33,25 @@ export function buildAvatarSvg(raw: Partial<AvatarConfig> | null | undefined, op
     const locks = hair(c.hair, c.hairColor);
     const whiskers = beard(c.beard, c.hairColor);
     const face = brows(c.brows, c.hairColor);
+
+    // Os ids internos (os recortes do visor e da pálpebra) têm de ser únicos na
+    // página: o mesmo avatar aparece várias vezes (header, ranking, miniaturas
+    // do editor).
+    let suffix = '';
+    const idFor = (name: string): string => {
+        if (!suffix) {
+            suffix = (options.uid ?? `a${(++idSequence).toString(36)}`).replace(/[^a-zA-Z0-9-]/g, '');
+        }
+
+        return `${name}-${suffix}`;
+    };
+
+    const clips: string[] = [];
+    const lid = animated ? eyelid(c.skin, idFor('lid')) : null;
+
+    if (lid) {
+        clips.push(lid.clip);
+    }
 
     // A cabeça inteira, da massa do cabelo aos óculos. Com capacete ela vai,
     // menor, dentro do visor; sem, é intercalada com a roupa logo abaixo.
@@ -41,6 +61,7 @@ export function buildAvatarSvg(raw: Partial<AvatarConfig> | null | undefined, op
         whiskers.under +
         face.brow +
         eyes() +
+        (lid ? lid.lid : '') +
         face.lashes +
         mouth(c.mouth, c.skin) +
         whiskers.over +
@@ -71,23 +92,40 @@ export function buildAvatarSvg(raw: Partial<AvatarConfig> | null | undefined, op
     //           passa por cima dos dois.
     //   cílio   depois do olho, senão a cápsula branca o cobre.
     //   óculos  depois da barba, para a armação passar por cima da costeleta.
-    const headBehind = locks.back + ears(c.skin) + neck(c.body, c.skin);
+    const headBehind = locks.back + ears(c.skin);
+    const neckShape = neck(c.body, c.skin);
     const earring = earrings(c.earrings, c.earringColor);
 
-    let defs = '';
     let scene: string;
 
     if (costume.helmet) {
-        // O id do recorte tem de ser único na página: o mesmo avatar aparece
-        // várias vezes (header, ranking, miniaturas do editor).
-        const id = `visor-${(options.uid ?? `a${(++idSequence).toString(36)}`).replace(/[^a-zA-Z0-9-]/g, '')}`;
+        const id = idFor('visor');
         const { glass, clip, transform } = costume.helmet;
 
-        defs = `<defs><clipPath id="${id}"><path d="${clip}"/></clipPath></defs>`;
+        clips.push(`<clipPath id="${id}"><path d="${clip}"/></clipPath>`);
         scene =
-            costume.body + glass + `<g clip-path="url(#${id})"><g transform="${transform}">${headBehind + earring + headAbove}</g></g>` + costume.top;
+            costume.body +
+            glass +
+            `<g clip-path="url(#${id})"><g transform="${transform}">${headBehind + neckShape + earring + headAbove}</g></g>` +
+            costume.top;
     } else {
-        scene = headBehind + (costume.body || clothes(c.body, c.clothesColor, c.skin)) + earring + headAbove + costume.top;
+        // Ganchos da animação do editor (ver `AvatarPreview.vue`). A cabeça e o
+        // pescoço quicam juntos, em `.avatar-head`. O corpo, em `.avatar-body`,
+        // amassa e estica preso ao pé da tela, com o topo acompanhando o
+        // queixo, e para isso o CSS precisa da altura dele (`--avatar-body-h`).
+        // Com capacete nada disso existe, porque o visor cortaria a cabeça: só a
+        // pálpebra pisca.
+        const withHead = (markup: string) => (animated && markup ? `<g class="avatar-head">${markup}</g>` : markup);
+        const body = costume.body || clothes(c.body, c.clothesColor, c.skin);
+        const bodyHeight = 200 - (costume.body ? (costume.neckline ?? BODIES[c.body].top) : BODIES[c.body].top);
+
+        scene =
+            withHead(headBehind) +
+            withHead(neckShape) +
+            (animated ? `<g class="avatar-body" style="--avatar-body-h:${+bodyHeight.toFixed(1)}">${body}</g>` : body) +
+            withHead(earring) +
+            withHead(headAbove) +
+            costume.top;
 
         // O coque passa do topo da tela, e a cena inteira encolhe para ele
         // caber. Só no avatar inteiro: as miniaturas do editor recortadas no
@@ -109,6 +147,7 @@ export function buildAvatarSvg(raw: Partial<AvatarConfig> | null | undefined, op
         scene = `<g transform="${costume.fit}">${scene}</g>`;
     }
 
+    const defs = clips.length ? `<defs>${clips.join('')}</defs>` : '';
     const backdrop = background ? `<rect x="0" y="0" width="200" height="200" fill="${c.background}"/>` : '';
 
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}" aria-hidden="true" focusable="false">` + defs + backdrop + scene + `</svg>`;
