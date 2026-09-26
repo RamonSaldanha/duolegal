@@ -8,8 +8,9 @@
  *             cobrindo a nuca e saindo por trás da roupa. A cortina (`front`)
  *             cai sobre a testa e vai depois da cabeça, senão o rosto a cobre.
  *   liso      as mesmas duas camadas do comprido, com a massa reta dos lados.
- *   chanel    as mesmas duas camadas, mas a massa termina na altura do queixo,
- *             antes de chegar à roupa, e a cortina é uma franja lateral.
+ *   chanel    as mesmas duas camadas. A massa ondulada termina entre a boca e o
+ *             queixo, antes de chegar à roupa, e a cortina é a franja com as
+ *             mechas que descem pela lateral do rosto até o alto da orelha.
  *   curto     só `front`. Ele para no alto da orelha, então não existe nada
  *   afro      dele atrás do pescoço para desenhar. Vale para os três.
  *   calvo
@@ -27,12 +28,13 @@
  * cor dele, então só existem dois jeitos certos:
  *
  *   parar acima da faixa dela (y 49..62), com a borda em y 46 no máximo — é o
- *   que o curto, o afro, o calvo, o comprido e o liso fazem. O coque desce
- *   mais perto das pontas, onde a sobrancelha é mais baixa, mas fica a pelo
+ *   que o curto, o afro, o calvo, o comprido e o liso fazem. O coque e o
+ *   chanel descem um pouco mais (o coque perto das pontas, onde a sobrancelha
+ *   é mais baixa; o chanel na ponta da mecha da franja), mas ficam a pelo
  *   menos 2,2 de qualquer estilo dela: a mesma folga do liso e do afro;
  *
  *   descer abaixo dela e cobri-la inteira, a partir de y 63 — ela some na cor
- *   do cabelo. É o que a franja do chanel faz do lado esquerdo.
+ *   do cabelo.
  *
  * Borda no meio da faixa faz a parte de baixo da sobrancelha reaparecer grudada
  * na franja, o que lê como erro de camada. E nenhuma franja pode chegar ao olho
@@ -56,16 +58,16 @@ export interface HairLayers {
 const EMPTY: HairLayers = { back: '', front: '' };
 
 /**
- * Coroa do comprido e do chanel: dois lóbulos redondos, como nas referências.
+ * Coroa do comprido: dois lóbulos redondos, como na referência.
  * O esquerdo é maior e mais alto, com pico em (74,3); o direito tem pico em
  * (138,9), e o entalhe entre os dois fica em (112,14), fora do centro. Cada
  * lóbulo é quase um quarto de círculo: com raio muito diferente na horizontal e
  * na vertical, ele vira canto de caixa arredondado.
  *
  * Vai da lateral esquerda (30,52) à direita (172,48) passando por cima da
- * cabeça. A massa e a cortina de cada corte começam por ela, então as duas
- * camadas têm o mesmo contorno de cima: não existe emenda entre elas, e nenhum
- * canto do rosto vaza no meio num risco de pele.
+ * cabeça. A massa e a cortina começam por ela, então as duas camadas têm o
+ * mesmo contorno de cima: não existe emenda entre elas, e nenhum canto do rosto
+ * vaza no meio num risco de pele.
  *
  * No recorte redondo os lóbulos encostam no círculo inscrito e perdem no máximo
  * 1–3px.
@@ -117,46 +119,82 @@ const LONG_MASS =
 const LONG_CURTAIN =
     CROWN + 'L147,64C147,58 146,54 144,50C140,42 128,42 118,39C109,36 103,30 100,23' + 'C97,30 91,36 82,39C72,42 60,42 56,50C54,54 53,58 53,64Z';
 
-/**
- * Massa do chanel.
+/*
+ * Chanel, **decalcado da silhueta de referência** (1254x1254, a mesma do SVG
+ * que veio com ela) e posto no rosto pelo avatar de referência que mostra o
+ * corte inteiro: um chanel ondulado, com a risca à direita do centro.
  *
- * Mesma coroa do comprido, mas as laterais descem cheias e param um pouco acima
- * do queixo, sem chegar à roupa:
+ * A silhueta é o cabelo desse avatar (batem em 88% da área, na escala 0,905),
+ * então as medidas vêm do rosto de lá. Na horizontal, a largura do rosto de lá
+ * vira a daqui, e as mechas das laterais cobrem 3,7 da borda do rosto, como lá.
+ * Na vertical o rosto daqui é mais comprido, então a silhueta foi presa às peças
+ * dele: a ponta da mecha da franja logo acima do arco dos cílios, o alto e o pé
+ * da orelha, e o queixo. Assim as pontas terminam onde terminam lá, a 77% do
+ * caminho entre o pé da orelha e o queixo. Acima da franja a coroa foi achatada
+ * 21%: na escala da silhueta ela passaria do topo da tela.
  *
- *   bojo  x 21 / 179, em y 100 — atrás da orelha
- *   pé    y 145, 7px acima do queixo (152)
+ *   coroa    dois lóbulos, o esquerdo maior e mais alto (topo em y 2,6), com o
+ *            entalhe em (119,4,12,9), acima da risca
+ *   lados    ondulados: abrem até x 13,7 / 186,8 na altura da orelha, recolhem
+ *            e terminam em pontas viradas para fora, em y 141,9
+ *   franja   risca em (114,8,28,6). A metade esquerda atravessa a testa e desce
+ *            numa mecha pontuda sobre a sobrancelha esquerda, com um pique de
+ *            pele entre ela e a mecha da lateral
+ *   mechas   da franja até o alto da orelha, cobrindo a borda do rosto
+ *            (x 56,7 / 143,3), e viram para fora num cacho em cima dela
  *
- * **Sem ponta nenhuma**, como na referência: o pé é um canto arredondado. A
- * lateral recolhe um pouco depois do bojo (x 26 / 174 em y 137) e dobra numa
- * curva de raio ~9 até a borda de baixo, que corre quase reta.
- *
- * Do canto, a borda de baixo sobe de leve até sumir atrás da mandíbula, em
- * (62,140) e (138,140). Entre esses dois pontos ela corre escondida atrás da
- * cabeça.
+ * O contorno de fora fica, em média, a 0,13 do da silhueta.
  */
-const BOB_MASS =
-    CROWN +
-    'C174,70 179,82 179,100C179,118 176,131 174,137C172,143 169,145 164,145C156,145 146,142 138,140' +
-    'L62,140C54,142 44,145 36,145C31,145 28,143 26,137C24,131 21,118 21,100C21,82 28,70 30,52Z';
 
 /**
- * Franja do chanel: lateral, pesada do lado esquerdo e subindo na diagonal.
+ * Coroa do chanel: do lado direito, em y 70, por cima dos dois lóbulos, até o
+ * lado esquerdo na mesma altura. A massa e a franja começam por ela, então as
+ * duas camadas se encaixam sem emenda.
  *
- * Do lado esquerdo ela **cobre a sobrancelha inteira**, o segundo jeito certo da
- * regra do cabeçalho: sobre a faixa dela (x 62–85) a borda fica entre y 64,5 e
- * 67,5 — abaixo do pé da sobrancelha (62,75) e acima do olho (68). A folga é
- * apertada de propósito: é o que deixa a franja pesada e rente ao olho, como na
- * referência.
- *
- * Em x 88 a borda vira e sobe na diagonal até o entalhe em (118,33). Dali para a
- * direita não tem ponta: a borda contorna o canto do rosto num quarto de
- * círculo de raio 29 e encontra a lateral da cabeça em (147,62) já na vertical,
- * então o canto de pele que sobra embaixo é arredondado. O arco passa pelo
- * menos 8px acima da sobrancelha direita em toda a largura dela.
- *
- * Como no comprido, a franja fecha por dentro da massa e para acima da orelha.
+ * No recorte redondo o lóbulo direito encosta no círculo inscrito e perde uns
+ * 2px, como os do comprido.
  */
-const BOB_FRINGE = CROWN + 'L147,62C147,46 134,33 118,33C108,41 97,56 88,63C80,68 64,68 53,67Z';
+const BOB_CROWN =
+    'M179.1,70C173.9,61.1 170.8,59.5 170.8,47.4C170.8,38.5 169.4,31.5 163.7,24.4C158.5,17.9 151.6,13.4 143.6,11.1' +
+    'C132.5,8 128.3,10.7 119.4,12.9C113.4,8.3 112.6,7.1 104.6,4.7C99.1,3 93.1,2.4 87.4,2.7C76,3.3 64.5,7.1 54.5,12.6' +
+    'C44.5,18.1 35.4,26.4 32.1,37.7C27.9,52.4 35.2,51.7 22.4,70.2';
+
+/**
+ * Massa do chanel: a coroa, o lado esquerdo até o canto de baixo, por trás do
+ * rosto até o canto do outro lado, e o lado direito de volta.
+ *
+ * Ela é maciça por trás do rosto e das orelhas. Na silhueta há um recorte no
+ * formato de cada orelha, porque lá a orelha tampava o cabelo; aqui a orelha é
+ * desenhada por cima da massa, então o recorte foi preenchido. O fecho de baixo,
+ * em y 134,2, corre inteiro atrás do rosto, e do canto do rosto para fora a
+ * borda de baixo aparece rente à curva da mandíbula, como lá.
+ */
+const BOB_MASS =
+    BOB_CROWN +
+    'C16.6,78.1 13.2,87 13.7,96.8C14.4,111.5 24.4,114 25.4,122.5C26.3,129.8 21.8,132.5 21.9,136' +
+    'C22.1,141.3 27.9,142.9 33.1,141.4C37.7,140.1 42.2,138.4 46.9,137.3C49.9,136.7 58.8,134.9 61,134.2' +
+    // Por trás do rosto, de um canto de baixo ao outro.
+    'L138.6,134.2' +
+    'C141.4,135 149.4,136.5 152.6,137.1C156.8,137.9 162.2,139.7 166.4,140.9C171.3,142.3 177.6,141 177.9,135.8' +
+    'C178.3,131.1 173.1,130.5 173.7,122.5C174.3,113.4 184.5,111.5 186.5,97.3C187.9,87.7 184.7,77.7 179.1,70Z';
+
+/**
+ * Franja do chanel: a coroa, a franja e as mechas das laterais, que ficam na
+ * frente do rosto.
+ *
+ * Nas laterais ela fecha por dentro da massa, numa reta que passa acima da
+ * orelha, com pelo menos 1,1 de folga: a mecha termina no cacho em cima dela, e
+ * a orelha continua por cima da massa, como lá.
+ *
+ * Contra a sobrancelha (ver o cabeçalho), o ponto mais perto é a ponta da mecha
+ * da franja, a 2,3 do arco dos cílios. A borda de dentro das mechas fica a 0,8
+ * do cílio.
+ */
+const BOB_FRINGE =
+    BOB_CROWN +
+    'L51.9,77.3C54.4,76.6 56.7,74 56.7,71.5C56.7,65.5 56.7,60 56.7,54.9C64.7,50.7 71.6,46.5 76.5,38.5' +
+    'C77.4,42.2 77.6,47.7 82,47.7C87.2,47.7 96.2,44.7 100.8,42.2C109.7,37.4 109.6,35.3 114.8,28.6' +
+    'C122.5,40.3 130.1,46.4 143.3,50.9C143.3,57 143.3,65.5 143.3,71.5C143.3,74 145.6,76.6 148.1,77.3Z';
 
 /**
  * Coroa do liso, **decalcada da imagem de referência** (798x795, cabeça em

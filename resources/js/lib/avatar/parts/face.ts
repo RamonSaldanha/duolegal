@@ -118,8 +118,8 @@ export function eyes(): string {
  *
  * O recorte é 0,75 maior que o olho em volta: do mesmo tamanho, a borda
  * suavizada do branco vazava em volta da pálpebra fechada, num contorno claro.
- * A folga não encosta em nada: o mais perto é a franja do chanel, que sobre o
- * alto do olho fica em y 67, e o recorte começa em 67,25.
+ * A folga não encosta em nada: o cabelo mais perto é a lateral do liso e do
+ * afro, em x 57, e o recorte começa em 61,25.
  *
  * Vai logo depois do olho, então o cílio e os óculos continuam por cima dela.
  */

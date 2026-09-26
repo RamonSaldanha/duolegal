@@ -59,7 +59,7 @@ const NONE: OutfitLayers = { body: '', top: '' };
  * barra, em y 227. Por isso a cena inteira encolhe para 91,3% — a escala da
  * referência inteira — e sobe (`fit`), com o queixo em y 138. Lá o queixo fica
  * em y 133,7; aqui ele desce 4,3 porque a nossa cabeça é mais alta que a de lá,
- * e o cabelo mais alto (comprido e chanel, y 2,4 na grade normal) sairia pelo
+ * e o cabelo mais alto (comprido e chanel, y 2,4 e 2,6 na grade normal) sairia pelo
  * topo. Tudo que a cabeça desenha até y 200 continua escondido: o pescoço fica
  * atrás do manto e a massa do cabelo comprido segue até y 232.
  */
