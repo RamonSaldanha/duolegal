@@ -8,10 +8,12 @@ uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
 /**
  * Trava do contrato da API v1.
  *
- * O app Android consome estas rotas. O criador de avatar é, por enquanto, um
- * recurso só da web: `avatar_config` não pode vazar para cá sem decisão explícita.
- * Se alguém acrescentar o campo no UserResource ou tirar `avatar_config` do
- * `$hidden` do User, estes testes quebram.
+ * O app Android consome estas rotas. O avatar entrou na API por decisão
+ * explícita, para o app desenhar o mesmo boneco da web, e só por dois
+ * caminhos: `avatar_config` no UserResource (`/me`, login e cadastro) e em
+ * cada entrada do ranking — sempre por publicAvatarConfig(). O model continua
+ * escondendo o campo, então `/api/user` e quem serializa o User inteiro não o
+ * recebem. Mudou um desses campos? Estes testes quebram.
  */
 function userWithAvatar(): User
 {
@@ -22,7 +24,7 @@ function userWithAvatar(): User
     return $user;
 }
 
-test('GET /api/v1/me devolve exatamente os campos de hoje', function () {
+test('GET /api/v1/me devolve exatamente estes campos', function () {
     Sanctum::actingAs(userWithAvatar());
 
     $payload = $this->getJson('/api/v1/me')->assertOk()->json();
@@ -38,6 +40,7 @@ test('GET /api/v1/me devolve exatamente os campos de hoje', function () {
         'longest_streak',
         'is_admin',
         'email_verified_at',
+        'avatar_config',
     ]);
 });
 
@@ -51,6 +54,8 @@ test('GET /api/user não expõe o avatar', function () {
 
 test('o ranking da API não muda de forma', function () {
     $user = userWithAvatar();
+    // Com XP, o usuário entra no ranking e dá para conferir a forma de uma entrada.
+    $user->addXp(10, 'play');
     Sanctum::actingAs($user);
 
     $payload = $this->getJson('/api/v1/ranking')->assertOk()->json();
@@ -60,6 +65,16 @@ test('o ranking da API não muda de forma', function () {
         'current_user_position',
         'current_user_data',
         'period',
+    ]);
+
+    expect(array_keys($payload['top_users'][0]))->toEqualCanonicalizing([
+        'id',
+        'first_name',
+        'last_name',
+        'xp',
+        'position',
+        'is_current_user',
+        'avatar_config',
     ]);
 });
 

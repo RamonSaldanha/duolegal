@@ -113,6 +113,9 @@ const stageColor = computed(() => (drawn.value ? normalizeAvatarConfig(props.con
  * Com `transform-box: view-box`, a origem é medida na grade do SVG: o queixo
  * (100,152) para a cabeça e o pescoço, e o pé da tela (100,200) para o corpo.
  * O que compõe cada parte está marcado em `lib/avatar/render.ts`.
+ *
+ * O app (memorize-mobile) toca a mesma animação, com estes números copiados em
+ * `src/components/avatar/motion.ts`. Mexeu num keyframe aqui, mexa lá também.
  */
 .avatar-react :deep(.avatar-head) {
     transform-box: view-box;

@@ -77,5 +77,6 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'throttle:120,1'])->group(funct
     // Perfil
     Route::patch('/profile', [AuthController::class, 'updateProfile'])->name('api.profile.update');
     Route::put('/profile/password', [AuthController::class, 'updatePassword'])->name('api.profile.password');
+    Route::put('/profile/avatar', [AuthController::class, 'updateAvatar'])->name('api.profile.avatar');
     Route::delete('/profile', [AuthController::class, 'deleteAccount'])->name('api.profile.delete');
 });

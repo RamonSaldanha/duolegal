@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Collection;
 use Laravel\Cashier\Billable;
 use Laravel\Sanctum\HasApiTokens;
 
@@ -39,8 +40,8 @@ class User extends Authenticatable
         'remember_token',
         // Fica oculto de propósito: `GET /api/user` devolve o model cru e o
         // ChallengeController serializa o criador inteiro. O avatar é exposto
-        // só onde a gente quer — hoje, no share do Inertia. Quando o app Android
-        // for renderizar avatares, é só acrescentar o campo no UserResource.
+        // só onde a gente quer, e sempre por publicAvatarConfig(): no share do
+        // Inertia, no ranking e, para o app, no UserResource e no ranking da API.
         'avatar_config',
     ];
 
@@ -183,6 +184,26 @@ class User extends Authenticatable
         }
 
         return $config;
+    }
+
+    /**
+     * publicAvatarConfig() de vários usuários de uma vez, indexado por id — é o
+     * que as listas (os rankings da web e da API) usam. As assinaturas vêm junto
+     * para não fazer uma consulta por usuário.
+     *
+     * @param  Collection<int, int>  $ids
+     * @return Collection<int, array<string, string>|null>
+     */
+    public static function publicAvatarConfigsFor(Collection $ids): Collection
+    {
+        if ($ids->isEmpty()) {
+            return collect();
+        }
+
+        return static::with('subscriptions')
+            ->whereIn('id', $ids)
+            ->get(['id', 'avatar_config'])
+            ->mapWithKeys(fn (User $user) => [$user->id => $user->publicAvatarConfig()]);
     }
 
     public function xpTransactions(): HasMany

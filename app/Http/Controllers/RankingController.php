@@ -21,10 +21,9 @@ class RankingController extends Controller
 
         $ranking = $this->xpService->getRanking($period, 20)->values();
 
-        // Consulta à parte em vez de mexer no select do XpService: o serviço é
-        // compartilhado com o RankingController da API, que precisa continuar
-        // devolvendo exatamente o que devolve hoje.
-        $avatars = $this->avatarsFor($ranking->pluck('id'));
+        // Consulta à parte em vez de mexer no select do XpService, que só sabe de
+        // XP. O RankingController da API busca os avatares do mesmo jeito.
+        $avatars = User::publicAvatarConfigsFor($ranking->pluck('id'));
 
         $topUsers = $ranking->map(function ($user, $index) use ($avatars) {
             return [
@@ -66,26 +65,5 @@ class RankingController extends Controller
             'currentUserData' => $currentUserData,
             'period' => $period,
         ]);
-    }
-
-    /**
-     * Avatares dos usuários do ranking, indexados por id.
-     *
-     * Passam por publicAvatarConfig(), que tira a fantasia de quem deixou de
-     * assinar; as assinaturas vêm junto para não fazer uma consulta por usuário.
-     *
-     * @param  \Illuminate\Support\Collection<int, int>  $ids
-     * @return \Illuminate\Support\Collection<int, array<string, string>|null>
-     */
-    private function avatarsFor($ids)
-    {
-        if ($ids->isEmpty()) {
-            return collect();
-        }
-
-        return User::with('subscriptions')
-            ->whereIn('id', $ids)
-            ->get(['id', 'avatar_config'])
-            ->mapWithKeys(fn (User $user) => [$user->id => $user->publicAvatarConfig()]);
     }
 }

@@ -17,11 +17,29 @@ import { clothes } from './parts/clothes';
 import { brows, eyelid, eyes, mouth, nose } from './parts/face';
 import { hair } from './parts/hair';
 import { ears, head, neck } from './parts/head';
-import { outfit } from './parts/outfit';
+import { outfit, type OutfitLayers } from './parts/outfit';
 import type { AvatarConfig, BuildOptions } from './types';
 
 /** Sequência para ids internos quando quem chama não passa `uid`. */
 let idSequence = 0;
+
+/**
+ * Altura do corpo, do topo dos ombros (ou da gola da fantasia) até o pé da
+ * tela, com uma casa decimal. A animação de troca de peça precisa dela para o
+ * corpo amassar e esticar com o topo acompanhando o queixo: a web a recebe no
+ * `--avatar-body-h` do SVG, e o app chama `avatarBodyHeight` direto.
+ */
+function bodyHeight(c: AvatarConfig, costume: OutfitLayers): number {
+    const top = costume.body ? (costume.neckline ?? BODIES[c.body].top) : BODIES[c.body].top;
+
+    return +(200 - top).toFixed(1);
+}
+
+export function avatarBodyHeight(raw: Partial<AvatarConfig> | null | undefined): number {
+    const c = normalizeAvatarConfig(raw);
+
+    return bodyHeight(c, outfit(c.outfit, c.body));
+}
 
 export function buildAvatarSvg(raw: Partial<AvatarConfig> | null | undefined, options: BuildOptions = {}): string {
     const c = normalizeAvatarConfig(raw);
@@ -117,12 +135,11 @@ export function buildAvatarSvg(raw: Partial<AvatarConfig> | null | undefined, op
         // pálpebra pisca.
         const withHead = (markup: string) => (animated && markup ? `<g class="avatar-head">${markup}</g>` : markup);
         const body = costume.body || clothes(c.body, c.clothesColor, c.skin);
-        const bodyHeight = 200 - (costume.body ? (costume.neckline ?? BODIES[c.body].top) : BODIES[c.body].top);
 
         scene =
             withHead(headBehind) +
             withHead(neckShape) +
-            (animated ? `<g class="avatar-body" style="--avatar-body-h:${+bodyHeight.toFixed(1)}">${body}</g>` : body) +
+            (animated ? `<g class="avatar-body" style="--avatar-body-h:${bodyHeight(c, costume)}">${body}</g>` : body) +
             withHead(earring) +
             withHead(headAbove) +
             costume.top;

@@ -1,5 +1,8 @@
 <?php
 
+use App\Models\User;
+use Laravel\Cashier\Subscription;
+
 /*
 |--------------------------------------------------------------------------
 | Test Case
@@ -44,4 +47,44 @@ expect()->extend('toBeOne', function () {
 function something()
 {
     // ..
+}
+
+// As fantasias exclusivas de assinante, lidas direto de config/avatar.php: o
+// dataset é montado antes de o Laravel subir, quando config() ainda não existe.
+dataset('fantasias premium', fn () => (require __DIR__.'/../config/avatar.php')['premium']['outfit']);
+
+/**
+ * Assinatura ativa no plano `default`, como o Cashier grava depois do Stripe.
+ */
+function giveActiveSubscription(User $user): void
+{
+    Subscription::query()->create([
+        'user_id' => $user->id,
+        'type' => 'default',
+        'stripe_id' => 'sub_test_'.uniqid(),
+        'stripe_status' => 'active',
+        'stripe_price' => 'price_test',
+        'quantity' => 1,
+    ]);
+}
+
+/**
+ * Avatar válido, montado a partir do primeiro id de cada grupo. Usado pelos
+ * testes do editor da web e da API do app.
+ *
+ * @return array<string, string>
+ */
+function validAvatar(array $overrides = []): array
+{
+    $avatar = [];
+
+    foreach (config('avatar.shapes') as $key => $allowed) {
+        $avatar[$key] = $allowed[0];
+    }
+
+    foreach (config('avatar.colors') as $key) {
+        $avatar[$key] = '#ABCDEF';
+    }
+
+    return array_merge($avatar, $overrides);
 }

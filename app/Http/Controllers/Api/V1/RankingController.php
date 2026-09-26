@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use App\Services\XpService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -23,7 +24,11 @@ class RankingController extends Controller
         $currentUserPosition = $this->xpService->getUserPositionInRanking($user->id, $period);
         $currentUserXp = $this->xpService->getUserXpForPeriod($user->id, $period);
 
-        $topUsersFormatted = $topUsers->map(function ($u, $index) use ($user) {
+        // Mesma consulta à parte do ranking da web: tira a fantasia de quem
+        // deixou de assinar.
+        $avatars = User::publicAvatarConfigsFor($topUsers->pluck('id'));
+
+        $topUsersFormatted = $topUsers->map(function ($u, $index) use ($user, $avatars) {
             $nameParts = explode(' ', $u->name, 2);
 
             return [
@@ -33,6 +38,7 @@ class RankingController extends Controller
                 'xp' => (int) $u->total_xp,
                 'position' => $index + 1,
                 'is_current_user' => $u->id === $user->id,
+                'avatar_config' => $avatars[$u->id] ?? null,
             ];
         });
 
@@ -48,6 +54,7 @@ class RankingController extends Controller
                 'xp' => $currentUserXp,
                 'position' => $currentUserPosition,
                 'is_current_user' => true,
+                'avatar_config' => $user->publicAvatarConfig(),
             ];
         }
 

@@ -1,44 +1,11 @@
 <?php
 
 use App\Models\User;
-use Laravel\Cashier\Subscription;
 
 uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
 
-/**
- * Assinatura ativa no plano `default`, como o Cashier grava depois do Stripe.
- */
-function giveActiveSubscription(User $user): void
-{
-    Subscription::query()->create([
-        'user_id' => $user->id,
-        'type' => 'default',
-        'stripe_id' => 'sub_test_'.uniqid(),
-        'stripe_status' => 'active',
-        'stripe_price' => 'price_test',
-        'quantity' => 1,
-    ]);
-}
-
-/**
- * Avatar válido, montado a partir do primeiro id de cada grupo.
- *
- * @return array<string, string>
- */
-function validAvatar(array $overrides = []): array
-{
-    $avatar = [];
-
-    foreach (config('avatar.shapes') as $key => $allowed) {
-        $avatar[$key] = $allowed[0];
-    }
-
-    foreach (config('avatar.colors') as $key) {
-        $avatar[$key] = '#ABCDEF';
-    }
-
-    return array_merge($avatar, $overrides);
-}
+// `giveActiveSubscription()` e `validAvatar()` ficam em tests/Pest.php: a API do
+// app usa os mesmos.
 
 test('a página do avatar exige login', function () {
     $this->get('/settings/avatar')->assertRedirect('/login');
@@ -120,7 +87,7 @@ test('fantasia exclusiva é recusada para quem não assina', function (string $o
         ->assertSessionHasErrors('avatar.outfit');
 
     expect($user->fresh()->avatar_config)->toBeNull();
-})->with(fn () => config('avatar.premium.outfit'));
+})->with('fantasias premium');
 
 test('assinante pode vestir a fantasia', function (string $outfit) {
     $user = User::factory()->create();
@@ -131,7 +98,7 @@ test('assinante pode vestir a fantasia', function (string $outfit) {
         ->assertSessionHasNoErrors();
 
     expect($user->fresh()->avatar_config['outfit'])->toBe($outfit);
-})->with(fn () => config('avatar.premium.outfit'));
+})->with('fantasias premium');
 
 test('a fantasia aparece para quem assina', function () {
     $user = User::factory()->create();

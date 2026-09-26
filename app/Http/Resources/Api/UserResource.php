@@ -20,6 +20,8 @@ class UserResource extends JsonResource
             'longest_streak' => $this->longestStreak(),
             'is_admin' => $this->is_admin,
             'email_verified_at' => $this->email_verified_at,
+            // Nulo para quem nunca editou o avatar: o app cai nas iniciais.
+            'avatar_config' => $this->publicAvatarConfig(),
         ];
     }
 }

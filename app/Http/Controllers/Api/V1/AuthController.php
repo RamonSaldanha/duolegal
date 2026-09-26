@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Settings\AvatarUpdateRequest;
 use App\Http\Resources\Api\UserResource;
 use App\Models\User;
 use Illuminate\Auth\Events\Registered;
@@ -130,6 +131,22 @@ class AuthController extends Controller
         if (isset($validated['email'])) {
             $user->email = $validated['email'];
         }
+        $user->save();
+
+        return response()->json(new UserResource($user));
+    }
+
+    /**
+     * Salva o avatar feito no editor do app.
+     *
+     * Mesma validação do editor da web (AvatarUpdateRequest), inclusive a trava
+     * das fantasias de assinante, e a mesma atribuição direta: `avatar_config`
+     * fica fora do `$fillable`.
+     */
+    public function updateAvatar(AvatarUpdateRequest $request): JsonResponse
+    {
+        $user = $request->user();
+        $user->avatar_config = $request->validated()['avatar'];
         $user->save();
 
         return response()->json(new UserResource($user));
