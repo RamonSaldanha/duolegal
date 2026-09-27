@@ -7,8 +7,13 @@ interface Props {
     config?: Partial<AvatarConfig> | null;
     name?: string;
     /**
-     * Gruda no topo ao rolar. Só o editor precisa: lá o palco tem de acompanhar
-     * quem está rolando a lista de peças.
+     * Gruda no topo ao rolar, logo abaixo do cabeçalho do app (`--app-header-h`,
+     * medido pelo AppHeaderLayout). Só o editor precisa: lá o palco tem de
+     * acompanhar quem está rolando a lista de peças.
+     *
+     * Grudado, ele ganha um anel da cor da página (`box-shadow`): sem ele, o que
+     * rola por baixo aparece nos cantos arredondados. Parado, o anel some no
+     * fundo, que é da mesma cor.
      */
     sticky?: boolean;
     /**
@@ -69,7 +74,7 @@ const stageColor = computed(() => (drawn.value ? normalizeAvatarConfig(props.con
     <div
         class="relative flex justify-center overflow-hidden rounded-2xl px-4"
         :class="[
-            sticky ? 'sticky top-0 z-10' : '',
+            sticky ? 'sticky top-[var(--app-header-h,0px)] z-10 shadow-[0_0_0_12px_hsl(var(--background))]' : '',
             drawn ? 'items-end pt-6' : 'items-center py-6',
             stageColor ? '' : 'bg-gray-50 dark:bg-gray-900',
             reacting ? 'avatar-react' : '',
