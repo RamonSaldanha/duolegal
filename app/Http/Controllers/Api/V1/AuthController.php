@@ -21,6 +21,7 @@ class AuthController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'onboarding' => ['sometimes', 'boolean'],
         ]);
 
         $user = User::create([
@@ -30,8 +31,12 @@ class AuthController extends Controller
             'lives' => 5,
         ]);
 
-        // O onboarding é só do site; quem se cadastra pelo app já sai com ele concluído.
-        $user->forceFill(['onboarding_completed_at' => now()])->save();
+        // Só o app que tem o onboarding (e avisa com `onboarding: true`) deixa
+        // ele pendente. Versões antigas do app não sabem mostrá-lo: a conta
+        // já sai com ele concluído, como antes.
+        if (! $request->boolean('onboarding')) {
+            $user->forceFill(['onboarding_completed_at' => now()])->save();
+        }
 
         event(new Registered($user));
 

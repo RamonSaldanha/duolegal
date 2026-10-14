@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\LawArticleApiController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\DisciplineProgressController;
 use App\Http\Controllers\Api\V1\LegalReferenceController;
+use App\Http\Controllers\Api\V1\OnboardingController;
 use App\Http\Controllers\Api\V1\PlayController;
 use App\Http\Controllers\Api\V1\RankingController;
 use App\Http\Controllers\Api\V1\StreakController;
@@ -39,6 +40,13 @@ Route::prefix('v1/auth')->group(function () {
 // Rotas autenticadas V1
 Route::prefix('v1')->middleware(['auth:sanctum', 'throttle:120,1'])->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
+
+    // Onboarding (só de quem se cadastrou pelo app novo; o site tem o seu)
+    Route::get('/onboarding', [OnboardingController::class, 'show']);
+    Route::post('/onboarding/trail', [OnboardingController::class, 'saveTrail']);
+    Route::post('/onboarding/challenge', [OnboardingController::class, 'completeChallenge']);
+    Route::post('/onboarding/offer', [OnboardingController::class, 'startOffer']);
+    Route::post('/onboarding/finish', [OnboardingController::class, 'finish']);
 
     // Gameplay
     Route::get('/play/map', [PlayController::class, 'map']);

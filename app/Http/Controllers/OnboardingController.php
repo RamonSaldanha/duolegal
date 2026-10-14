@@ -2,9 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Legislation;
-use App\Models\UserLegislationSelection;
-use App\Services\StripePriceService;
+use App\Services\OnboardingService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -17,41 +15,28 @@ use Inertia\Response;
  * trilha (seleção de legislações), um desafio de verdade, a apresentação do
  * avatar e a oferta de boas-vindas.
  *
- * Só o cadastro web manda para cá. Contas antigas e cadastros pelo app (API)
- * já têm `onboarding_completed_at` preenchido e são mandados para o mapa.
- * Nada aqui trava rota do jogo.
+ * Só o cadastro web manda para cá. O app tem o mesmo fluxo pela API
+ * (Api\V1\OnboardingController), com as mesmas regras (OnboardingService).
+ * Contas antigas já têm `onboarding_completed_at` preenchido e são mandadas
+ * para o mapa. Nada aqui trava rota do jogo.
  */
 class OnboardingController extends Controller
 {
-    public const GOALS = ['oab', 'concurso', 'faculdade', 'profissao', 'pessoal'];
-
-    public const AREAS = ['constitucional', 'penal', 'civil', 'trabalho', 'administrativo', 'indica'];
-
-    public const MINUTES = [5, 15, 30, 60];
-
-    /** XP do desafio do onboarding. Vale uma vez por conta. */
-    public const CHALLENGE_XP = 25;
+    public function __construct(private OnboardingService $onboarding) {}
 
     public function show(): Response|RedirectResponse
     {
         $user = Auth::user();
 
-        if ($user->onboarding_completed_at) {
+        if ($this->onboarding->completed($user)) {
             return redirect()->route('play.map');
         }
 
-        $legislations = Legislation::where('status', 'published')
-            ->orderBy('id')
-            ->get(['id', 'title']);
-
         return Inertia::render('Onboarding/Index', [
-            'legislations' => $legislations,
-            'challengeDone' => $this->challengeDone(),
-            'yearlyPlan' => $this->yearlyPlan(),
-            'welcomeOffer' => $user->hasWelcomeOffer() ? [
-                'percent_off' => config('subscription.welcome_offer.percent_off'),
-                'expires_at' => $user->welcome_offer_expires_at->toIso8601String(),
-            ] : null,
+            'legislations' => $this->onboarding->legislations(),
+            'challengeDone' => $this->onboarding->challengeDone($user),
+            'yearlyPlan' => $this->onboarding->yearlyPlan(),
+            'welcomeOffer' => $this->onboarding->welcomeOffer($user),
         ]);
     }
 
@@ -61,40 +46,11 @@ class OnboardingController extends Controller
      */
     public function saveTrail(Request $request): RedirectResponse
     {
-        if ($this->alreadyOnboarded()) {
+        if ($this->onboarding->completed(Auth::user())) {
             return redirect()->route('play.map');
         }
 
-        $validated = $request->validate([
-            'goal' => ['required', Rule::in(self::GOALS)],
-            'area' => ['required', Rule::in(self::AREAS)],
-            'minutes' => ['required', 'integer', Rule::in(self::MINUTES)],
-            'legislation_ids' => ['required', 'array', 'min:1'],
-            'legislation_ids.*' => ['integer'],
-        ]);
-
-        $user = Auth::user();
-
-        $validIds = Legislation::whereIn('id', $validated['legislation_ids'])
-            ->where('status', 'published')
-            ->pluck('id');
-
-        $user->onboarding_answers = [
-            'goal' => $validated['goal'],
-            'area' => $validated['area'],
-            'minutes' => (int) $validated['minutes'],
-        ];
-        $user->save();
-
-        if ($validIds->isNotEmpty()) {
-            UserLegislationSelection::where('user_id', $user->id)->delete();
-            foreach ($validIds as $legislationId) {
-                UserLegislationSelection::create([
-                    'user_id' => $user->id,
-                    'legislation_id' => $legislationId,
-                ]);
-            }
-        }
+        $this->onboarding->saveTrail(Auth::user(), $request->validate($this->onboarding->trailRules()));
 
         return back();
     }
@@ -102,13 +58,11 @@ class OnboardingController extends Controller
     /** O desafio do onboarding conta XP de verdade, uma vez só. */
     public function completeChallenge(): RedirectResponse
     {
-        if ($this->alreadyOnboarded()) {
+        if ($this->onboarding->completed(Auth::user())) {
             return redirect()->route('play.map');
         }
 
-        if (! $this->challengeDone()) {
-            Auth::user()->addXp(self::CHALLENGE_XP, 'onboarding');
-        }
+        $this->onboarding->completeChallenge(Auth::user());
 
         return back();
     }
@@ -116,16 +70,11 @@ class OnboardingController extends Controller
     /** Liga o relógio das 24h quando a tela da oferta aparece pela primeira vez. */
     public function startOffer(): RedirectResponse
     {
-        if ($this->alreadyOnboarded()) {
+        if ($this->onboarding->completed(Auth::user())) {
             return redirect()->route('play.map');
         }
 
-        $user = Auth::user();
-
-        if ($user->welcome_offer_expires_at === null && ! $user->hasActiveSubscription()) {
-            $user->welcome_offer_expires_at = now()->addHours(config('subscription.welcome_offer.hours'));
-            $user->save();
-        }
+        $this->onboarding->startOffer(Auth::user());
 
         return back();
     }
@@ -141,37 +90,12 @@ class OnboardingController extends Controller
         ]);
 
         $user = Auth::user();
-        $user->onboarding_completed_at ??= now();
-        $user->save();
+        $this->onboarding->finish($user);
 
         if ($validated['next'] === 'subscription' && $user->hasWelcomeOffer()) {
             return redirect()->route('subscription.index');
         }
 
         return redirect()->route('play.map');
-    }
-
-    /** Conta antiga, cadastro pelo app ou onboarding já feito: nada daqui vale de novo. */
-    private function alreadyOnboarded(): bool
-    {
-        return Auth::user()->onboarding_completed_at !== null;
-    }
-
-    private function challengeDone(): bool
-    {
-        return Auth::user()->xpTransactions()->where('source_type', 'onboarding')->exists();
-    }
-
-    /**
-     * Preço do plano anual em centavos, para a tela da oferta. Mesma fonte do
-     * checkout (StripePriceService), para os dois mostrarem o mesmo valor.
-     *
-     * @return array{price: int, monthly_price: int}|null
-     */
-    private function yearlyPlan(): ?array
-    {
-        $price = app(StripePriceService::class)->find(config('subscription.plans.yearly'));
-
-        return $price ? ['price' => $price['price'], 'monthly_price' => $price['monthly_price']] : null;
     }
 }

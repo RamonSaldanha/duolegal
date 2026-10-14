@@ -25,7 +25,7 @@ test('cadastro pelo site leva ao onboarding', function () {
     $response->assertRedirect(route('onboarding.show', absolute: false));
 });
 
-test('cadastro pelo app não passa pelo onboarding nem expõe os campos novos', function () {
+test('cadastro pelo app antigo (sem o flag) não passa pelo onboarding nem expõe os campos novos', function () {
     $response = $this->postJson('/api/v1/auth/register', [
         'name' => 'App User',
         'email' => 'app@example.com',
