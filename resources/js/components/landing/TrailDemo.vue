@@ -106,7 +106,7 @@ onBeforeUnmount(() => {
 <template>
     <div ref="root" class="relative mx-auto" :style="{ width: `${WIDTH}px`, height: `${height}px` }" aria-hidden="true">
         <svg class="absolute inset-0" :width="WIDTH" :height="height" :viewBox="`0 0 ${WIDTH} ${height}`" fill="none">
-            <path :d="pathD" class="stroke-gray-200 dark:stroke-gray-800" stroke-width="18" stroke-linecap="round" />
+            <path :d="pathD" class="stroke-gray-200 dark:stroke-gray-700" stroke-width="18" stroke-linecap="round" />
             <path
                 ref="pathEl"
                 :d="pathD"
@@ -122,7 +122,7 @@ onBeforeUnmount(() => {
             <!-- Divisória da lei, como no mapa -->
             <div
                 v-if="node.label"
-                class="absolute left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-md border border-gray-200 bg-white px-2.5 py-0.5 text-xs font-semibold text-gray-500 transition-colors duration-500 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-400"
+                class="absolute left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-md border border-gray-200 bg-white px-2.5 py-0.5 text-xs font-semibold text-gray-500 transition-colors duration-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400"
                 :class="i <= currentIndex && 'border-green-200 text-green-700 dark:border-green-900 dark:text-green-400'"
                 :style="{ top: `${points[i].y - 62}px` }"
             >
@@ -133,7 +133,7 @@ onBeforeUnmount(() => {
                 <!-- Balão "Começar!" na fase atual -->
                 <div
                     v-if="stateOf(i) === 'current'"
-                    class="trail-bubble absolute -top-11 left-1/2 whitespace-nowrap rounded-xl border-2 border-gray-200 bg-white px-3 py-1 text-sm font-bold text-blue-600 dark:border-gray-700 dark:bg-gray-900 dark:text-blue-400"
+                    class="trail-bubble absolute -top-11 left-1/2 whitespace-nowrap rounded-xl border-2 border-gray-200 bg-white px-3 py-1 text-sm font-bold text-blue-600 dark:border-gray-600 dark:bg-gray-800 dark:text-blue-400"
                 >
                     Começar!
                 </div>
@@ -146,7 +146,7 @@ onBeforeUnmount(() => {
                         stateOf(i) === 'done' && node.kind === 'review' && 'border-purple-700 bg-purple-500 shadow-[0_6px_0_#6b21a8]',
                         stateOf(i) === 'current' && 'border-blue-700 bg-blue-500 shadow-[0_6px_0_#1d4ed8]',
                         stateOf(i) === 'locked' &&
-                            'border-gray-300 bg-gray-200 text-gray-400 shadow-[0_6px_0_#d4d4d4] dark:border-gray-700 dark:bg-gray-800 dark:text-gray-500 dark:shadow-[0_6px_0_#262626]',
+                            'border-gray-300 bg-gray-200 text-gray-400 shadow-[0_6px_0_#d4d4d4] dark:border-gray-600 dark:bg-gray-700 dark:text-gray-500 dark:shadow-[0_6px_0_#0f0f0f]',
                     ]"
                     :key="stateOf(i)"
                 >

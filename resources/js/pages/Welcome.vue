@@ -183,11 +183,11 @@ const toggleFaq = (i: number) => {
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="true" />
         <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     </Head>
-    <div class="lp-root flex min-h-screen flex-col items-center overflow-x-clip bg-white text-gray-800 dark:bg-black dark:text-gray-100">
+    <div class="lp-root flex min-h-screen flex-col items-center overflow-x-clip bg-white text-gray-800 dark:bg-gray-900 dark:text-gray-100">
         <!-- Header -->
         <header
-            class="sticky top-0 z-50 w-full border-b bg-white transition-shadow duration-300 dark:bg-black"
-            :class="scrolled ? 'border-gray-200 shadow-[0_2px_0_rgba(0,0,0,0.04)] dark:border-gray-800' : 'border-transparent'"
+            class="sticky top-0 z-50 w-full border-b bg-white transition-shadow duration-300 dark:bg-gray-900"
+            :class="scrolled ? 'border-gray-200 shadow-[0_2px_0_rgba(0,0,0,0.04)] dark:border-gray-700' : 'border-transparent'"
         >
             <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
                 <div class="flex items-center">
@@ -256,7 +256,7 @@ const toggleFaq = (i: number) => {
             <Transition name="lp-menu">
                 <div
                     v-if="mobileMenuOpen"
-                    class="absolute inset-x-0 top-16 z-50 border-b border-gray-200 bg-white px-4 py-4 dark:border-gray-800 dark:bg-black md:hidden"
+                    class="absolute inset-x-0 top-16 z-50 border-b border-gray-200 bg-white px-4 py-4 dark:border-gray-700 dark:bg-gray-900 md:hidden"
                 >
                     <nav class="flex flex-col gap-3">
                         <a
@@ -315,7 +315,7 @@ const toggleFaq = (i: number) => {
         </header>
 
         <!-- Hero -->
-        <section class="w-full overflow-hidden bg-gray-50 dark:bg-gray-950" id="hero">
+        <section class="w-full overflow-hidden bg-gray-50 dark:bg-[#1e1e1e]" id="hero">
             <div
                 class="mx-auto grid max-w-7xl items-center gap-16 px-4 pb-24 pt-10 sm:px-6 sm:pt-14 lg:grid-cols-[1.05fr_1fr] lg:gap-12 lg:pb-28 lg:pt-16"
             >
@@ -383,7 +383,7 @@ const toggleFaq = (i: number) => {
                                 :key="a.name"
                                 :config="a.config"
                                 :name="a.name"
-                                class="h-10 w-10 rounded-full ring-[3px] ring-gray-50 dark:ring-gray-950"
+                                class="h-10 w-10 rounded-full ring-[3px] ring-gray-50 dark:ring-[#1e1e1e]"
                             />
                         </div>
                         <p class="text-left text-sm leading-snug text-gray-500 dark:text-gray-400">
@@ -404,7 +404,7 @@ const toggleFaq = (i: number) => {
                         <Zap class="h-4 w-4 fill-current" /> Nível 12
                     </div>
                     <div
-                        class="lp-float absolute -bottom-6 -left-6 z-30 hidden items-center gap-2 rounded-2xl border-2 border-gray-200 bg-white px-3 py-2 text-sm font-bold shadow-[0_4px_0_#e5e5e5] dark:border-gray-800 dark:bg-gray-900 dark:shadow-[0_4px_0_#262626] sm:flex"
+                        class="lp-float absolute -bottom-6 -left-6 z-30 hidden items-center gap-2 rounded-2xl border-2 border-gray-200 bg-white px-3 py-2 text-sm font-bold shadow-[0_4px_0_#e5e5e5] dark:border-gray-700 dark:bg-gray-800 dark:shadow-[0_4px_0_#0f0f0f] sm:flex"
                         style="animation-delay: -2.4s"
                         aria-hidden="true"
                     >
@@ -418,7 +418,7 @@ const toggleFaq = (i: number) => {
         </section>
 
         <!-- Faixa de leis em movimento -->
-        <section class="w-full border-y-2 border-gray-100 bg-white py-6 dark:border-gray-900 dark:bg-black" aria-label="Leis disponíveis">
+        <section class="w-full border-y-2 border-gray-100 bg-white py-6 dark:border-gray-800 dark:bg-gray-900" aria-label="Leis disponíveis">
             <div class="lp-marquee-mask space-y-3 overflow-hidden">
                 <div class="lp-marquee flex w-max gap-3">
                     <Link
@@ -427,7 +427,7 @@ const toggleFaq = (i: number) => {
                         :href="getLawUrl(law)"
                         :tabindex="i >= lawList.length ? -1 : undefined"
                         :aria-hidden="i >= lawList.length ? 'true' : undefined"
-                        class="whitespace-nowrap rounded-xl border-2 border-gray-200 bg-white px-4 py-2 text-sm font-bold text-gray-700 shadow-[0_4px_0_#e5e5e5] transition-all hover:-translate-y-0.5 hover:border-green-300 hover:text-green-700 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-200 dark:shadow-[0_4px_0_#262626] dark:hover:border-green-800 dark:hover:text-green-400"
+                        class="whitespace-nowrap rounded-xl border-2 border-gray-200 bg-white px-4 py-2 text-sm font-bold text-gray-700 shadow-[0_4px_0_#e5e5e5] transition-all hover:-translate-y-0.5 hover:border-green-300 hover:text-green-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:shadow-[0_4px_0_#0f0f0f] dark:hover:border-green-800 dark:hover:text-green-400"
                     >
                         {{ law.name }}
                     </Link>
@@ -447,11 +447,11 @@ const toggleFaq = (i: number) => {
         </section>
 
         <!-- App Android Section -->
-        <section v-if="showAndroid" class="w-full bg-blue-50 py-16 dark:bg-blue-950" id="app-android">
+        <section v-if="showAndroid" class="w-full bg-blue-50 py-16 dark:bg-[#1e1e1e]" id="app-android">
             <div class="mx-auto max-w-5xl px-4 sm:px-6">
                 <div v-reveal class="flex flex-col items-center gap-8 text-center lg:flex-row lg:text-left">
                     <div class="flex-shrink-0">
-                        <div class="lp-phone flex h-24 w-24 items-center justify-center rounded-3xl bg-blue-100 dark:bg-blue-900 sm:h-32 sm:w-32">
+                        <div class="lp-phone flex h-24 w-24 items-center justify-center rounded-3xl bg-blue-100 dark:bg-gray-800 sm:h-32 sm:w-32">
                             <Smartphone class="h-14 w-14 text-blue-600 dark:text-blue-400 sm:h-16 sm:w-16" />
                         </div>
                     </div>
@@ -481,7 +481,7 @@ const toggleFaq = (i: number) => {
         </section>
 
         <!-- Como funciona -->
-        <section class="w-full bg-white py-20 dark:bg-black" id="features">
+        <section class="w-full bg-white py-20 dark:bg-gray-900" id="features">
             <div class="mx-auto max-w-7xl px-4 sm:px-6">
                 <div v-reveal class="mb-14 text-center">
                     <h2 class="heading-font mb-5 text-4xl font-bold text-gray-800 dark:text-white sm:text-5xl">
@@ -497,11 +497,11 @@ const toggleFaq = (i: number) => {
                         v-for="(step, i) in steps"
                         :key="step.title"
                         v-reveal="i * 120"
-                        class="group rounded-3xl border-2 border-gray-200 bg-white p-6 shadow-[0_6px_0_#e5e5e5] transition-transform duration-300 hover:-translate-y-1 dark:border-gray-800 dark:bg-gray-900 dark:shadow-[0_6px_0_#262626]"
+                        class="group rounded-3xl border-2 border-gray-200 bg-white p-6 shadow-[0_6px_0_#e5e5e5] transition-transform duration-300 hover:-translate-y-1 dark:border-gray-700 dark:bg-gray-800 dark:shadow-[0_6px_0_#0f0f0f]"
                     >
                         <!-- Mini animação de cada passo -->
                         <div
-                            class="mb-6 flex h-36 items-center justify-center overflow-hidden rounded-2xl bg-gray-50 dark:bg-gray-950"
+                            class="mb-6 flex h-36 items-center justify-center overflow-hidden rounded-2xl bg-gray-50 dark:bg-gray-900"
                             aria-hidden="true"
                         >
                             <!-- 1: grifando o artigo -->
@@ -568,7 +568,7 @@ const toggleFaq = (i: number) => {
         </section>
 
         <!-- Trilha (benefícios) -->
-        <section class="w-full bg-gray-50 py-20 dark:bg-gray-950" id="testimonials">
+        <section class="w-full bg-gray-50 py-20 dark:bg-[#1e1e1e]" id="testimonials">
             <div class="mx-auto grid max-w-6xl grid-cols-1 items-start gap-12 px-4 sm:px-6 lg:grid-cols-2">
                 <div class="lg:sticky lg:top-28">
                     <div v-reveal>
@@ -581,7 +581,7 @@ const toggleFaq = (i: number) => {
                     </div>
 
                     <ul class="space-y-4">
-                        <li v-reveal="0" class="flex gap-4 rounded-2xl border-2 border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
+                        <li v-reveal="0" class="flex gap-4 rounded-2xl border-2 border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
                             <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-yellow-100 dark:bg-yellow-900/40">
                                 <Zap class="h-6 w-6 text-yellow-600 dark:text-yellow-300" />
                             </span>
@@ -590,7 +590,7 @@ const toggleFaq = (i: number) => {
                                 <p class="text-gray-600 dark:text-gray-300">Fases curtas, com 6 artigos cada. Cabem no intervalo do café.</p>
                             </div>
                         </li>
-                        <li v-reveal="100" class="flex gap-4 rounded-2xl border-2 border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
+                        <li v-reveal="100" class="flex gap-4 rounded-2xl border-2 border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
                             <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-purple-100 dark:bg-purple-900/40">
                                 <RotateCcw class="h-6 w-6 text-purple-600 dark:text-purple-300" />
                             </span>
@@ -601,7 +601,7 @@ const toggleFaq = (i: number) => {
                                 </p>
                             </div>
                         </li>
-                        <li v-reveal="200" class="flex gap-4 rounded-2xl border-2 border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
+                        <li v-reveal="200" class="flex gap-4 rounded-2xl border-2 border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
                             <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-green-100 dark:bg-green-900/40">
                                 <Target class="h-6 w-6 text-green-600 dark:text-green-300" />
                             </span>
@@ -620,7 +620,7 @@ const toggleFaq = (i: number) => {
         </section>
 
         <!-- Ranking + avatar -->
-        <section class="w-full bg-white py-20 dark:bg-black" id="ranking">
+        <section class="w-full bg-white py-20 dark:bg-gray-900" id="ranking">
             <div class="mx-auto grid max-w-6xl grid-cols-1 items-center gap-12 px-4 sm:px-6 lg:grid-cols-2">
                 <div v-reveal class="order-2 w-full max-w-md justify-self-center lg:order-1">
                     <RankingDemo />
@@ -654,7 +654,7 @@ const toggleFaq = (i: number) => {
         </section>
 
         <!-- Seção da Pesquisa -->
-        <section class="w-full bg-gray-50 py-20 dark:bg-gray-950" id="research">
+        <section class="w-full bg-gray-50 py-20 dark:bg-[#1e1e1e]" id="research">
             <div class="mx-auto max-w-6xl px-4 sm:px-6">
                 <div v-reveal class="mb-12 text-center">
                     <h2 class="heading-font mb-4 text-3xl font-bold text-gray-800 dark:text-white sm:text-4xl">
@@ -665,7 +665,7 @@ const toggleFaq = (i: number) => {
                 <div
                     ref="researchEl"
                     v-reveal
-                    class="rounded-3xl border-2 border-gray-200 bg-white p-8 shadow-[0_8px_0_#e5e5e5] dark:border-gray-800 dark:bg-gray-900 dark:shadow-[0_8px_0_#262626]"
+                    class="rounded-3xl border-2 border-gray-200 bg-white p-8 shadow-[0_8px_0_#e5e5e5] dark:border-gray-700 dark:bg-gray-800 dark:shadow-[0_8px_0_#0f0f0f]"
                 >
                     <div class="grid grid-cols-1 items-center gap-8 lg:grid-cols-2">
                         <div class="text-center lg:text-left">
@@ -696,7 +696,7 @@ const toggleFaq = (i: number) => {
                         <div class="flex justify-center">
                             <div class="relative h-64 w-64">
                                 <svg class="absolute inset-0 h-full w-full -rotate-90" viewBox="0 0 200 200">
-                                    <circle cx="100" cy="100" r="90" fill="none" class="stroke-gray-100 dark:stroke-gray-800" stroke-width="16" />
+                                    <circle cx="100" cy="100" r="90" fill="none" class="stroke-gray-100 dark:stroke-gray-700" stroke-width="16" />
                                     <circle
                                         cx="100"
                                         cy="100"
@@ -724,7 +724,7 @@ const toggleFaq = (i: number) => {
         </section>
 
         <!-- FAQ Section -->
-        <section class="w-full bg-white py-20 dark:bg-black" id="faq">
+        <section class="w-full bg-white py-20 dark:bg-gray-900" id="faq">
             <div class="mx-auto max-w-3xl px-4 sm:px-6">
                 <div v-reveal class="mb-12 text-center">
                     <h2 class="heading-font mb-4 text-3xl font-bold text-gray-800 dark:text-white sm:text-4xl">
@@ -742,7 +742,7 @@ const toggleFaq = (i: number) => {
                         :class="
                             openFaq === i
                                 ? 'border-green-300 bg-green-50/60 dark:border-green-900 dark:bg-green-950/20'
-                                : 'border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900'
+                                : 'border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800'
                         "
                     >
                         <button
@@ -775,7 +775,7 @@ const toggleFaq = (i: number) => {
         </section>
 
         <!-- CTA Principal -->
-        <section ref="ctaEl" class="relative w-full overflow-hidden bg-gray-900 py-20 text-white dark:bg-gray-950" id="cta">
+        <section ref="ctaEl" class="relative w-full overflow-hidden bg-gray-900 py-20 text-white dark:bg-[#1e1e1e]" id="cta">
             <div class="pointer-events-none absolute inset-0" aria-hidden="true">
                 <span class="lp-drift absolute left-[8%] top-[20%] h-4 w-4 rounded-md bg-yellow-400 opacity-40" />
                 <span class="lp-drift absolute right-[10%] top-[30%] h-3 w-3 rounded-full bg-green-400 opacity-50" style="animation-delay: -2s" />
@@ -827,7 +827,7 @@ const toggleFaq = (i: number) => {
         </section>
 
         <!-- Footer -->
-        <footer class="w-full bg-gray-900 py-12 text-white dark:bg-black">
+        <footer class="w-full bg-gray-900 py-12 text-white dark:bg-gray-900">
             <div class="mx-auto max-w-7xl px-4 sm:px-6">
                 <div class="grid grid-cols-1 gap-8 md:grid-cols-3 lg:grid-cols-4">
                     <!-- Logo e descrição -->
@@ -900,7 +900,7 @@ const toggleFaq = (i: number) => {
                     </div>
                 </div>
 
-                <div class="mt-8 border-t border-gray-800 pt-8 text-center dark:border-gray-800">
+                <div class="mt-8 border-t border-gray-800 pt-8 text-center dark:border-gray-700">
                     <p class="text-gray-400 dark:text-gray-500">© {{ new Date().getFullYear() }} Memorize Direito. Todos os direitos reservados.</p>
                 </div>
             </div>

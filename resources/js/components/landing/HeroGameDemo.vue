@@ -141,7 +141,7 @@ async function flyWord(word: string, gap: number) {
     const ghost = document.createElement('span');
     ghost.textContent = word;
     ghost.className =
-        'pointer-events-none absolute z-30 rounded-xl border-2 border-gray-300 bg-white px-3 py-1.5 text-sm font-bold text-gray-800 shadow-[0_4px_0_#d4d4d4] dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:shadow-[0_4px_0_#404040]';
+        'pointer-events-none absolute z-30 rounded-xl border-2 border-gray-300 bg-white px-3 py-1.5 text-sm font-bold text-gray-800 shadow-[0_4px_0_#d4d4d4] dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:shadow-[0_4px_0_#171717]';
     ghost.style.left = `${from.left - b.left}px`;
     ghost.style.top = `${from.top - b.top}px`;
     box.appendChild(ghost);
@@ -246,11 +246,11 @@ const setGap = (i: number) => (el: unknown) => {
 <template>
     <div ref="root" class="relative select-none" aria-hidden="true">
         <div
-            class="relative overflow-hidden rounded-3xl border-2 border-gray-200 bg-white shadow-[0_8px_0_#e5e5e5] dark:border-gray-800 dark:bg-gray-900 dark:shadow-[0_8px_0_#262626]"
+            class="relative overflow-hidden rounded-3xl border-2 border-gray-200 bg-white shadow-[0_8px_0_#e5e5e5] dark:border-gray-700 dark:bg-gray-800 dark:shadow-[0_8px_0_#0f0f0f]"
         >
             <!-- Barra do topo: progresso + status do jogador -->
-            <div class="flex items-center gap-3 border-b-2 border-gray-100 px-4 py-3 dark:border-gray-800">
-                <div class="h-3 flex-1 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
+            <div class="flex items-center gap-3 border-b-2 border-gray-100 px-4 py-3 dark:border-gray-700">
+                <div class="h-3 flex-1 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-700">
                     <div class="demo-progress h-full rounded-full bg-green-500" :style="{ width: `${progress}%` }" />
                 </div>
                 <span class="flex items-center gap-1 rounded-full bg-pink-50 px-2 py-1 text-xs font-bold text-pink-500 dark:bg-pink-950/50">
@@ -258,7 +258,7 @@ const setGap = (i: number) => (el: unknown) => {
                 </span>
                 <span
                     class="flex items-center gap-1 rounded-full px-2 py-1 text-xs font-bold transition-colors duration-500"
-                    :class="success ? 'bg-orange-50 text-orange-500 dark:bg-orange-950/50' : 'bg-gray-100 text-gray-400 dark:bg-gray-800'"
+                    :class="success ? 'bg-orange-50 text-orange-500 dark:bg-orange-950/50' : 'bg-gray-100 text-gray-400 dark:bg-gray-700'"
                 >
                     <Flame class="h-3.5 w-3.5" :class="[success && 'fill-current', streakPop && 'streak-pop']" /> {{ streak }}
                 </span>
@@ -313,23 +313,23 @@ const setGap = (i: number) => (el: unknown) => {
                         class="rounded-xl border-2 px-3 py-1.5 text-sm font-bold transition-all duration-150"
                         :class="
                             used.has(word)
-                                ? 'border-gray-200 bg-gray-100 text-transparent shadow-none dark:border-gray-800 dark:bg-gray-800'
+                                ? 'border-gray-200 bg-gray-100 text-transparent shadow-none dark:border-gray-700 dark:bg-gray-700/40'
                                 : pressedChip === word
                                   ? 'translate-y-[3px] border-blue-300 bg-blue-50 text-blue-700 shadow-[0_1px_0_#93c5fd] dark:border-blue-700 dark:bg-blue-950 dark:text-blue-200'
-                                  : 'border-gray-300 bg-white text-gray-800 shadow-[0_4px_0_#d4d4d4] dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:shadow-[0_4px_0_#404040]'
+                                  : 'border-gray-300 bg-white text-gray-800 shadow-[0_4px_0_#d4d4d4] dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:shadow-[0_4px_0_#171717]'
                         "
                     >
                         {{ word }}
                     </span>
                 </div>
 
-                <div class="mt-4 flex justify-end border-t-2 border-gray-100 pt-4 dark:border-gray-800">
+                <div class="mt-4 flex justify-end border-t-2 border-gray-100 pt-4 dark:border-gray-700">
                     <span
                         class="relative rounded-xl border-2 px-5 py-2 text-sm font-extrabold uppercase tracking-wide transition-all duration-150"
                         :class="[
                             allFilled
                                 ? 'border-green-600 bg-green-500 text-white shadow-[0_5px_0_#15803d]'
-                                : 'border-gray-300 bg-gray-200 text-gray-400 shadow-[0_5px_0_#d4d4d4] dark:border-gray-700 dark:bg-gray-800 dark:shadow-[0_5px_0_#262626]',
+                                : 'border-gray-300 bg-gray-200 text-gray-400 shadow-[0_5px_0_#d4d4d4] dark:border-gray-600 dark:bg-gray-700 dark:shadow-[0_5px_0_#0f0f0f]',
                             verifyPressed && 'translate-y-[4px] !shadow-[0_1px_0_#15803d]',
                         ]"
                     >

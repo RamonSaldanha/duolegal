@@ -119,7 +119,7 @@ onBeforeUnmount(() => {
 <template>
     <div
         ref="root"
-        class="rounded-3xl border-2 border-gray-200 bg-white p-3 shadow-[0_8px_0_#e5e5e5] dark:border-gray-800 dark:bg-gray-900 dark:shadow-[0_8px_0_#262626] sm:p-4"
+        class="rounded-3xl border-2 border-gray-200 bg-white p-3 shadow-[0_8px_0_#e5e5e5] dark:border-gray-700 dark:bg-gray-800 dark:shadow-[0_8px_0_#0f0f0f] sm:p-4"
         aria-hidden="true"
     >
         <div class="mb-2 flex items-center justify-between px-2 pt-1">
@@ -136,7 +136,7 @@ onBeforeUnmount(() => {
                 :class="
                     p.you
                         ? 'border-blue-300 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/60'
-                        : 'border-transparent bg-gray-50 dark:bg-gray-800/60'
+                        : 'border-transparent bg-gray-50 dark:bg-gray-700/60'
                 "
             >
                 <span
