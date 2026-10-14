@@ -4,8 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\LawArticle;
 use App\Models\LegalReference;
-use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
 
 class WelcomeController extends Controller
 {
@@ -17,14 +17,15 @@ class WelcomeController extends Controller
         }
 
         $articlesCount = LawArticle::where('is_active', true)->count();
-        $firstFourLaws = LegalReference::where('is_active', true)
+        $laws = LegalReference::where('is_active', true)
             ->orderBy('id', 'asc')
-            ->take(4)
             ->get(['name', 'uuid', 'slug']);
-        
+
         return Inertia::render('Welcome', [
             'articlesCount' => $articlesCount,
-            'firstFourLaws' => $firstFourLaws
+            'firstFourLaws' => $laws->take(4)->values(),
+            // Faixa animada de leis na landing
+            'laws' => $laws,
         ]);
     }
 }
