@@ -17,5 +17,5 @@ test('new users can register', function () {
     ]);
 
     $this->assertAuthenticated();
-    $response->assertRedirect(route('play.map', absolute: false));
+    $response->assertRedirect(route('onboarding.show', absolute: false));
 });

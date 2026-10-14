@@ -47,6 +47,11 @@ class HandleInertiaRequests extends Middleware
                 'error' => fn () => $request->session()->get('error'),
                 'info' => fn () => $request->session()->get('info'),
             ],
+            // Oferta de boas-vindas do onboarding, para o banner do mapa (nulo fora das 24h)
+            'welcomeOffer' => fn () => $request->user()?->hasWelcomeOffer() ? [
+                'percent_off' => config('subscription.welcome_offer.percent_off'),
+                'expires_at' => $request->user()->welcome_offer_expires_at->toIso8601String(),
+            ] : null,
             'auth' => [
                 'user' => $request->user()
                     ? array_merge($request->user()->only('id', 'name', 'email', 'lives'), [

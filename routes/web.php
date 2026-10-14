@@ -2,8 +2,9 @@
 
 // routes\web.php
 use App\Http\Controllers\ChallengeController;
-use App\Http\Controllers\PublicController;
 use App\Http\Controllers\DisciplineProgressController;
+use App\Http\Controllers\OnboardingController;
+use App\Http\Controllers\PublicController;
 use App\Http\Controllers\RankingController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\StreakController;
@@ -58,6 +59,13 @@ Route::get('dashboard', function () {
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware(['auth'])->group(function () {
+    // === ONBOARDING (só o cadastro web manda para cá) ===
+    Route::get('/boas-vindas', [OnboardingController::class, 'show'])->name('onboarding.show');
+    Route::post('/boas-vindas/trilha', [OnboardingController::class, 'saveTrail'])->name('onboarding.trail');
+    Route::post('/boas-vindas/desafio', [OnboardingController::class, 'completeChallenge'])->name('onboarding.challenge');
+    Route::post('/boas-vindas/oferta', [OnboardingController::class, 'startOffer'])->name('onboarding.offer');
+    Route::post('/boas-vindas/concluir', [OnboardingController::class, 'finish'])->name('onboarding.finish');
+
     // === ROTAS DE DESAFIOS ===
     // Desafios públicos
     Route::get('/challenges', [ChallengeController::class, 'index'])->name('challenges.index');

@@ -46,6 +46,7 @@ class RegisteredUserController extends Controller
 
         Auth::login($user);
 
-        return to_route('play.map');
+        // Cadastro pelo site passa pelo onboarding. O do app (API) não passa por aqui.
+        return to_route('onboarding.show');
     }
 }

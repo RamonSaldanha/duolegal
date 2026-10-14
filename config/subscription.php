@@ -17,4 +17,21 @@ return [
         'quarterly' => env('STRIPE_PRICE_QUARTERLY', 'price_1StIQJGjTEIZborGfWvfFumD'),
         'yearly' => env('STRIPE_PRICE_YEARLY', 'price_1StIR1GjTEIZborGzAc3WC2U'),
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Oferta de boas-vindas
+    |--------------------------------------------------------------------------
+    |
+    | Desconto mostrado no fim do onboarding, só no plano anual e só por
+    | algumas horas. O cupom é criado no Stripe na primeira assinatura que
+    | usar a oferta, se ainda não existir lá com este id.
+    |
+    */
+
+    'welcome_offer' => [
+        'coupon' => env('STRIPE_WELCOME_COUPON', 'BOASVINDAS15'),
+        'percent_off' => 15,
+        'hours' => 24,
+    ],
 ];

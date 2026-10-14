@@ -38,6 +38,13 @@
                                     </div>
                                 </li>
                                 <li class="flex items-start gap-3">
+                                    <Shirt class="w-5 h-5 text-gray-700 dark:text-gray-300 flex-shrink-0 mt-0.5" />
+                                    <div>
+                                        <h4 class="font-medium text-gray-900 dark:text-white text-sm">Fantasias exclusivas</h4>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400">Toga e astronauta para o seu avatar</p>
+                                    </div>
+                                </li>
+                                <li class="flex items-start gap-3">
                                     <Zap class="w-5 h-5 text-gray-700 dark:text-gray-300 flex-shrink-0 mt-0.5" />
                                     <div>
                                         <h4 class="font-medium text-gray-900 dark:text-white text-sm">Sem anúncios</h4>
@@ -64,6 +71,25 @@
 
                     <!-- Coluna Direita: Checkout -->
                     <div class="lg:col-span-3">
+                        <!-- Oferta de boas-vindas do onboarding -->
+                        <div
+                            v-if="offerAvailable"
+                            class="mb-4 flex items-center gap-3 rounded-xl border-2 border-pink-200 bg-pink-50 p-4 dark:border-pink-900 dark:bg-pink-950/40"
+                        >
+                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-pink-100 text-pink-500 dark:bg-pink-900/60 dark:text-pink-300">
+                                <Gift class="h-5 w-5" />
+                            </span>
+                            <div class="min-w-0 flex-1 text-sm">
+                                <p class="font-bold text-gray-900 dark:text-white">Presente de boas-vindas: {{ welcomeOffer?.percent_off }}% off no plano anual</p>
+                                <p class="text-gray-600 dark:text-gray-400">
+                                    <template v-if="welcomeActive">Já aplicado. Termina em <span class="tabular-nums font-semibold">{{ offerCountdown }}</span>.</template>
+                                    <template v-else>
+                                        Escolha o plano anual para usar. Termina em <span class="tabular-nums font-semibold">{{ offerCountdown }}</span>.
+                                    </template>
+                                </p>
+                            </div>
+                        </div>
+
                         <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
                             <!-- Escolher Plano -->
                             <div class="p-5 lg:p-6 border-b border-gray-200 dark:border-gray-700">
@@ -131,10 +157,11 @@
                                             </span>
                                         </div>
                                         <div class="font-semibold text-gray-900 dark:text-white text-sm">Anual</div>
-                                        <div class="mt-1">
-                                            <span class="text-lg lg:text-xl font-bold text-gray-900 dark:text-white">{{ formatCurrency(getPlanPrice('yearly')) }}</span>
+                                        <div v-if="offerAvailable" class="mt-1 text-xs text-gray-400 line-through">{{ formatCurrency(getPlanPrice('yearly')) }}</div>
+                                        <div :class="offerAvailable ? '' : 'mt-1'">
+                                            <span class="text-lg lg:text-xl font-bold text-gray-900 dark:text-white">{{ formatCurrency(getPlanPrice('yearly') - (offerAvailable ? welcomeDiscount('yearly') : 0)) }}</span>
                                         </div>
-                                        <div class="text-xs text-gray-500 dark:text-gray-400">{{ formatCurrency(getPlanMonthlyPrice('yearly')) }}/mês</div>
+                                        <div class="text-xs text-gray-500 dark:text-gray-400">{{ formatCurrency(offerAvailable ? Math.round((getPlanPrice('yearly') - welcomeDiscount('yearly')) / 12) : getPlanMonthlyPrice('yearly')) }}/mês</div>
                                         <div v-if="selectedPlan === 'yearly'" class="absolute top-2 right-2">
                                             <CheckCircle class="w-4 h-4 text-purple-500" />
                                         </div>
@@ -193,8 +220,8 @@
                             <div class="p-5 lg:p-6 bg-gray-50 dark:bg-gray-900/50">
                                 <h3 class="font-semibold text-gray-900 dark:text-white mb-4">Resumo do faturamento</h3>
 
-                                <!-- Cupom -->
-                                <div class="mb-4">
+                                <!-- Cupom (a oferta de boas-vindas não soma com cupom) -->
+                                <div v-if="!welcomeActive" class="mb-4">
                                     <div class="flex gap-2">
                                         <Input
                                             v-model="couponCode"
@@ -235,7 +262,11 @@
                                         <span class="text-gray-600 dark:text-gray-400">{{ planLabels[selectedPlan] }}</span>
                                         <span class="text-gray-900 dark:text-white">{{ formatCurrency(getPlanPrice(selectedPlan)) }}</span>
                                     </div>
-                                    <div v-if="appliedCoupon" class="flex justify-between text-green-600 dark:text-green-400">
+                                    <div v-if="welcomeActive" class="flex justify-between text-green-600 dark:text-green-400">
+                                        <span>Oferta de boas-vindas ({{ welcomeOffer?.percent_off }}%)</span>
+                                        <span>-{{ formatCurrency(discountAmount) }}</span>
+                                    </div>
+                                    <div v-else-if="appliedCoupon" class="flex justify-between text-green-600 dark:text-green-400">
                                         <span>Desconto</span>
                                         <span>-{{ formatCurrency(discountAmount) }}</span>
                                     </div>
@@ -306,6 +337,13 @@
                                     <div>
                                         <h4 class="font-medium text-gray-900 dark:text-white text-sm">Vidas infinitas</h4>
                                         <p class="text-xs text-gray-500 dark:text-gray-400">Estude sem interrupções</p>
+                                    </div>
+                                </li>
+                                <li class="flex items-start gap-3">
+                                    <Shirt class="w-5 h-5 text-gray-700 dark:text-gray-300 flex-shrink-0 mt-0.5" />
+                                    <div>
+                                        <h4 class="font-medium text-gray-900 dark:text-white text-sm">Fantasias exclusivas</h4>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400">Toga e astronauta para o seu avatar</p>
                                     </div>
                                 </li>
                                 <li class="flex items-start gap-3">
@@ -416,8 +454,8 @@ import { Head, useForm, usePage } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import GameButton from '@/components/ui/GameButton.vue';
-import { CheckCircle, Loader2, AlertCircle, X, Heart, Zap, BookOpen, Shield } from 'lucide-vue-next';
-import { onMounted, ref, computed } from 'vue';
+import { CheckCircle, Loader2, AlertCircle, X, Heart, Zap, BookOpen, Shield, Gift, Shirt } from 'lucide-vue-next';
+import { onMounted, onBeforeUnmount, ref, computed } from 'vue';
 import axios from 'axios';
 
 declare global {
@@ -455,13 +493,35 @@ interface Props {
     price: number;
     planInterval: string;
     plans?: Record<string, PlanInfo>;
+    /** Oferta de boas-vindas do onboarding (só no anual), enquanto as 24h valem. */
+    welcomeOffer?: { percent_off: number; expires_at: string } | null;
 }
 
 const props = defineProps<Props>();
 const page = usePage();
 
 // Planos disponíveis
-const selectedPlan = ref<'monthly' | 'quarterly' | 'yearly'>('monthly');
+// Quem chega com a oferta de boas-vindas já cai no anual, que é onde ela vale.
+const selectedPlan = ref<'monthly' | 'quarterly' | 'yearly'>(props.welcomeOffer ? 'yearly' : 'monthly');
+
+// Oferta de boas-vindas: relógio das 24h e desconto no anual
+const now = ref(Date.now());
+let offerClock: ReturnType<typeof setInterval> | undefined;
+const offerMsLeft = computed(() => (props.welcomeOffer ? new Date(props.welcomeOffer.expires_at).getTime() - now.value : 0));
+const offerAvailable = computed(() => offerMsLeft.value > 0);
+const welcomeActive = computed(() => offerAvailable.value && selectedPlan.value === 'yearly');
+const offerCountdown = computed(() => {
+    const ms = Math.max(0, offerMsLeft.value);
+    return [Math.floor(ms / 3_600_000), Math.floor((ms % 3_600_000) / 60_000), Math.floor((ms % 60_000) / 1000)]
+        .map((n) => String(n).padStart(2, '0'))
+        .join(':');
+});
+const welcomeDiscount = (plan: string) => Math.round(getPlanPrice(plan) * ((props.welcomeOffer?.percent_off ?? 0) / 100));
+
+onMounted(() => {
+    if (props.welcomeOffer) offerClock = setInterval(() => (now.value = Date.now()), 1000);
+});
+onBeforeUnmount(() => clearInterval(offerClock));
 
 // Valores padrão caso o backend não retorne os planos
 const defaultPrices: Record<string, number> = {
@@ -576,6 +636,7 @@ const couponError = ref<string | null>(null);
 const appliedCoupon = ref<AppliedCoupon | null>(null);
 
 const discountAmount = computed(() => {
+    if (welcomeActive.value) return welcomeDiscount('yearly');
     if (!appliedCoupon.value) return 0;
     return appliedCoupon.value.discount_amount;
 });
@@ -759,7 +820,8 @@ const subscribe = async () => {
         }
 
         form.payment_method = paymentMethod.id;
-        form.promotion_code_id = appliedCoupon.value?.promotion_code_id || '';
+        form.welcome_offer = welcomeActive.value;
+        form.promotion_code_id = welcomeActive.value ? '' : appliedCoupon.value?.promotion_code_id || '';
         form.price_id = getPlanPriceId(selectedPlan.value);
 
         form.post(route('subscription.subscribe'), {
@@ -794,6 +856,7 @@ const form = useForm({
     payment_method: '',
     promotion_code_id: '',
     price_id: '',
+    welcome_offer: false,
 });
 
 const cancelSubscription = () => {

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
+import WelcomeOfferBanner from '@/components/WelcomeOfferBanner.vue';
 import { computed, ref, onMounted, onUnmounted, nextTick } from 'vue';
 import { Book, FileText, Bookmark, CheckCircle, Star, Lock } from 'lucide-vue-next';
 import type { BetaPhase, BetaMapLegislation, PlayUserData, LoadMorePhasesResponse } from '@/types/legislation-play';
@@ -257,6 +258,9 @@ onUnmounted(() => {
     <AppLayout>
         <div class="container py-6 px-4">
             <div class="max-w-4xl mx-auto">
+
+                <!-- Lembrete da oferta de boas-vindas (24h depois do onboarding) -->
+                <WelcomeOfferBanner />
 
                 <!-- Botão flutuante "Ir para fase atual" -->
                 <div v-if="showScrollButton" class="fixed bottom-20 left-4 z-50">

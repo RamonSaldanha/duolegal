@@ -12,7 +12,7 @@ use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable, Billable, HasApiTokens;
+    use Billable, HasApiTokens, HasFactory, Notifiable;
 
     /**
      * The attributes that are mass assignable.
@@ -27,7 +27,7 @@ class User extends Authenticatable
         'stripe_id',
         'pm_type',
         'pm_last_four',
-        'trial_ends_at'
+        'trial_ends_at',
     ];
 
     /**
@@ -43,6 +43,11 @@ class User extends Authenticatable
         // só onde a gente quer, e sempre por publicAvatarConfig(): no share do
         // Inertia, no ranking e, para o app, no UserResource e no ranking da API.
         'avatar_config',
+        // Dados do onboarding web: ficam fora do JSON cru do `GET /api/user` para
+        // o app Android continuar recebendo exatamente o que recebia.
+        'onboarding_answers',
+        'onboarding_completed_at',
+        'welcome_offer_expires_at',
     ];
 
     /**
@@ -58,6 +63,9 @@ class User extends Authenticatable
         'has_infinite_lives' => 'boolean',
         'trial_ends_at' => 'datetime',
         'avatar_config' => 'array',
+        'onboarding_answers' => 'array',
+        'onboarding_completed_at' => 'datetime',
+        'welcome_offer_expires_at' => 'datetime',
     ];
 
     /**
@@ -127,7 +135,7 @@ class User extends Authenticatable
     public function legalReferences()
     {
         return $this->belongsToMany(LegalReference::class, 'user_legal_references')
-                    ->withTimestamps();
+            ->withTimestamps();
     }
 
     /**
@@ -148,13 +156,26 @@ class User extends Authenticatable
         try {
             // Verifica apenas se o usuário está inscrito no plano default
             $subscribed = $this->subscribed('default');
+
             // Retorna apenas se o usuário tem uma assinatura ativa
             return $subscribed;
         } catch (\Exception $exception) {
             // Log do erro para depuração
-            \Illuminate\Support\Facades\Log::warning('Erro ao verificar assinatura: ' . $exception->getMessage());
+            \Illuminate\Support\Facades\Log::warning('Erro ao verificar assinatura: '.$exception->getMessage());
+
             return false;
         }
+    }
+
+    /**
+     * A oferta de boas-vindas do onboarding (15% no plano anual) ainda vale:
+     * dentro das 24h e sem assinatura ativa.
+     */
+    public function hasWelcomeOffer(): bool
+    {
+        return $this->welcome_offer_expires_at !== null
+            && $this->welcome_offer_expires_at->isFuture()
+            && ! $this->hasActiveSubscription();
     }
 
     /**

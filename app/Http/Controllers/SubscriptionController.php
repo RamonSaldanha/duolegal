@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Laravel\Cashier\Exceptions\IncompletePayment;
+use Stripe\Coupon;
+use Stripe\Exception\InvalidRequestException;
 use Stripe\PromotionCode;
 use Stripe\Stripe;
 use Stripe\Webhook;
@@ -96,6 +98,10 @@ class SubscriptionController extends Controller
             'price' => $priceInfo['price'],
             'planInterval' => $priceInfo['interval'],
             'plans' => $plans,
+            'welcomeOffer' => $user->hasWelcomeOffer() ? [
+                'percent_off' => config('subscription.welcome_offer.percent_off'),
+                'expires_at' => $user->welcome_offer_expires_at->toIso8601String(),
+            ] : null,
         ]);
     }
 
@@ -177,6 +183,27 @@ class SubscriptionController extends Controller
         }
 
         return $result;
+    }
+
+    /**
+     * Id do cupom da oferta de boas-vindas no Stripe. Se ainda não existe lá,
+     * é criado aqui (percentual, só na primeira cobrança).
+     */
+    private function welcomeCouponId(): string
+    {
+        Stripe::setApiKey(config('cashier.secret'));
+        $couponId = config('subscription.welcome_offer.coupon');
+
+        try {
+            return Coupon::retrieve($couponId)->id;
+        } catch (InvalidRequestException $e) {
+            return Coupon::create([
+                'id' => $couponId,
+                'name' => 'Boas-vindas: '.config('subscription.welcome_offer.percent_off').'% no anual',
+                'percent_off' => config('subscription.welcome_offer.percent_off'),
+                'duration' => 'once',
+            ])->id;
+        }
     }
 
     /**
@@ -288,6 +315,7 @@ class SubscriptionController extends Controller
                 'payment_method' => 'required|string',
                 'promotion_code_id' => 'nullable|string',
                 'price_id' => 'nullable|string',
+                'welcome_offer' => 'nullable|boolean',
             ]);
 
             // Verifica se o usuário já tem uma assinatura ativa
@@ -346,8 +374,16 @@ class SubscriptionController extends Controller
                     ->newSubscription('default', $priceId)
                     ->skipTrial();
 
-                // Adiciona o código promocional se fornecido
-                if ($request->promotion_code_id) {
+                // Oferta de boas-vindas do onboarding: só no anual e dentro das 24h.
+                // Não soma com cupom digitado; a oferta tem prioridade.
+                $useWelcomeOffer = $request->boolean('welcome_offer')
+                    && $priceId === config('subscription.plans.yearly')
+                    && $user->hasWelcomeOffer();
+
+                if ($useWelcomeOffer) {
+                    $subscriptionBuilder->withCoupon($this->welcomeCouponId());
+                } elseif ($request->promotion_code_id) {
+                    // Adiciona o código promocional se fornecido
                     $subscriptionBuilder->withPromotionCode($request->promotion_code_id);
                 }
 

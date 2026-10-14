@@ -30,6 +30,9 @@ class AuthController extends Controller
             'lives' => 5,
         ]);
 
+        // O onboarding é só do site; quem se cadastra pelo app já sai com ele concluído.
+        $user->forceFill(['onboarding_completed_at' => now()])->save();
+
         event(new Registered($user));
 
         $token = $user->createToken('mobile')->plainTextToken;
@@ -121,7 +124,7 @@ class AuthController extends Controller
     {
         $validated = $request->validate([
             'name' => ['sometimes', 'string', 'max:255'],
-            'email' => ['sometimes', 'string', 'email', 'max:255', 'unique:users,email,' . $request->user()->id],
+            'email' => ['sometimes', 'string', 'email', 'max:255', 'unique:users,email,'.$request->user()->id],
         ]);
 
         $user = $request->user();
