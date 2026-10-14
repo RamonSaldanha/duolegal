@@ -4,16 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\Legislation;
 use App\Models\UserLegislationSelection;
+use App\Services\StripePriceService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
-use Stripe\Price;
-use Stripe\Stripe;
 
 /**
  * Onboarding de quem acabou de se cadastrar pelo site: quiz curto que monta a
@@ -166,29 +163,15 @@ class OnboardingController extends Controller
     }
 
     /**
-     * Preço do plano anual em centavos, para a tela da oferta. Fica em cache
-     * para o onboarding não esperar o Stripe a cada cadastro.
+     * Preço do plano anual em centavos, para a tela da oferta. Mesma fonte do
+     * checkout (StripePriceService), para os dois mostrarem o mesmo valor.
      *
      * @return array{price: int, monthly_price: int}|null
      */
     private function yearlyPlan(): ?array
     {
-        $priceId = config('subscription.plans.yearly');
-        if (empty($priceId)) {
-            return null;
-        }
+        $price = app(StripePriceService::class)->find(config('subscription.plans.yearly'));
 
-        try {
-            return Cache::remember("stripe-price:{$priceId}", now()->addHour(), function () use ($priceId) {
-                Stripe::setApiKey(config('cashier.secret'));
-                $amount = (int) Price::retrieve($priceId)->unit_amount;
-
-                return ['price' => $amount, 'monthly_price' => (int) round($amount / 12)];
-            });
-        } catch (\Exception $e) {
-            Log::warning('Onboarding: preço anual indisponível', ['error' => $e->getMessage()]);
-
-            return null;
-        }
+        return $price ? ['price' => $price['price'], 'monthly_price' => $price['monthly_price']] : null;
     }
 }

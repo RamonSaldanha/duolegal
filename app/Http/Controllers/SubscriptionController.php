@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\StripePriceService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -110,33 +111,24 @@ class SubscriptionController extends Controller
      */
     private function getPriceInfo(): array
     {
-        try {
-            Stripe::setApiKey(config('cashier.secret'));
-            // Usa o plano mensal como referência
-            $priceId = config('subscription.plans.monthly');
+        // Usa o plano mensal como referência
+        $price = app(StripePriceService::class)->find(config('subscription.plans.monthly'));
 
-            if (empty($priceId)) {
-                return ['price' => 0000, 'interval' => 'mês'];
-            }
-
-            $price = \Stripe\Price::retrieve($priceId);
-
-            $intervalMap = [
-                'year' => 'ano',
-                'month' => 'mês',
-                'week' => 'semana',
-                'day' => 'dia',
-            ];
-
-            return [
-                'price' => $price->unit_amount,
-                'interval' => $intervalMap[$price->recurring->interval] ?? 'período',
-            ];
-        } catch (\Exception $e) {
-            Log::error('Erro ao buscar informações do preço', ['error' => $e->getMessage()]);
-
+        if (! $price) {
             return ['price' => 0000, 'interval' => 'mês'];
         }
+
+        $intervalMap = [
+            'year' => 'ano',
+            'month' => 'mês',
+            'week' => 'semana',
+            'day' => 'dia',
+        ];
+
+        return [
+            'price' => $price['price'],
+            'interval' => $intervalMap[$price['interval']] ?? 'período',
+        ];
     }
 
     /**
@@ -145,41 +137,13 @@ class SubscriptionController extends Controller
      */
     private function getAllPlans(): array
     {
-        $plans = config('subscription.plans', []);
+        $prices = app(StripePriceService::class);
         $result = [];
 
-        try {
-            Stripe::setApiKey(config('cashier.secret'));
-
-            foreach ($plans as $key => $priceId) {
-                try {
-                    $price = \Stripe\Price::retrieve($priceId);
-
-                    $intervalCount = $price->recurring->interval_count ?? 1;
-                    $interval = $price->recurring->interval ?? 'month';
-
-                    // Calcula o preço mensal equivalente
-                    $monthlyPrice = $price->unit_amount;
-                    if ($interval === 'year') {
-                        $monthlyPrice = round($price->unit_amount / 12);
-                    } elseif ($interval === 'month' && $intervalCount > 1) {
-                        $monthlyPrice = round($price->unit_amount / $intervalCount);
-                    }
-
-                    $result[$key] = [
-                        'price_id' => $priceId,
-                        'price' => $price->unit_amount,
-                        'monthly_price' => $monthlyPrice,
-                        'interval' => $interval,
-                        'interval_count' => $intervalCount,
-                        'currency' => $price->currency,
-                    ];
-                } catch (\Exception $e) {
-                    Log::warning("Erro ao buscar preço {$key}", ['error' => $e->getMessage()]);
-                }
+        foreach (config('subscription.plans', []) as $key => $priceId) {
+            if ($price = $prices->find($priceId)) {
+                $result[$key] = $price;
             }
-        } catch (\Exception $e) {
-            Log::error('Erro ao buscar planos', ['error' => $e->getMessage()]);
         }
 
         return $result;
