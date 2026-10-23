@@ -15,6 +15,7 @@ const currentMatchIndex = ref(0);
 interface TextToken {
     text: string;
     isBlock: boolean;
+    start: number;
 }
 
 interface TextPart {
@@ -39,14 +40,14 @@ const tokens = computed((): TextToken[] => {
 
     for (const range of ranges) {
         if (cursor < range.start) {
-            result.push({ text: text.slice(cursor, range.start), isBlock: false });
+            result.push({ text: text.slice(cursor, range.start), isBlock: false, start: cursor });
         }
-        result.push({ text: text.slice(range.start, range.end), isBlock: true });
+        result.push({ text: text.slice(range.start, range.end), isBlock: true, start: range.start });
         cursor = range.end;
     }
 
     if (cursor < text.length) {
-        result.push({ text: text.slice(cursor, text.length), isBlock: false });
+        result.push({ text: text.slice(cursor, text.length), isBlock: false, start: cursor });
     }
 
     return result;
@@ -153,7 +154,7 @@ watch(searchQuery, () => {
             </div>
         </div>
         <div ref="scrollContainer" class="flex-1 overflow-y-auto p-5 text-[13px] leading-relaxed select-text">
-            <template v-for="(token, ti) in tokens" :key="ti">
+            <template v-for="token in tokens" :key="(token.isBlock ? 'b' : 't') + token.start">
                 <span
                     v-if="token.isBlock"
                     class="whitespace-pre-wrap border-l-2 border-emerald-500 bg-emerald-50/50 dark:bg-emerald-900/20 px-1 -ml-1 text-gray-800 dark:text-gray-200"

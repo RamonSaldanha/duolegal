@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Zap, Square, Link as LinkIcon, Globe, EyeOff } from 'lucide-vue-next';
+import { ArrowLeft, Zap, Square, Link as LinkIcon, Globe, EyeOff, TriangleAlert } from 'lucide-vue-next';
 import { Link } from '@inertiajs/vue3';
 import type { Legislation } from '@/types/legislation';
 
@@ -11,12 +11,15 @@ const props = defineProps<{
     autoCreating: boolean;
     hasText: boolean;
     autoCreateProgress: { current: number; total: number } | null;
+    bigBlockCount: number;
+    bigBlockIndex: number | null;
 }>();
 
 const emit = defineEmits<{
     autoCreate: [];
     stopAutoCreate: [];
     togglePublish: [];
+    nextBigBlock: [];
 }>();
 </script>
 
@@ -51,6 +54,21 @@ const emit = defineEmits<{
                 <LinkIcon class="w-4 h-4" />
             </a>
             <template v-if="hasText">
+                <!-- Blocos grandes: cada clique leva ao próximo -->
+                <button
+                    v-if="bigBlockCount > 0"
+                    type="button"
+                    class="inline-flex items-center gap-1.5 rounded-md border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 px-2.5 py-1 text-xs font-medium text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/50"
+                    title="Ir para o próximo bloco grande"
+                    @click="emit('nextBigBlock')"
+                >
+                    <TriangleAlert class="w-3.5 h-3.5" />
+                    <span class="tabular-nums">
+                        <template v-if="bigBlockIndex !== null">{{ bigBlockIndex + 1 }}/</template>{{ bigBlockCount }}
+                    </span>
+                    {{ bigBlockCount === 1 ? 'bloco grande' : 'blocos grandes' }}
+                </button>
+
                 <!-- Durante auto-criação: progresso + botão Parar -->
                 <template v-if="autoCreating">
                     <span class="text-xs text-gray-500 tabular-nums">

@@ -10,6 +10,7 @@ import type {
     SegmentAnswer,
     DisciplineLevelUp,
 } from '@/types/legislation-play';
+import { requiredCorrect } from '@/types/legislation-play';
 import LevelUpOverlay from '@/components/LevelUpOverlay.vue';
 import { ref, onMounted, nextTick } from 'vue';
 import { Trophy } from 'lucide-vue-next';
@@ -168,7 +169,7 @@ async function handleSubmit(data: {
             return;
         }
 
-        const passed = result.progress.percentage >= 70;
+        const passed = result.passed ?? data.correct_count >= requiredCorrect(data.total_count);
 
         if (passed) {
             // Confetti + áudio
@@ -232,7 +233,7 @@ async function handleSubmit(data: {
             if (result.lost_life) {
                 toast({
                     title: 'Vida perdida!',
-                    description: `Você precisa acertar pelo menos 70%. Acertou ${data.correct_count} de ${data.total_count}.`,
+                    description: `Você precisava acertar pelo menos ${requiredCorrect(data.total_count)} de ${data.total_count}. Acertou ${data.correct_count}.`,
                     variant: 'destructive',
                     duration: 4000,
                 });

@@ -45,6 +45,9 @@ Route::middleware(['auth', 'admin'])->prefix('editor')->group(function () {
     // Detectar limites de bloco (JSON para auto-criação progressiva)
     Route::post('{legislation:uuid}/detect-boundaries', [LegislationEditorController::class, 'detectBoundaries'])->name('editor.detect-boundaries');
 
+    // Criar blocos em lote (JSON, usado pela criação automática)
+    Route::post('{legislation:uuid}/blocks', [LegislationEditorController::class, 'storeBlocks'])->name('editor.store-blocks');
+
     // Auto-criar todos os blocos (fallback)
     Route::post('{legislation:uuid}/auto-create', [LegislationEditorController::class, 'autoCreate'])->name('editor.auto-create');
 

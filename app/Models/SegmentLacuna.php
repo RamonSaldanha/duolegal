@@ -18,10 +18,14 @@ class SegmentLacuna extends Model
         'word_position',
         'is_correct',
         'gap_order',
+        'is_active',
+        'auto_added',
     ];
 
     protected $casts = [
         'is_correct' => 'boolean',
+        'is_active' => 'boolean',
+        'auto_added' => 'boolean',
         'word_position' => 'integer',
         'gap_order' => 'integer',
     ];

@@ -17,6 +17,15 @@ export interface LegislationSegment {
     position: number;
     is_block: boolean;
     lacunas: SegmentLacuna[];
+    /** Alunos que já concluíram o bloco (remover o bloco apaga esse progresso). */
+    completed_count?: number;
+}
+
+/** A partir de quantas palavras um bloco é destacado como grande no editor. */
+export const BIG_BLOCK_WORDS = 100;
+
+export function wordCount(text: string): number {
+    return text.split(/\s+/).filter((w) => w.length > 0).length;
 }
 
 export interface Legislation {

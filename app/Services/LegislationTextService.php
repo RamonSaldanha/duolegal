@@ -10,6 +10,13 @@ class LegislationTextService
     private const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
     /**
+     * Início de inciso: "IV -", "VIII-B -" ou, sem hífen, "IX todos..." (algarismo romano
+     * seguido de texto minúsculo, como o Planalto grafa parte do Art. 93 da CF).
+     * O grupo 1 captura o algarismo romano.
+     */
+    private const INCISO_PATTERN = '/^\s*([IVXLCDM]+(?:-[A-Z])?)(?:\s*[-–]|\s+(?=[a-záàâãéêíóôõúç]))/u';
+
+    /**
      * Busca o texto de uma legislação a partir da URL.
      *
      * Estratégia em cascata:
@@ -318,7 +325,7 @@ class LegislationTextService
         if (preg_match('/^\s*(§|Parágrafo\s+único)/iu', $line)) {
             return 'paragrafo';
         }
-        if (preg_match('/^\s*[IVXLCDM]+\s*[-–]/u', $line)) {
+        if (preg_match(self::INCISO_PATTERN, $line)) {
             return 'inciso';
         }
         if (preg_match('/^\s*[a-z]\)/u', $line)) {
@@ -345,7 +352,7 @@ class LegislationTextService
         if (preg_match('/^(§\s*\d+[ºo]?\.?|Parágrafo\s+único\.?)/iu', $line, $m)) {
             return $m[1];
         }
-        if (preg_match('/^([IVXLCDM]+)\s*[-–]/u', $line, $m)) {
+        if (preg_match(self::INCISO_PATTERN, $line, $m)) {
             return $m[1];
         }
         if (preg_match('/^([a-z])\)/u', $line, $m)) {

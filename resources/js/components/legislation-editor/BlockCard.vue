@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import type { LegislationSegment } from '@/types/legislation';
+import { BIG_BLOCK_WORDS, wordCount } from '@/types/legislation';
 import LacunaTagBar from './LacunaTagBar.vue';
 import { Badge } from '@/components/ui/badge';
-import { X } from 'lucide-vue-next';
+import { X, TriangleAlert, Users } from 'lucide-vue-next';
 import { computed } from 'vue';
 
 const props = defineProps<{
@@ -35,6 +36,9 @@ const tokens = computed(() => {
         return { text: part, isSpace: false, wordIndex: idx, charStart: start, charEnd: charPos };
     });
 });
+
+const words = computed(() => wordCount(props.segment.original_text));
+const isBig = computed(() => words.value >= BIG_BLOCK_WORDS);
 
 const lacunaPositions = computed(() => {
     const positions = new Set<number>();
@@ -88,16 +92,33 @@ function isSearchMatch(charStart: number, charEnd: number): boolean {
         class="rounded-lg border p-4 transition-colors bg-white dark:bg-gray-800"
         :class="isActive
             ? 'border-blue-400 dark:border-blue-500 ring-1 ring-blue-200 dark:ring-blue-800'
-            : 'border-gray-300 dark:border-gray-600'"
+            : isBig
+                ? 'border-amber-400 dark:border-amber-500 ring-1 ring-amber-200 dark:ring-amber-800'
+                : 'border-gray-300 dark:border-gray-600'"
     >
         <div class="flex items-start justify-between gap-2 mb-2">
-            <div class="flex items-center gap-2">
+            <div class="flex flex-wrap items-center gap-2">
                 <Badge variant="outline" class="text-[10px]">{{ segment.segment_type }}</Badge>
                 <span v-if="segment.structural_marker" class="text-[11px] text-gray-400 font-mono">
                     {{ segment.structural_marker }}
                 </span>
                 <span v-if="segment.article_reference" class="text-[10px] text-gray-400">
                     Art. {{ segment.article_reference }}
+                </span>
+                <span
+                    v-if="isBig"
+                    class="inline-flex items-center gap-1 rounded bg-amber-100 dark:bg-amber-900/40 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800 dark:text-amber-300"
+                >
+                    <TriangleAlert class="w-3 h-3" />
+                    Bloco grande · {{ words }} palavras
+                </span>
+                <span
+                    v-if="segment.completed_count"
+                    class="inline-flex items-center gap-1 text-[10px] text-gray-500 dark:text-gray-400"
+                    :title="`${segment.completed_count} aluno(s) já concluíram este bloco`"
+                >
+                    <Users class="w-3 h-3" />
+                    {{ segment.completed_count }}
                 </span>
             </div>
             <button

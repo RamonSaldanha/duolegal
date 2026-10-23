@@ -18,8 +18,9 @@ class BlockBoundaryService
         'paragrafo' => '/^(§\s*\d+[ºo°]?\s*\.?\s*[-–]?\s*)/ium',
         // Parágrafo único
         'paragrafo_unico' => '/^(Parágrafo\s+único\s*\.?\s*[-–]?\s*)/ium',
-        // I -, II -, III -, IV –, XIV -
-        'inciso'    => '/^([IVXLCDM]+\s*[-–]\s*)/um',
+        // I -, II -, IV –, VIII-B -, e também sem hífen quando segue texto minúsculo
+        // ("IX todos os julgamentos...", como o Planalto grafa parte do Art. 93 da CF)
+        'inciso'    => '/^([IVXLCDM]+(?:-[A-Z])?\s*[-–]\s*|[IVXLCDM]+(?:-[A-Z])?\s+(?=[a-záàâãéêíóôõúç]))/um',
         // a), b), c)
         'alinea'    => '/^([a-z]\)\s*)/um',
         // 1), 2), 3) (itens numéricos)

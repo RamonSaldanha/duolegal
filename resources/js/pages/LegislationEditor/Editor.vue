@@ -10,12 +10,26 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Download, FileText } from 'lucide-vue-next';
 import type { Legislation, LegislationSegment } from '@/types/legislation';
-import { ref, computed } from 'vue';
+import { BIG_BLOCK_WORDS, wordCount } from '@/types/legislation';
+import { ref, computed, watch } from 'vue';
 
 const props = defineProps<{
     legislation: Legislation;
     segments: LegislationSegment[];
 }>();
+
+// Quantos blocos cada requisição da criação automática cria
+const AUTO_CREATE_BATCH = 50;
+
+// Cópia local dos blocos: a criação em lote acrescenta aqui sem recarregar a página.
+// Ações via Inertia (remover, lacunas, publicar) trazem a lista nova pelas props.
+const segments = ref<LegislationSegment[]>([...props.segments]);
+watch(
+    () => props.segments,
+    (value) => {
+        segments.value = [...value];
+    },
+);
 
 const publishing = ref(false);
 const autoCreating = ref(false);
@@ -24,6 +38,20 @@ const autoCreateProgress = ref<{ current: number; total: number } | null>(null);
 const activeSegmentUuid = ref<string | null>(null);
 
 const hasText = computed(() => (props.legislation.raw_text ?? '').length > 0);
+
+// Blocos grandes, na ordem do texto, para o atalho "próximo bloco grande" do topo
+const bigSegments = computed(() =>
+    segments.value
+        .filter((s) => wordCount(s.original_text) >= BIG_BLOCK_WORDS)
+        .sort((a, b) => a.char_start - b.char_start),
+);
+const bigBlockIndex = ref<number | null>(null);
+
+function nextBigBlock() {
+    if (bigSegments.value.length === 0) return;
+    bigBlockIndex.value = bigBlockIndex.value === null ? 0 : (bigBlockIndex.value + 1) % bigSegments.value.length;
+    selectSegment(bigSegments.value[bigBlockIndex.value].uuid);
+}
 
 const importForm = useForm({
     source_url: props.legislation.source_url ?? '',
@@ -62,28 +90,21 @@ async function autoCreate() {
 
         autoCreateProgress.value = { current: 0, total };
 
-        // 2. Cria blocos um a um via Inertia
-        for (let i = 0; i < boundaries.length; i++) {
+        // 2. Cria os blocos em lotes (JSON), acrescentando só os novos na lista local
+        for (let i = 0; i < boundaries.length; i += AUTO_CREATE_BATCH) {
             if (stopAutoCreateFlag.value) break;
 
-            await new Promise<void>((resolve) => {
-                router.post(
-                    route('editor.create-block', props.legislation.uuid),
-                    { char_start: boundaries[i].char_start, char_end: boundaries[i].char_end },
-                    {
-                        preserveScroll: true,
-                        onFinish: () => {
-                            autoCreateProgress.value = { current: i + 1, total };
-                            resolve();
-                        },
-                    },
-                );
-            });
+            const batch = boundaries
+                .slice(i, i + AUTO_CREATE_BATCH)
+                .map((b: { char_start: number; char_end: number }) => ({ char_start: b.char_start, char_end: b.char_end }));
 
-            // Delay entre requests para efeito visual
-            if (i < boundaries.length - 1 && !stopAutoCreateFlag.value) {
-                await new Promise((r) => setTimeout(r, 300));
-            }
+            const created = await axios.post<{ segments: LegislationSegment[] }>(
+                route('editor.store-blocks', props.legislation.uuid),
+                { boundaries: batch },
+            );
+
+            segments.value.push(...created.data.segments);
+            autoCreateProgress.value = { current: Math.min(i + batch.length, total), total };
         }
     } catch (error) {
         console.error('Auto-create failed:', error);
@@ -98,6 +119,18 @@ function stopAutoCreate() {
 }
 
 function removeBlock(segmentUuid: string) {
+    // Remover apaga o progresso de quem já concluiu o bloco: pede confirmação nesse caso
+    const completed = segments.value.find((s) => s.uuid === segmentUuid)?.completed_count ?? 0;
+    if (
+        completed > 0 &&
+        !window.confirm(
+            `${completed} aluno(s) já concluíram este bloco. Remover apaga esse progresso, e os blocos que forem criados no lugar ` +
+                'aparecem como pendentes para eles, travando as fases seguintes até refazerem. Remover mesmo assim?',
+        )
+    ) {
+        return;
+    }
+
     router.delete(
         route('editor.remove-block', segmentUuid),
         { preserveScroll: true },
@@ -143,6 +176,9 @@ function togglePublish() {
             :auto-creating="autoCreating"
             :has-text="hasText"
             :auto-create-progress="autoCreateProgress"
+            :big-block-count="bigSegments.length"
+            :big-block-index="bigBlockIndex"
+            @next-big-block="nextBigBlock"
             @auto-create="autoCreate"
             @stop-auto-create="stopAutoCreate"
             @toggle-publish="togglePublish"

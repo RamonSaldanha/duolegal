@@ -181,7 +181,7 @@ watch(searchQuery, () => {
         <div ref="scrollContainer" class="flex-1 overflow-y-auto p-6">
             <div class="max-w-3xl mx-auto">
                 <div class="text-[13px] leading-relaxed">
-                    <template v-for="(token, ti) in tokens" :key="ti">
+                    <template v-for="token in tokens" :key="token.segment ? token.segment.uuid : 't' + token.charStart">
                         <!-- Texto sem bloco -->
                         <span
                             v-if="token.type === 'text'"

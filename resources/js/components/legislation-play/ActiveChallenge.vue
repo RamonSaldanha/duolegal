@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { ActiveSegmentData, SegmentAnswer } from '@/types/legislation-play';
+import { requiredCorrect } from '@/types/legislation-play';
 import { ref, computed } from 'vue';
 import { RefreshCw } from 'lucide-vue-next';
 import GameButton from '@/components/ui/GameButton.vue';
@@ -253,11 +254,11 @@ defineExpose({ reset });
             <div v-if="segment.total_gaps > 0" class="flex items-center justify-center gap-3">
                 <div
                     class="w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold"
-                    :class="verificationResults.filter(r => r.is_correct).length >= Math.ceil(segment.total_gaps * 0.7)
+                    :class="verificationResults.filter(r => r.is_correct).length >= requiredCorrect(segment.total_gaps)
                         ? 'bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400'
                         : 'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400'"
                 >
-                    {{ verificationResults.filter(r => r.is_correct).length >= Math.ceil(segment.total_gaps * 0.7) ? '✓' : '✗' }}
+                    {{ verificationResults.filter(r => r.is_correct).length >= requiredCorrect(segment.total_gaps) ? '✓' : '✗' }}
                 </div>
                 <div class="text-base font-semibold text-gray-700 dark:text-gray-300">
                     {{ verificationResults.filter(r => r.is_correct).length }} de {{ segment.total_gaps }} corretas

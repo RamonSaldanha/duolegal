@@ -330,7 +330,7 @@ class PlayController extends Controller
 
         $correctCount = (int) $validated['correct_count'];
         $totalCount = (int) $validated['total_count'];
-        $percentage = ($totalCount > 0) ? (($correctCount / $totalCount) * 100) : 100;
+        $passed = UserSegmentProgress::passed($correctCount, $totalCount);
 
         $previousProgress = UserSegmentProgress::where('user_id', $user->id)
             ->where('legislation_segment_id', $segment->id)
@@ -338,7 +338,7 @@ class PlayController extends Controller
         $wasAlreadyCompleted = $previousProgress && $previousProgress->is_completed;
 
         $lostLife = false;
-        if ($percentage < 70) {
+        if (! $passed) {
             if ($user->lives > 0 && ! $user->hasInfiniteLives()) {
                 $user->decrementLife();
                 $lostLife = true;
@@ -355,7 +355,7 @@ class PlayController extends Controller
 
         $xpGained = 0;
         $levelUp = null;
-        if ($percentage >= 70 && ! $wasAlreadyCompleted) {
+        if ($passed && ! $wasAlreadyCompleted) {
             $gapsCount = $segment->lacunas()->where('is_correct', true)->count();
             $xpGained = max(10, $gapsCount * 5);
             $user->addXp($xpGained, 'legislation', $segment->id, $segment->legislation_id);
@@ -391,6 +391,7 @@ class PlayController extends Controller
 
         return response()->json([
             'success' => true,
+            'passed' => $passed,
             'progress' => [
                 'is_completed' => $progress->is_completed,
                 'best_score' => $progress->best_score,
@@ -570,7 +571,7 @@ class PlayController extends Controller
 
     private function formatSegmentForChallenge(LegislationSegment $segment): array
     {
-        $lacunas = $segment->lacunas()->orderBy('gap_order')->get();
+        $lacunas = $segment->activeLacunas()->orderBy('gap_order')->get();
         $correctLacunas = $lacunas->where('is_correct', true)->sortBy('gap_order');
         $distractors = $lacunas->where('is_correct', false);
 

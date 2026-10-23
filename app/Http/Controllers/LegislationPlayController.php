@@ -551,7 +551,7 @@ class LegislationPlayController extends Controller
 
         $correctCount = (int) $validated['correct_count'];
         $totalCount = (int) $validated['total_count'];
-        $percentage = ($totalCount > 0) ? (($correctCount / $totalCount) * 100) : 100;
+        $passed = UserSegmentProgress::passed($correctCount, $totalCount);
 
         // Verifica se já havia completado antes
         $previousProgress = UserSegmentProgress::where('user_id', $user->id)
@@ -559,9 +559,9 @@ class LegislationPlayController extends Controller
             ->first();
         $wasAlreadyCompleted = $previousProgress && $previousProgress->is_completed;
 
-        // Perde vida se < 70%
+        // Perde vida se não passou (ver UserSegmentProgress::requiredCorrect)
         $lostLife = false;
-        if ($percentage < 70) {
+        if (! $passed) {
             if ($user->lives > 0 && ! $user->hasInfiniteLives()) {
                 $user->decrementLife();
                 $lostLife = true;
@@ -580,7 +580,7 @@ class LegislationPlayController extends Controller
         // XP na primeira conclusão
         $xpGained = 0;
         $levelUp = null;
-        if ($percentage >= 70 && ! $wasAlreadyCompleted) {
+        if ($passed && ! $wasAlreadyCompleted) {
             $gapsCount = $segment->lacunas()->where('is_correct', true)->count();
             $xpGained = max(10, $gapsCount * 5);
             $user->addXp($xpGained, 'legislation', $segment->id, $segment->legislation_id);
@@ -615,6 +615,7 @@ class LegislationPlayController extends Controller
 
         return response()->json([
             'success' => true,
+            'passed' => $passed,
             'progress' => [
                 'is_completed' => $progress->is_completed,
                 'best_score' => $progress->best_score,
@@ -663,7 +664,7 @@ class LegislationPlayController extends Controller
      */
     private function formatSegmentForChallenge(LegislationSegment $segment): array
     {
-        $lacunas = $segment->lacunas()->orderBy('gap_order')->get();
+        $lacunas = $segment->activeLacunas()->orderBy('gap_order')->get();
         $correctLacunas = $lacunas->where('is_correct', true)->sortBy('gap_order');
         $distractors = $lacunas->where('is_correct', false);
 

@@ -53,11 +53,34 @@ class UserSegmentProgress extends Model
     }
 
     /**
+     * Acertos necessários para passar: o aluno pode errar no máximo 1 lacuna
+     * (bloco de 1 lacuna exige o acerto; 2 → 1; 3 → 2; 4 → 3; 5 → 4). Nunca exige
+     * mais que os 70% da regra antiga, para blocos com muitas lacunas não ficarem mais difíceis.
+     */
+    public static function requiredCorrect(int $totalCount): int
+    {
+        if ($totalCount <= 0) {
+            return 0;
+        }
+        if ($totalCount === 1) {
+            return 1;
+        }
+
+        return min($totalCount - 1, (int) ceil($totalCount * 0.7));
+    }
+
+    public static function passed(int $correctCount, int $totalCount): bool
+    {
+        return $correctCount >= self::requiredCorrect($totalCount);
+    }
+
+    /**
      * Atualiza o progresso do usuário em um segmento.
      */
     public static function updateProgress(int $userId, int $segmentId, int $correctCount, int $totalCount, array $answersData): self
     {
         $percentage = $totalCount > 0 ? round(($correctCount / $totalCount) * 100, 2) : 100;
+        $passed = self::passed($correctCount, $totalCount);
 
         $progress = self::firstOrNew([
             'user_id' => $userId,
@@ -74,7 +97,7 @@ class UserSegmentProgress extends Model
             $progress->attempts += 1;
         }
 
-        if ($percentage >= 70) {
+        if ($passed) {
             $progress->correct_answers += 1;
         } else {
             $progress->wrong_answers += 1;
@@ -84,7 +107,7 @@ class UserSegmentProgress extends Model
             $progress->best_score = $percentage;
         }
 
-        if ($percentage >= 70 && ! $progress->is_completed) {
+        if ($passed && ! $progress->is_completed) {
             $progress->is_completed = true;
             $progress->completed_at = now();
         }

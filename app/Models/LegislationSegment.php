@@ -55,4 +55,12 @@ class LegislationSegment extends Model
     {
         return $this->hasMany(SegmentLacuna::class);
     }
+
+    /**
+     * Lacunas visíveis no jogo. As ocultas (is_active = false) continuam guardadas.
+     */
+    public function activeLacunas(): HasMany
+    {
+        return $this->hasMany(SegmentLacuna::class)->where('is_active', true);
+    }
 }
