@@ -357,7 +357,7 @@ class PlayController extends Controller
         $levelUp = null;
         if ($passed && ! $wasAlreadyCompleted) {
             $gapsCount = $segment->lacunas()->where('is_correct', true)->count();
-            $xpGained = max(10, $gapsCount * 5);
+            $xpGained = $user->boostedXp(max(10, $gapsCount * 5));
             $user->addXp($xpGained, 'legislation', $segment->id, $segment->legislation_id);
 
             // Detecta subida de nível na disciplina (após creditar o XP).

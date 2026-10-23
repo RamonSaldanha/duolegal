@@ -8,6 +8,7 @@ import DeleteUser from '@/components/DeleteUser.vue';
 import HeadingSmall from '@/components/HeadingSmall.vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -17,9 +18,10 @@ import { type BreadcrumbItem, type SharedData, type User } from '@/types';
 interface Props {
     mustVerifyEmail: boolean;
     status?: string;
+    receivesEmails: boolean;
 }
 
-defineProps<Props>();
+const props = defineProps<Props>();
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -40,6 +42,13 @@ const submit = () => {
     form.patch(route('profile.update'), {
         preserveScroll: true,
     });
+};
+
+const emailsForm = useForm({ receives_emails: props.receivesEmails });
+
+const toggleEmails = (checked: boolean) => {
+    emailsForm.receives_emails = checked;
+    emailsForm.patch(route('emails.preferences'), { preserveScroll: true });
 };
 </script>
 
@@ -117,6 +126,24 @@ const submit = () => {
                         </TransitionRoot>
                     </div>
                 </form>
+            </div>
+
+            <div class="flex flex-col space-y-4">
+                <HeadingSmall title="Lembretes por e-mail" description="Quando você some do jogo, a gente manda um lembrete com presente." />
+
+                <label for="receives_emails" class="flex cursor-pointer items-start gap-3">
+                    <Checkbox
+                        id="receives_emails"
+                        class="mt-0.5"
+                        :checked="emailsForm.receives_emails"
+                        :disabled="emailsForm.processing"
+                        @update:checked="toggleEmails"
+                    />
+                    <span class="text-sm">
+                        <span class="font-medium">Quero receber lembretes</span>
+                        <span class="block text-muted-foreground">Desmarque para não receber mais. Dá para voltar quando quiser.</span>
+                    </span>
+                </label>
             </div>
 
             <DeleteUser />

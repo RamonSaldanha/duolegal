@@ -18,6 +18,8 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
         ]);
+        // "Cancelar inscrição" do Gmail/Outlook chega sem token CSRF; a rota é protegida por assinatura.
+        $middleware->validateCsrfTokens(except: ['emails/sair/*']);
         $middleware->alias([
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
             'stripe' => \App\Http\Middleware\StripeWebhookMiddleware::class,

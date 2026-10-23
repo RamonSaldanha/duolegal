@@ -3,6 +3,8 @@
 // routes\web.php
 use App\Http\Controllers\ChallengeController;
 use App\Http\Controllers\DisciplineProgressController;
+use App\Http\Controllers\EmailPreferenceController;
+use App\Http\Controllers\GiftController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\PublicController;
 use App\Http\Controllers\RankingController;
@@ -105,6 +107,20 @@ Route::middleware(['auth'])->group(function () {
 
     // Rota de progresso por disciplina
     Route::get('/disciplines', [DisciplineProgressController::class, 'index'])->name('disciplines.index');
+});
+
+// === LEMBRETES POR E-MAIL (abrem sem login, pelo link do e-mail) ===
+// Presente do lembrete: o uuid do lembrete é a chave.
+Route::get('/presente/{reengagementEmail:uuid}', [GiftController::class, 'show'])->name('gift.show');
+Route::post('/presente/{reengagementEmail:uuid}', [GiftController::class, 'claim'])
+    ->middleware('throttle:10,1')
+    ->name('gift.claim');
+
+// Descadastro por link assinado. O POST aceita o "cancelar inscrição" do Gmail (sem CSRF, ver bootstrap/app.php).
+Route::middleware('signed:relative')->group(function () {
+    Route::get('/emails/sair/{user}', [EmailPreferenceController::class, 'show'])->name('emails.unsubscribe');
+    Route::post('/emails/sair/{user}', [EmailPreferenceController::class, 'unsubscribe'])->name('emails.unsubscribe.confirm');
+    Route::post('/emails/voltar/{user}', [EmailPreferenceController::class, 'resubscribe'])->name('emails.resubscribe');
 });
 
 // Rota para o webhook do Stripe - sem verificação CSRF

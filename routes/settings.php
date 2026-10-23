@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\EmailPreferenceController;
 use App\Http\Controllers\Settings\AvatarController;
 use App\Http\Controllers\Settings\PasswordController;
 use App\Http\Controllers\Settings\ProfileController;
@@ -12,6 +13,8 @@ Route::middleware('auth')->group(function () {
     Route::get('settings/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('settings/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('settings/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    Route::patch('settings/emails', [EmailPreferenceController::class, 'update'])->name('emails.preferences');
 
     Route::get('settings/avatar', [AvatarController::class, 'edit'])->name('avatar.edit');
     Route::put('settings/avatar', [AvatarController::class, 'update'])->name('avatar.update');

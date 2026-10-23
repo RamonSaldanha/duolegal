@@ -507,7 +507,7 @@ class ChallengeController extends Controller
         $wasAlreadyCompleted = $progress->attempts > 1 && $progress->is_completed;
         $xpGained = 0;
         if ($percentage >= 70 && ! $wasAlreadyCompleted) {
-            $xpGained = \App\Models\User::calculateXpGain($article->difficulty_level);
+            $xpGained = $user->boostedXp(\App\Models\User::calculateXpGain($article->difficulty_level));
             $user->addXp($xpGained, 'challenge', $article->id);
         }
 

@@ -2,11 +2,15 @@
 
 namespace App\Models;
 
+use App\Services\ReengagementService;
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Laravel\Cashier\Billable;
 use Laravel\Sanctum\HasApiTokens;
 
@@ -48,6 +52,9 @@ class User extends Authenticatable
         'onboarding_answers',
         'onboarding_completed_at',
         'welcome_offer_expires_at',
+        // Lembretes por e-mail: também fora do JSON cru, pelo mesmo motivo.
+        'email_opt_out_at',
+        'xp_boost_until',
     ];
 
     /**
@@ -66,6 +73,8 @@ class User extends Authenticatable
         'onboarding_answers' => 'array',
         'onboarding_completed_at' => 'datetime',
         'welcome_offer_expires_at' => 'datetime',
+        'email_opt_out_at' => 'datetime',
+        'xp_boost_until' => 'datetime',
     ];
 
     /**
@@ -253,6 +262,61 @@ class User extends Authenticatable
             'source_id' => $sourceId,
             'legislation_id' => $legislationId,
         ]);
+    }
+
+    /** O boost de XP que vem de presente para assinante (ver ReengagementService) ainda vale. */
+    public function hasXpBoost(): bool
+    {
+        return $this->xp_boost_until !== null && $this->xp_boost_until->isFuture();
+    }
+
+    /**
+     * O XP de um exercício já com o boost, se houver. Os pontos onde o jogo dá
+     * XP passam por aqui antes do addXp, e a resposta mostra o valor final.
+     */
+    public function boostedXp(int $amount): int
+    {
+        return $this->hasXpBoost()
+            ? (int) round($amount * ReengagementService::BOOST_MULTIPLIER)
+            : $amount;
+    }
+
+    public function receivesEmails(): bool
+    {
+        return $this->email_opt_out_at === null;
+    }
+
+    public function reengagementEmails(): HasMany
+    {
+        return $this->hasMany(ReengagementEmail::class);
+    }
+
+    /**
+     * Acrescenta a última vez que a pessoa jogou em cada sistema: XP ganho, bloco
+     * tentado no jogo novo e artigo tentado no legado. Leia com lastPlayedAt().
+     */
+    public function scopeWithLastPlayed(Builder $query): Builder
+    {
+        if ($query->getQuery()->columns === null) {
+            $query->select('users.*');
+        }
+
+        return $query
+            ->selectSub(DB::table('xp_transactions')->selectRaw('MAX(created_at)')->whereColumn('user_id', 'users.id'), 'last_xp_at')
+            ->selectSub(DB::table('user_segment_progress')->selectRaw('MAX(updated_at)')->whereColumn('user_id', 'users.id'), 'last_segment_at')
+            ->selectSub(DB::table('user_progress')->selectRaw('MAX(updated_at)')->whereColumn('user_id', 'users.id'), 'last_legacy_at');
+    }
+
+    /** Última jogada em qualquer sistema, ou nulo para quem nunca jogou. Pede scopeWithLastPlayed. */
+    public function lastPlayedAt(): ?Carbon
+    {
+        $dates = array_filter([
+            $this->getAttribute('last_xp_at'),
+            $this->getAttribute('last_segment_at'),
+            $this->getAttribute('last_legacy_at'),
+        ]);
+
+        return $dates ? Carbon::parse(max($dates)) : null;
     }
 
     public static function calculateXpGain(int $difficultyLevel): int

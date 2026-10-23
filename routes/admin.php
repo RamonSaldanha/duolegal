@@ -40,6 +40,12 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     // Rota para exportação de contatos para Brevo
     Route::get('users/export-brevo', [UserController::class, 'exportBrevoContacts'])->name('admin.users.export-brevo');
 
+    // Ficha completa de um usuário
+    Route::get('users/{user}', [UserController::class, 'show'])->whereNumber('user')->name('admin.users.show');
+
+    // Prévia do lembrete por e-mail (?gift=xp_boost, ?sequence=2)
+    Route::get('emails/lembrete', [UserController::class, 'previewEmail'])->name('admin.emails.preview');
+
     // Rota para adicionar vidas a um usuário
     Route::post('users/{user}/add-lives', [UserController::class, 'addLives'])->name('admin.users.add-lives');
 

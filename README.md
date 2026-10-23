@@ -22,6 +22,22 @@ php artisan optimize
 - `php artisan optimize` refaz o cache de config, rotas e views. Rode a cada deploy, senão o servidor pode seguir com a config antiga (como a lista de peças de `config/avatar.php`).
 - Se a versão muda a API do app (`routes/api.php`, `UserResource`), publique a web **antes** do app.
 
+## Lembretes por e-mail
+
+Quem para de jogar recebe um e-mail com presente: **5 vidas** para quem joga de graça, **50% a mais de XP por 3 dias** para assinante. O intervalo cresce de 15 em 15 dias (1º lembrete com 15 dias parado, o 2º 30 dias depois, o 3º 45 dias depois...) e voltar a jogar zera a sequência. Cada execução manda no máximo um e-mail por pessoa, então quem nunca recebeu nada ganha só o 1º. A regra fica em `app/Services/ReengagementService.php`.
+
+O comando `emails:reengage` roda todo dia às 10h (horário de Brasília) pelo agendador do Laravel. Para o agendador funcionar, crie no CloudPanel (Sites → o site → Cron Jobs) um cron **a cada minuto** com:
+
+```bash
+cd ~/htdocs/memorizedireito.com && php artisan schedule:run >> /dev/null 2>&1
+```
+
+- Antes de ligar, simule: `php artisan emails:reengage --dry-run` mostra quantas pessoas receberiam, sem enviar.
+- Cada execução manda no máximo 150 e-mails (`--limit=150`); o resto fica para os dias seguintes, de quem jogou mais recentemente para quem sumiu há mais tempo.
+- O `APP_URL` do `.env` de produção precisa ser `https://memorizedireito.com`: os links e as imagens do e-mail são montados com ele.
+- A prévia do e-mail fica em `/admin/emails/lembrete` (`?gift=xp_boost` e `?sequence=2` trocam a versão). As imagens do presente são `public/img/email/gift-*.png`, geradas do componente `GiftBox.vue`.
+- A pessoa para de receber pelo link do rodapé (ou pelo "cancelar inscrição" do Gmail) e também nas configurações do perfil.
+
 ## Avatares
 
 O avatar não tem imagem: é um SVG montado no navegador a partir de um JSON salvo em `users.avatar_config` (ids de peça + cores hex). O código fica em `resources/js/lib/avatar/`.
