@@ -58,6 +58,9 @@ class LacunaAutoSelectionService
 
         $selected = $this->pickBest($candidates, $numGaps);
 
+        // pickBest devolve por pontuação; gap_order precisa seguir a ordem do texto
+        usort($selected, fn ($a, $b) => $a['position'] - $b['position']);
+
         $lacunas = [];
         foreach ($selected as $i => $sel) {
             $lacunas[] = ['word' => $sel['word'], 'position' => $sel['position'], 'gap_order' => $i + 1];

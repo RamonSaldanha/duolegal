@@ -572,7 +572,9 @@ class PlayController extends Controller
     private function formatSegmentForChallenge(LegislationSegment $segment): array
     {
         $lacunas = $segment->activeLacunas()->orderBy('gap_order')->get();
-        $correctLacunas = $lacunas->where('is_correct', true)->sortBy('gap_order');
+        // O jogo preenche as lacunas na ordem de gap_order: numera sempre na ordem do texto,
+        // mesmo que o banco tenha números fora de ordem ou com buracos
+        $correctLacunas = $lacunas->where('is_correct', true)->sortBy('word_position')->values();
         $distractors = $lacunas->where('is_correct', false);
 
         $allOptions = $correctLacunas->pluck('word')
@@ -587,8 +589,8 @@ class PlayController extends Controller
             'segment_type' => $segment->segment_type,
             'article_reference' => $segment->article_reference,
             'structural_marker' => $segment->structural_marker,
-            'lacunas' => $correctLacunas->map(fn ($l) => [
-                'gap_order' => $l->gap_order,
+            'lacunas' => $correctLacunas->map(fn ($l, $i) => [
+                'gap_order' => $i + 1,
                 'word' => $l->word,
                 'word_position' => $l->word_position,
             ])->values()->toArray(),

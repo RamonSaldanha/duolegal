@@ -220,3 +220,34 @@ test('bloco grande com muitas lacunas pode ficar com mais de 2', function () {
     expect(max($kept))->toBeGreaterThan(2)
         ->and(min($kept))->toBeGreaterThanOrEqual(2);
 });
+
+test('lacunas de bloco novo são numeradas na ordem do texto', function () {
+    // "direito" pontua mais que "lei", mas vem depois: a lacuna 1 tem de ser "lei"
+    $text = 'IX todos os julgamentos dos órgãos do Poder Judiciário serão públicos, podendo a lei limitar a presença, em casos nos quais a preservação do direito à intimidade não prejudique o interesse público à informação;';
+    $result = app(\App\Services\LacunaAutoSelectionService::class)->selectLacunas($text, ['direito' => 80, 'lei' => 60], 'IX');
+
+    $positions = array_column($result['lacunas'], 'position');
+    $sorted = $positions;
+    sort($sorted);
+
+    expect($positions)->toBe($sorted)
+        ->and(array_column($result['lacunas'], 'gap_order'))->toBe(range(1, count($positions)));
+});
+
+test('o jogo numera as lacunas na ordem do texto mesmo com gap_order fora de ordem no banco', function () {
+    $segment = simplificationSegment($this->legislation, 'Art. 20. A lei regulará o direito de petição e a forma de seu exercício perante os órgãos públicos.', 'Art. 20.', [3, 6], [], 500);
+    // Inverte a numeração gravada, como nos blocos criados com o bug
+    $segment->lacunas()->where('word_position', 3)->update(['gap_order' => 2]);
+    $segment->lacunas()->where('word_position', 6)->update(['gap_order' => 1]);
+
+    $format = function (LegislationSegment $segment) {
+        return $this->formatSegmentForChallenge($segment);
+    };
+
+    foreach ([\App\Http\Controllers\LegislationPlayController::class, \App\Http\Controllers\Api\V1\PlayController::class] as $controller) {
+        $lacunas = $format->call(app($controller), $segment)['lacunas'];
+
+        expect(array_column($lacunas, 'word'))->toBe(['lei', 'direito'])
+            ->and(array_column($lacunas, 'gap_order'))->toBe([1, 2]);
+    }
+});
