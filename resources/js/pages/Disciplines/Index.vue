@@ -2,7 +2,7 @@
 import AppHeaderLayout from '@/layouts/app/AppHeaderLayout.vue';
 import { Head } from '@inertiajs/vue3';
 import { BookOpen, TrendingUp } from 'lucide-vue-next';
-import DisciplineBadge from '@/components/DisciplineBadge.vue';
+import StarBadge from '@/components/StarBadge.vue';
 import { computed } from 'vue';
 
 interface DisciplineProgress {
@@ -18,6 +18,9 @@ interface DisciplineProgress {
     current_xp_in_level: number;
     xp_for_next_level: number;
     progress_percent: number;
+    stars: number;
+    next_star_xp: number | null;
+    badge_url: string | null;
 }
 
 interface LevelInfo {
@@ -42,12 +45,16 @@ const breadcrumbs = [
 ];
 
 const activeDisciplines = computed(() =>
-    props.disciplineProgress.filter(d => d.total_xp > 0)
+    props.disciplineProgress.filter(d => d.stars > 0)
 );
 
 const inactiveDisciplines = computed(() =>
-    props.disciplineProgress.filter(d => d.total_xp === 0)
+    props.disciplineProgress.filter(d => d.stars === 0)
 );
+
+// Mesma medida do texto ao lado: XP total em relação à próxima estrela.
+const nextStarPercent = (discipline: DisciplineProgress) =>
+    discipline.next_star_xp === null ? 100 : Math.min(100, (discipline.total_xp / discipline.next_star_xp) * 100);
 </script>
 
 <template>
@@ -111,10 +118,12 @@ const inactiveDisciplines = computed(() =>
                         :key="discipline.id"
                         class="flex flex-col items-center rounded-2xl border border-gray-200 bg-white p-4 transition-all dark:border-transparent dark:bg-gray-900"
                     >
-                        <DisciplineBadge
+                        <StarBadge
+                            :badge-url="discipline.badge_url"
+                            :name="discipline.name"
+                            :stars="discipline.stars"
                             :icon="discipline.icon"
                             :color="discipline.color"
-                            :level="discipline.level"
                         />
 
                         <p class="mt-3 text-center text-base font-bold leading-tight text-gray-900 dark:text-white">
@@ -126,13 +135,16 @@ const inactiveDisciplines = computed(() =>
                             <div class="h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
                                 <div
                                     class="h-full rounded-full transition-all duration-700 ease-out"
-                                    :style="{ width: Math.max(discipline.progress_percent, 3) + '%', backgroundColor: discipline.color }"
+                                    :style="{ width: Math.max(nextStarPercent(discipline), 3) + '%', backgroundColor: discipline.color }"
                                 ></div>
                             </div>
                         </div>
 
                         <p class="mt-2 text-xs font-medium text-gray-500 dark:text-gray-400">
-                            {{ discipline.current_xp_in_level }} / {{ discipline.xp_for_next_level }} XP
+                            <template v-if="discipline.next_star_xp !== null">
+                                {{ discipline.total_xp.toLocaleString() }} / {{ discipline.next_star_xp.toLocaleString() }} XP
+                            </template>
+                            <template v-else>{{ discipline.total_xp.toLocaleString() }} XP</template>
                         </p>
                     </div>
                 </div>
@@ -148,11 +160,12 @@ const inactiveDisciplines = computed(() =>
                         :key="discipline.id"
                         class="flex flex-col items-center rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-4 opacity-60 dark:border-transparent dark:bg-gray-900"
                     >
-                        <DisciplineBadge
+                        <StarBadge
+                            :badge-url="discipline.badge_url"
+                            :name="discipline.name"
+                            :stars="0"
                             :icon="discipline.icon"
                             :color="discipline.color"
-                            :level="0"
-                            :locked="true"
                         />
 
                         <p class="mt-3 text-center text-base font-medium leading-tight text-gray-400 dark:text-gray-500">
@@ -164,7 +177,7 @@ const inactiveDisciplines = computed(() =>
                         </div>
 
                         <p class="mt-2 text-xs font-medium text-gray-300 dark:text-gray-600">
-                            0 / {{ discipline.xp_for_next_level }} XP
+                            Conclua um bloco para ganhar a 1ª estrela
                         </p>
                     </div>
                 </div>

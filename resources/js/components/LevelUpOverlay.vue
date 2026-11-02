@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import DisciplineBadge from '@/components/DisciplineBadge.vue';
+import StarBadge from '@/components/StarBadge.vue';
 import type { DisciplineLevelUp } from '@/types/legislation-play';
 import { watch } from 'vue';
 
@@ -38,20 +38,22 @@ watch(
             :style="{ borderColor: levelUp.color }"
         >
             <p class="level-up-text text-center text-2xl font-bold leading-snug text-white">
-                Você subiu de nível!
+                {{ levelUp.stars === 1 ? 'Você ganhou a primeira estrela!' : 'Você ganhou uma estrela!' }}
             </p>
 
             <div class="mt-5 mb-4 flex items-center justify-center">
-                <DisciplineBadge
+                <StarBadge
+                    :badge-url="levelUp.badge_url"
+                    :name="levelUp.discipline_name"
+                    :stars="levelUp.stars"
                     :icon="levelUp.icon"
                     :color="levelUp.color"
-                    :level="levelUp.new_level"
                     size="lg"
                 />
             </div>
 
             <p class="level-up-text text-center text-lg font-bold leading-snug text-white">
-                Especialista nível {{ levelUp.new_level }} em {{ levelUp.discipline_name }}
+                {{ levelUp.stars }} {{ levelUp.stars === 1 ? 'estrela' : 'estrelas' }} em {{ levelUp.discipline_name }}
             </p>
         </div>
     </div>

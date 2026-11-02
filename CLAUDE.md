@@ -86,6 +86,17 @@ const PHASES_PER_JOURNEY = 24;        // UI pagination — phases per journey
 
 **Legislation / LegislationSegment:** Newer model for full legislation text with "lacunas" (gaps). Editor and player components exist in `components/legislation-editor/` and `components/legislation-play/` but system is still in development.
 
+### Conquistas: estrelas por disciplina
+
+`DisciplineStarService` calcula de 0 a 5 estrelas a partir do XP em cada disciplina. O "Nível Global" continua em `XpService::calculateLevel`, sem limite.
+
+- **Metas:** ficam fixas em `disciplines.star_thresholds` (`72,52 × √XP potencial`; 2, 3 e 4 estrelas valem 3%, 15% e 45% dessa meta). Cadastrar uma lei não as altera.
+- **Estrela não se perde:** `user_discipline_stars` guarda o maior valor conquistado, e a tela mostra sempre o maior.
+- **XP antigo:** a origem `migration` foi distribuída por área em `discipline_xp_credits`. O ranking e o XP do usuário não mudam.
+- **App já instalado:** a API mantém `level`, `current_xp_in_level`, `xp_for_next_level` e `progress_percent`, porque builds antigas desenham o badge antigo com eles. Os campos novos (`stars`, `next_star_xp`, `badge_url`) são só acréscimos; não remova nem mude o formato dos antigos.
+- **Conversão:** `php artisan disciplines:convert-to-stars` simula; `--force` grava; `--recalculate` recalcula metas fixadas sem tirar estrelas.
+- **Artes:** `public/img/badges/{badge_key}-{estrelas}.png` (0 = bloqueado), geradas do Ateliê de Badges (artefato no claude.ai). Disciplina sem `badge_key` usa o `DisciplineBadge` antigo.
+
 ### Shared Data via Middleware
 
 `HandleInertiaRequests.php` injects into every Vue page via `usePage().props`:

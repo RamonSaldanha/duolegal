@@ -64,6 +64,8 @@ export interface DisciplineLevelUp {
     color: string;
     old_level: number;
     new_level: number;
+    stars: number;
+    badge_url: string | null;
 }
 
 /**

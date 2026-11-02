@@ -15,6 +15,12 @@ class Discipline extends Model
         'description',
         'icon',
         'color',
+        'badge_key',
+        'star_thresholds',
+    ];
+
+    protected $casts = [
+        'star_thresholds' => 'array',
     ];
 
     protected static function boot()
