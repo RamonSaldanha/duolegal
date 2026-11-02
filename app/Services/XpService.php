@@ -23,12 +23,12 @@ class XpService
     {
         $query = DB::table('xp_transactions')
             ->join('users', 'users.id', '=', 'xp_transactions.user_id')
-            ->select('users.id', 'users.name', DB::raw('SUM(xp_transactions.amount) as total_xp'));
+            ->select('users.id', 'users.uuid', 'users.name', DB::raw('SUM(xp_transactions.amount) as total_xp'));
 
         $this->applyPeriodFilter($query, $period);
 
         return $query
-            ->groupBy('users.id', 'users.name')
+            ->groupBy('users.id', 'users.uuid', 'users.name')
             ->orderByDesc('total_xp')
             ->limit($limit)
             ->get();

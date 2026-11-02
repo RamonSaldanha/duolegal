@@ -111,6 +111,15 @@ class DisciplineStarService
         return $progress->values();
     }
 
+    /** Disciplinas com estrela: mais estrelas primeiro, depois mais XP, como na página Conquistas. */
+    public function earnedFor(User $user): Collection
+    {
+        return $this->progressFor($user)
+            ->filter(fn (array $progress) => $progress['stars'] > 0)
+            ->sortBy([['stars', 'desc'], ['total_xp', 'desc']])
+            ->values();
+    }
+
     /**
      * Registra as estrelas ganhas com o XP recém-creditado (já somado ao total) e devolve os
      * dados da celebração, ou null se nenhuma disciplina ganhou estrela.
@@ -247,9 +256,27 @@ class DisciplineStarService
         ];
     }
 
-    /** Disciplina sem arte nova devolve null, e a tela usa o badge antigo. */
-    private function badgeUrl(Discipline $discipline, int $stars): ?string
+    /** Imagem gerada no admin ou arte original; sem nenhuma das duas, a tela usa o badge antigo. */
+    public function badgeUrl(Discipline $discipline, int $stars): ?string
     {
+        if ($discipline->badge_version) {
+            return route('disciplines.badge', ['discipline' => $discipline, 'stars' => $stars, 'v' => $discipline->badge_version]);
+        }
+
         return $discipline->badge_key ? asset("img/badges/{$discipline->badge_key}-{$stars}.png") : null;
+    }
+
+    /** Fixa as metas assim que a disciplina oferece XP. Metas já fixadas não mudam. */
+    public function freezeThresholds(Discipline $discipline): void
+    {
+        if ($discipline->star_thresholds !== null) {
+            return;
+        }
+
+        $thresholds = $this->thresholdsFromPotential($this->potentials($discipline->id)[$discipline->id] ?? 0);
+
+        if ($thresholds !== []) {
+            $discipline->update(['star_thresholds' => $thresholds]);
+        }
     }
 }

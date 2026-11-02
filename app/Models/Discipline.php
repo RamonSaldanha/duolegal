@@ -16,10 +16,14 @@ class Discipline extends Model
         'icon',
         'color',
         'badge_key',
+        'badge_config',
+        'badge_version',
         'star_thresholds',
     ];
 
     protected $casts = [
+        'badge_config' => 'array',
+        'badge_version' => 'integer',
         'star_thresholds' => 'array',
     ];
 
@@ -42,6 +46,12 @@ class Discipline extends Model
     public function getRouteKeyName(): string
     {
         return 'uuid';
+    }
+
+    /** Pasta, no disco local, das imagens geradas pelo admin. */
+    public function badgeImagesDirectory(): string
+    {
+        return "discipline-badges/{$this->uuid}";
     }
 
     public function legislations(): BelongsToMany

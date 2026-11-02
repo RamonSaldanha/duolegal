@@ -3,6 +3,7 @@ import AppHeaderLayout from '@/layouts/app/AppHeaderLayout.vue';
 import { Head } from '@inertiajs/vue3';
 import { BookOpen, TrendingUp } from 'lucide-vue-next';
 import StarBadge from '@/components/StarBadge.vue';
+import StarRow from '@/components/StarRow.vue';
 import { computed } from 'vue';
 
 interface DisciplineProgress {
@@ -45,7 +46,9 @@ const breadcrumbs = [
 ];
 
 const activeDisciplines = computed(() =>
-    props.disciplineProgress.filter(d => d.stars > 0)
+    props.disciplineProgress
+        .filter(d => d.stars > 0)
+        .sort((a, b) => b.stars - a.stars || b.total_xp - a.total_xp)
 );
 
 const inactiveDisciplines = computed(() =>
@@ -112,7 +115,7 @@ const nextStarPercent = (discipline: DisciplineProgress) =>
             <div v-if="activeDisciplines.length > 0" class="space-y-3">
                 <p class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider px-1">Em progresso</p>
 
-                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
                     <div
                         v-for="discipline in activeDisciplines"
                         :key="discipline.id"
@@ -129,6 +132,8 @@ const nextStarPercent = (discipline: DisciplineProgress) =>
                         <p class="mt-3 text-center text-base font-bold leading-tight text-gray-900 dark:text-white">
                             {{ discipline.name }}
                         </p>
+
+                        <StarRow class="mt-1.5" :stars="discipline.stars" />
 
                         <!-- Progress bar -->
                         <div class="mt-3 w-full">
@@ -154,7 +159,7 @@ const nextStarPercent = (discipline: DisciplineProgress) =>
             <div v-if="inactiveDisciplines.length > 0" class="space-y-3">
                 <p class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider px-1">Para desbloquear</p>
 
-                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
                     <div
                         v-for="discipline in inactiveDisciplines"
                         :key="discipline.id"
@@ -172,11 +177,7 @@ const nextStarPercent = (discipline: DisciplineProgress) =>
                             {{ discipline.name }}
                         </p>
 
-                        <div class="mt-3 w-full">
-                            <div class="h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700"></div>
-                        </div>
-
-                        <p class="mt-2 text-xs font-medium text-gray-300 dark:text-gray-600">
+                        <p class="mt-2 text-center text-xs font-medium text-gray-400 dark:text-gray-500">
                             Conclua um bloco para ganhar a 1ª estrela
                         </p>
                     </div>

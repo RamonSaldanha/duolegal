@@ -2,11 +2,13 @@
 
 // routes\web.php
 use App\Http\Controllers\ChallengeController;
+use App\Http\Controllers\DisciplineBadgeController;
 use App\Http\Controllers\DisciplineProgressController;
 use App\Http\Controllers\EmailPreferenceController;
 use App\Http\Controllers\GiftController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\PublicController;
+use App\Http\Controllers\PublicProfileController;
 use App\Http\Controllers\RankingController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\StreakController;
@@ -16,6 +18,11 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', [WelcomeController::class, 'index'])->name('home');
+
+// Imagens de badge geradas no admin (públicas: o app as carrega sem token)
+Route::get('/discipline-badges/{discipline}/{stars}', [DisciplineBadgeController::class, 'show'])
+    ->whereNumber('stars')
+    ->name('disciplines.badge');
 
 // === ROTAS PÚBLICAS PARA SEO ===
 // Páginas públicas de leis e artigos (sem necessidade de login)
@@ -101,6 +108,9 @@ Route::middleware(['auth'])->group(function () {
 
     // Rota de ranking
     Route::get('/ranking', [RankingController::class, 'index'])->name('ranking.index');
+
+    // Perfil que um usuário vê de outro, aberto pelo ranking
+    Route::get('/perfil/{user:uuid}', [PublicProfileController::class, 'show'])->name('profiles.show');
 
     // Rota de ofensiva (streak)
     Route::get('/ofensiva', [StreakController::class, 'index'])->name('ofensiva.index');

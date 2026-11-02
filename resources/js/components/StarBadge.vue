@@ -22,7 +22,15 @@ const starsLabel = () => {
 </script>
 
 <template>
-    <img v-if="badgeUrl" :src="badgeUrl" :alt="starsLabel()" :class="size === 'lg' ? 'h-52 w-52' : 'h-32 w-32'" draggable="false" />
+    <!-- A largura acompanha o card e a altura segue a proporção, para o badge nunca deformar. -->
+    <img
+        v-if="badgeUrl"
+        :src="badgeUrl"
+        :alt="starsLabel()"
+        class="aspect-square w-full object-contain"
+        :class="size === 'lg' ? 'max-w-52' : 'max-w-40'"
+        draggable="false"
+    />
     <!-- Disciplina ainda sem arte nova usa o badge antigo. -->
     <DisciplineBadge v-else :icon="icon" :color="color" :level="stars" :locked="stars === 0" :size="size" />
 </template>

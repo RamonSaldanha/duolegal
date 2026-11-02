@@ -97,6 +97,7 @@ class UserController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'avatar_config' => $user->publicAvatarConfig(),
+                'bio' => $user->bio,
                 'is_admin' => $user->is_admin,
                 'is_premium' => $user->hasActiveSubscription(),
                 'lives' => $user->lives,
@@ -221,6 +222,16 @@ class UserController extends Controller
         $user->incrementLife($request->lives);
 
         return back()->with('success', "Adicionadas {$request->lives} vidas ao usuário {$user->name}");
+    }
+
+    /**
+     * Apaga a descrição do perfil, que os outros usuários leem.
+     */
+    public function clearBio(User $user): \Illuminate\Http\RedirectResponse
+    {
+        $user->update(['bio' => null]);
+
+        return back()->with('success', "Descrição de {$user->name} apagada");
     }
 
     private function activeSubscriptionUserIds(): Collection

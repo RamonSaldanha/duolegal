@@ -94,6 +94,24 @@
                     </div>
                 </section>
 
+                <!-- Descrição do perfil -->
+                <section
+                    v-if="user.bio"
+                    class="flex flex-col gap-3 rounded-2xl border-2 border-b-4 bg-card p-5 sm:flex-row sm:items-center sm:justify-between"
+                >
+                    <div class="min-w-0">
+                        <h2 class="font-extrabold">Descrição do perfil</h2>
+                        <p class="mt-1 break-words text-sm text-muted-foreground">{{ user.bio }}</p>
+                    </div>
+                    <button
+                        type="button"
+                        class="shrink-0 self-start rounded-md border px-3 py-1.5 text-xs font-bold text-muted-foreground hover:border-red-300 hover:text-red-600 sm:self-auto"
+                        @click="clearBio"
+                    >
+                        Apagar descrição
+                    </button>
+                </section>
+
                 <div class="grid gap-5 lg:grid-cols-2">
                     <!-- Objetivo -->
                     <section class="rounded-2xl border-2 border-b-4 bg-card p-5">
@@ -203,6 +221,7 @@ interface UserDetail {
     name: string;
     email: string;
     avatar_config: AvatarConfig | null;
+    bio: string | null;
     is_admin: boolean;
     is_premium: boolean;
     lives: number;
@@ -250,5 +269,16 @@ const addLife = () => {
             onSuccess: () => toast({ title: 'Vida adicionada!', description: `+1 vida para ${props.user.name}` }),
         },
     );
+};
+
+const clearBio = () => {
+    if (!confirm(`Apagar a descrição de ${props.user.name}? Não dá para desfazer.`)) {
+        return;
+    }
+
+    router.delete(route('admin.users.clear-bio', props.user.id), {
+        preserveScroll: true,
+        onSuccess: () => toast({ title: 'Descrição apagada', description: `Perfil de ${props.user.name}` }),
+    });
 };
 </script>

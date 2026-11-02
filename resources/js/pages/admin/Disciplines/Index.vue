@@ -23,6 +23,7 @@ const props = defineProps<{
     slug: string;
     description?: string;
     legislations_count: number;
+    badge_url: string | null;
   }>;
 }>();
 
@@ -67,6 +68,7 @@ const deleteDiscipline = (uuid: string, name: string) => {
             <TableCaption>Lista de disciplinas cadastradas</TableCaption>
             <TableHeader>
               <TableRow>
+                <TableHead>Badge</TableHead>
                 <TableHead>Nome</TableHead>
                 <TableHead>Slug</TableHead>
                 <TableHead>Descricao</TableHead>
@@ -76,6 +78,15 @@ const deleteDiscipline = (uuid: string, name: string) => {
             </TableHeader>
             <TableBody>
               <TableRow v-for="discipline in props.disciplines" :key="discipline.id">
+                <TableCell>
+                  <img
+                    v-if="discipline.badge_url"
+                    :src="discipline.badge_url"
+                    :alt="`Badge de ${discipline.name}`"
+                    class="aspect-square h-14 w-14 object-contain"
+                  />
+                  <span v-else class="text-xs text-muted-foreground">Sem badge</span>
+                </TableCell>
                 <TableCell class="font-medium">{{ discipline.name }}</TableCell>
                 <TableCell class="text-muted-foreground">{{ discipline.slug }}</TableCell>
                 <TableCell>{{ discipline.description || '-' }}</TableCell>
@@ -102,7 +113,7 @@ const deleteDiscipline = (uuid: string, name: string) => {
                 </TableCell>
               </TableRow>
               <TableRow v-if="props.disciplines.length === 0">
-                <TableCell colspan="5" class="text-center py-8 text-muted-foreground">
+                <TableCell colspan="6" class="text-center py-8 text-muted-foreground">
                   Nenhuma disciplina encontrada
                 </TableCell>
               </TableRow>

@@ -49,6 +49,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     // Rota para adicionar vidas a um usuário
     Route::post('users/{user}/add-lives', [UserController::class, 'addLives'])->name('admin.users.add-lives');
 
+    // Rota para apagar a descrição do perfil de um usuário
+    Route::delete('users/{user}/bio', [UserController::class, 'clearBio'])->name('admin.users.clear-bio');
+
     // Rotas para disciplinas
     Route::get('disciplines', [DisciplineController::class, 'index'])->name('admin.disciplines.index');
     Route::get('disciplines/create', [DisciplineController::class, 'create'])->name('admin.disciplines.create');

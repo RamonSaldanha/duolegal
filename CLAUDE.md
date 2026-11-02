@@ -95,7 +95,17 @@ const PHASES_PER_JOURNEY = 24;        // UI pagination — phases per journey
 - **XP antigo:** a origem `migration` foi distribuída por área em `discipline_xp_credits`. O ranking e o XP do usuário não mudam.
 - **App já instalado:** a API mantém `level`, `current_xp_in_level`, `xp_for_next_level` e `progress_percent`, porque builds antigas desenham o badge antigo com eles. Os campos novos (`stars`, `next_star_xp`, `badge_url`) são só acréscimos; não remova nem mude o formato dos antigos.
 - **Conversão:** `php artisan disciplines:convert-to-stars` simula; `--force` grava; `--recalculate` recalcula metas fixadas sem tirar estrelas.
-- **Artes:** `public/img/badges/{badge_key}-{estrelas}.png` (0 = bloqueado), geradas do Ateliê de Badges (artefato no claude.ai). Disciplina sem `badge_key` usa o `DisciplineBadge` antigo.
+- **Artes:** `public/img/badges/{badge_key}-{estrelas}.png` (0 = bloqueado) são as originais. Disciplina sem arte usa o `DisciplineBadge` antigo.
+- **Criar ou editar badge:** o formulário do admin (`StarBadgeEditor`) desenha os 6 PNGs no navegador com `resources/js/lib/badges/art.ts` e os envia. Eles ficam em `storage/app/private/discipline-badges/{uuid}`, são servidos por `/discipline-badges/{uuid}/{estrelas}` e têm prioridade sobre as originais. Ilustração nova exige mudar `art.ts` e `BADGE_ILLUSTRATIONS` em `Admin\DisciplineController`.
+
+### Perfil público
+
+Só no site: cada linha do ranking da web abre `/perfil/{uuid}` (`PublicProfileController`). O app e a API não têm essa tela.
+
+- **Campos:** o controller escolhe um a um o que sai (primeiro e último nome, `publicAvatarConfig()`, `bio`, ofensiva atual e as conquistas com estrela, sem XP). Não mande o model inteiro para a tela.
+- **Conquistas exibidas:** `users.hidden_achievements` guarda as disciplinas que a pessoa escondeu em Configurações, então uma conquista nova aparece sozinha. As escondidas não saem do servidor.
+- **`uuid`, `bio` e `hidden_achievements`:** ficam em `$hidden` para não vazar em `GET /api/user` e no criador dos desafios. A URL usa `uuid` para ninguém listar os usuários percorrendo ids; não mude o `getRouteKeyName` do `User`, porque o admin usa o id.
+- **Descrição:** até 160 caracteres, editada em Configurações e exibida como texto puro. O admin apaga na ficha do usuário.
 
 ### Shared Data via Middleware
 

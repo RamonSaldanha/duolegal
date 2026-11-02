@@ -1,1 +1,3 @@
 resources/js/components/ui/*
+resources/js/lib/badges/art.ts
+resources/js/lib/badges/font.ts

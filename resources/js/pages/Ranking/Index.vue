@@ -2,12 +2,14 @@
 import UserAvatar from '@/components/UserAvatar.vue';
 import AppHeaderLayout from '@/layouts/app/AppHeaderLayout.vue';
 import type { AvatarConfig } from '@/lib/avatar';
-import { Head, router } from '@inertiajs/vue3';
-import { Trophy, Crown, Medal, Flame, TrendingUp, Zap } from 'lucide-vue-next';
+import { Head, Link, router } from '@inertiajs/vue3';
+import { ChevronRight, Trophy, Crown, Medal, Flame, TrendingUp, Zap } from 'lucide-vue-next';
 import { computed } from 'vue';
 
 interface User {
     id: number;
+    /** A coluna aceita nulo: quem se cadastrou entre a migração e o deploy fica sem link. */
+    uuid: string | null;
     first_name: string;
     last_name: string;
     xp: number;
@@ -142,13 +144,15 @@ const getPositionIcon = (position: number) => {
                         <div class="flex-1 border-t border-dashed border-gray-300 dark:border-gray-600"></div>
                     </div>
 
-                    <div
-                        class="flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all"
+                    <component
+                        :is="user.uuid ? Link : 'div'"
+                        :href="user.uuid ? route('profiles.show', user.uuid) : undefined"
+                        class="flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                         :class="[
                             isCurrentUser(user.id)
-                                ? 'bg-blue-50 dark:bg-blue-950/30 ring-1 ring-blue-400/50'
+                                ? 'bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/30 dark:hover:bg-blue-950/50 ring-1 ring-blue-400/50'
                                 : user.position <= 3
-                                    ? 'bg-white dark:bg-gray-800/80 border border-gray-100 dark:border-gray-700/50 ' + getPositionStyle(user.position).ring
+                                    ? 'bg-white hover:bg-gray-50 dark:bg-gray-800/80 dark:hover:bg-gray-800 border border-gray-100 dark:border-gray-700/50 ' + getPositionStyle(user.position).ring
                                     : 'bg-white dark:bg-gray-800/60 hover:bg-gray-50 dark:hover:bg-gray-800'
                         ]"
                     >
@@ -201,7 +205,9 @@ const getPositionIcon = (position: number) => {
                                 {{ user.xp.toLocaleString() }}
                             </span>
                         </div>
-                    </div>
+
+                        <ChevronRight v-if="user.uuid" class="-mr-1 hidden h-4 w-4 flex-shrink-0 text-gray-300 dark:text-gray-600 sm:block" aria-hidden="true" />
+                    </component>
                 </template>
             </div>
 

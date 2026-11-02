@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Discipline;
 use App\Models\Legislation;
+use App\Services\DisciplineStarService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -40,11 +42,25 @@ class DisciplineController extends Controller
         '#9F1239', '#854D0E',
     ];
 
+    /** Ilustrações de resources/js/lib/badges/art.ts. */
+    private const BADGE_ILLUSTRATIONS = [
+        'penal', 'civil', 'const', 'consumidor', 'tributario', 'processo',
+        'estatuto', 'previdencia', 'trabalho', 'administrativo', 'empresarial',
+    ];
+
+    /** Uma imagem para cada quantidade de estrelas, de 0 (bloqueado) a 5. */
+    private const BADGE_IMAGE_COUNT = DisciplineStarService::MAX_STARS + 1;
+
+    public function __construct(private DisciplineStarService $stars) {}
+
     public function index(): Response
     {
         $disciplines = Discipline::withCount('legislations')
             ->orderBy('name')
-            ->get();
+            ->get()
+            ->map(fn (Discipline $discipline) => array_merge($discipline->toArray(), [
+                'badge_url' => $this->stars->badgeUrl($discipline, DisciplineStarService::MAX_STARS),
+            ]));
 
         return Inertia::render('admin/Disciplines/Index', [
             'disciplines' => $disciplines,
@@ -72,6 +88,7 @@ class DisciplineController extends Controller
             'color' => 'nullable|string|max:7',
             'legislation_ids' => 'nullable|array',
             'legislation_ids.*' => 'exists:legislations,id',
+            ...$this->badgeRules(required: true),
         ]);
 
         $discipline = Discipline::create([
@@ -84,6 +101,9 @@ class DisciplineController extends Controller
         if (! empty($validated['legislation_ids'])) {
             $discipline->legislations()->sync($validated['legislation_ids']);
         }
+
+        $this->saveBadge($discipline, $request, $validated);
+        $this->stars->freezeThresholds($discipline);
 
         return redirect()->route('admin.disciplines.index')
             ->with('success', 'Disciplina criada com sucesso.');
@@ -98,6 +118,7 @@ class DisciplineController extends Controller
 
         return Inertia::render('admin/Disciplines/Edit', [
             'discipline' => $discipline,
+            'potentialXp' => $this->stars->potentials($discipline->id)[$discipline->id] ?? 0,
             'legislations' => $legislations,
             'selectedLegislationIds' => $discipline->legislations->pluck('id')->toArray(),
             'availableIcons' => self::AVAILABLE_ICONS,
@@ -114,6 +135,7 @@ class DisciplineController extends Controller
             'color' => 'nullable|string|max:7',
             'legislation_ids' => 'nullable|array',
             'legislation_ids.*' => 'exists:legislations,id',
+            ...$this->badgeRules(required: false),
         ]);
 
         $discipline->update([
@@ -125,15 +147,52 @@ class DisciplineController extends Controller
 
         $discipline->legislations()->sync($validated['legislation_ids'] ?? []);
 
+        $this->saveBadge($discipline, $request, $validated);
+        $this->stars->freezeThresholds($discipline);
+
         return redirect()->route('admin.disciplines.index')
             ->with('success', 'Disciplina atualizada com sucesso.');
     }
 
     public function destroy(Discipline $discipline)
     {
+        Storage::disk('local')->deleteDirectory($discipline->badgeImagesDirectory());
         $discipline->delete();
 
         return redirect()->route('admin.disciplines.index')
             ->with('success', 'Disciplina excluída com sucesso.');
+    }
+
+    /** As imagens chegam prontas: o formulário as desenha no navegador, com a arte do badge. */
+    private function badgeRules(bool $required): array
+    {
+        $presence = $required ? 'required' : 'required_with:badge_images';
+        $images = $required ? 'required' : 'nullable';
+
+        return [
+            'badge_config' => [$presence, 'array'],
+            'badge_config.icon' => [$presence, 'string', 'in:'.implode(',', self::BADGE_ILLUSTRATIONS)],
+            'badge_config.text' => [$presence, 'string', 'max:20'],
+            'badge_config.shield' => [$presence, 'regex:/^#[0-9a-fA-F]{6}$/'],
+            'badge_config.ribbon' => [$presence, 'regex:/^#[0-9a-fA-F]{6}$/'],
+            'badge_images' => [$images, 'array', 'size:'.self::BADGE_IMAGE_COUNT],
+            'badge_images.*' => ['file', 'mimes:png', 'max:2048'],
+        ];
+    }
+
+    private function saveBadge(Discipline $discipline, Request $request, array $validated): void
+    {
+        if (! $request->hasFile('badge_images')) {
+            return;
+        }
+
+        foreach ($request->file('badge_images') as $stars => $image) {
+            Storage::disk('local')->putFileAs($discipline->badgeImagesDirectory(), $image, "{$stars}.png");
+        }
+
+        $discipline->update([
+            'badge_config' => $validated['badge_config'],
+            'badge_version' => now()->timestamp,
+        ]);
     }
 }

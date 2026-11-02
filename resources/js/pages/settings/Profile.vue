@@ -7,10 +7,12 @@ import AvatarPreview from '@/components/avatar-editor/AvatarPreview.vue';
 import DeleteUser from '@/components/DeleteUser.vue';
 import HeadingSmall from '@/components/HeadingSmall.vue';
 import InputError from '@/components/InputError.vue';
+import StarRow from '@/components/StarRow.vue';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/AppLayout.vue';
 import SettingsLayout from '@/layouts/settings/Layout.vue';
 import { type BreadcrumbItem, type SharedData, type User } from '@/types';
@@ -19,6 +21,9 @@ interface Props {
     mustVerifyEmail: boolean;
     status?: string;
     receivesEmails: boolean;
+    bio: string | null;
+    profileUrl: string | null;
+    achievements: { id: number; name: string; stars: number; badge_url: string | null; hidden: boolean }[];
 }
 
 const props = defineProps<Props>();
@@ -36,6 +41,7 @@ const user = page.props.auth.user as User;
 const form = useForm({
     name: user.name,
     email: user.email,
+    bio: props.bio ?? '',
 });
 
 const submit = () => {
@@ -49,6 +55,14 @@ const emailsForm = useForm({ receives_emails: props.receivesEmails });
 const toggleEmails = (checked: boolean) => {
     emailsForm.receives_emails = checked;
     emailsForm.patch(route('emails.preferences'), { preserveScroll: true });
+};
+
+const achievementsForm = useForm({ hidden: props.achievements.filter((achievement) => achievement.hidden).map((achievement) => achievement.id) });
+
+const toggleAchievement = (id: number, visible: boolean) => {
+    const others = achievementsForm.hidden.filter((hiddenId) => hiddenId !== id);
+    achievementsForm.hidden = visible ? others : [...others, id];
+    achievementsForm.patch(route('achievements.preferences'), { preserveScroll: true });
 };
 </script>
 
@@ -94,6 +108,26 @@ const toggleEmails = (checked: boolean) => {
                         <InputError class="mt-2" :message="form.errors.email" />
                     </div>
 
+                    <div class="grid gap-2">
+                        <Label for="bio">Descrição</Label>
+                        <Textarea
+                            id="bio"
+                            v-model="form.bio"
+                            class="mt-1"
+                            maxlength="160"
+                            rows="3"
+                            placeholder="Conte em poucas palavras quem você é e o que está estudando"
+                        />
+                        <div class="flex items-center justify-between gap-4 text-xs text-muted-foreground">
+                            <Link v-if="profileUrl" :href="profileUrl" class="underline underline-offset-4 hover:text-foreground"
+                                >Ver meu perfil</Link
+                            >
+                            <span class="ml-auto tabular-nums">{{ form.bio.length }}/160</span>
+                        </div>
+                        <p class="text-xs text-muted-foreground">Aparece no seu perfil, que os outros usuários abrem pelo ranking.</p>
+                        <InputError class="mt-2" :message="form.errors.bio" />
+                    </div>
+
                     <div v-if="mustVerifyEmail && !user.email_verified_at">
                         <p class="-mt-4 text-sm text-muted-foreground">
                             Seu endereço de email não está verificado.
@@ -101,7 +135,7 @@ const toggleEmails = (checked: boolean) => {
                                 :href="route('verification.send')"
                                 method="post"
                                 as="button"
-                                class="hover:!decoration-current text-foreground underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out dark:decoration-neutral-500"
+                                class="text-foreground underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:!decoration-current dark:decoration-neutral-500"
                             >
                                 Clique aqui para reenviar o email de verificação.
                             </Link>
@@ -126,6 +160,37 @@ const toggleEmails = (checked: boolean) => {
                         </TransitionRoot>
                     </div>
                 </form>
+            </div>
+
+            <div v-if="achievements.length > 0" class="flex flex-col space-y-4">
+                <HeadingSmall title="Conquistas no perfil" description="Desmarque as que não quer mostrar. As novas aparecem sozinhas." />
+
+                <div class="grid gap-2 sm:grid-cols-2">
+                    <label
+                        v-for="achievement in achievements"
+                        :key="achievement.id"
+                        :for="`achievement-${achievement.id}`"
+                        class="flex cursor-pointer items-center gap-3 rounded-lg border p-3"
+                    >
+                        <Checkbox
+                            :id="`achievement-${achievement.id}`"
+                            :checked="!achievementsForm.hidden.includes(achievement.id)"
+                            :disabled="achievementsForm.processing"
+                            @update:checked="(visible: boolean) => toggleAchievement(achievement.id, visible)"
+                        />
+                        <img
+                            v-if="achievement.badge_url"
+                            :src="achievement.badge_url"
+                            alt=""
+                            class="size-12 shrink-0 object-contain"
+                            draggable="false"
+                        />
+                        <span class="min-w-0">
+                            <span class="block truncate text-sm font-medium">{{ achievement.name }}</span>
+                            <StarRow :stars="achievement.stars" />
+                        </span>
+                    </label>
+                </div>
             </div>
 
             <div class="flex flex-col space-y-4">

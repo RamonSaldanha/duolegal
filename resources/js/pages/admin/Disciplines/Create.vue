@@ -10,6 +10,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import Icon from '@/components/Icon.vue';
 import DisciplineBadge from '@/components/DisciplineBadge.vue';
+import StarBadgeEditor from '@/components/StarBadgeEditor.vue';
+import { type BadgeConfig, exportBadgeImages } from '@/lib/badges/export';
 import { ref } from 'vue';
 
 const props = defineProps<{
@@ -36,6 +38,8 @@ const form = ref({
   legislation_ids: [] as number[],
 });
 
+const badge = ref<BadgeConfig>({ icon: 'penal', text: '', shield: '#3d8bf2', ribbon: '#ffc21a' });
+
 const errors = ref<Record<string, string>>({});
 const processing = ref(false);
 
@@ -47,9 +51,25 @@ const toggleLegislation = (id: number, checked: boolean) => {
   }
 };
 
-const submit = () => {
+const submit = async () => {
+  if (!badge.value.text) {
+    errors.value = { 'badge_config.text': 'Escreva o texto da faixa do badge.' };
+    return;
+  }
+
   processing.value = true;
-  router.post(route('admin.disciplines.store'), form.value, {
+
+  let badgeImages: File[];
+  try {
+    badgeImages = await exportBadgeImages(badge.value);
+  } catch {
+    errors.value = { badge_images: 'Não foi possível gerar as imagens do badge. Tente novamente.' };
+    processing.value = false;
+    return;
+  }
+
+  router.post(route('admin.disciplines.store'), { ...form.value, badge_config: { ...badge.value }, badge_images: badgeImages }, {
+    forceFormData: true,
     onError: (e) => {
       errors.value = e;
       processing.value = false;
@@ -97,6 +117,15 @@ const submit = () => {
               />
               <p v-if="errors.description" class="text-sm text-destructive">{{ errors.description }}</p>
             </div>
+
+            <div class="space-y-3">
+              <h3 class="text-lg font-semibold">Badge da conquista</h3>
+              <StarBadgeEditor v-model="badge" :errors="errors" />
+              <p v-if="errors.badge_images" class="text-sm text-destructive">{{ errors.badge_images }}</p>
+            </div>
+
+            <h3 class="text-lg font-semibold">Badge antigo</h3>
+            <p class="text-sm text-muted-foreground">Só aparece no app já instalado, até ele ser atualizado.</p>
 
             <!-- Icon picker -->
             <div class="space-y-3">

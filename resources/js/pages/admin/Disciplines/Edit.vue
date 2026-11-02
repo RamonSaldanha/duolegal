@@ -10,7 +10,9 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import Icon from '@/components/Icon.vue';
 import DisciplineBadge from '@/components/DisciplineBadge.vue';
-import { ref } from 'vue';
+import StarBadgeEditor from '@/components/StarBadgeEditor.vue';
+import { type BadgeConfig, exportBadgeImages } from '@/lib/badges/export';
+import { computed, ref } from 'vue';
 
 const props = defineProps<{
   discipline: {
@@ -21,7 +23,10 @@ const props = defineProps<{
     description?: string;
     icon: string;
     color: string;
+    badge_config: BadgeConfig | null;
+    star_thresholds: number[] | null;
   };
+  potentialXp: number;
   legislations: Array<{
     id: number;
     uuid: string;
@@ -46,6 +51,10 @@ const form = ref({
   legislation_ids: [...props.selectedLegislationIds],
 });
 
+const savedBadge = props.discipline.badge_config ?? { icon: 'penal', text: '', shield: '#3d8bf2', ribbon: '#ffc21a' };
+const badge = ref<BadgeConfig>({ ...savedBadge });
+const badgeChanged = computed(() => (Object.keys(savedBadge) as (keyof BadgeConfig)[]).some((key) => savedBadge[key] !== badge.value[key]));
+
 const errors = ref<Record<string, string>>({});
 const processing = ref(false);
 
@@ -57,9 +66,29 @@ const toggleLegislation = (id: number, checked: boolean) => {
   }
 };
 
-const submit = () => {
+const submit = async () => {
+  if (badgeChanged.value && !badge.value.text) {
+    errors.value = { 'badge_config.text': 'Escreva o texto da faixa do badge.' };
+    return;
+  }
+
   processing.value = true;
-  router.put(route('admin.disciplines.update', props.discipline.uuid as any), form.value, {
+
+  // A arte só é gerada de novo se mudou; assim os badges originais continuam como estão.
+  let badgeFields = {};
+  if (badgeChanged.value) {
+    try {
+      badgeFields = { badge_config: { ...badge.value }, badge_images: await exportBadgeImages(badge.value) };
+    } catch {
+      errors.value = { badge_images: 'Não foi possível gerar as imagens do badge. Tente novamente.' };
+      processing.value = false;
+      return;
+    }
+  }
+
+  // Envio de arquivo exige POST; o Laravel lê _method e trata como PUT.
+  router.post(route('admin.disciplines.update', props.discipline.uuid as any), { ...form.value, ...badgeFields, _method: 'put' }, {
+    forceFormData: true,
     onError: (e) => {
       errors.value = e;
       processing.value = false;
@@ -107,6 +136,29 @@ const submit = () => {
               />
               <p v-if="errors.description" class="text-sm text-destructive">{{ errors.description }}</p>
             </div>
+
+            <div class="space-y-3">
+              <h3 class="text-lg font-semibold">Badge da conquista</h3>
+              <StarBadgeEditor v-model="badge" :errors="errors" />
+              <p v-if="errors.badge_images" class="text-sm text-destructive">{{ errors.badge_images }}</p>
+            </div>
+
+            <div class="space-y-2 rounded-lg border p-4 text-sm">
+              <p class="font-semibold">Metas de estrelas</p>
+              <p v-if="discipline.star_thresholds" class="text-muted-foreground">
+                2 estrelas: {{ discipline.star_thresholds[0].toLocaleString() }} XP ·
+                3: {{ discipline.star_thresholds[1].toLocaleString() }} XP ·
+                4: {{ discipline.star_thresholds[2].toLocaleString() }} XP ·
+                5: {{ discipline.star_thresholds[3].toLocaleString() }} XP
+              </p>
+              <p v-else class="text-muted-foreground">Serão fixadas ao salvar a disciplina com alguma lei.</p>
+              <p class="text-xs text-muted-foreground">
+                As leis desta disciplina oferecem {{ potentialXp.toLocaleString() }} XP hoje. Adicionar lei não muda as metas, e ninguém perde estrelas.
+              </p>
+            </div>
+
+            <h3 class="text-lg font-semibold">Badge antigo</h3>
+            <p class="text-sm text-muted-foreground">Só aparece no app já instalado, até ele ser atualizado.</p>
 
             <!-- Icon picker -->
             <div class="space-y-3">

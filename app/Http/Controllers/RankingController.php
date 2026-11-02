@@ -28,6 +28,7 @@ class RankingController extends Controller
         $topUsers = $ranking->map(function ($user, $index) use ($avatars) {
             return [
                 'id' => $user->id,
+                'uuid' => $user->uuid,
                 'first_name' => explode(' ', trim($user->name))[0],
                 'last_name' => count(explode(' ', trim($user->name))) > 1
                     ? explode(' ', trim($user->name))[count(explode(' ', trim($user->name))) - 1]
@@ -48,6 +49,7 @@ class RankingController extends Controller
             if ($userXp > 0) {
                 $currentUserData = [
                     'id' => $currentUser->id,
+                    'uuid' => $currentUser->uuid,
                     'first_name' => explode(' ', trim($currentUser->name))[0],
                     'last_name' => count(explode(' ', trim($currentUser->name))) > 1
                         ? explode(' ', trim($currentUser->name))[count(explode(' ', trim($currentUser->name))) - 1]

@@ -9,7 +9,9 @@ use App\Models\SegmentLacuna;
 use App\Models\User;
 use App\Services\DisciplineStarService;
 use App\Services\XpService;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 
 function lawWithBlocks(string $title, int $blocks, int $gapsPerBlock = 2): Legislation
@@ -242,4 +244,80 @@ test('a conversão simula sem gravar e, com --force, fixa metas, credita o XP an
         ->and(DB::table('user_discipline_stars')->where('user_id', $user->id)->sole()->stars)->toBe(5)
         ->and(progressOf($user, $discipline)['total_xp'])->toBe(750)
         ->and($user->fresh()->xp)->toBe(1000);
+});
+
+function badgeFormData(array $overrides = []): array
+{
+    return array_merge([
+        'name' => 'Direito Digital',
+        'icon' => 'Cpu',
+        'color' => '#1D4ED8',
+        'badge_config' => ['icon' => 'estatuto', 'text' => 'Digitalista', 'shield' => '#3d8bf2', 'ribbon' => '#ffc21a'],
+        'badge_images' => array_map(fn (int $stars) => UploadedFile::fake()->image("{$stars}.png", 16, 16), range(0, 5)),
+    ], $overrides);
+}
+
+test('o admin cria disciplina com badge próprio, e as imagens ficam públicas', function () {
+    Storage::fake('local');
+    $law = lawWithBlocks('Marco Civil', 2);
+    $admin = User::factory()->createOne(['is_admin' => true]);
+
+    $this->actingAs($admin)
+        ->post('/admin/disciplines', badgeFormData(['legislation_ids' => [$law->id]]))
+        ->assertRedirect(route('admin.disciplines.index'));
+
+    $discipline = Discipline::where('name', 'Direito Digital')->sole();
+    $user = User::factory()->createOne();
+    $url = progressOf($user, $discipline)['badge_url'];
+
+    expect($discipline->badge_config['text'])->toBe('Digitalista')
+        ->and($discipline->badge_version)->not->toBeNull()
+        ->and($discipline->star_thresholds)->toBe(app(DisciplineStarService::class)->thresholdsFromPotential(20))
+        ->and($url)->toContain("/discipline-badges/{$discipline->uuid}/0");
+
+    auth()->logout();
+    $this->get($url)->assertSuccessful()->assertHeader('content-type', 'image/png');
+    $this->get("/discipline-badges/{$discipline->uuid}/9")->assertNotFound();
+});
+
+test('criar disciplina exige o badge completo', function () {
+    Storage::fake('local');
+    $admin = User::factory()->createOne(['is_admin' => true]);
+
+    $this->actingAs($admin)
+        ->post('/admin/disciplines', badgeFormData(['badge_images' => [UploadedFile::fake()->image('0.png')]]))
+        ->assertSessionHasErrors('badge_images');
+
+    $this->actingAs($admin)
+        ->post('/admin/disciplines', badgeFormData(['badge_config' => ['icon' => 'inventada', 'text' => 'X', 'shield' => '#3d8bf2', 'ribbon' => '#ffc21a']]))
+        ->assertSessionHasErrors('badge_config.icon');
+
+    expect(Discipline::count())->toBe(0);
+});
+
+test('editar sem mexer no badge preserva a arte e as metas; trocar a arte muda a URL', function () {
+    Storage::fake('local');
+    $law = lawWithBlocks('CTN', 2);
+    $discipline = disciplineWithThresholds($law);
+    $admin = User::factory()->createOne(['is_admin' => true]);
+    $original = app(DisciplineStarService::class)->badgeUrl($discipline, 3);
+
+    $this->actingAs($admin)
+        ->put("/admin/disciplines/{$discipline->uuid}", ['name' => 'Tributário', 'legislation_ids' => [$law->id, lawWithBlocks('LEF', 9)->id]])
+        ->assertRedirect();
+
+    $discipline->refresh();
+    expect(app(DisciplineStarService::class)->badgeUrl($discipline, 3))->toBe($original)
+        ->and($discipline->star_thresholds)->toBe([100, 500, 2000, 5000]);
+
+    $this->actingAs($admin)
+        ->put("/admin/disciplines/{$discipline->uuid}", badgeFormData(['name' => 'Tributário', 'legislation_ids' => [$law->id]]))
+        ->assertRedirect();
+
+    $changed = app(DisciplineStarService::class)->badgeUrl($discipline->refresh(), 3);
+    expect($changed)->not->toBe($original)->toContain('/discipline-badges/');
+    Storage::disk('local')->assertExists($discipline->badgeImagesDirectory().'/5.png');
+
+    $this->actingAs($admin)->delete("/admin/disciplines/{$discipline->uuid}")->assertRedirect();
+    Storage::disk('local')->assertMissing($discipline->badgeImagesDirectory().'/5.png');
 });

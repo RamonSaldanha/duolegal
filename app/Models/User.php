@@ -11,6 +11,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Laravel\Cashier\Billable;
 use Laravel\Sanctum\HasApiTokens;
 
@@ -32,6 +33,7 @@ class User extends Authenticatable
         'pm_type',
         'pm_last_four',
         'trial_ends_at',
+        'bio',
     ];
 
     /**
@@ -55,6 +57,10 @@ class User extends Authenticatable
         // Lembretes por e-mail: também fora do JSON cru, pelo mesmo motivo.
         'email_opt_out_at',
         'xp_boost_until',
+        // Perfil público: também fora do JSON cru. Só o PublicProfileController os expõe.
+        'uuid',
+        'bio',
+        'hidden_achievements',
     ];
 
     /**
@@ -70,12 +76,20 @@ class User extends Authenticatable
         'has_infinite_lives' => 'boolean',
         'trial_ends_at' => 'datetime',
         'avatar_config' => 'array',
+        'hidden_achievements' => 'array',
         'onboarding_answers' => 'array',
         'onboarding_completed_at' => 'datetime',
         'welcome_offer_expires_at' => 'datetime',
         'email_opt_out_at' => 'datetime',
         'xp_boost_until' => 'datetime',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (User $user) {
+            $user->uuid ??= (string) Str::uuid();
+        });
+    }
 
     /**
      * Verifica se o usuário tem vidas disponíveis
