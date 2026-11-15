@@ -107,6 +107,21 @@ Só no site: cada linha do ranking da web abre `/perfil/{uuid}` (`PublicProfileC
 - **`uuid`, `bio` e `hidden_achievements`:** ficam em `$hidden` para não vazar em `GET /api/user` e no criador dos desafios. A URL usa `uuid` para ninguém listar os usuários percorrendo ids; não mude o `getRouteKeyName` do `User`, porque o admin usa o id.
 - **Descrição:** até 160 caracteres, editada em Configurações e exibida como texto puro. O admin apaga na ficha do usuário.
 
+### Material de estudo
+
+Resumo em markdown + questões no estilo de banca, escritos por um agente de IA (Claude Code, Codex, OpenCode) na máquina do admin e gravados por rotas REST. O site não gera conteúdo. No mapa beta vira o nó bônus entre os quadrados.
+
+- **Trechos escolhidos pelo agente:** cada linha de `study_materials` é um intervalo contínuo de blocos de uma lei (`first_block_id` a `last_block_id`), de 4 a 20 blocos, sempre começando no primeiro bloco pendente. `block_ids` são os blocos que o material cobre; o agente pode deixar alguns de fora ou pular o trecho inteiro (`skipped`, com `skip_reason`). A posição é medida por `char_start`. As regras ficam em `StudyMaterialService` e valem igual para a API e para a edição no admin.
+- **Rascunho, publicado, pulado:** tudo entra como `draft`; só `published` aparece no mapa. Apagar um material ou um trecho pulado devolve os blocos a pendente.
+- **Hash:** `content_hash` é o sha256 dos textos dos blocos cobertos. Se o texto muda ou um bloco some, o material fica "desatualizado": sai do mapa e não publica até o admin usar "Revisei e confirmo" ou apagar.
+- **Rotas do agente:** `/api/v1/admin/study-materials` (`routes/api.php`), com `auth:sanctum` e o middleware `study-materials.agent`, que exige admin e a habilidade `study-materials` conferida na lista literal do token. Não troque por `tokenCan()`: o token do app (`mobile`) tem `*` e passaria. Os erros dessas rotas saem sempre em JSON (`bootstrap/app.php`) e são escritos para o agente se corrigir.
+- **Bônus no mapa beta:** o material pertence ao quadrado em que cai o último bloco do trecho (`bonusForSquares`). Libera quando os blocos cobertos estão concluídos, não o quadrado inteiro. Fica fora do cálculo de fase atual/bloqueada e não gasta vida.
+- **Regra de assinante:** só `hasInfiniteLives()` abre e conclui (`BetaBonusController` checa nas três rotas). Quem não assina vê o nó, não recebe a lista e vai para `/subscription`.
+- **Gabarito:** nunca vai para o navegador antes da resposta. `answer` corrige uma questão; `finish` recalcula os acertos no servidor.
+- **XP:** `10 + 5 por acerto` (constantes em `BetaBonusController`), só na primeira conclusão, origem `study_material` com o `legislation_id`, então conta na disciplina e no ranking sem mudar nada lá.
+- **Resumo:** guardado em markdown puro e convertido por `StudyMaterialService::renderSummary` (`Str::markdown`, HTML embutido removido, links inseguros bloqueados). A tela só usa `v-html` com esse HTML, pelo componente `StudySummary`.
+- **Skill:** `.claude/skills/gerar-material-estudo/SKILL.md`, com cópia idêntica em `.agents/skills/` (um teste falha se divergirem). A página `/admin/study-materials/instalar` gera o token, monta o `.zip` a partir dessa pasta e traz os comandos por ferramenta. Mudou uma rota ou regra de validação: atualize a skill e o número de versão dela.
+
 ### Shared Data via Middleware
 
 `HandleInertiaRequests.php` injects into every Vue page via `usePage().props`:
