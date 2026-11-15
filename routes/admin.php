@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\DisciplineController;
 use App\Http\Controllers\Admin\LawArticleController;
 use App\Http\Controllers\Admin\LawArticleOptionController;
 use App\Http\Controllers\Admin\LegalReferenceController;
+use App\Http\Controllers\Admin\StudyMaterialController;
 use App\Http\Controllers\Admin\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -59,4 +60,21 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     Route::get('disciplines/{discipline}/edit', [DisciplineController::class, 'edit'])->name('admin.disciplines.edit');
     Route::put('disciplines/{discipline}', [DisciplineController::class, 'update'])->name('admin.disciplines.update');
     Route::delete('disciplines/{discipline}', [DisciplineController::class, 'destroy'])->name('admin.disciplines.destroy');
+
+    // Material de estudo (resumos + questões gravados por agentes de IA)
+    Route::get('study-materials', [StudyMaterialController::class, 'index'])->name('admin.study-materials.index');
+    Route::post('study-materials/preview', [StudyMaterialController::class, 'preview'])->name('admin.study-materials.preview');
+
+    // Página "Instalar a skill": token do agente e download da skill
+    Route::get('study-materials/instalar', [StudyMaterialController::class, 'install'])->name('admin.study-materials.install');
+    Route::post('study-materials/tokens', [StudyMaterialController::class, 'createToken'])->name('admin.study-materials.tokens.store');
+    Route::delete('study-materials/tokens/{token}', [StudyMaterialController::class, 'revokeToken'])->whereNumber('token')->name('admin.study-materials.tokens.destroy');
+    Route::get('study-materials/skill.zip', [StudyMaterialController::class, 'downloadSkill'])->name('admin.study-materials.skill');
+
+    Route::get('study-materials/{studyMaterial}', [StudyMaterialController::class, 'edit'])->whereUuid('studyMaterial')->name('admin.study-materials.edit');
+    Route::put('study-materials/{studyMaterial}', [StudyMaterialController::class, 'update'])->whereUuid('studyMaterial')->name('admin.study-materials.update');
+    Route::post('study-materials/{studyMaterial}/publish', [StudyMaterialController::class, 'publish'])->whereUuid('studyMaterial')->name('admin.study-materials.publish');
+    Route::post('study-materials/{studyMaterial}/unpublish', [StudyMaterialController::class, 'unpublish'])->whereUuid('studyMaterial')->name('admin.study-materials.unpublish');
+    Route::post('study-materials/{studyMaterial}/confirm', [StudyMaterialController::class, 'confirm'])->whereUuid('studyMaterial')->name('admin.study-materials.confirm');
+    Route::delete('study-materials/{studyMaterial}', [StudyMaterialController::class, 'destroy'])->whereUuid('studyMaterial')->name('admin.study-materials.destroy');
 });

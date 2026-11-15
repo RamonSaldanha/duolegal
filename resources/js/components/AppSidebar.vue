@@ -78,6 +78,15 @@ const mainNavItems = computed(() => [
             },
         ]
         : []),
+    ...(isAdmin.value
+        ? [
+            {
+                title: 'Material de estudo',
+                href: '/admin/study-materials',
+                iconPath: '/icons/configuracoes.png',
+            },
+        ]
+        : []),
 ]);
 
 const footerNavItems: NavItem[] = [];

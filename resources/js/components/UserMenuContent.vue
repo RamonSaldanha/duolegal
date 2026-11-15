@@ -3,7 +3,7 @@ import UserInfo from '@/components/UserInfo.vue';
 import { DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import type { User } from '@/types';
 import { Link } from '@inertiajs/vue3';
-import { LogOut, Settings, FileText, Scale, Users, GraduationCap } from 'lucide-vue-next';
+import { FileText, GraduationCap, LogOut, NotebookPen, Scale, Settings, Users } from 'lucide-vue-next';
 
 interface Props {
     user: User;
@@ -53,6 +53,12 @@ defineProps<Props>();
                 <Link class="block w-full" href="/admin/users" as="button">
                     <Users class="mr-2 h-4 w-4" />
                     Usuários
+                </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem :as-child="true">
+                <Link class="block w-full" href="/admin/study-materials" as="button">
+                    <NotebookPen class="mr-2 h-4 w-4" />
+                    Material de estudo
                 </Link>
             </DropdownMenuItem>
         </DropdownMenuGroup>
