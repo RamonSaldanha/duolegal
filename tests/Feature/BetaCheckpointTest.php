@@ -77,7 +77,7 @@ test('toda etapa tem o seu desafio, mesmo sem material', function () {
     $this->actingAs($user)->get('/beta/play/etapa/'.checkpointKey($legislation, 159))->assertRedirect(route('beta.play.map'));
 });
 
-test('o desafio reúne os materiais de todas as etapas até ali', function () {
+test('o desafio tem só os materiais da própria etapa', function () {
     $legislation = studyLegislation(170);
     studyMaterial($legislation, 0, 9);
     // Começa na primeira etapa e termina na segunda: fica na segunda
@@ -88,8 +88,9 @@ test('o desafio reúne os materiais de todas as etapas até ali', function () {
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('sections.0.checkpoint.total', 1)
             ->where('sections.0.checkpoint.questions', 2)
-            ->where('sections.1.checkpoint.total', 2)
-            ->where('sections.1.checkpoint.questions', 4));
+            // O material da primeira etapa não se repete na segunda
+            ->where('sections.1.checkpoint.total', 1)
+            ->where('sections.1.checkpoint.questions', 2));
 });
 
 test('só libera com a etapa inteira concluída', function () {
@@ -163,6 +164,13 @@ test('a resposta é corrigida no servidor e só vale para material da etapa', fu
     $this->actingAs($user)->postJson("/beta/play/etapa/{$key}/answer", ['material' => $later->uuid, 'position' => 1, 'answer' => 'certo'])
         ->assertNotFound();
 
+    // Nem o de uma etapa anterior entra no desafio da seguinte
+    $next = checkpointKey($legislation, 169);
+    $this->actingAs($user)->postJson("/beta/play/etapa/{$next}/answer", ['material' => $material->uuid, 'position' => 1, 'answer' => 'certo'])
+        ->assertNotFound();
+    $this->actingAs($user)->postJson("/beta/play/etapa/{$next}/finish", ['results' => [['material' => $material->uuid, 'answers' => [1 => 'certo', 2 => 'C']]]])
+        ->assertNotFound();
+
     expect(UserStudyMaterial::count())->toBe(0)->and(UserBetaCheckpoint::count())->toBe(0);
 });
 
@@ -173,17 +181,15 @@ test('concluir conta o material na etapa e dá o XP uma única vez', function ()
     $user = checkpointSubscriber();
     completeBlocks($user, $legislation, 0, 169);
     $first = checkpointKey($legislation, 159);
-    $second = checkpointKey($legislation, 169);
 
     $expected = BetaCheckpointController::MATERIAL_XP_BASE + BetaCheckpointController::MATERIAL_XP_PER_CORRECT;
 
     // Um acerto (a segunda está errada), apesar de o navegador não mandar a contagem
-    $this->actingAs($user)->postJson("/beta/play/etapa/{$first}/finish", ['material' => $material->uuid, 'answers' => [1 => 'certo', 2 => 'A']])
+    $this->actingAs($user)->postJson("/beta/play/etapa/{$first}/finish", ['results' => [['material' => $material->uuid, 'answers' => [1 => 'certo', 2 => 'A']]]])
         ->assertSuccessful()
         ->assertJsonPath('correct_count', 1)
         ->assertJsonPath('total', 2)
         ->assertJsonPath('xp_gained', $expected)
-        ->assertJsonPath('first_completion', true)
         ->assertJsonPath('checkpoint.completed', 1)
         ->assertJsonPath('checkpoint.total', 2);
 
@@ -196,21 +202,21 @@ test('concluir conta o material na etapa e dá o XP uma única vez', function ()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('sections.0.checkpoint.state', 'available')
             ->where('sections.0.checkpoint.completed', 1)
-            // A etapa seguinte tem a sua própria contagem
+            // A etapa seguinte não tem material: nada do que foi feito aqui aparece lá
+            ->where('sections.1.checkpoint.total', 0)
             ->where('sections.1.checkpoint.completed', 0));
 
-    $this->actingAs($user)->postJson("/beta/play/etapa/{$first}/finish", ['material' => $other->uuid, 'answers' => [1 => 'certo', 2 => 'C']])
+    $this->actingAs($user)->postJson("/beta/play/etapa/{$first}/finish", ['results' => [['material' => $other->uuid, 'answers' => [1 => 'certo', 2 => 'C']]]])
         ->assertJsonPath('checkpoint.completed', 2);
 
     $this->actingAs($user)->get('/beta/play')
         ->assertInertia(fn (AssertableInertia $page) => $page->where('sections.0.checkpoint.state', 'complete'));
 
-    // Refazer o mesmo material na etapa seguinte conta lá, sem XP de novo
-    $this->actingAs($user)->postJson("/beta/play/etapa/{$second}/finish", ['material' => $material->uuid, 'answers' => [1 => 'certo', 2 => 'C']])
+    // Refazer o mesmo material (revisão) conta os acertos novos, sem XP de novo
+    $this->actingAs($user)->postJson("/beta/play/etapa/{$first}/finish", ['results' => [['material' => $material->uuid, 'answers' => [1 => 'certo', 2 => 'C']]]])
         ->assertSuccessful()
         ->assertJsonPath('xp_gained', 0)
-        ->assertJsonPath('first_completion', false)
-        ->assertJsonPath('checkpoint.completed', 1);
+        ->assertJsonPath('checkpoint.completed', 2);
 
     expect(XpTransaction::where('source_type', 'study_material')->count())->toBe(2)
         ->and($user->fresh()->lives)->toBe(5)
@@ -226,13 +232,56 @@ test('concluir conta o material na etapa e dá o XP uma única vez', function ()
             ->where('sections.0.checkpoint.total', 3));
 });
 
+test('a fase inteira é gravada no fim, com o XP de todos os materiais de uma vez', function () {
+    $legislation = studyLegislation(170);
+    $first = studyMaterial($legislation, 0, 9);
+    $second = studyMaterial($legislation, 10, 19);
+    $user = checkpointSubscriber();
+    completeBlocks($user, $legislation, 0, 159);
+    $key = checkpointKey($legislation, 159);
+
+    // Responder questões não grava nem dá XP
+    $this->actingAs($user)->postJson("/beta/play/etapa/{$key}/answer", ['material' => $first->uuid, 'position' => 1, 'answer' => 'certo'])
+        ->assertSuccessful();
+    expect($user->fresh()->xp)->toBe(0)->and(UserBetaCheckpoint::count())->toBe(0);
+
+    // Uma resposta faltando em qualquer material: nada é gravado
+    $this->actingAs($user)->postJson("/beta/play/etapa/{$key}/finish", ['results' => [
+        ['material' => $first->uuid, 'answers' => [1 => 'certo', 2 => 'C']],
+        ['material' => $second->uuid, 'answers' => [1 => 'certo']],
+    ]])->assertStatus(422);
+    expect(UserStudyMaterial::count())->toBe(0)->and($user->fresh()->xp)->toBe(0);
+
+    // O mesmo material duas vezes não vale
+    $this->actingAs($user)->postJson("/beta/play/etapa/{$key}/finish", ['results' => [
+        ['material' => $first->uuid, 'answers' => [1 => 'certo', 2 => 'C']],
+        ['material' => $first->uuid, 'answers' => [1 => 'certo', 2 => 'C']],
+    ]])->assertStatus(422);
+
+    $base = BetaCheckpointController::MATERIAL_XP_BASE;
+    $perCorrect = BetaCheckpointController::MATERIAL_XP_PER_CORRECT;
+
+    $this->actingAs($user)->postJson("/beta/play/etapa/{$key}/finish", ['results' => [
+        ['material' => $first->uuid, 'answers' => [1 => 'certo', 2 => 'C']],
+        ['material' => $second->uuid, 'answers' => [1 => 'errado', 2 => 'C']],
+    ]])
+        ->assertSuccessful()
+        ->assertJsonPath('correct_count', 3)
+        ->assertJsonPath('total', 4)
+        ->assertJsonPath('xp_gained', ($base + 2 * $perCorrect) + ($base + $perCorrect))
+        ->assertJsonPath('checkpoint.completed', 2)
+        ->assertJsonPath('user.xp', ($base + 2 * $perCorrect) + ($base + $perCorrect));
+
+    expect(XpTransaction::where('source_type', 'study_material')->count())->toBe(2);
+});
+
 test('concluir exige todas as questões respondidas', function () {
     $legislation = studyLegislation(170);
     $material = studyMaterial($legislation, 0, 9);
     $user = checkpointSubscriber();
     completeBlocks($user, $legislation, 0, 159);
 
-    $this->actingAs($user)->postJson('/beta/play/etapa/'.checkpointKey($legislation, 159).'/finish', ['material' => $material->uuid, 'answers' => [1 => 'certo']])
+    $this->actingAs($user)->postJson('/beta/play/etapa/'.checkpointKey($legislation, 159).'/finish', ['results' => [['material' => $material->uuid, 'answers' => [1 => 'certo']]]])
         ->assertStatus(422);
 
     expect(UserStudyMaterial::count())->toBe(0)->and(UserBetaCheckpoint::count())->toBe(0)->and($user->fresh()->xp)->toBe(0);
@@ -252,7 +301,7 @@ test('não assinante vê o desafio mas não abre nem conclui', function () {
 
     $this->actingAs($user)->get("/beta/play/etapa/{$key}")->assertRedirect(route('beta.play.map'));
     $this->actingAs($user)->postJson("/beta/play/etapa/{$key}/answer", ['material' => $material->uuid, 'position' => 1, 'answer' => 'certo'])->assertForbidden();
-    $this->actingAs($user)->postJson("/beta/play/etapa/{$key}/finish", ['material' => $material->uuid, 'answers' => [1 => 'certo', 2 => 'C']])->assertForbidden();
+    $this->actingAs($user)->postJson("/beta/play/etapa/{$key}/finish", ['results' => [['material' => $material->uuid, 'answers' => [1 => 'certo', 2 => 'C']]]])->assertForbidden();
 
     expect(UserStudyMaterial::count())->toBe(0)->and($user->fresh()->xp)->toBe(0);
 });
@@ -270,7 +319,7 @@ test('rascunho e material desatualizado ficam de fora', function () {
     $this->actingAs($user)->get('/beta/play')
         ->assertInertia(fn (AssertableInertia $page) => $page->where('sections.0.checkpoint.state', 'empty'));
 
-    $this->actingAs($user)->postJson("/beta/play/etapa/{$key}/finish", ['material' => $draft->uuid, 'answers' => [1 => 'certo', 2 => 'C']])->assertForbidden();
+    $this->actingAs($user)->postJson("/beta/play/etapa/{$key}/finish", ['results' => [['material' => $draft->uuid, 'answers' => [1 => 'certo', 2 => 'C']]]])->assertForbidden();
 });
 
 test('o avanço das fases é o mesmo com ou sem desafio', function () {

@@ -1,15 +1,16 @@
 ---
 name: gerar-material-estudo
-description: Gera material de estudo (um resumo em markdown e duas questões inéditas no estilo Cebraspe, FGV, FCC ou Vunesp) para os dispositivos de uma lei do Memorize Direito e grava no site pelas rotas REST do admin. Use quando o usuário pedir, por exemplo, "faça questões e resumos para a CF88", "gere material de estudo para o Código Penal" ou "continue o material da Constituição". Não use para criar ou editar lacunas, blocos ou o texto das leis.
+description: Gera material de estudo (um resumo em markdown e até quatro questões inéditas e difíceis no estilo Cebraspe, FGV, FCC ou Vunesp) para os dispositivos de uma lei do Memorize Direito e grava no site pelas rotas REST do admin. Use quando o usuário pedir, por exemplo, "faça questões e resumos para a CF88", "gere material de estudo para o Código Penal" ou "continue o material da Constituição". Não use para criar ou editar lacunas, blocos ou o texto das leis.
 ---
 
 # Gerar material de estudo
 
-Versão da skill: **1.0.0** (envie este valor em `skill_version`).
+Versão da skill: **1.2.0** (envie este valor em `skill_version`).
 
 Você vai ler os dispositivos de uma lei, escolher trechos que formem um assunto, escrever para
-cada trecho um resumo e duas questões, e gravar tudo no site. O que você grava entra como
-rascunho; um administrador revisa e publica. Você pode parar a qualquer momento: da próxima vez,
+cada trecho um resumo e até quatro questões, e gravar tudo no site. O que você grava entra
+**publicado** e aparece no mapa na hora, então cada material precisa estar pronto para o aluno.
+Se o usuário pedir para revisar antes de publicar, envie `"status": "draft"` em cada material. Você pode parar a qualquer momento: da próxima vez,
 o site devolve o ponto em que você parou.
 
 ## Configuração
@@ -89,25 +90,68 @@ repetir o mesmo título.
 
 ## Resumo
 
-Campo `summary`, em **markdown**, com **250 a 450 palavras**. Sem HTML (o site remove).
+Campo `summary`, em **markdown**, com **500 a 900 palavras**. Sem HTML (o site remove).
+
+**O resumo ensina, não só resume.** Escreva para quem nunca estudou o tema e precisa sair
+entendendo. Repetir a lei com outras palavras não serve: o aluno já tem o texto da lei nas fases
+de lacunas. Se a escolha for entre um resumo curto e um resumo que explica, fique com o que
+explica, mesmo que ele passe um pouco do tamanho.
+
+Para cada regra importante do trecho:
+
+1. **Diga a regra em linguagem simples**, antes de qualquer termo técnico. Termo técnico que
+   aparecer ("decadência", "litisconsórcio", "efeito ex tunc") é explicado na primeira vez.
+2. **Explique o porquê:** que problema a regra resolve, o que ela protege, qual a lógica por
+   trás dela. Quem entende a razão lembra da regra na prova.
+3. **Ilustre com um caso concreto.** Sempre que a regra puder ser aplicada a uma situação, crie
+   uma: personagem com nome, fatos, datas ou valores quando importarem, e o desfecho ("Maria,
+   servidora estadual, pediu a licença em março... Como o prazo é de 30 dias, o pedido de maio
+   chegou tarde"). O caso mostra a regra funcionando, passo a passo, e termina dizendo qual
+   dispositivo decidiu a questão.
+4. **Mostre o contraste:** mude um fato do caso e diga o que muda no resultado ("Se Maria fosse
+   servidora federal, a regra seria outra, porque..."). É assim que o aluno aprende as exceções
+   e as figuras que se confundem.
+
+Todo resumo tem **pelo menos um caso concreto desenvolvido**; trechos com várias regras têm um
+para cada regra principal. Só dispense o caso quando o dispositivo não se aplica a uma situação
+(definição pura, lista de princípios), e mesmo assim dê um exemplo curto do que entra e do que
+não entra no conceito.
+
+Além disso:
 
 - Use subtítulos (`##`), listas e **negrito** nos termos-chave. Tabela só quando comparar duas ou
-  três figuras lado a lado.
-- Explique os dispositivos com **casos concretos** ("Maria, servidora estadual, ...").
+  três figuras lado a lado. Os casos concretos ficam em parágrafos, não em tópicos soltos.
 - Mostre **como o tema costuma ser cobrado** e as **pegadinhas mais comuns** (troca de prazo,
-  de quórum, de competência, de "poderá" por "deverá").
+  de quórum, de competência, de "poderá" por "deverá"), explicando por que a versão trocada
+  está errada.
 - Termine com uma orientação prática de **como resolver** questões do tema.
 - Cite os dispositivos pelo número ("art. 12, § 4º"), para o aluno localizar.
 - Trate só do que está nos blocos cobertos. Não cite súmula, julgado ou doutrinador de memória.
+  O caso concreto é inventado por você e se resolve só com o texto dos blocos; não o apresente
+  como caso real.
+
+## Estilo do texto
+
+Vale para o resumo, os enunciados, as alternativas e os comentários.
+
+- **Não use travessão (—), meia-risca (–) nem hífen para intercalar ou explicar.** Intercale com
+  vírgulas ou parênteses; para introduzir uma explicação ou lista, use dois-pontos.
+  - Errado: "O prazo — que é decadencial — conta da posse."
+  - Certo: "O prazo, que é decadencial, conta da posse." ou "O prazo (decadencial) conta da posse."
+- Hífen só onde a ortografia exige ("vice-presidente", "decreto-lei", "dar-se-á") ou numa
+  referência legal ("art. 45-A").
+- Em listas markdown, o marcador é `-` no começo da linha; dentro do item, a mesma regra vale.
 
 `title`: curto e específico, com até 80 caracteres ("Nacionalidade: brasileiros natos e
 naturalizados"). Sem o nome da lei e sem numeração de material.
 
 ## Questões
 
-**Duas questões por material, de bancas diferentes entre si.** Alterne as quatro bancas ao longo
-da lei: escolha as duas com menor contagem em `questions_by_board`. O site aceita de 1 a 4
-questões, mas o padrão é 2.
+**Quatro questões por material**, o máximo que o site aceita: uma de cada banca (Cebraspe, FGV,
+FCC e Vunesp). Só faça menos quando o trecho não tiver matéria para quatro questões que não se
+repitam (trecho curto, com um ou dois dispositivos); nesse caso, faça três, ou duas no mínimo, e
+escolha as bancas com menor contagem em `questions_by_board`. Cada questão cobra um ponto
+diferente do trecho.
 
 | Banca | `board` | `type` | Estilo |
 |---|---|---|---|
@@ -123,7 +167,35 @@ Regras de formato, que o site valida:
   `"A"`, `"B"`, `"C"`, `"D"`, `"E"`, nessa ordem, e `correct_answer` é uma única letra.
 - `explanation` e `legal_basis` são obrigatórios em toda questão.
 
-Regras de qualidade:
+## Dificuldade
+
+O padrão é de prova de carreira (magistratura, Ministério Público, procuradorias, tribunais), não
+de prova de nível médio. Questão que se resolve lendo só o caput, ou que tem a resposta óbvia
+para quem nunca leu a lei, está fácil demais: reescreva.
+
+- **Cobre o detalhe, não a ideia geral:** exceções, ressalvas ("salvo", "exceto", "ressalvado"),
+  parágrafos e incisos, prazos, quóruns, legitimados, competência, a consequência exata de cada
+  hipótese.
+- **Combine dispositivos:** pelo menos duas questões por material exigem ligar dois ou mais
+  dispositivos do trecho (o caput com o parágrafo que o excepciona, dois incisos que se
+  confundem, a regra geral e a especial).
+- **Distratores plausíveis:** cada alternativa errada é algo que um aluno que leu a lei por cima
+  marcaria. Troque um único elemento do texto (prazo, sujeito, verbo, "poderá" por "deverá",
+  "ou" por "e", "maioria absoluta" por "dois terços"), use a regra de um dispositivo vizinho ou
+  aplique a regra geral onde vale a exceção. Nada de alternativa absurda ou fora do assunto.
+- **Casos concretos com mais de um fato relevante** (FGV e Vunesp): o aluno precisa enquadrar a
+  situação antes de aplicar a regra, e um dos fatos pode ser irrelevante de propósito.
+- **Cebraspe:** o item erra por um detalhe, nunca pela ideia toda; quando certo, use a redação
+  menos óbvia do dispositivo (paráfrase fiel, não cópia literal).
+- **FCC:** literalidade, mas com as cinco alternativas parecidas com o texto da lei, diferindo
+  em uma palavra ou expressão.
+- Prefira enunciados que pedem a alternativa **incorreta** ou que combinam afirmações (I, II e III)
+  em parte das questões de múltipla escolha, como as bancas fazem.
+
+Antes de gravar, pergunte para cada questão: um aluno que só leu o resumo por cima acertaria?
+Se sim, aumente a dificuldade.
+
+## Regras de qualidade
 
 - Toda questão é **respondível só com os dispositivos cobertos** e traz em `legal_basis` o
   dispositivo que fundamenta o gabarito ("CF, art. 12, I, a").
@@ -140,13 +212,17 @@ Regras de qualidade:
 
 ## Conferência antes de enviar
 
-Antes de cada `POST /`:
+Antes de cada `POST /` (o material vai direto para o mapa):
 
 1. Releia cada gabarito contra o `text` dos blocos recebidos, palavra por palavra nos pontos que a
    questão explora (prazos, números, sujeitos, verbos).
 2. Confirme que cada alternativa errada está errada pelo texto, e não só "menos certa".
 3. Confirme que o dispositivo de `legal_basis` está entre os blocos de `block_ids`.
-4. Confirme que o resumo não afirma nada que os blocos não digam.
+4. Confirme que o resumo não afirma nada que os blocos não digam, que explica cada regra
+   principal (e não só a repete) e que traz pelo menos um caso concreto desenvolvido.
+5. Procure "—", "–" e " - " no resumo, nos enunciados, nas alternativas e nos comentários, e
+   reescreva com vírgulas, parênteses ou dois-pontos.
+6. Confira a dificuldade (seção acima).
 
 Se não conseguir sustentar um gabarito no texto, reescreva a questão.
 
@@ -211,7 +287,7 @@ curl -s -X POST -H "Authorization: Bearer $MEMORIZE_TOKEN" -H "Accept: applicati
   "title": "Nacionalidade: brasileiros natos e naturalizados",
   "summary": "## Quem é brasileiro nato\n\nO **art. 12, I** …",
   "generated_by_model": "nome-do-modelo-que-você-é",
-  "skill_version": "1.0.0",
+  "skill_version": "1.2.0",
   "questions": [
     {
       "board": "cebraspe",
@@ -246,7 +322,11 @@ curl -s -X POST -H "Authorization: Bearer $MEMORIZE_TOKEN" -H "Accept: applicati
 - `block_ids` lista os blocos cobertos (no exemplo, o bloco 5020, revogado, ficou de fora).
 - `generated_by_model` é o identificador do modelo que você é.
 
-Resposta `201`: `{ "message": "…", "material": { "uuid": "…", "status": "draft", … }, "pending_blocks": 1637 }`.
+- `status` é opcional: o padrão é `"published"`. Mande `"draft"` só se o usuário pedir para
+  revisar antes de publicar.
+- O exemplo mostra duas questões para ficar curto; o material normal tem quatro, uma por banca.
+
+Resposta `201`: `{ "message": "…", "material": { "uuid": "…", "status": "published", … }, "pending_blocks": 1637 }`.
 
 ### Pular um trecho
 

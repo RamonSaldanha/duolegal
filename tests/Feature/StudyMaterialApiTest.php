@@ -82,7 +82,7 @@ test('next avança depois de um material e depois de um trecho pulado', function
 
     $this->withToken($token)->postJson(STUDY_API, agentPayload($legislation, 0, 9))
         ->assertCreated()
-        ->assertJsonPath('material.status', 'draft')
+        ->assertJsonPath('material.status', 'published')
         ->assertJsonPath('pending_blocks', 50);
 
     $this->withToken($token)->getJson(STUDY_API.'/next?legislation='.$legislation->uuid)
@@ -100,8 +100,9 @@ test('next avança depois de um material e depois de um trecho pulado', function
         ->assertJsonPath('first_block_id', $ids[50])
         ->assertJsonCount(10, 'blocks');
 
-    $material = StudyMaterial::where('status', 'draft')->firstOrFail();
-    expect($material->questions)->toHaveCount(2)
+    $material = StudyMaterial::where('status', 'published')->firstOrFail();
+    expect($material->published_at)->not->toBeNull()
+        ->and($material->questions)->toHaveCount(2)
         ->and($material->block_ids)->toBe(array_slice($ids, 0, 10))
         ->and($material->content_hash)->toHaveLength(64)
         ->and($material->generated_by_model)->toBe('claude-teste')
@@ -292,4 +293,18 @@ test('bloco criado depois no meio de um trecho não vira pendente', function () 
     $this->withToken(agentToken())->getJson(STUDY_API.'/next?legislation='.$legislation->uuid)
         ->assertJsonPath('pending_blocks', 10)
         ->assertJsonPath('first_block_id', studyBlockIds($legislation)[11]);
+});
+
+test('o agente pode gravar como rascunho quando pedirem revisão antes', function () {
+    $legislation = studyLegislation(30);
+
+    $this->withToken(agentToken())->postJson(STUDY_API, agentPayload($legislation, 0, 9) + ['status' => 'draft'])
+        ->assertCreated()
+        ->assertJsonPath('material.status', 'draft');
+
+    expect(StudyMaterial::firstOrFail()->published_at)->toBeNull();
+
+    $this->withToken(agentToken())->postJson(STUDY_API, agentPayload($legislation, 10, 19) + ['status' => 'skipped'])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('status');
 });

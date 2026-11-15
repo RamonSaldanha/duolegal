@@ -1,17 +1,19 @@
 <script setup lang="ts">
 import { Head, router, usePage } from '@inertiajs/vue3';
-import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
-import { FileCheck, Heart, Infinity as InfinityIcon, Target, X, Zap } from 'lucide-vue-next';
 import axios from 'axios';
+import { Heart, Infinity as InfinityIcon, X } from 'lucide-vue-next';
+import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
 // @ts-expect-error: vue-rewards package does not provide proper type definitions
-import { useReward } from 'vue-rewards';
 import ActiveChallenge from '@/components/legislation-play/ActiveChallenge.vue';
-import LevelUpOverlay from '@/components/LevelUpOverlay.vue';
-import GameButton from '@/components/ui/GameButton.vue';
 import CompletedSegment from '@/components/legislation-play/CompletedSegment.vue';
+import LevelUpOverlay from '@/components/LevelUpOverlay.vue';
+import PhaseComplete from '@/components/PhaseComplete.vue';
+import ResultBar from '@/components/ResultBar.vue';
+import GameButton from '@/components/ui/GameButton.vue';
+import type { BetaFailResponse, BetaFinishResponse } from '@/types/beta-play';
 import type { ActiveSegmentData, CompletedSegmentData, DisciplineLevelUp, SegmentAnswer } from '@/types/legislation-play';
 import { requiredCorrect } from '@/types/legislation-play';
-import type { BetaFailResponse, BetaFinishResponse } from '@/types/beta-play';
+import { useReward } from 'vue-rewards';
 
 interface ChallengeResult {
     segment_uuid: string;
@@ -102,10 +104,9 @@ async function loadMoreAbove() {
     const oldScrollHeight = container.scrollHeight;
 
     try {
-        const { data } = await axios.get<{ segments: CompletedSegmentData[]; hasMore: boolean }>(
-            route('play.completed', props.legislation.uuid),
-            { params: { before_position: earlier.value[0].position, limit: 5 } },
-        );
+        const { data } = await axios.get<{ segments: CompletedSegmentData[]; hasMore: boolean }>(route('play.completed', props.legislation.uuid), {
+            params: { before_position: earlier.value[0].position, limit: 5 },
+        });
 
         if (data.segments.length > 0) {
             earlier.value = [...data.segments, ...earlier.value];
@@ -272,45 +273,15 @@ onUnmounted(() => {
         <LevelUpOverlay :level-up="levelUp" @done="levelUp = null" />
 
         <!-- ===== Fim da fase ===== -->
-        <div v-if="stage === 'done'" class="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 pb-6">
-            <div class="mx-auto flex w-full max-w-md flex-1 flex-col">
-                <div class="flex flex-1 flex-col items-center justify-center py-6 text-center">
-                    <img src="/img/vencedora.gif" alt="" class="h-56 w-auto sm:h-64" />
-                    <h1 class="mt-4 text-2xl font-bold text-gray-900 dark:text-white">
-                        {{ isReview ? 'Revisão concluída!' : 'Fase concluída!' }}
-                    </h1>
-                    <p class="mt-2 text-base text-gray-500 dark:text-gray-400">
-                        Você está um passo mais perto da aprovação.
-                    </p>
-                </div>
-
-                <div class="grid grid-cols-3 divide-x-2 divide-gray-200 rounded-2xl border-2 border-gray-200 dark:divide-gray-700 dark:border-gray-700">
-                    <div class="px-2 py-3 text-center">
-                        <div class="flex items-center justify-center gap-1.5 text-xl font-bold text-green-600 dark:text-green-400">
-                            <FileCheck class="h-5 w-5" />
-                            {{ total }}
-                        </div>
-                        <div class="mt-0.5 text-sm text-gray-500 dark:text-gray-400">Desafios</div>
-                    </div>
-                    <div class="px-2 py-3 text-center">
-                        <div class="flex items-center justify-center gap-1.5 text-xl font-bold text-purple-500">
-                            <Zap class="h-5 w-5" />
-                            {{ xpGained }}
-                        </div>
-                        <div class="mt-0.5 text-sm text-gray-500 dark:text-gray-400">XP recebido</div>
-                    </div>
-                    <div class="px-2 py-3 text-center">
-                        <div class="flex items-center justify-center gap-1.5 text-xl font-bold text-blue-500">
-                            <Target class="h-5 w-5" />
-                            {{ accuracy }}%
-                        </div>
-                        <div class="mt-0.5 text-sm text-gray-500 dark:text-gray-400">Precisão</div>
-                    </div>
-                </div>
-
-                <GameButton variant="purple" size="lg" class="mt-6 w-full" @click="backToMap">Continuar</GameButton>
-            </div>
-        </div>
+        <PhaseComplete
+            v-if="stage === 'done'"
+            :title="isReview ? 'Revisão concluída!' : 'Fase concluída!'"
+            :count="total"
+            count-label="Desafios"
+            :xp="xpGained"
+            :accuracy="accuracy"
+            @continue="backToMap"
+        />
 
         <!-- ===== Gravando / erro ao gravar ===== -->
         <div v-else-if="stage !== 'playing'" class="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center">
@@ -368,7 +339,7 @@ onUnmounted(() => {
                                 :key="`${active.uuid}-${attempt}`"
                                 :segment="active"
                                 controls-target="#beta-controls"
-                                hide-result-icon
+                                hide-result
                                 @submit="handleSubmit"
                             />
                         </div>
@@ -376,28 +347,31 @@ onUnmounted(() => {
                 </div>
 
                 <!-- Controles: palavras e Verificar (teleport), depois o resultado -->
-                <div class="shrink-0 px-3 pb-5 md:px-4">
+                <div v-show="!lastResult" class="shrink-0 px-3 pb-5 md:px-4">
                     <div class="mx-auto w-full sm:w-[95%] lg:w-[50rem]">
                         <div id="beta-controls" />
-
-                        <div v-if="lastResult" class="pt-3">
-                            <div
-                                v-if="wrongAnswers.length > 0"
-                                class="mb-3 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-300"
-                            >
-                                <p class="font-bold">Resposta correta:</p>
-                                <p v-for="answer in wrongAnswers" :key="answer.gap_order" class="mt-1">
-                                    <span class="line-through opacity-70">{{ answer.user_word }}</span>
-                                    <span class="mx-1.5">→</span>
-                                    <span class="font-bold">{{ answer.correct_word }}</span>
-                                </p>
-                            </div>
-                            <GameButton :variant="lastResult.passed ? 'green' : 'red'" size="lg" class="w-full" @click="next">
-                                {{ lastResult.passed ? 'Continuar' : 'Tentar de novo' }}
-                            </GameButton>
-                        </div>
                     </div>
                 </div>
+
+                <!-- Resultado: a mesma barra do desafio da etapa -->
+                <ResultBar
+                    v-if="lastResult"
+                    :correct="lastResult.passed"
+                    :button-label="lastResult.passed ? 'Continuar' : 'Tentar de novo'"
+                    @continue="next"
+                >
+                    <p v-if="lastResult.answers.length > 0">
+                        {{ lastResult.answers.length - wrongAnswers.length }} de {{ lastResult.answers.length }} corretas
+                    </p>
+                    <template v-if="wrongAnswers.length > 0">
+                        <p class="mt-2 font-bold">Resposta correta:</p>
+                        <p v-for="answer in wrongAnswers" :key="answer.gap_order" class="mt-1">
+                            <span class="line-through opacity-70">{{ answer.user_word }}</span>
+                            <span class="mx-1.5">→</span>
+                            <span class="font-bold">{{ answer.correct_word }}</span>
+                        </p>
+                    </template>
+                </ResultBar>
             </div>
         </template>
 

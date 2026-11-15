@@ -69,7 +69,6 @@ class BetaCheckpointController extends BetaPlayController
                 ])->values(),
                 'done' => isset($done[$material->id]),
             ])->values(),
-            'xp' => ['base' => self::MATERIAL_XP_BASE, 'per_correct' => self::MATERIAL_XP_PER_CORRECT],
         ]);
     }
 
@@ -96,32 +95,48 @@ class BetaCheckpointController extends BetaPlayController
     }
 
     /**
-     * Conclusão de um material dentro da etapa: recalcula os acertos no servidor, marca o
-     * material como feito nesta etapa e dá o XP só na primeira vez que o material é concluído.
+     * Fim da fase: recebe todos os materiais jogados de uma vez, recalcula os acertos no
+     * servidor, marca os materiais como feitos nesta etapa e só então dá o XP, apenas pelos
+     * materiais concluídos pela primeira vez. Sair no meio não grava nada.
      */
     public function finish(Request $request, string $checkpoint): JsonResponse
     {
         $validated = $request->validate([
-            'material' => ['required', 'uuid'],
-            'answers' => ['required', 'array'],
-            'answers.*' => ['required', 'string', 'max:10'],
+            'results' => ['required', 'array', 'min:1'],
+            'results.*.material' => ['required', 'uuid', 'distinct'],
+            'results.*.answers' => ['present', 'array'],
+            'results.*.answers.*' => ['required', 'string', 'max:10'],
         ]);
 
         $user = Auth::user();
-        $found = null;
-        $material = $this->authorizeMaterial($user, $checkpoint, $validated['material'], $found);
+        $found = $this->authorizedCheckpoint($user, $checkpoint);
 
-        $answers = [];
-        $correct = 0;
-        foreach ($material->questions as $question) {
-            $answer = $validated['answers'][$question->position] ?? null;
-            abort_if($answer === null, 422, 'Responda todas as questões.');
+        $materials = StudyMaterial::whereIn('uuid', array_column($validated['results'], 'material'))
+            ->with('questions')
+            ->get()
+            ->keyBy('uuid');
 
-            $answers[$question->position] = $answer;
-            $correct += $this->isCorrect($question, $answer) ? 1 : 0;
+        // Corrige tudo antes de gravar qualquer coisa
+        $graded = [];
+        foreach ($validated['results'] as $result) {
+            $material = $materials->get($result['material']);
+            abort_if(! $material || ! in_array($material->id, $found['material_ids'], true), 404);
+
+            $answers = [];
+            $correct = 0;
+            foreach ($material->questions as $question) {
+                $answer = $result['answers'][$question->position] ?? null;
+                abort_if($answer === null, 422, 'Responda todas as questões.');
+
+                $answers[$question->position] = $answer;
+                $correct += $this->isCorrect($question, $answer) ? 1 : 0;
+            }
+
+            $graded[] = ['material' => $material, 'answers' => $answers, 'correct' => $correct];
         }
 
-        $xpGained = DB::transaction(function () use ($user, $material, $answers, $correct, $found) {
+        // XP por lei, para a conquista de cada disciplina
+        $xpByLegislation = DB::transaction(function () use ($user, $graded, $found) {
             $progress = UserBetaCheckpoint::where('user_id', $user->id)
                 ->where('legislation_segment_id', $found['anchor_block_id'])
                 ->lockForUpdate()
@@ -130,42 +145,49 @@ class BetaCheckpointController extends BetaPlayController
                     'legislation_segment_id' => $found['anchor_block_id'],
                     'done_material_ids' => [],
                 ]);
-            $progress->done_material_ids = array_values(array_unique([...$progress->doneIds(), $material->id]));
+            $progress->done_material_ids = array_values(array_unique([
+                ...$progress->doneIds(),
+                ...array_map(fn ($item) => $item['material']->id, $graded),
+            ]));
             $progress->save();
 
-            $record = UserStudyMaterial::where('user_id', $user->id)
-                ->where('study_material_id', $material->id)
-                ->lockForUpdate()
-                ->first() ?? new UserStudyMaterial(['user_id' => $user->id, 'study_material_id' => $material->id]);
+            $xpByLegislation = [];
+            foreach ($graded as ['material' => $material, 'answers' => $answers, 'correct' => $correct]) {
+                $record = UserStudyMaterial::where('user_id', $user->id)
+                    ->where('study_material_id', $material->id)
+                    ->lockForUpdate()
+                    ->first() ?? new UserStudyMaterial(['user_id' => $user->id, 'study_material_id' => $material->id]);
 
-            $first = $record->completed_at === null;
+                $first = $record->completed_at === null;
 
-            $record->fill([
-                'answers' => $answers,
-                'correct_count' => $correct,
-                'completed_at' => $record->completed_at ?? now(),
-            ])->save();
+                $record->fill([
+                    'answers' => $answers,
+                    'correct_count' => $correct,
+                    'completed_at' => $record->completed_at ?? now(),
+                ])->save();
 
-            if (! $first) {
-                return 0;
+                if ($first) {
+                    $xp = $user->boostedXp(self::MATERIAL_XP_BASE + self::MATERIAL_XP_PER_CORRECT * $correct);
+                    $user->addXp($xp, 'study_material', $material->id, $material->legislation_id);
+                    $xpByLegislation[$material->legislation_id] = ($xpByLegislation[$material->legislation_id] ?? 0) + $xp;
+                }
             }
 
-            $xp = $user->boostedXp(self::MATERIAL_XP_BASE + self::MATERIAL_XP_PER_CORRECT * $correct);
-            $user->addXp($xp, 'study_material', $material->id, $material->legislation_id);
-
-            return $xp;
+            return $xpByLegislation;
         });
+
+        $levelUp = null;
+        foreach ($xpByLegislation as $legislationId => $xp) {
+            $levelUp ??= app(XpService::class)->detectDisciplineLevelUp($user, $legislationId, $xp);
+        }
 
         $doneNow = count(array_intersect($found['material_ids'], $this->doneIds($user, $found)));
 
         return response()->json([
-            'correct_count' => $correct,
-            'total' => $material->questions->count(),
-            'xp_gained' => $xpGained,
-            'first_completion' => $xpGained > 0,
-            'discipline_level_up' => $xpGained > 0
-                ? app(XpService::class)->detectDisciplineLevelUp($user, $material->legislation_id, $xpGained)
-                : null,
+            'correct_count' => array_sum(array_column($graded, 'correct')),
+            'total' => array_sum(array_map(fn ($item) => $item['material']->questions->count(), $graded)),
+            'xp_gained' => array_sum($xpByLegislation),
+            'discipline_level_up' => $levelUp,
             'checkpoint' => ['completed' => $doneNow, 'total' => $found['total']],
             'user' => ['xp' => $user->xp],
         ]);
@@ -187,14 +209,22 @@ class BetaCheckpointController extends BetaPlayController
         return null;
     }
 
-    /** As checagens de show() para as rotas JSON, e o material pedido (que precisa estar na etapa). */
-    private function authorizeMaterial(User $user, string $key, string $materialUuid, ?array &$found = null): StudyMaterial
+    /** As checagens de show() para as rotas JSON. */
+    private function authorizedCheckpoint(User $user, string $key): array
     {
         $found = $this->findCheckpoint($user, $key);
 
         abort_if(! $found, 404);
         abort_if($found['premium_required'], 403, 'O desafio da etapa é exclusivo para assinantes.');
         abort_if(! in_array($found['state'], ['available', 'complete'], true), 403, 'Conclua as fases desta etapa para liberar o desafio.');
+
+        return $found;
+    }
+
+    /** O material pedido, que precisa estar no desafio desta etapa. */
+    private function authorizeMaterial(User $user, string $key, string $materialUuid): StudyMaterial
+    {
+        $found = $this->authorizedCheckpoint($user, $key);
 
         $material = StudyMaterial::where('uuid', $materialUuid)->with('questions')->first();
         abort_if(! $material || ! in_array($material->id, $found['material_ids'], true), 404);

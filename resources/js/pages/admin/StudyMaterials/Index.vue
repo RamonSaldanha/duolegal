@@ -95,8 +95,8 @@ function destroy(material: StudyMaterialRow) {
                     <div>
                         <CardTitle class="text-2xl font-bold">Material de estudo</CardTitle>
                         <CardDescription>
-                            Resumos e questões gravados pelos agentes de IA. Todo material entra como rascunho e só aparece no mapa beta depois de
-                            publicado.
+                            Resumos e questões gravados pelos agentes de IA. Todo material entra publicado e já aparece no mapa beta; despublique
+                            o que precisar de revisão.
                         </CardDescription>
                     </div>
                     <Link :href="route('admin.study-materials.install')">

@@ -13,7 +13,7 @@ const benefits = [
     {
         icon: BookOpenCheck,
         title: 'Resumos e questões de concurso',
-        text: 'Ao fim de cada etapa, um resumo de tudo o que você estudou e questões no estilo Cebraspe, FGV, FCC e Vunesp.',
+        text: 'Ao fim de cada etapa, resumos do que você estudou nela e questões no estilo Cebraspe, FGV, FCC e Vunesp.',
     },
     { icon: Heart, title: 'Vidas infinitas', text: 'Erre à vontade e estude sem pausa.' },
     { icon: Scale, title: 'Todas as legislações', text: 'Acesso completo ao conteúdo.' },

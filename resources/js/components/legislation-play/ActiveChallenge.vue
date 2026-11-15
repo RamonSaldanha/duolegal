@@ -10,6 +10,8 @@ const props = defineProps<{
     controlsTarget?: string;
     /** Esconde o ✓/✗ do resultado (a tela que usa já mostra o acerto ou o erro). */
     hideResultIcon?: boolean;
+    // A tela mostra o resultado por conta própria (barra de resultado)
+    hideResult?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -252,7 +254,7 @@ defineExpose({ reset });
         </div>
 
         <!-- Resultado após verificação -->
-        <div v-else class="text-center py-2">
+        <div v-else-if="!hideResult" class="text-center py-2">
             <div v-if="segment.total_gaps > 0" class="flex items-center justify-center gap-3">
                 <div
                     v-if="!hideResultIcon"

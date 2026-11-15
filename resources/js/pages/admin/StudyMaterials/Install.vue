@@ -320,7 +320,7 @@ const tools = computed(() => [
                         <p class="text-sm font-medium">Depois, peça ao agente:</p>
                         <pre class="command">faça questões e resumos para a Constituição Federal</pre>
                         <p class="mt-2 text-sm text-muted-foreground">
-                            Ele continua de onde parou. O que ele grava entra como rascunho em Material de estudo, para você revisar e publicar.
+                            Ele continua de onde parou. O que ele grava entra publicado e já aparece no mapa; em Material de estudo você revisa e despublica se precisar.
                         </p>
                     </div>
                 </CardContent>

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import UserAvatar from '@/components/UserAvatar.vue';
 import UserMenuContent from '@/components/UserMenuContent.vue';
+import XpCounter from '@/components/XpCounter.vue';
 import type { AvatarConfig } from '@/lib/avatar';
 import { Link, usePage } from '@inertiajs/vue3';
 import { Heart, Gem, Infinity, Flame } from 'lucide-vue-next';
@@ -102,10 +103,7 @@ watch(userLives, (newValue, oldValue) => {
                 </Link>
 
                 <!-- XP Counter -->
-                <div v-if="auth.user?.xp !== undefined" class="flex items-center gap-1">
-                    <span class="rounded bg-purple-100 px-2 py-1 text-xs font-bold text-purple-500 dark:bg-purple-900/30">XP</span>
-                    <span class="font-bold text-purple-500 text-sm sm:text-base whitespace-nowrap">{{ auth.user.xp }}</span>
-                </div>
+                <XpCounter v-if="auth.user?.xp !== undefined" :xp="auth.user.xp" :user-id="auth.user.id" />
 
                 <!-- Diamond / Premium -->
                 <Link

@@ -409,10 +409,10 @@ class StudyMaterialService
     }
 
     /**
-     * Desafio de cada etapa do mapa beta: a fase paralela ao fim da etapa. Ela reúne, de forma
-     * cumulativa, todos os materiais publicados e atuais cujo último bloco cai nesta etapa ou
-     * numa anterior da trilha (serve de revisão de tudo o que a pessoa já leu). Só libera
-     * quando a etapa inteira está concluída e há ao menos um material.
+     * Desafio de cada etapa do mapa beta: a fase paralela ao fim da etapa. Ela reúne só os
+     * materiais publicados e atuais cujo último bloco cai nesta etapa; os de outras etapas
+     * ficam cada um no seu desafio e não se repetem. Só libera quando a etapa inteira está
+     * concluída e há ao menos um material.
      *
      * @param  array<int, array{complete: bool, block_ids: array<int, int>}>  $sections  etapas na ordem da trilha
      * @return array<int, array<string, mixed>> uma por etapa, na mesma ordem
@@ -456,13 +456,13 @@ class StudyMaterialService
 
         $premium = $user->hasInfiniteLives();
         $result = [];
-        $ids = [];
-        $questions = 0;
         $next = 0;
 
         foreach ($sections as $si => $section) {
-            // Cumulativo: os materiais desta etapa somam-se aos das anteriores
-            while ($next < $materials->count() && $sectionOf[$materials[$next]->last_block_id] <= $si) {
+            // Só os materiais desta etapa: os das anteriores ficam no desafio de cada uma
+            $ids = [];
+            $questions = 0;
+            while ($next < $materials->count() && $sectionOf[$materials[$next]->last_block_id] === $si) {
                 $ids[] = $materials[$next]->id;
                 $questions += (int) $materials[$next]->questions_count;
                 $next++;

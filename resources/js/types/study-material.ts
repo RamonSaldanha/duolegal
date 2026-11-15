@@ -1,5 +1,7 @@
 // Material de estudo (resumo + questões) gravado por agentes de IA.
 
+import type { DisciplineLevelUp } from '@/types/legislation-play';
+
 export type StudyBoard = 'cebraspe' | 'fgv' | 'fcc' | 'vunesp';
 export type StudyQuestionType = 'true_false' | 'multiple_choice';
 export type StudyStatus = 'draft' | 'published' | 'skipped';
@@ -61,8 +63,9 @@ export interface CheckpointFinishResponse {
     correct_count: number;
     total: number;
     xp_gained: number;
-    first_completion: boolean;
+    discipline_level_up: DisciplineLevelUp | null;
     checkpoint: { completed: number; total: number };
+    user: { xp: number };
 }
 
 /** Material como a fase da etapa recebe: resumo já em HTML seguro e questões sem gabarito. */

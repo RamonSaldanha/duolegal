@@ -106,7 +106,10 @@ class StudyMaterialController extends Controller
             'block_ids.*' => ['integer'],
             'generated_by_model' => ['nullable', 'string', 'max:100'],
             'skill_version' => ['nullable', 'string', 'max:30'],
+            // Entra publicado; o agente só manda "draft" quando o usuário pede para revisar antes
+            'status' => ['nullable', 'in:draft,published'],
         ], [
+            'status.in' => 'status aceita "published" (padrão) ou "draft".',
             'block_ids.required' => 'block_ids não pode ficar vazio: informe os blocos do trecho que o material cobre.',
         ]);
 
@@ -134,7 +137,8 @@ class StudyMaterialController extends Controller
                 'content_hash' => $this->service->contentHash($covered),
                 'title' => $content['title'],
                 'summary' => $content['summary'],
-                'status' => StudyMaterial::STATUS_DRAFT,
+                'status' => $request->input('status', StudyMaterial::STATUS_PUBLISHED),
+                'published_at' => $request->input('status', StudyMaterial::STATUS_PUBLISHED) === StudyMaterial::STATUS_PUBLISHED ? now() : null,
                 'generated_by_model' => $request->input('generated_by_model'),
                 'skill_version' => $request->input('skill_version'),
             ]);
@@ -145,7 +149,9 @@ class StudyMaterialController extends Controller
         });
 
         return response()->json([
-            'message' => 'Material gravado como rascunho. O admin revisa e publica.',
+            'message' => $material->status === StudyMaterial::STATUS_PUBLISHED
+                ? 'Material gravado e publicado: já aparece no mapa.'
+                : 'Material gravado como rascunho. O admin revisa e publica.',
             'material' => [
                 'uuid' => $material->uuid,
                 'status' => $material->status,

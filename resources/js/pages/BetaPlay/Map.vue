@@ -200,13 +200,13 @@ function checkpointText(checkpoint: BetaCheckpoint): string {
     const content = `${plural(checkpoint.total, 'resumo', 'resumos')} e ${plural(checkpoint.questions, 'questão', 'questões')}`;
     switch (checkpoint.state) {
         case 'locked':
-            return 'Conclua as fases desta etapa para liberar a revisão de tudo o que você estudou até aqui.';
+            return 'Conclua as fases desta etapa para liberar os resumos e as questões dela.';
         case 'empty':
-            return 'Ainda não há resumos nem questões para os dispositivos que você estudou até aqui.';
+            return 'Ainda não há resumos nem questões para os dispositivos desta etapa.';
         case 'complete':
-            return `Você fez os ${content} dos dispositivos estudados até aqui. Pode revisar quando quiser.`;
+            return `Você fez os ${content} dos dispositivos desta etapa. Pode revisar quando quiser.`;
         default:
-            return `${content} sobre os dispositivos que você já estudou.`;
+            return `${content} sobre os dispositivos desta etapa.`;
     }
 }
 
@@ -703,30 +703,35 @@ onUnmounted(() => {
     box-shadow: none;
 }
 
-/* Desafio da etapa: mesmo tamanho e formato das fases, na cor própria */
+/* Desafio da etapa: mesmo tamanho e formato das fases, na cor própria. A borda de baixo
+   usa --edge para o hover poder encolhê-la, como nos quadrados (efeito de apertar). */
+.checkpoint .node-face {
+    box-shadow: 0 6px 0 0 var(--edge);
+}
 .checkpoint-available .node-face {
+    --edge: theme('colors.purple.700');
     background: theme('colors.purple.500');
-    box-shadow: 0 6px 0 0 theme('colors.purple.700');
 }
 .checkpoint-complete .node-face {
+    --edge: #15803d;
     background: theme('colors.green.500');
     color: #fff;
-    box-shadow: 0 6px 0 0 #15803d;
 }
 .checkpoint-locked .node-face,
 .checkpoint-empty .node-face {
+    --edge: theme('colors.gray.300');
     background: theme('colors.gray.200');
     color: theme('colors.gray.400');
-    box-shadow: 0 6px 0 0 theme('colors.gray.300');
 }
 .dark .checkpoint-locked .node-face,
 .dark .checkpoint-empty .node-face {
+    --edge: theme('colors.gray.800');
     background: theme('colors.gray.700');
     color: theme('colors.gray.500');
-    box-shadow: 0 6px 0 0 theme('colors.gray.800');
 }
 .checkpoint:hover .node-face {
     transform: translateY(2px);
+    box-shadow: 0 4px 0 0 var(--edge);
 }
 .checkpoint:active .node-face {
     transform: translateY(6px);

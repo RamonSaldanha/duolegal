@@ -314,8 +314,8 @@ class BetaPlayController extends LegislationPlayController
     }
 
     /**
-     * Desafio de cada etapa (a fase paralela ao fim dela), com o conteúdo cumulativo de todas
-     * as etapas até ali. Calculado sobre a trilha inteira, antes de recortar a janela do mapa.
+     * Desafio de cada etapa (a fase paralela ao fim dela), só com os materiais da própria
+     * etapa. Calculado sobre a trilha inteira, antes de recortar a janela do mapa.
      *
      * @return array<int, array<string, mixed>> as etapas com 'checkpoint' e, por enquanto, os campos internos
      */
