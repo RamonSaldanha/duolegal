@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\BetaBonusController;
+use App\Http\Controllers\BetaCheckpointController;
 use App\Http\Controllers\BetaPlayController;
 use App\Http\Controllers\LegislationEditorController;
 use App\Http\Controllers\LegislationPlayController;
@@ -32,10 +32,10 @@ Route::middleware(['auth', 'admin'])->prefix('beta/play')->group(function () {
     Route::post('fail', [BetaPlayController::class, 'betaFail'])->name('beta.play.fail');
     Route::post('finish', [BetaPlayController::class, 'betaFinish'])->name('beta.play.finish');
 
-    // Desafio bônus: material de estudo (resumo + questões), só para assinantes
-    Route::get('bonus/{studyMaterial}', [BetaBonusController::class, 'show'])->whereUuid('studyMaterial')->name('beta.play.bonus');
-    Route::post('bonus/{studyMaterial}/answer', [BetaBonusController::class, 'answer'])->whereUuid('studyMaterial')->name('beta.play.bonus.answer');
-    Route::post('bonus/{studyMaterial}/finish', [BetaBonusController::class, 'finish'])->whereUuid('studyMaterial')->name('beta.play.bonus.finish');
+    // Desafio da etapa: fase paralela com os resumos e as questões até ali, só para assinantes
+    Route::get('etapa/{checkpoint}', [BetaCheckpointController::class, 'show'])->whereUuid('checkpoint')->name('beta.play.checkpoint');
+    Route::post('etapa/{checkpoint}/answer', [BetaCheckpointController::class, 'answer'])->whereUuid('checkpoint')->name('beta.play.checkpoint.answer');
+    Route::post('etapa/{checkpoint}/finish', [BetaCheckpointController::class, 'finish'])->whereUuid('checkpoint')->name('beta.play.checkpoint.finish');
 });
 
 // Rotas do editor de legislações (admin)

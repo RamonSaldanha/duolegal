@@ -41,7 +41,7 @@ class BetaPlayController extends LegislationPlayController
     {
         $user = Auth::user();
 
-        $sections = $this->buildSections($this->betaPhases($user));
+        $sections = $this->withCheckpoints($user, $this->buildSections($this->betaPhases($user)));
 
         $currentIndex = 0;
         foreach ($sections as $i => $section) {
@@ -58,7 +58,7 @@ class BetaPlayController extends LegislationPlayController
         $end = min(count($sections), $currentIndex + $after + 1);
 
         return Inertia::render('BetaPlay/Map', [
-            'sections' => $this->withBonus($user, array_slice($sections, $start, $end - $start)),
+            'sections' => array_slice($sections, $start, $end - $start),
             'hasMoreAbove' => $start > 0,
             'hasMoreBelow' => $end < count($sections),
             'window' => [
@@ -235,7 +235,7 @@ class BetaPlayController extends LegislationPlayController
 
     // ==================== PRIVATE METHODS ====================
 
-    private function betaPhases(User $user): array
+    protected function betaPhases(User $user): array
     {
         $selectedUuids = UserLegislationSelection::where('user_id', $user->id)
             ->join('legislations', 'legislations.id', '=', 'user_legislation_selections.legislation_id')
@@ -257,7 +257,7 @@ class BetaPlayController extends LegislationPlayController
     /**
      * Agrupa as fases em trechos (mesma lei) e cada trecho em quadrados de PHASES_PER_GROUP fases.
      */
-    private function buildSections(array $phases): array
+    protected function buildSections(array $phases): array
     {
         $maxPerSection = self::PHASES_PER_GROUP * self::GROUPS_PER_SECTION;
 
@@ -288,7 +288,7 @@ class BetaPlayController extends LegislationPlayController
                     'completed_phases' => $completed,
                     'total_phases' => count($chunk),
                     'current_phase_id' => $current['id'] ?? null,
-                    // Só para uso interno (desafio bônus); sai antes de ir para a tela
+                    // Só para uso interno (desafio da etapa); sai antes de ir para a tela
                     'block_ids' => array_merge(...array_column($chunk, 'block_ids')),
                     'phases' => array_map(fn ($p) => [
                         'id' => $p['id'],
@@ -314,24 +314,31 @@ class BetaPlayController extends LegislationPlayController
     }
 
     /**
-     * Põe em cada quadrado o desafio bônus (materiais de estudo publicados cujo trecho termina
-     * nele) ou nulo. Fica fora do cálculo de fase atual/bloqueada: o bônus nunca trava o avanço.
+     * Desafio de cada etapa (a fase paralela ao fim dela), com o conteúdo cumulativo de todas
+     * as etapas até ali. Calculado sobre a trilha inteira, antes de recortar a janela do mapa.
+     *
+     * @return array<int, array<string, mixed>> as etapas com 'checkpoint' e, por enquanto, os campos internos
      */
-    private function withBonus(User $user, array $sections): array
+    protected function checkpointsFor(User $user, array $sections): array
     {
-        $squares = [];
-        foreach ($sections as $si => $section) {
-            foreach ($section['groups'] as $gi => $group) {
-                $squares["{$si}.{$gi}"] = $group['block_ids'];
-            }
-        }
+        return app(StudyMaterialService::class)->checkpoints($user, array_map(fn ($section) => [
+            'complete' => $section['completed_phases'] === $section['total_phases'],
+            'block_ids' => array_merge(...array_column($section['groups'], 'block_ids')),
+        ], $sections));
+    }
 
-        $bonus = app(StudyMaterialService::class)->bonusForSquares($user, $squares);
+    /**
+     * Põe em cada etapa o seu desafio. Fica fora do cálculo de fase atual/bloqueada: o
+     * desafio nunca trava o avanço.
+     */
+    private function withCheckpoints(User $user, array $sections): array
+    {
+        $checkpoints = $this->checkpointsFor($user, $sections);
 
         foreach ($sections as $si => &$section) {
-            foreach ($section['groups'] as $gi => &$group) {
+            $section['checkpoint'] = array_diff_key($checkpoints[$si], ['anchor_block_id' => true, 'material_ids' => true]);
+            foreach ($section['groups'] as &$group) {
                 unset($group['block_ids']);
-                $group['bonus'] = $bonus["{$si}.{$gi}"] ?? null;
             }
             unset($group);
         }

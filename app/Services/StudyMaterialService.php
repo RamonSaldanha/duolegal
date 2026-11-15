@@ -7,8 +7,8 @@ use App\Models\Legislation;
 use App\Models\StudyMaterial;
 use App\Models\StudyQuestion;
 use App\Models\User;
+use App\Models\UserBetaCheckpoint;
 use App\Models\UserSegmentProgress;
-use App\Models\UserStudyMaterial;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -409,31 +409,37 @@ class StudyMaterialService
     }
 
     /**
-     * Desafio bônus de cada quadrado do mapa beta: os materiais publicados e atuais cujo
-     * último bloco cai no quadrado. Um material libera quando o usuário concluiu todos os
-     * blocos que ele cobre. Só assinante joga; os demais veem o nó e vão para a assinatura.
+     * Desafio de cada etapa do mapa beta: a fase paralela ao fim da etapa. Ela reúne, de forma
+     * cumulativa, todos os materiais publicados e atuais cujo último bloco cai nesta etapa ou
+     * numa anterior da trilha (serve de revisão de tudo o que a pessoa já leu). Só libera
+     * quando a etapa inteira está concluída e há ao menos um material.
      *
-     * @param  array<int|string, array<int, int>>  $squares  chave do quadrado => ids dos blocos, em ordem
-     * @return array<int|string, array<string, mixed>> só os quadrados que têm material
+     * @param  array<int, array{complete: bool, block_ids: array<int, int>}>  $sections  etapas na ordem da trilha
+     * @return array<int, array<string, mixed>> uma por etapa, na mesma ordem
      */
-    public function bonusForSquares(User $user, array $squares): array
+    public function checkpoints(User $user, array $sections): array
     {
-        $squareOf = [];
+        $sections = array_values($sections);
         $order = [];
-        foreach ($squares as $key => $blockIds) {
-            foreach (array_values($blockIds) as $i => $blockId) {
-                $squareOf[$blockId] = $key;
-                $order[$blockId] = $i;
+        $sectionOf = [];
+        $anchors = [];
+        foreach ($sections as $si => $section) {
+            foreach ($section['block_ids'] as $blockId) {
+                $order[$blockId] = count($order);
+                $sectionOf[$blockId] = $si;
             }
+            $anchors[$si] = $section['block_ids'] ? (int) end($section['block_ids']) : null;
         }
 
-        if (! $squareOf) {
-            return [];
+        $materials = collect();
+        foreach (array_chunk(array_keys($sectionOf), 5000) as $chunk) {
+            $materials = $materials->merge(
+                StudyMaterial::where('status', StudyMaterial::STATUS_PUBLISHED)
+                    ->whereIn('last_block_id', $chunk)
+                    ->withCount('questions')
+                    ->get()
+            );
         }
-
-        $materials = StudyMaterial::where('status', StudyMaterial::STATUS_PUBLISHED)
-            ->whereIn('last_block_id', array_keys($squareOf))
-            ->get();
 
         $stale = array_flip($this->staleIds($materials));
         $materials = $materials
@@ -441,41 +447,53 @@ class StudyMaterialService
             ->sortBy(fn (StudyMaterial $material) => $order[$material->last_block_id])
             ->values();
 
-        if ($materials->isEmpty()) {
-            return [];
-        }
+        $anchorIds = array_values(array_filter($anchors));
+        $uuids = DB::table('legislation_segments')->whereIn('id', $anchorIds)->pluck('uuid', 'id');
+        $progress = UserBetaCheckpoint::where('user_id', $user->id)
+            ->whereIn('legislation_segment_id', $anchorIds)
+            ->get()
+            ->keyBy('legislation_segment_id');
 
         $premium = $user->hasInfiniteLives();
-        $doneBlocks = $this->completedBlocks($user, $materials->flatMap->coveredBlockIds()->unique()->all());
-        $finished = UserStudyMaterial::where('user_id', $user->id)
-            ->whereIn('study_material_id', $materials->pluck('id'))
-            ->whereNotNull('completed_at')
-            ->pluck('study_material_id')
-            ->flip();
+        $result = [];
+        $ids = [];
+        $questions = 0;
+        $next = 0;
 
-        $bonus = [];
-        foreach ($materials as $material) {
-            $key = $squareOf[$material->last_block_id];
-            $bonus[$key] ??= ['total' => 0, 'unlocked' => 0, 'completed' => 0, 'premium_required' => ! $premium, 'materials' => []];
-
-            $unlocked = ! array_diff($material->coveredBlockIds(), $doneBlocks);
-            $completed = $finished->has($material->id);
-
-            $bonus[$key]['total']++;
-            $bonus[$key]['unlocked'] += $unlocked ? 1 : 0;
-            $bonus[$key]['completed'] += $completed ? 1 : 0;
-
-            // Quem não é assinante não recebe a lista: o nó só leva à tela de assinatura
-            if ($premium) {
-                $bonus[$key]['materials'][] = [
-                    'uuid' => $material->uuid,
-                    'title' => $material->title,
-                    'state' => $completed ? 'completed' : ($unlocked ? 'available' : 'locked'),
-                ];
+        foreach ($sections as $si => $section) {
+            // Cumulativo: os materiais desta etapa somam-se aos das anteriores
+            while ($next < $materials->count() && $sectionOf[$materials[$next]->last_block_id] <= $si) {
+                $ids[] = $materials[$next]->id;
+                $questions += (int) $materials[$next]->questions_count;
+                $next++;
             }
+
+            $anchor = $anchors[$si];
+            $total = count($ids);
+            $done = $anchor && $progress->has($anchor)
+                ? count(array_intersect($ids, $progress->get($anchor)->doneIds()))
+                : 0;
+
+            $result[$si] = [
+                'key' => $anchor ? $uuids->get($anchor) : null,
+                'state' => match (true) {
+                    ! $section['complete'] => 'locked',
+                    $total === 0 => 'empty',
+                    $done >= $total => 'complete',
+                    default => 'available',
+                },
+                'total' => $total,
+                'completed' => $done,
+                'questions' => $questions,
+                // Quem não assina vê a fase e recebe o convite para assinar
+                'premium_required' => ! $premium,
+                // Só para uso interno; sai antes de ir para a tela
+                'anchor_block_id' => $anchor,
+                'material_ids' => $ids,
+            ];
         }
 
-        return $bonus;
+        return $result;
     }
 
     /** O material aparece no mapa: publicado e com o texto da lei igual ao de quando foi gerado. */

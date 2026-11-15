@@ -42,7 +42,7 @@ export interface StudyMaterialRow {
 }
 
 /** Questão como o jogador recebe: sem gabarito, comentário nem fundamento. */
-export interface BonusQuestion {
+export interface CheckpointQuestion {
     position: number;
     board: StudyBoard;
     type: StudyQuestionType;
@@ -50,16 +50,27 @@ export interface BonusQuestion {
     options: Record<string, string> | null;
 }
 
-export interface BonusAnswerResponse {
+export interface CheckpointAnswerResponse {
     is_correct: boolean;
     correct_answer: string;
     explanation: string;
     legal_basis: string;
 }
 
-export interface BonusFinishResponse {
+export interface CheckpointFinishResponse {
     correct_count: number;
     total: number;
     xp_gained: number;
     first_completion: boolean;
+    checkpoint: { completed: number; total: number };
+}
+
+/** Material como a fase da etapa recebe: resumo já em HTML seguro e questões sem gabarito. */
+export interface CheckpointMaterial {
+    uuid: string;
+    title: string;
+    legislation_title: string;
+    summary_html: string;
+    questions: CheckpointQuestion[];
+    done: boolean;
 }

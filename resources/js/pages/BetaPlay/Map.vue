@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import PremiumUpsellModal from '@/components/PremiumUpsellModal.vue';
 import WelcomeOfferBanner from '@/components/WelcomeOfferBanner.vue';
+import GameButton from '@/components/ui/GameButton.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
-import type { BetaBonus, BetaGroup, BetaSection } from '@/types/beta-play';
+import type { BetaCheckpoint, BetaGroup, BetaSection } from '@/types/beta-play';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { Book, BookOpen, Check, Crown, Lock, RotateCcw } from 'lucide-vue-next';
+import { Book, BookOpenCheck, Check, Crown, Lock, RotateCcw } from 'lucide-vue-next';
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 
 const props = defineProps<{
@@ -22,7 +24,7 @@ const COLUMNS = 6;
 const MAX_UNIT = 60;
 const COLUMN_PATTERN = [3, 5, 3, 1];
 // Distância entre um quadrado e o seguinte, em U. Deixa espaço vazio ao lado do caminho,
-// onde fica o desafio bônus.
+// onde fica o desafio da etapa.
 const ROW_STEP = 2.6;
 
 const windowWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1024);
@@ -76,40 +78,56 @@ function connector(from: Point, to: Point, fromIndex: number): string {
 const flatGroups = computed(() => props.sections.flatMap((section) => section.groups));
 const sectionOfGroup = computed(() => props.sections.flatMap((section, si) => section.groups.map(() => si)));
 
-// === Desafio bônus ===
-// Fica fora do caminho, no espaço vazio que a trilha deixa: é um extra para assinantes e
-// não trava o avanço (o servidor o deixa fora da fase atual/bloqueada).
-const bonusSize = computed(() => unit.value * 0.95);
+// === Desafio da etapa ===
+// Fase paralela ao lado do último quadrado de cada etapa, ligada a ele por um caminho
+// pontilhado. Fica fora da trilha: não trava o avanço (o servidor a deixa fora da fase
+// atual/bloqueada).
 const CENTER_COLUMN = 3;
 
 /**
- * Quadrado da lateral: o bônus fica no centro, na mesma linha, dentro da volta do caminho.
- * Quadrado do centro: fica na lateral oposta à do próximo quadrado, meia linha abaixo.
+ * Quadrado da lateral: a fase fica na mesma linha, para dentro da volta do caminho, e o
+ * pontilhado é reto. Quadrado do centro: a linha dele já tem caminho dos dois lados, então a
+ * fase fica meia linha abaixo, na lateral livre (a oposta à do próximo quadrado), e o
+ * pontilhado desce e vira.
  */
-function bonusPoint(from: Point, to: Point, fromIndex: number): Point {
-    if (fromIndex % 2 === 1) {
-        return { x: CENTER_COLUMN * unit.value, y: from.y };
+function checkpointPlacement(from: Point, next: Point, index: number): { point: Point; d: string } {
+    const u = unit.value;
+    if (index % 2 === 1) {
+        const dir = from.x > CENTER_COLUMN * u ? -1 : 1;
+        const point = { x: from.x + dir * 2.5 * u, y: from.y };
+        return { point, d: `M ${from.x} ${from.y} H ${point.x}` };
     }
-    return { x: 2 * from.x - to.x, y: from.y + (unit.value * ROW_STEP) / 2 };
+    const point = { x: 2 * from.x - next.x, y: from.y + (u * ROW_STEP) / 2 };
+    const r = u * 0.5;
+    const dir = point.x > from.x ? 1 : -1;
+    return { point, d: `M ${from.x} ${from.y} V ${point.y - r} Q ${from.x} ${point.y} ${from.x + dir * r} ${point.y} H ${point.x}` };
 }
 
-type BonusLook = 'premium' | 'locked' | 'available' | 'complete';
-
-function bonusLook(bonus: BetaBonus): BonusLook {
-    if (bonus.premium_required) return 'premium';
-    if (bonus.completed >= bonus.total) return 'complete';
-    return bonus.unlocked > bonus.completed ? 'available' : 'locked';
-}
+// Índice (na trilha inteira) do último quadrado de cada etapa
+const checkpointRows = computed(() => {
+    let offset = 0;
+    return props.sections.flatMap((section) => {
+        const index = offset + section.groups.length - 1;
+        offset += section.groups.length;
+        return section.groups.length > 0 ? [{ index, section }] : [];
+    });
+});
 
 const trail = computed(() => {
     const count = flatGroups.value.length;
-    // Um ponto a mais, só para saber onde ficaria o bônus do último quadrado
+    // Um ponto a mais, só para saber para que lado vai o quadrado seguinte ao último
     const points = positions(count + 1);
     const last = count - 1;
-    // O bônus de um quadrado do centro fica meia linha abaixo dele: no último, pede mais altura
-    const lastBonusBelow = count > 0 && last % 2 === 0 && flatGroups.value[last].bonus !== null;
 
-    const bonuses = flatGroups.value.map((group, i) => (group.bonus ? bonusPoint(points[i], points[i + 1], i) : null));
+    const checkpoints = checkpointRows.value.map(({ index, section }) => ({
+        index,
+        section,
+        checkpoint: section.checkpoint,
+        ...checkpointPlacement(points[index], points[index + 1], index),
+    }));
+
+    // A fase de um quadrado do centro fica meia linha abaixo dele: no último, pede mais altura
+    const lastBelow = count > 0 && last % 2 === 0 && checkpoints.some((c) => c.index === last);
 
     const connectors = points.slice(0, count - 1).map((point, i) => ({
         d: connector(point, points[i + 1], i),
@@ -118,8 +136,8 @@ const trail = computed(() => {
 
     return {
         points: points.slice(0, count),
-        bonuses,
-        height: trailHeight(count) + (lastBonusBelow ? unit.value * 0.7 : 0),
+        checkpoints,
+        height: trailHeight(count) + (lastBelow ? unit.value * 0.9 : 0),
         connectors,
     };
 });
@@ -161,16 +179,44 @@ const ringOffset = (group: BetaGroup) => ringCircumference * (1 - group.complete
 // Quadrado concluído aberto (lista de fases para revisar)
 const openGroupId = ref<number | null>(null);
 const toggleGroup = (group: BetaGroup) => {
-    openBonusId.value = null;
+    openCheckpoint.value = null;
     openGroupId.value = openGroupId.value === group.id ? null : group.id;
 };
 
-// Bônus aberto (lista dos materiais do quadrado)
-const openBonusId = ref<number | null>(null);
-const toggleBonus = (group: BetaGroup) => {
+// Desafio da etapa aberto (cartão com o que tem dentro e o botão)
+const openCheckpoint = ref<number | null>(null);
+const toggleCheckpoint = (index: number) => {
     openGroupId.value = null;
-    openBonusId.value = openBonusId.value === group.id ? null : group.id;
+    openCheckpoint.value = openCheckpoint.value === index ? null : index;
 };
+
+const checkpointOffset = (checkpoint: BetaCheckpoint) => ringCircumference * (1 - checkpoint.completed / Math.max(1, checkpoint.total));
+
+function plural(count: number, one: string, many: string): string {
+    return `${count} ${count === 1 ? one : many}`;
+}
+
+function checkpointText(checkpoint: BetaCheckpoint): string {
+    const content = `${plural(checkpoint.total, 'resumo', 'resumos')} e ${plural(checkpoint.questions, 'questão', 'questões')}`;
+    switch (checkpoint.state) {
+        case 'locked':
+            return 'Conclua as fases desta etapa para liberar a revisão de tudo o que você estudou até aqui.';
+        case 'empty':
+            return 'Ainda não há resumos nem questões para os dispositivos que você estudou até aqui.';
+        case 'complete':
+            return `Você fez os ${content} dos dispositivos estudados até aqui. Pode revisar quando quiser.`;
+        default:
+            return `${content} sobre os dispositivos que você já estudou.`;
+    }
+}
+
+// Convite para assinar, para quem não é assinante
+const showUpsell = ref(false);
+
+function openUpsell() {
+    openCheckpoint.value = null;
+    showUpsell.value = true;
+}
 
 function loadMore(direction: 'above' | 'below') {
     router.get(
@@ -260,6 +306,7 @@ onUnmounted(() => {
     <Head title="Mapa (beta)" />
 
     <AppLayout>
+        <PremiumUpsellModal :show="showUpsell" @close="showUpsell = false" />
         <div ref="pageRef">
             <!-- Oferta de boas-vindas (24h depois do onboarding): faixa de lado a lado, logo abaixo do cabeçalho -->
             <WelcomeOfferBanner variant="strip" />
@@ -322,6 +369,23 @@ onUnmounted(() => {
                                     stroke-linecap="round"
                                     :stroke-width="pathWidth"
                                     :class="line.done ? 'stroke-green-300 dark:stroke-green-800' : 'stroke-gray-200 dark:stroke-gray-700'"
+                                />
+                                <!-- Pontilhado até o desafio da etapa -->
+                                <path
+                                    v-for="cp in trail.checkpoints"
+                                    :key="`cp-line-${cp.index}`"
+                                    :d="cp.d"
+                                    fill="none"
+                                    stroke-linecap="round"
+                                    :stroke-width="pathWidth"
+                                    :stroke-dasharray="`0 ${pathWidth * 1.9}`"
+                                    :class="
+                                        cp.checkpoint.state === 'available'
+                                            ? 'stroke-purple-300 dark:stroke-purple-800'
+                                            : cp.checkpoint.state === 'complete'
+                                              ? 'stroke-green-300 dark:stroke-green-800'
+                                              : 'stroke-gray-200 dark:stroke-gray-700'
+                                    "
                                 />
                             </svg>
 
@@ -429,89 +493,107 @@ onUnmounted(() => {
                                         </Link>
                                     </div>
                                 </template>
+                            </template>
 
-                                <!-- Desafio bônus do quadrado: material de estudo, só para assinantes -->
-                                <template v-if="group.bonus && trail.bonuses[gi]">
-                                    <Link
-                                        v-if="group.bonus.premium_required"
-                                        :href="route('subscription.index')"
-                                        class="node bonus bonus-premium absolute block"
-                                        :style="{
-                                            left: `${trail.bonuses[gi]!.x}px`,
-                                            top: `${trail.bonuses[gi]!.y}px`,
-                                            width: `${bonusSize}px`,
-                                            height: `${bonusSize}px`,
-                                        }"
-                                        aria-label="Desafio bônus, exclusivo para assinantes"
+                            <!-- Desafio da etapa: fase paralela, ligada ao último quadrado por um pontilhado -->
+                            <template v-for="cp in trail.checkpoints" :key="`cp-${cp.index}`">
+                                <button
+                                    type="button"
+                                    class="node checkpoint absolute"
+                                    :class="`checkpoint-${cp.checkpoint.state}`"
+                                    :style="{
+                                        left: `${cp.point.x}px`,
+                                        top: `${cp.point.y}px`,
+                                        width: `${nodeSize}px`,
+                                        height: `${nodeSize}px`,
+                                    }"
+                                    :aria-label="`Desafio da etapa ${cp.section.number}`"
+                                    :aria-expanded="openCheckpoint === cp.index"
+                                    @click="toggleCheckpoint(cp.index)"
+                                >
+                                    <span class="node-face absolute inset-0 flex items-center justify-center">
+                                        <template v-if="cp.checkpoint.state === 'available'">
+                                            <svg class="absolute h-[78%] w-[78%]" viewBox="0 0 80 80">
+                                                <circle cx="40" cy="40" :r="RING_RADIUS" fill="none" stroke-width="7" class="stroke-purple-700" />
+                                                <circle
+                                                    cx="40"
+                                                    cy="40"
+                                                    :r="RING_RADIUS"
+                                                    fill="none"
+                                                    stroke-width="7"
+                                                    stroke-linecap="round"
+                                                    class="stroke-white"
+                                                    :stroke-dasharray="ringCircumference"
+                                                    :stroke-dashoffset="checkpointOffset(cp.checkpoint)"
+                                                    transform="rotate(-90 40 40)"
+                                                />
+                                            </svg>
+                                            <span class="relative font-bold text-white" :style="{ fontSize: `${unit * 0.3}px` }">
+                                                {{ cp.checkpoint.completed }}/{{ cp.checkpoint.total }}
+                                            </span>
+                                        </template>
+                                        <BookOpenCheck v-else class="h-2/5 w-2/5" :stroke-width="2.5" />
+                                    </span>
+                                    <span
+                                        v-if="cp.checkpoint.premium_required"
+                                        class="checkpoint-crown absolute flex items-center justify-center rounded-full"
+                                        aria-hidden="true"
                                     >
-                                        <span class="bonus-face absolute inset-0 flex items-center justify-center">
-                                            <Crown class="h-1/2 w-1/2" :stroke-width="2.5" />
-                                        </span>
-                                    </Link>
-                                    <button
-                                        v-else
-                                        type="button"
-                                        class="node bonus absolute"
-                                        :class="`bonus-${bonusLook(group.bonus)}`"
-                                        :style="{
-                                            left: `${trail.bonuses[gi]!.x}px`,
-                                            top: `${trail.bonuses[gi]!.y}px`,
-                                            width: `${bonusSize}px`,
-                                            height: `${bonusSize}px`,
-                                        }"
-                                        :aria-label="`Desafio bônus: ${group.bonus.completed} de ${group.bonus.total} concluídos`"
-                                        @click="toggleBonus(group)"
-                                    >
-                                        <span class="bonus-face absolute inset-0 flex items-center justify-center">
-                                            <Check v-if="bonusLook(group.bonus) === 'complete'" class="h-1/2 w-1/2" :stroke-width="3.5" />
-                                            <BookOpen v-else class="h-1/2 w-1/2" :stroke-width="2.5" />
-                                        </span>
-                                        <span class="bonus-count absolute left-1/2 rounded-full px-1.5 text-[11px] font-bold leading-4">
-                                            {{ group.bonus.completed }}/{{ group.bonus.total }}
-                                        </span>
-                                    </button>
+                                        <Crown class="h-3.5 w-3.5" :stroke-width="2.5" />
+                                    </span>
+                                </button>
 
-                                    <template v-if="openBonusId === group.id">
-                                        <div class="fixed inset-0 z-20" @click="openBonusId = null" />
-                                        <div
-                                            class="section-card absolute left-0 right-0 z-30 rounded-2xl border-2 border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-800"
-                                            :style="{ top: `${trail.bonuses[gi]!.y + bonusSize / 2 + 22}px` }"
+                                <template v-if="openCheckpoint === cp.index">
+                                    <div class="fixed inset-0 z-20" @click="openCheckpoint = null" />
+                                    <div
+                                        class="section-card absolute left-0 right-0 z-30 rounded-2xl border-2 border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800"
+                                        :style="{ top: `${cp.point.y + nodeSize / 2 + 18}px` }"
+                                    >
+                                        <span
+                                            class="absolute -top-[9px] h-4 w-4 rotate-45 border-l-2 border-t-2 border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800"
+                                            :style="{ left: `${cp.point.x - 8}px` }"
+                                        />
+                                        <p class="text-lg font-bold text-gray-900 dark:text-white">Desafio da etapa {{ cp.section.number }}</p>
+                                        <p class="mt-1 text-sm leading-relaxed text-gray-500 dark:text-gray-400">
+                                            {{ checkpointText(cp.checkpoint) }}
+                                        </p>
+                                        <p
+                                            v-if="cp.checkpoint.state === 'available' && cp.checkpoint.completed > 0"
+                                            class="mt-2 text-sm font-bold text-purple-600 dark:text-purple-400"
                                         >
-                                            <p class="px-3 pb-1 pt-1 text-xs font-bold uppercase tracking-wide text-purple-600 dark:text-purple-400">
-                                                Desafio bônus
-                                            </p>
-                                            <template v-for="material in group.bonus.materials" :key="material.uuid">
-                                                <div
-                                                    v-if="material.state === 'locked'"
-                                                    class="flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-sm text-gray-400 dark:text-gray-500"
-                                                >
-                                                    <span class="min-w-0">
-                                                        <span class="block truncate font-bold">{{ material.title }}</span>
-                                                        <span class="block text-xs">Conclua os dispositivos deste tema para liberar</span>
-                                                    </span>
-                                                    <Lock class="h-4 w-4 shrink-0" />
-                                                </div>
-                                                <Link
-                                                    v-else
-                                                    :href="route('beta.play.bonus', { studyMaterial: material.uuid })"
-                                                    class="flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-sm font-bold text-gray-800 hover:bg-gray-100 dark:text-gray-100 dark:hover:bg-gray-700"
-                                                >
-                                                    <span class="min-w-0 truncate">{{ material.title }}</span>
-                                                    <span
-                                                        v-if="material.state === 'completed'"
-                                                        class="flex shrink-0 items-center gap-1.5 text-green-600 dark:text-green-400"
-                                                    >
-                                                        <RotateCcw class="h-4 w-4" />
-                                                        Refazer
-                                                    </span>
-                                                    <span v-else class="flex shrink-0 items-center gap-1.5 text-purple-600 dark:text-purple-400">
-                                                        <BookOpen class="h-4 w-4" />
-                                                        Estudar
-                                                    </span>
-                                                </Link>
-                                            </template>
-                                        </div>
-                                    </template>
+                                            {{ cp.checkpoint.completed }} de {{ cp.checkpoint.total }} feitos
+                                        </p>
+
+                                        <GameButton
+                                            v-if="cp.checkpoint.state === 'locked' || cp.checkpoint.state === 'empty'"
+                                            variant="white"
+                                            size="lg"
+                                            class="mt-4 w-full"
+                                            disabled
+                                        >
+                                            {{ cp.checkpoint.state === 'locked' ? 'Bloqueado' : 'Sem conteúdo ainda' }}
+                                        </GameButton>
+                                        <GameButton
+                                            v-else-if="cp.checkpoint.premium_required"
+                                            variant="purple"
+                                            size="lg"
+                                            class="mt-4 w-full"
+                                            @click="openUpsell"
+                                        >
+                                            Liberar com o Premium
+                                        </GameButton>
+                                        <GameButton
+                                            v-else-if="cp.checkpoint.key"
+                                            :variant="cp.checkpoint.state === 'complete' ? 'green' : 'purple'"
+                                            size="lg"
+                                            class="mt-4 w-full"
+                                            :href="route('beta.play.checkpoint', { checkpoint: cp.checkpoint.key })"
+                                        >
+                                            {{
+                                                cp.checkpoint.state === 'complete' ? 'Revisar' : cp.checkpoint.completed > 0 ? 'Continuar' : 'Começar'
+                                            }}
+                                        </GameButton>
+                                    </div>
                                 </template>
                             </template>
                         </div>
@@ -621,77 +703,43 @@ onUnmounted(() => {
     box-shadow: none;
 }
 
-/* Desafio bônus: redondo e menor, para não se confundir com os quadrados das fases */
-.bonus-face {
-    border-radius: 9999px;
-    color: #fff;
-    transition:
-        transform 0.1s ease,
-        box-shadow 0.1s ease;
-}
-.bonus-count {
-    bottom: -14px;
-    transform: translateX(-50%);
-    white-space: nowrap;
-}
-.bonus-available .bonus-face {
+/* Desafio da etapa: mesmo tamanho e formato das fases, na cor própria */
+.checkpoint-available .node-face {
     background: theme('colors.purple.500');
-    box-shadow: 0 5px 0 0 theme('colors.purple.700');
+    box-shadow: 0 6px 0 0 theme('colors.purple.700');
 }
-.bonus-available .bonus-count {
-    background: theme('colors.purple.100');
-    color: theme('colors.purple.700');
-}
-.bonus-complete .bonus-face {
+.checkpoint-complete .node-face {
     background: theme('colors.green.500');
-    box-shadow: 0 5px 0 0 #15803d;
+    color: #fff;
+    box-shadow: 0 6px 0 0 #15803d;
 }
-.bonus-complete .bonus-count {
-    background: theme('colors.green.100');
-    color: theme('colors.green.700');
-}
-.bonus-locked .bonus-face {
+.checkpoint-locked .node-face,
+.checkpoint-empty .node-face {
     background: theme('colors.gray.200');
     color: theme('colors.gray.400');
-    box-shadow: 0 5px 0 0 theme('colors.gray.300');
+    box-shadow: 0 6px 0 0 theme('colors.gray.300');
 }
-.bonus-locked .bonus-count {
-    background: theme('colors.gray.100');
-    color: theme('colors.gray.500');
-}
-.bonus-premium .bonus-face {
-    background: theme('colors.amber.100');
-    color: theme('colors.amber.600');
-    box-shadow: 0 5px 0 0 theme('colors.amber.300');
-}
-.dark .bonus-locked .bonus-face {
+.dark .checkpoint-locked .node-face,
+.dark .checkpoint-empty .node-face {
     background: theme('colors.gray.700');
     color: theme('colors.gray.500');
-    box-shadow: 0 5px 0 0 theme('colors.gray.800');
+    box-shadow: 0 6px 0 0 theme('colors.gray.800');
 }
-.dark .bonus-locked .bonus-count {
-    background: theme('colors.gray.800');
-    color: theme('colors.gray.400');
-}
-.dark .bonus-available .bonus-count {
-    background: theme('colors.purple.950');
-    color: theme('colors.purple.300');
-}
-.dark .bonus-complete .bonus-count {
-    background: theme('colors.green.950');
-    color: theme('colors.green.300');
-}
-.dark .bonus-premium .bonus-face {
-    background: theme('colors.amber.950');
-    color: theme('colors.amber.400');
-    box-shadow: 0 5px 0 0 theme('colors.amber.900');
-}
-.bonus:hover .bonus-face {
+.checkpoint:hover .node-face {
     transform: translateY(2px);
 }
-.bonus:active .bonus-face {
-    transform: translateY(5px);
+.checkpoint:active .node-face {
+    transform: translateY(6px);
     box-shadow: none;
+}
+.checkpoint-crown {
+    right: -6px;
+    top: -6px;
+    width: 24px;
+    height: 24px;
+    background: theme('colors.amber.400');
+    color: theme('colors.amber.950');
+    box-shadow: 0 0 0 3px hsl(var(--background));
 }
 
 .more-button {
