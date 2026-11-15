@@ -21,8 +21,8 @@ const props = defineProps<{
 const COLUMNS = 6;
 const MAX_UNIT = 60;
 const COLUMN_PATTERN = [3, 5, 3, 1];
-// Distância entre um quadrado e o seguinte, em U. Deixa um trecho de caminho livre entre
-// eles, onde depois cabe um item extra (um desafio, um prêmio).
+// Distância entre um quadrado e o seguinte, em U. Deixa espaço vazio ao lado do caminho,
+// onde fica o desafio bônus.
 const ROW_STEP = 2.6;
 
 const windowWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1024);
@@ -77,23 +77,20 @@ const flatGroups = computed(() => props.sections.flatMap((section) => section.gr
 const sectionOfGroup = computed(() => props.sections.flatMap((section, si) => section.groups.map(() => si)));
 
 // === Desafio bônus ===
-// Fica no trecho de caminho livre depois do quadrado, na parte que desce: é um extra para
-// assinantes e não trava o avanço (o servidor o deixa fora da fase atual/bloqueada).
+// Fica fora do caminho, no espaço vazio que a trilha deixa: é um extra para assinantes e
+// não trava o avanço (o servidor o deixa fora da fase atual/bloqueada).
 const bonusSize = computed(() => unit.value * 0.95);
+const CENTER_COLUMN = 3;
 
+/**
+ * Quadrado da lateral: o bônus fica no centro, na mesma linha, dentro da volta do caminho.
+ * Quadrado do centro: fica na lateral oposta à do próximo quadrado, meia linha abaixo.
+ */
 function bonusPoint(from: Point, to: Point, fromIndex: number): Point {
-    return fromIndex % 2 === 0 ? { x: to.x, y: from.y + unit.value * 0.85 } : { x: from.x, y: from.y + unit.value * 1.675 };
-}
-
-/** Pedaço de caminho até o bônus do último quadrado da lista, que não tem quadrado seguinte. */
-function bonusStub(from: Point, to: Point, fromIndex: number, bonus: Point): string {
-    const r = unit.value * 0.5;
-    const dir = to.x > from.x ? 1 : -1;
-
-    if (fromIndex % 2 === 0) {
-        return `M ${from.x} ${from.y} H ${to.x - dir * r} Q ${to.x} ${from.y} ${to.x} ${from.y + r} V ${bonus.y}`;
+    if (fromIndex % 2 === 1) {
+        return { x: CENTER_COLUMN * unit.value, y: from.y };
     }
-    return `M ${from.x} ${from.y} V ${bonus.y}`;
+    return { x: 2 * from.x - to.x, y: from.y + (unit.value * ROW_STEP) / 2 };
 }
 
 type BonusLook = 'premium' | 'locked' | 'available' | 'complete';
@@ -109,7 +106,8 @@ const trail = computed(() => {
     // Um ponto a mais, só para saber onde ficaria o bônus do último quadrado
     const points = positions(count + 1);
     const last = count - 1;
-    const lastHasBonus = count > 0 && flatGroups.value[last].bonus !== null;
+    // O bônus de um quadrado do centro fica meia linha abaixo dele: no último, pede mais altura
+    const lastBonusBelow = count > 0 && last % 2 === 0 && flatGroups.value[last].bonus !== null;
 
     const bonuses = flatGroups.value.map((group, i) => (group.bonus ? bonusPoint(points[i], points[i + 1], i) : null));
 
@@ -118,17 +116,10 @@ const trail = computed(() => {
         done: flatGroups.value[i].state === 'complete',
     }));
 
-    if (lastHasBonus) {
-        connectors.push({
-            d: bonusStub(points[last], points[last + 1], last, bonuses[last] as Point),
-            done: flatGroups.value[last].state === 'complete',
-        });
-    }
-
     return {
         points: points.slice(0, count),
         bonuses,
-        height: trailHeight(count) + (lastHasBonus ? unit.value * 1.4 : 0),
+        height: trailHeight(count) + (lastBonusBelow ? unit.value * 0.7 : 0),
         connectors,
     };
 });

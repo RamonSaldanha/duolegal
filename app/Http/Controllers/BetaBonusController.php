@@ -28,7 +28,7 @@ class BetaBonusController extends Controller
     /** XP da primeira conclusão de um material: base + um tanto por acerto. Refazer não dá XP. */
     const BONUS_XP_BASE = 10;
 
-    const BONUS_XP_PER_CORRECT = 5;
+    const BONUS_XP_PER_CORRECT = 15;
 
     public function __construct(private StudyMaterialService $service) {}
 

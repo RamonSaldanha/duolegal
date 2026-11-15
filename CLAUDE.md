@@ -118,7 +118,7 @@ Resumo em markdown + questões no estilo de banca, escritos por um agente de IA 
 - **Bônus no mapa beta:** o material pertence ao quadrado em que cai o último bloco do trecho (`bonusForSquares`). Libera quando os blocos cobertos estão concluídos, não o quadrado inteiro. Fica fora do cálculo de fase atual/bloqueada e não gasta vida.
 - **Regra de assinante:** só `hasInfiniteLives()` abre e conclui (`BetaBonusController` checa nas três rotas). Quem não assina vê o nó, não recebe a lista e vai para `/subscription`.
 - **Gabarito:** nunca vai para o navegador antes da resposta. `answer` corrige uma questão; `finish` recalcula os acertos no servidor.
-- **XP:** `10 + 5 por acerto` (constantes em `BetaBonusController`), só na primeira conclusão, origem `study_material` com o `legislation_id`, então conta na disciplina e no ranking sem mudar nada lá.
+- **XP:** `10 + 15 por acerto` (constantes em `BetaBonusController`; cada acerto vale o triplo de uma lacuna), só na primeira conclusão, origem `study_material` com o `legislation_id`, então conta na disciplina e no ranking sem mudar nada lá.
 - **Resumo:** guardado em markdown puro e convertido por `StudyMaterialService::renderSummary` (`Str::markdown`, HTML embutido removido, links inseguros bloqueados). A tela só usa `v-html` com esse HTML, pelo componente `StudySummary`.
 - **Skill:** `.claude/skills/gerar-material-estudo/SKILL.md`, com cópia idêntica em `.agents/skills/` (um teste falha se divergirem). A página `/admin/study-materials/instalar` gera o token, monta o `.zip` a partir dessa pasta e traz os comandos por ferramenta. Mudou uma rota ou regra de validação: atualize a skill e o número de versão dela.
 
