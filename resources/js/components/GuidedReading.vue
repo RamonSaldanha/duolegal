@@ -5,7 +5,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 // Leitura guiada do resumo, como um exercício de leitura dinâmica: o texto escurece e um grupo
 // de palavras claras avança na velocidade escolhida. São dois modos, alternados no painel:
-// por blocos (grupos de poucas palavras, cortados na pontuação) e régua de leitura (uma linha
+// por blocos (uma janela de palavras que desliza palavra a palavra) e régua de leitura (uma linha
 // inteira por vez). Rolar a tela leva a leitura para o trecho que ficou à vista, e tocar numa
 // palavra leva a leitura até ela. O resumo só conta como lido quando a leitura, tocando, passou
 // por quase todas as palavras: rolar ou pular até o fim não vale. Os controles ficam num painel
@@ -20,8 +20,9 @@ const WPM_MIN = 100;
 const WPM_MAX = 800;
 const WPM_STEP = 25;
 const WPM_DEFAULT = 250;
-// Leitura por blocos: até quantas palavras por bloco (a pontuação fecha o bloco antes)
-const CHUNK_MAX = 4;
+// Leitura por blocos: palavras claras antes e depois da palavra atual
+const WINDOW_BEHIND = 5;
+const WINDOW_AHEAD = 9;
 // Parte das palavras que a leitura precisa ter percorrido, tocando, para o resumo contar como lido
 const REQUIRED_COVERAGE = 0.9;
 const WPM_KEY = 'memorize:reading-wpm';
@@ -113,28 +114,18 @@ function wrapWords() {
     }
 }
 
-const BLOCKS = 'p,li,h1,h2,h3,h4,h5,h6,td,th,blockquote';
-const ENDS_PHRASE = /[.!?:,;]["”')\]]?$/;
-// Abreviações comuns em texto jurídico: o ponto delas não fecha o bloco
-const ABBREVIATION = /^\(?(arts?|incs?|als?|n|p|ex|cf|sr|sra|dr|dra)\.$/i;
-// Pontuação que ficou solta da palavra (depois de um negrito, por exemplo)
-const ONLY_PUNCTUATION = /^[^\p{L}\p{N}]+$/u;
-
-function endsPhrase(text: string): boolean {
-    return ENDS_PHRASE.test(text) && !ABBREVIATION.test(text);
-}
-
-/** Divide as palavras nos grupos do modo atual: blocos de poucas palavras ou linhas do texto. */
+/**
+ * Divide as palavras nos grupos em que a leitura avança: uma linha do texto por vez na régua,
+ * palavra a palavra na leitura por blocos (que clareia uma janela em volta da palavra atual).
+ */
 function buildGroups() {
     groupStart = [];
     groupOfWord = new Uint32Array(words.length);
 
-    let size = 0;
     let lineTop = 0;
-    let block: Element | null = null;
 
     for (let i = 0; i < words.length; i++) {
-        let starts = i === 0;
+        let starts = i === 0 || mode.value === 'chunk';
 
         if (mode.value === 'line') {
             const box = words[i].getBoundingClientRect();
@@ -142,24 +133,9 @@ function buildGroups() {
                 starts = true;
                 lineTop = box.top;
             }
-        } else {
-            const currentBlock = words[i].closest(BLOCKS);
-            const text = words[i].textContent ?? '';
-            // Uma palavra a mais entra no bloco quando é ela que fecha a frase
-            // Uma palavra a mais também entra quando é a última do parágrafo ou do título
-            const closesBlock = i + 1 >= words.length || words[i + 1].closest(BLOCKS) !== currentBlock;
-            const full = size > CHUNK_MAX || (size === CHUNK_MAX && !endsPhrase(text) && !closesBlock);
-            if (!starts && currentBlock !== block) starts = true;
-            // Pontuação solta fica com a palavra de antes
-            else if (!starts && !ONLY_PUNCTUATION.test(text) && (full || endsPhrase(words[i - 1].textContent ?? ''))) starts = true;
-            block = currentBlock;
         }
 
-        if (starts) {
-            groupStart.push(i);
-            size = 0;
-        }
-        size++;
+        if (starts) groupStart.push(i);
         groupOfWord[i] = groupStart.length - 1;
     }
 }
@@ -177,7 +153,11 @@ function snap(wordIndex: number): number {
 }
 
 function paint() {
-    const [from, to] = groupRange(index);
+    let [from, to] = groupRange(index);
+    if (mode.value === 'chunk') {
+        from = Math.max(0, index - WINDOW_BEHIND);
+        to = Math.min(words.length - 1, index + WINDOW_AHEAD);
+    }
 
     for (let i = litFrom; i <= litTo; i++) {
         if (i < from || i > to) words[i]?.classList.remove('on');
@@ -587,11 +567,11 @@ onBeforeUnmount(() => {
     transition: opacity 0.25s ease;
 }
 .guided-reading.is-reading :deep(.rw) {
-    opacity: 0.25;
+    opacity: 0.35;
     cursor: pointer;
 }
 .guided-reading.is-reading.is-paused :deep(.rw) {
-    opacity: 0.5;
+    opacity: 0.55;
 }
 .guided-reading.is-reading :deep(.rw.on) {
     opacity: 1;
