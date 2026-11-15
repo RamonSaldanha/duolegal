@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\BetaBonusController;
 use App\Http\Controllers\BetaPlayController;
 use App\Http\Controllers\LegislationEditorController;
 use App\Http\Controllers\LegislationPlayController;
@@ -30,6 +31,11 @@ Route::middleware(['auth', 'admin'])->prefix('beta/play')->group(function () {
     Route::get('phase/{phaseId}', [BetaPlayController::class, 'betaPhase'])->where('phaseId', '[0-9]+')->name('beta.play.phase');
     Route::post('fail', [BetaPlayController::class, 'betaFail'])->name('beta.play.fail');
     Route::post('finish', [BetaPlayController::class, 'betaFinish'])->name('beta.play.finish');
+
+    // Desafio bônus: material de estudo (resumo + questões), só para assinantes
+    Route::get('bonus/{studyMaterial}', [BetaBonusController::class, 'show'])->whereUuid('studyMaterial')->name('beta.play.bonus');
+    Route::post('bonus/{studyMaterial}/answer', [BetaBonusController::class, 'answer'])->whereUuid('studyMaterial')->name('beta.play.bonus.answer');
+    Route::post('bonus/{studyMaterial}/finish', [BetaBonusController::class, 'finish'])->whereUuid('studyMaterial')->name('beta.play.bonus.finish');
 });
 
 // Rotas do editor de legislações (admin)

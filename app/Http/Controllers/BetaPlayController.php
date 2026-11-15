@@ -7,6 +7,7 @@ use App\Models\LegislationSegment;
 use App\Models\User;
 use App\Models\UserLegislationSelection;
 use App\Models\UserSegmentProgress;
+use App\Services\StudyMaterialService;
 use App\Services\XpService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -57,7 +58,7 @@ class BetaPlayController extends LegislationPlayController
         $end = min(count($sections), $currentIndex + $after + 1);
 
         return Inertia::render('BetaPlay/Map', [
-            'sections' => array_slice($sections, $start, $end - $start),
+            'sections' => $this->withBonus($user, array_slice($sections, $start, $end - $start)),
             'hasMoreAbove' => $start > 0,
             'hasMoreBelow' => $end < count($sections),
             'window' => [
@@ -287,6 +288,8 @@ class BetaPlayController extends LegislationPlayController
                     'completed_phases' => $completed,
                     'total_phases' => count($chunk),
                     'current_phase_id' => $current['id'] ?? null,
+                    // Só para uso interno (desafio bônus); sai antes de ir para a tela
+                    'block_ids' => array_merge(...array_column($chunk, 'block_ids')),
                     'phases' => array_map(fn ($p) => [
                         'id' => $p['id'],
                         'is_complete' => $p['is_complete'],
@@ -306,6 +309,33 @@ class BetaPlayController extends LegislationPlayController
                 'groups' => $groups,
             ];
         }
+
+        return $sections;
+    }
+
+    /**
+     * Põe em cada quadrado o desafio bônus (materiais de estudo publicados cujo trecho termina
+     * nele) ou nulo. Fica fora do cálculo de fase atual/bloqueada: o bônus nunca trava o avanço.
+     */
+    private function withBonus(User $user, array $sections): array
+    {
+        $squares = [];
+        foreach ($sections as $si => $section) {
+            foreach ($section['groups'] as $gi => $group) {
+                $squares["{$si}.{$gi}"] = $group['block_ids'];
+            }
+        }
+
+        $bonus = app(StudyMaterialService::class)->bonusForSquares($user, $squares);
+
+        foreach ($sections as $si => &$section) {
+            foreach ($section['groups'] as $gi => &$group) {
+                unset($group['block_ids']);
+                $group['bonus'] = $bonus["{$si}.{$gi}"] ?? null;
+            }
+            unset($group);
+        }
+        unset($section);
 
         return $sections;
     }

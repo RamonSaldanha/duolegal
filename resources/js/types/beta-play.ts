@@ -8,6 +8,22 @@ export interface BetaGroupPhase {
     is_current: boolean;
 }
 
+// Desafio bônus de um quadrado: materiais de estudo cujo trecho termina nele.
+export interface BetaBonusMaterial {
+    uuid: string;
+    title: string;
+    state: 'locked' | 'available' | 'completed';
+}
+
+export interface BetaBonus {
+    total: number;
+    unlocked: number;
+    completed: number;
+    // Não assinante: vê o nó, não recebe a lista e vai para a tela de assinatura
+    premium_required: boolean;
+    materials: BetaBonusMaterial[];
+}
+
 export interface BetaGroup {
     id: number;
     state: 'complete' | 'current' | 'locked';
@@ -15,6 +31,7 @@ export interface BetaGroup {
     total_phases: number;
     current_phase_id: number | null;
     phases: BetaGroupPhase[];
+    bonus: BetaBonus | null;
 }
 
 export interface BetaSection {

@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { Head, Link, router } from '@inertiajs/vue3';
-import AppLayout from '@/layouts/AppLayout.vue';
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
-import { Book, Check, Lock, RotateCcw } from 'lucide-vue-next';
 import WelcomeOfferBanner from '@/components/WelcomeOfferBanner.vue';
-import type { BetaGroup, BetaSection } from '@/types/beta-play';
+import AppLayout from '@/layouts/AppLayout.vue';
+import type { BetaBonus, BetaGroup, BetaSection } from '@/types/beta-play';
+import { Head, Link, router } from '@inertiajs/vue3';
+import { Book, BookOpen, Check, Crown, Lock, RotateCcw } from 'lucide-vue-next';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 
 const props = defineProps<{
     sections: BetaSection[];
@@ -76,22 +76,72 @@ function connector(from: Point, to: Point, fromIndex: number): string {
 const flatGroups = computed(() => props.sections.flatMap((section) => section.groups));
 const sectionOfGroup = computed(() => props.sections.flatMap((section, si) => section.groups.map(() => si)));
 
+// === Desafio bônus ===
+// Fica no trecho de caminho livre depois do quadrado, na parte que desce: é um extra para
+// assinantes e não trava o avanço (o servidor o deixa fora da fase atual/bloqueada).
+const bonusSize = computed(() => unit.value * 0.95);
+
+function bonusPoint(from: Point, to: Point, fromIndex: number): Point {
+    return fromIndex % 2 === 0 ? { x: to.x, y: from.y + unit.value * 0.925 } : { x: from.x, y: from.y + unit.value * 1.675 };
+}
+
+/** Pedaço de caminho até o bônus do último quadrado da lista, que não tem quadrado seguinte. */
+function bonusStub(from: Point, to: Point, fromIndex: number, bonus: Point): string {
+    const r = unit.value * 0.5;
+    const dir = to.x > from.x ? 1 : -1;
+
+    if (fromIndex % 2 === 0) {
+        return `M ${from.x} ${from.y} H ${to.x - dir * r} Q ${to.x} ${from.y} ${to.x} ${from.y + r} V ${bonus.y}`;
+    }
+    return `M ${from.x} ${from.y} V ${bonus.y}`;
+}
+
+type BonusLook = 'premium' | 'locked' | 'available' | 'complete';
+
+function bonusLook(bonus: BetaBonus): BonusLook {
+    if (bonus.premium_required) return 'premium';
+    if (bonus.completed >= bonus.total) return 'complete';
+    return bonus.unlocked > bonus.completed ? 'available' : 'locked';
+}
+
 const trail = computed(() => {
-    const points = positions(flatGroups.value.length);
+    const count = flatGroups.value.length;
+    // Um ponto a mais, só para saber onde ficaria o bônus do último quadrado
+    const points = positions(count + 1);
+    const last = count - 1;
+    const lastHasBonus = count > 0 && flatGroups.value[last].bonus !== null;
+
+    const bonuses = flatGroups.value.map((group, i) => (group.bonus ? bonusPoint(points[i], points[i + 1], i) : null));
+
+    const connectors = points.slice(0, count - 1).map((point, i) => ({
+        d: connector(point, points[i + 1], i),
+        done: flatGroups.value[i].state === 'complete',
+    }));
+
+    if (lastHasBonus) {
+        connectors.push({
+            d: bonusStub(points[last], points[last + 1], last, bonuses[last] as Point),
+            done: flatGroups.value[last].state === 'complete',
+        });
+    }
+
     return {
-        points,
-        height: trailHeight(flatGroups.value.length),
-        connectors: points.slice(0, -1).map((point, i) => ({
-            d: connector(point, points[i + 1], i),
-            done: flatGroups.value[i].state === 'complete',
-        })),
+        points: points.slice(0, count),
+        bonuses,
+        height: trailHeight(count) + (lastHasBonus ? unit.value * 1.4 : 0),
+        connectors,
     };
 });
 
 // Etapa mostrada no cartão: a do quadrado mais próximo do meio da tela
 const cardRef = ref<HTMLElement | null>(null);
 const trailRef = ref<HTMLElement | null>(null);
-const shownSectionIndex = ref(Math.max(0, props.sections.findIndex((section) => section.is_current)));
+const shownSectionIndex = ref(
+    Math.max(
+        0,
+        props.sections.findIndex((section) => section.is_current),
+    ),
+);
 const shownSection = computed(() => props.sections[shownSectionIndex.value] ?? props.sections[0] ?? null);
 
 function updateShownSection() {
@@ -115,13 +165,20 @@ watch(
 // Anel de progresso do quadrado atual
 const RING_RADIUS = 30;
 const ringCircumference = 2 * Math.PI * RING_RADIUS;
-const ringOffset = (group: BetaGroup) =>
-    ringCircumference * (1 - group.completed_phases / Math.max(1, group.total_phases));
+const ringOffset = (group: BetaGroup) => ringCircumference * (1 - group.completed_phases / Math.max(1, group.total_phases));
 
 // Quadrado concluído aberto (lista de fases para revisar)
 const openGroupId = ref<number | null>(null);
 const toggleGroup = (group: BetaGroup) => {
+    openBonusId.value = null;
     openGroupId.value = openGroupId.value === group.id ? null : group.id;
+};
+
+// Bônus aberto (lista dos materiais do quadrado)
+const openBonusId = ref<number | null>(null);
+const toggleBonus = (group: BetaGroup) => {
+    openGroupId.value = null;
+    openBonusId.value = openBonusId.value === group.id ? null : group.id;
 };
 
 function loadMore(direction: 'above' | 'below') {
@@ -220,7 +277,9 @@ onUnmounted(() => {
                 <div class="mx-auto" :style="{ width: `${trailWidth}px` }">
                     <!-- Aviso de teste -->
                     <div class="mb-5 flex items-center justify-between text-xs">
-                        <span class="rounded-md bg-blue-100 px-2 py-1 font-bold uppercase tracking-wide text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
+                        <span
+                            class="rounded-md bg-blue-100 px-2 py-1 font-bold uppercase tracking-wide text-blue-700 dark:bg-blue-900/50 dark:text-blue-300"
+                        >
                             Mapa beta
                         </span>
                         <Link :href="route('play.map')" class="font-medium text-gray-500 underline-offset-2 hover:underline dark:text-gray-400">
@@ -235,9 +294,7 @@ onUnmounted(() => {
                         <p class="text-gray-400 dark:text-gray-500">Selecione legislações para estudar.</p>
                     </div>
 
-                    <button v-if="hasMoreAbove" type="button" class="more-button mb-6" @click="loadMore('above')">
-                        Ver trechos anteriores
-                    </button>
+                    <button v-if="hasMoreAbove" type="button" class="more-button mb-6" @click="loadMore('above')">Ver trechos anteriores</button>
 
                     <template v-if="shownSection">
                         <!-- Cartão da etapa: um só, parado no topo; o título muda conforme a etapa que passa por ele -->
@@ -381,13 +438,95 @@ onUnmounted(() => {
                                         </Link>
                                     </div>
                                 </template>
+
+                                <!-- Desafio bônus do quadrado: material de estudo, só para assinantes -->
+                                <template v-if="group.bonus && trail.bonuses[gi]">
+                                    <Link
+                                        v-if="group.bonus.premium_required"
+                                        :href="route('subscription.index')"
+                                        class="node bonus bonus-premium absolute block"
+                                        :style="{
+                                            left: `${trail.bonuses[gi]!.x}px`,
+                                            top: `${trail.bonuses[gi]!.y}px`,
+                                            width: `${bonusSize}px`,
+                                            height: `${bonusSize}px`,
+                                        }"
+                                        aria-label="Desafio bônus, exclusivo para assinantes"
+                                    >
+                                        <span class="bonus-face absolute inset-0 flex items-center justify-center">
+                                            <Crown class="h-1/2 w-1/2" :stroke-width="2.5" />
+                                        </span>
+                                    </Link>
+                                    <button
+                                        v-else
+                                        type="button"
+                                        class="node bonus absolute"
+                                        :class="`bonus-${bonusLook(group.bonus)}`"
+                                        :style="{
+                                            left: `${trail.bonuses[gi]!.x}px`,
+                                            top: `${trail.bonuses[gi]!.y}px`,
+                                            width: `${bonusSize}px`,
+                                            height: `${bonusSize}px`,
+                                        }"
+                                        :aria-label="`Desafio bônus: ${group.bonus.completed} de ${group.bonus.total} concluídos`"
+                                        @click="toggleBonus(group)"
+                                    >
+                                        <span class="bonus-face absolute inset-0 flex items-center justify-center">
+                                            <Check v-if="bonusLook(group.bonus) === 'complete'" class="h-1/2 w-1/2" :stroke-width="3.5" />
+                                            <BookOpen v-else class="h-1/2 w-1/2" :stroke-width="2.5" />
+                                        </span>
+                                        <span class="bonus-count absolute left-1/2 rounded-full px-1.5 text-[11px] font-bold leading-4">
+                                            {{ group.bonus.completed }}/{{ group.bonus.total }}
+                                        </span>
+                                    </button>
+
+                                    <template v-if="openBonusId === group.id">
+                                        <div class="fixed inset-0 z-20" @click="openBonusId = null" />
+                                        <div
+                                            class="section-card absolute left-0 right-0 z-30 rounded-2xl border-2 border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-800"
+                                            :style="{ top: `${trail.bonuses[gi]!.y + bonusSize / 2 + 22}px` }"
+                                        >
+                                            <p class="px-3 pb-1 pt-1 text-xs font-bold uppercase tracking-wide text-purple-600 dark:text-purple-400">
+                                                Desafio bônus
+                                            </p>
+                                            <template v-for="material in group.bonus.materials" :key="material.uuid">
+                                                <div
+                                                    v-if="material.state === 'locked'"
+                                                    class="flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-sm text-gray-400 dark:text-gray-500"
+                                                >
+                                                    <span class="min-w-0">
+                                                        <span class="block truncate font-bold">{{ material.title }}</span>
+                                                        <span class="block text-xs">Conclua os dispositivos deste tema para liberar</span>
+                                                    </span>
+                                                    <Lock class="h-4 w-4 shrink-0" />
+                                                </div>
+                                                <Link
+                                                    v-else
+                                                    :href="route('beta.play.bonus', { studyMaterial: material.uuid })"
+                                                    class="flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-sm font-bold text-gray-800 hover:bg-gray-100 dark:text-gray-100 dark:hover:bg-gray-700"
+                                                >
+                                                    <span class="min-w-0 truncate">{{ material.title }}</span>
+                                                    <span
+                                                        v-if="material.state === 'completed'"
+                                                        class="flex shrink-0 items-center gap-1.5 text-green-600 dark:text-green-400"
+                                                    >
+                                                        <RotateCcw class="h-4 w-4" />
+                                                        Refazer
+                                                    </span>
+                                                    <span v-else class="flex shrink-0 items-center gap-1.5 text-purple-600 dark:text-purple-400">
+                                                        <BookOpen class="h-4 w-4" />
+                                                        Estudar
+                                                    </span>
+                                                </Link>
+                                            </template>
+                                        </div>
+                                    </template>
+                                </template>
                             </template>
                         </div>
                     </template>
 
-                    <button v-if="hasMoreBelow" type="button" class="more-button mt-2" @click="loadMore('below')">
-                        Ver mais trechos
-                    </button>
+                    <button v-if="hasMoreBelow" type="button" class="more-button mt-2" @click="loadMore('below')">Ver mais trechos</button>
                 </div>
             </div>
         </div>
@@ -488,6 +627,79 @@ onUnmounted(() => {
 .node-current:active .node-face,
 .node-complete:active .node-face {
     transform: translateY(6px);
+    box-shadow: none;
+}
+
+/* Desafio bônus: redondo e menor, para não se confundir com os quadrados das fases */
+.bonus-face {
+    border-radius: 9999px;
+    color: #fff;
+    transition:
+        transform 0.1s ease,
+        box-shadow 0.1s ease;
+}
+.bonus-count {
+    bottom: -14px;
+    transform: translateX(-50%);
+    white-space: nowrap;
+}
+.bonus-available .bonus-face {
+    background: theme('colors.purple.500');
+    box-shadow: 0 5px 0 0 theme('colors.purple.700');
+}
+.bonus-available .bonus-count {
+    background: theme('colors.purple.100');
+    color: theme('colors.purple.700');
+}
+.bonus-complete .bonus-face {
+    background: theme('colors.green.500');
+    box-shadow: 0 5px 0 0 #15803d;
+}
+.bonus-complete .bonus-count {
+    background: theme('colors.green.100');
+    color: theme('colors.green.700');
+}
+.bonus-locked .bonus-face {
+    background: theme('colors.gray.200');
+    color: theme('colors.gray.400');
+    box-shadow: 0 5px 0 0 theme('colors.gray.300');
+}
+.bonus-locked .bonus-count {
+    background: theme('colors.gray.100');
+    color: theme('colors.gray.500');
+}
+.bonus-premium .bonus-face {
+    background: theme('colors.amber.100');
+    color: theme('colors.amber.600');
+    box-shadow: 0 5px 0 0 theme('colors.amber.300');
+}
+.dark .bonus-locked .bonus-face {
+    background: theme('colors.gray.700');
+    color: theme('colors.gray.500');
+    box-shadow: 0 5px 0 0 theme('colors.gray.800');
+}
+.dark .bonus-locked .bonus-count {
+    background: theme('colors.gray.800');
+    color: theme('colors.gray.400');
+}
+.dark .bonus-available .bonus-count {
+    background: theme('colors.purple.950');
+    color: theme('colors.purple.300');
+}
+.dark .bonus-complete .bonus-count {
+    background: theme('colors.green.950');
+    color: theme('colors.green.300');
+}
+.dark .bonus-premium .bonus-face {
+    background: theme('colors.amber.950');
+    color: theme('colors.amber.400');
+    box-shadow: 0 5px 0 0 theme('colors.amber.900');
+}
+.bonus:hover .bonus-face {
+    transform: translateY(2px);
+}
+.bonus:active .bonus-face {
+    transform: translateY(5px);
     box-shadow: none;
 }
 

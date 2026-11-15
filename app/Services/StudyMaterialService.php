@@ -6,6 +6,9 @@ use App\Http\Controllers\BetaPlayController;
 use App\Models\Legislation;
 use App\Models\StudyMaterial;
 use App\Models\StudyQuestion;
+use App\Models\User;
+use App\Models\UserSegmentProgress;
+use App\Models\UserStudyMaterial;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -397,6 +400,90 @@ class StudyMaterialService
     }
 
     /**
+     * Desafio bônus de cada quadrado do mapa beta: os materiais publicados e atuais cujo
+     * último bloco cai no quadrado. Um material libera quando o usuário concluiu todos os
+     * blocos que ele cobre. Só assinante joga; os demais veem o nó e vão para a assinatura.
+     *
+     * @param  array<int|string, array<int, int>>  $squares  chave do quadrado => ids dos blocos, em ordem
+     * @return array<int|string, array<string, mixed>> só os quadrados que têm material
+     */
+    public function bonusForSquares(User $user, array $squares): array
+    {
+        $squareOf = [];
+        $order = [];
+        foreach ($squares as $key => $blockIds) {
+            foreach (array_values($blockIds) as $i => $blockId) {
+                $squareOf[$blockId] = $key;
+                $order[$blockId] = $i;
+            }
+        }
+
+        if (! $squareOf) {
+            return [];
+        }
+
+        $materials = StudyMaterial::where('status', StudyMaterial::STATUS_PUBLISHED)
+            ->whereIn('last_block_id', array_keys($squareOf))
+            ->get();
+
+        $stale = array_flip($this->staleIds($materials));
+        $materials = $materials
+            ->reject(fn (StudyMaterial $material) => isset($stale[$material->id]))
+            ->sortBy(fn (StudyMaterial $material) => $order[$material->last_block_id])
+            ->values();
+
+        if ($materials->isEmpty()) {
+            return [];
+        }
+
+        $premium = $user->hasInfiniteLives();
+        $doneBlocks = $this->completedBlocks($user, $materials->flatMap->coveredBlockIds()->unique()->all());
+        $finished = UserStudyMaterial::where('user_id', $user->id)
+            ->whereIn('study_material_id', $materials->pluck('id'))
+            ->whereNotNull('completed_at')
+            ->pluck('study_material_id')
+            ->flip();
+
+        $bonus = [];
+        foreach ($materials as $material) {
+            $key = $squareOf[$material->last_block_id];
+            $bonus[$key] ??= ['total' => 0, 'unlocked' => 0, 'completed' => 0, 'premium_required' => ! $premium, 'materials' => []];
+
+            $unlocked = ! array_diff($material->coveredBlockIds(), $doneBlocks);
+            $completed = $finished->has($material->id);
+
+            $bonus[$key]['total']++;
+            $bonus[$key]['unlocked'] += $unlocked ? 1 : 0;
+            $bonus[$key]['completed'] += $completed ? 1 : 0;
+
+            // Quem não é assinante não recebe a lista: o nó só leva à tela de assinatura
+            if ($premium) {
+                $bonus[$key]['materials'][] = [
+                    'uuid' => $material->uuid,
+                    'title' => $material->title,
+                    'state' => $completed ? 'completed' : ($unlocked ? 'available' : 'locked'),
+                ];
+            }
+        }
+
+        return $bonus;
+    }
+
+    /** O material aparece no mapa: publicado e com o texto da lei igual ao de quando foi gerado. */
+    public function isPlayable(StudyMaterial $material): bool
+    {
+        return $material->status === StudyMaterial::STATUS_PUBLISHED && ! $this->isStale($material);
+    }
+
+    /** O usuário concluiu todos os blocos cobertos pelo material. */
+    public function isUnlockedFor(User $user, StudyMaterial $material): bool
+    {
+        $covered = $material->coveredBlockIds();
+
+        return $covered && ! array_diff($covered, $this->completedBlocks($user, $covered));
+    }
+
+    /**
      * Resumo em markdown → HTML. HTML embutido é removido e links inseguros
      * (javascript:, data: etc.) são bloqueados.
      */
@@ -406,6 +493,21 @@ class StudyMaterialService
             'html_input' => 'strip',
             'allow_unsafe_links' => false,
         ]);
+    }
+
+    /**
+     * Dos blocos informados, os que o usuário já concluiu.
+     *
+     * @return array<int, int>
+     */
+    private function completedBlocks(User $user, array $blockIds): array
+    {
+        return UserSegmentProgress::where('user_id', $user->id)
+            ->whereIn('legislation_segment_id', $blockIds)
+            ->where('is_completed', true)
+            ->pluck('legislation_segment_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
     }
 
     /** Intervalo [char_start inicial, final] que o trecho ocupa; nulo se não ocupa nada. */
