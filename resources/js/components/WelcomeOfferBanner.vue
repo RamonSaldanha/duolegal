@@ -7,7 +7,13 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
  * Lembrete da oferta de boas-vindas do onboarding (15% no anual) durante as
  * 24h em que ela vale. Gruda logo abaixo do cabeçalho do app. Fechar esconde
  * só até a próxima sessão do navegador.
+ *
+ * `variant="strip"` (mapa beta) troca o cartão por uma faixa de cor sólida de
+ * lado a lado, encostada no cabeçalho: a frase à esquerda e o relógio à
+ * direita. A faixa inteira leva à assinatura e não tem botão de fechar.
  */
+
+const props = withDefaults(defineProps<{ variant?: 'card' | 'strip' }>(), { variant: 'card' });
 
 const DISMISS_KEY = 'welcome-offer-dismissed';
 
@@ -19,7 +25,7 @@ const dismissed = ref(false);
 let clock: ReturnType<typeof setInterval> | undefined;
 
 const msLeft = computed(() => (offer.value ? new Date(offer.value.expires_at).getTime() - now.value : 0));
-const visible = computed(() => !dismissed.value && msLeft.value > 0);
+const visible = computed(() => msLeft.value > 0 && (props.variant === 'strip' || !dismissed.value));
 const countdown = computed(() => {
     const ms = Math.max(0, msLeft.value);
     return [Math.floor(ms / 3_600_000), Math.floor((ms % 3_600_000) / 60_000), Math.floor((ms % 60_000) / 1000)]
@@ -50,7 +56,17 @@ onBeforeUnmount(() => clearInterval(clock));
 
 <template>
     <Transition name="offer-banner" appear>
-        <div v-if="visible" data-welcome-offer class="sticky z-40 mb-4" style="top: calc(var(--app-header-h, 64px) + 8px)">
+        <Link
+            v-if="visible && variant === 'strip'"
+            :href="route('subscription.index')"
+            data-welcome-offer
+            class="sticky z-40 flex items-center justify-between gap-4 bg-purple-600 px-5 py-3 text-white transition-colors hover:bg-purple-500"
+            style="top: var(--app-header-h, 64px)"
+        >
+            <span class="text-base font-bold leading-snug">Contagem regressiva final para {{ offer?.percent_off }}% de desconto!</span>
+            <span class="shrink-0 font-mono text-lg tabular-nums">{{ countdown }}</span>
+        </Link>
+        <div v-else-if="visible" data-welcome-offer class="sticky z-40 mb-4" style="top: calc(var(--app-header-h, 64px) + 8px)">
             <div
                 class="flex items-center gap-3 rounded-2xl border-2 border-pink-200 bg-white py-2.5 pl-3 pr-2 shadow-[0_4px_0_#fbcfe8] dark:border-pink-900 dark:bg-gray-800 dark:shadow-[0_4px_0_#0f0f0f]"
             >

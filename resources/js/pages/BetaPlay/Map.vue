@@ -138,13 +138,13 @@ function loadMore(direction: 'above' | 'below') {
 // O cartão da etapa gruda no topo ao rolar, abaixo do cabeçalho do app e, quando ela
 // aparece, da oferta de boas-vindas (que também gruda). A altura da oferta é medida
 // porque ela pode sumir: ao ser fechada ou quando o prazo acaba.
-const containerRef = ref<HTMLElement | null>(null);
+const pageRef = ref<HTMLElement | null>(null);
 const offerHeight = ref(0);
 let offerWatcher: MutationObserver | null = null;
 
 function measureOffer() {
-    const offer = containerRef.value?.querySelector<HTMLElement>('[data-welcome-offer]');
-    offerHeight.value = offer ? offer.offsetHeight + 8 : 0;
+    const offer = pageRef.value?.querySelector<HTMLElement>('[data-welcome-offer]');
+    offerHeight.value = offer ? offer.offsetHeight : 0;
 }
 
 const cardTop = computed(() => `calc(var(--app-header-h, 64px) + ${8 + offerHeight.value}px)`);
@@ -176,9 +176,9 @@ onMounted(async () => {
     window.addEventListener('resize', updateShownSection);
     window.addEventListener('scroll', updateShownSection, { passive: true });
 
-    if (containerRef.value) {
+    if (pageRef.value) {
         offerWatcher = new MutationObserver(measureOffer);
-        offerWatcher.observe(containerRef.value, { childList: true });
+        offerWatcher.observe(pageRef.value, { childList: true });
     }
     measureOffer();
 
@@ -212,181 +212,183 @@ onUnmounted(() => {
     <Head title="Mapa (beta)" />
 
     <AppLayout>
-        <div class="px-4 py-6">
-            <div ref="containerRef" class="mx-auto" :style="{ width: `${trailWidth}px` }">
-                <!-- Lembrete da oferta de boas-vindas (24h depois do onboarding), como no mapa atual -->
-                <WelcomeOfferBanner />
+        <div ref="pageRef">
+            <!-- Oferta de boas-vindas (24h depois do onboarding): faixa de lado a lado, logo abaixo do cabeçalho -->
+            <WelcomeOfferBanner variant="strip" />
 
-                <!-- Aviso de teste -->
-                <div class="mb-5 flex items-center justify-between text-xs">
-                    <span class="rounded-md bg-blue-100 px-2 py-1 font-bold uppercase tracking-wide text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
-                        Mapa beta
-                    </span>
-                    <Link :href="route('play.map')" class="font-medium text-gray-500 underline-offset-2 hover:underline dark:text-gray-400">
-                        Voltar ao mapa atual
-                    </Link>
-                </div>
-
-                <!-- Estado vazio -->
-                <div v-if="sections.length === 0" class="py-16 text-center">
-                    <Book class="mx-auto mb-4 h-16 w-16 text-gray-300 dark:text-gray-600" />
-                    <h2 class="mb-2 text-xl font-bold text-gray-500 dark:text-gray-400">Nenhuma fase disponível</h2>
-                    <p class="text-gray-400 dark:text-gray-500">Selecione legislações para estudar.</p>
-                </div>
-
-                <button v-if="hasMoreAbove" type="button" class="more-button mb-6" @click="loadMore('above')">
-                    Ver trechos anteriores
-                </button>
-
-                <template v-if="shownSection">
-                    <!-- Cartão da etapa: um só, parado no topo; o título muda conforme a etapa que passa por ele -->
-                    <div
-                        ref="cardRef"
-                        class="section-card section-sticky sticky z-20 rounded-2xl border-2 border-gray-200 bg-white px-5 py-4 dark:border-gray-700 dark:bg-gray-800"
-                        :style="{ top: cardTop }"
-                    >
-                        <p class="text-sm text-gray-500 dark:text-gray-400">Etapa {{ shownSection.number }}</p>
-                        <h2 class="mt-0.5 truncate text-lg font-bold leading-snug text-gray-900 dark:text-white">
-                            {{ shownSection.legislation_title }}
-                        </h2>
-                        <div class="mt-3 h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
-                            <div
-                                class="h-full rounded-full bg-green-500"
-                                :style="{ width: `${(shownSection.completed_phases / Math.max(1, shownSection.total_phases)) * 100}%` }"
-                            />
-                        </div>
+            <div class="px-4 py-6">
+                <div class="mx-auto" :style="{ width: `${trailWidth}px` }">
+                    <!-- Aviso de teste -->
+                    <div class="mb-5 flex items-center justify-between text-xs">
+                        <span class="rounded-md bg-blue-100 px-2 py-1 font-bold uppercase tracking-wide text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
+                            Mapa beta
+                        </span>
+                        <Link :href="route('play.map')" class="font-medium text-gray-500 underline-offset-2 hover:underline dark:text-gray-400">
+                            Voltar ao mapa atual
+                        </Link>
                     </div>
 
-                    <!-- Trilha -->
-                    <div ref="trailRef" class="relative" :style="{ height: `${trail.height}px` }">
-                        <svg
-                            class="pointer-events-none absolute inset-0"
-                            :width="trailWidth"
-                            :height="trail.height"
-                            :viewBox="`0 0 ${trailWidth} ${trail.height}`"
+                    <!-- Estado vazio -->
+                    <div v-if="sections.length === 0" class="py-16 text-center">
+                        <Book class="mx-auto mb-4 h-16 w-16 text-gray-300 dark:text-gray-600" />
+                        <h2 class="mb-2 text-xl font-bold text-gray-500 dark:text-gray-400">Nenhuma fase disponível</h2>
+                        <p class="text-gray-400 dark:text-gray-500">Selecione legislações para estudar.</p>
+                    </div>
+
+                    <button v-if="hasMoreAbove" type="button" class="more-button mb-6" @click="loadMore('above')">
+                        Ver trechos anteriores
+                    </button>
+
+                    <template v-if="shownSection">
+                        <!-- Cartão da etapa: um só, parado no topo; o título muda conforme a etapa que passa por ele -->
+                        <div
+                            ref="cardRef"
+                            class="section-card section-sticky sticky z-20 rounded-2xl border-2 border-gray-200 bg-white px-5 py-4 dark:border-gray-700 dark:bg-gray-800"
+                            :style="{ top: cardTop }"
                         >
-                            <path
-                                v-for="(line, li) in trail.connectors"
-                                :key="li"
-                                :d="line.d"
-                                fill="none"
-                                stroke-linecap="round"
-                                :stroke-width="pathWidth"
-                                :class="line.done ? 'stroke-green-300 dark:stroke-green-800' : 'stroke-gray-200 dark:stroke-gray-700'"
-                            />
-                        </svg>
-
-                        <template v-for="(group, gi) in flatGroups" :key="group.id">
-                            <!-- Quadrado atual: abre direto a próxima fase -->
-                            <Link
-                                v-if="group.state === 'current' && group.current_phase_id"
-                                :href="route('beta.play.phase', { phaseId: group.current_phase_id })"
-                                data-current-group
-                                class="node node-current absolute block"
-                                :style="{
-                                    left: `${trail.points[gi].x}px`,
-                                    top: `${trail.points[gi].y}px`,
-                                    width: `${nodeSize + FRAME_GAP * 2}px`,
-                                    height: `${nodeSize + FRAME_GAP * 2 + FACE_DEPTH}px`,
-                                }"
-                                :aria-label="`Começar fase ${group.completed_phases + 1} de ${group.total_phases}`"
-                            >
-                                <span
-                                    class="node-frame absolute inset-0 border-4 bg-white dark:bg-gray-900"
-                                    :style="{ borderRadius: `${faceRadius + FRAME_GAP}px` }"
-                                />
-                                <span
-                                    class="node-face absolute flex items-center justify-center bg-blue-500"
-                                    :style="{
-                                        inset: `${FRAME_GAP}px ${FRAME_GAP}px ${FRAME_GAP + FACE_DEPTH}px`,
-                                        borderRadius: `${faceRadius}px`,
-                                    }"
-                                >
-                                    <svg class="absolute h-[78%] w-[78%]" viewBox="0 0 80 80">
-                                        <circle cx="40" cy="40" :r="RING_RADIUS" fill="none" stroke-width="7" class="stroke-blue-700" />
-                                        <circle
-                                            cx="40"
-                                            cy="40"
-                                            :r="RING_RADIUS"
-                                            fill="none"
-                                            stroke-width="7"
-                                            stroke-linecap="round"
-                                            class="stroke-white"
-                                            :stroke-dasharray="ringCircumference"
-                                            :stroke-dashoffset="ringOffset(group)"
-                                            transform="rotate(-90 40 40)"
-                                        />
-                                    </svg>
-                                    <span class="relative font-bold text-white" :style="{ fontSize: `${unit * 0.3}px` }">
-                                        {{ group.completed_phases }}/{{ group.total_phases }}
-                                    </span>
-                                </span>
-                            </Link>
-
-                            <!-- Quadrado concluído: lista as fases para revisar -->
-                            <button
-                                v-else-if="group.state === 'complete'"
-                                type="button"
-                                class="node node-complete absolute"
-                                :style="{
-                                    left: `${trail.points[gi].x}px`,
-                                    top: `${trail.points[gi].y}px`,
-                                    width: `${nodeSize}px`,
-                                    height: `${nodeSize}px`,
-                                }"
-                                aria-label="Fases concluídas"
-                                @click="toggleGroup(group)"
-                            >
-                                <span class="node-face absolute inset-0 flex items-center justify-center bg-green-500">
-                                    <Check class="h-2/5 w-2/5 text-white" :stroke-width="3.5" />
-                                </span>
-                            </button>
-
-                            <!-- Quadrado bloqueado -->
-                            <div
-                                v-else
-                                class="node node-locked absolute"
-                                :style="{
-                                    left: `${trail.points[gi].x}px`,
-                                    top: `${trail.points[gi].y}px`,
-                                    width: `${nodeSize}px`,
-                                    height: `${nodeSize}px`,
-                                }"
-                                aria-label="Bloqueado"
-                            >
-                                <span class="node-face absolute inset-0 flex items-center justify-center bg-gray-200 dark:bg-gray-700">
-                                    <Lock class="h-1/3 w-1/3 text-gray-400 dark:text-gray-500" :stroke-width="2.5" />
-                                </span>
-                            </div>
-
-                            <!-- Fases do quadrado concluído -->
-                            <template v-if="openGroupId === group.id">
-                                <div class="fixed inset-0 z-20" @click="openGroupId = null" />
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Etapa {{ shownSection.number }}</p>
+                            <h2 class="mt-0.5 truncate text-lg font-bold leading-snug text-gray-900 dark:text-white">
+                                {{ shownSection.legislation_title }}
+                            </h2>
+                            <div class="mt-3 h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
                                 <div
-                                    class="section-card absolute left-0 right-0 z-30 rounded-2xl border-2 border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-800"
-                                    :style="{ top: `${trail.points[gi].y + nodeSize / 2 + 16}px` }"
-                                >
-                                    <Link
-                                        v-for="(phase, pi) in group.phases"
-                                        :key="phase.id"
-                                        :href="route('beta.play.phase', { phaseId: phase.id })"
-                                        class="flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-bold text-gray-800 hover:bg-gray-100 dark:text-gray-100 dark:hover:bg-gray-700"
-                                    >
-                                        <span>Fase {{ pi + 1 }}</span>
-                                        <span class="flex items-center gap-1.5 text-green-600 dark:text-green-400">
-                                            <RotateCcw class="h-4 w-4" />
-                                            Revisar
-                                        </span>
-                                    </Link>
-                                </div>
-                            </template>
-                        </template>
-                    </div>
-                </template>
+                                    class="h-full rounded-full bg-green-500"
+                                    :style="{ width: `${(shownSection.completed_phases / Math.max(1, shownSection.total_phases)) * 100}%` }"
+                                />
+                            </div>
+                        </div>
 
-                <button v-if="hasMoreBelow" type="button" class="more-button mt-2" @click="loadMore('below')">
-                    Ver mais trechos
-                </button>
+                        <!-- Trilha -->
+                        <div ref="trailRef" class="relative" :style="{ height: `${trail.height}px` }">
+                            <svg
+                                class="pointer-events-none absolute inset-0"
+                                :width="trailWidth"
+                                :height="trail.height"
+                                :viewBox="`0 0 ${trailWidth} ${trail.height}`"
+                            >
+                                <path
+                                    v-for="(line, li) in trail.connectors"
+                                    :key="li"
+                                    :d="line.d"
+                                    fill="none"
+                                    stroke-linecap="round"
+                                    :stroke-width="pathWidth"
+                                    :class="line.done ? 'stroke-green-300 dark:stroke-green-800' : 'stroke-gray-200 dark:stroke-gray-700'"
+                                />
+                            </svg>
+
+                            <template v-for="(group, gi) in flatGroups" :key="group.id">
+                                <!-- Quadrado atual: abre direto a próxima fase -->
+                                <Link
+                                    v-if="group.state === 'current' && group.current_phase_id"
+                                    :href="route('beta.play.phase', { phaseId: group.current_phase_id })"
+                                    data-current-group
+                                    class="node node-current absolute block"
+                                    :style="{
+                                        left: `${trail.points[gi].x}px`,
+                                        top: `${trail.points[gi].y}px`,
+                                        width: `${nodeSize + FRAME_GAP * 2}px`,
+                                        height: `${nodeSize + FRAME_GAP * 2 + FACE_DEPTH}px`,
+                                    }"
+                                    :aria-label="`Começar fase ${group.completed_phases + 1} de ${group.total_phases}`"
+                                >
+                                    <span
+                                        class="node-frame absolute inset-0 border-4 bg-white dark:bg-gray-900"
+                                        :style="{ borderRadius: `${faceRadius + FRAME_GAP}px` }"
+                                    />
+                                    <span
+                                        class="node-face absolute flex items-center justify-center bg-blue-500"
+                                        :style="{
+                                            inset: `${FRAME_GAP}px ${FRAME_GAP}px ${FRAME_GAP + FACE_DEPTH}px`,
+                                            borderRadius: `${faceRadius}px`,
+                                        }"
+                                    >
+                                        <svg class="absolute h-[78%] w-[78%]" viewBox="0 0 80 80">
+                                            <circle cx="40" cy="40" :r="RING_RADIUS" fill="none" stroke-width="7" class="stroke-blue-700" />
+                                            <circle
+                                                cx="40"
+                                                cy="40"
+                                                :r="RING_RADIUS"
+                                                fill="none"
+                                                stroke-width="7"
+                                                stroke-linecap="round"
+                                                class="stroke-white"
+                                                :stroke-dasharray="ringCircumference"
+                                                :stroke-dashoffset="ringOffset(group)"
+                                                transform="rotate(-90 40 40)"
+                                            />
+                                        </svg>
+                                        <span class="relative font-bold text-white" :style="{ fontSize: `${unit * 0.3}px` }">
+                                            {{ group.completed_phases }}/{{ group.total_phases }}
+                                        </span>
+                                    </span>
+                                </Link>
+
+                                <!-- Quadrado concluído: lista as fases para revisar -->
+                                <button
+                                    v-else-if="group.state === 'complete'"
+                                    type="button"
+                                    class="node node-complete absolute"
+                                    :style="{
+                                        left: `${trail.points[gi].x}px`,
+                                        top: `${trail.points[gi].y}px`,
+                                        width: `${nodeSize}px`,
+                                        height: `${nodeSize}px`,
+                                    }"
+                                    aria-label="Fases concluídas"
+                                    @click="toggleGroup(group)"
+                                >
+                                    <span class="node-face absolute inset-0 flex items-center justify-center bg-green-500">
+                                        <Check class="h-2/5 w-2/5 text-white" :stroke-width="3.5" />
+                                    </span>
+                                </button>
+
+                                <!-- Quadrado bloqueado -->
+                                <div
+                                    v-else
+                                    class="node node-locked absolute"
+                                    :style="{
+                                        left: `${trail.points[gi].x}px`,
+                                        top: `${trail.points[gi].y}px`,
+                                        width: `${nodeSize}px`,
+                                        height: `${nodeSize}px`,
+                                    }"
+                                    aria-label="Bloqueado"
+                                >
+                                    <span class="node-face absolute inset-0 flex items-center justify-center bg-gray-200 dark:bg-gray-700">
+                                        <Lock class="h-1/3 w-1/3 text-gray-400 dark:text-gray-500" :stroke-width="2.5" />
+                                    </span>
+                                </div>
+
+                                <!-- Fases do quadrado concluído -->
+                                <template v-if="openGroupId === group.id">
+                                    <div class="fixed inset-0 z-20" @click="openGroupId = null" />
+                                    <div
+                                        class="section-card absolute left-0 right-0 z-30 rounded-2xl border-2 border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-800"
+                                        :style="{ top: `${trail.points[gi].y + nodeSize / 2 + 16}px` }"
+                                    >
+                                        <Link
+                                            v-for="(phase, pi) in group.phases"
+                                            :key="phase.id"
+                                            :href="route('beta.play.phase', { phaseId: phase.id })"
+                                            class="flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-bold text-gray-800 hover:bg-gray-100 dark:text-gray-100 dark:hover:bg-gray-700"
+                                        >
+                                            <span>Fase {{ pi + 1 }}</span>
+                                            <span class="flex items-center gap-1.5 text-green-600 dark:text-green-400">
+                                                <RotateCcw class="h-4 w-4" />
+                                                Revisar
+                                            </span>
+                                        </Link>
+                                    </div>
+                                </template>
+                            </template>
+                        </div>
+                    </template>
+
+                    <button v-if="hasMoreBelow" type="button" class="more-button mt-2" @click="loadMore('below')">
+                        Ver mais trechos
+                    </button>
+                </div>
             </div>
         </div>
     </AppLayout>
