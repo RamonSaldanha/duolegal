@@ -88,3 +88,99 @@ function validAvatar(array $overrides = []): array
 
     return array_merge($avatar, $overrides);
 }
+
+// ==================== Material de estudo ====================
+
+/** Lei publicada com $blocks blocos, um artigo por bloco. */
+function studyLegislation(int $blocks, string $title = 'Lei de Estudo'): App\Models\Legislation
+{
+    $legislation = App\Models\Legislation::create(['title' => $title, 'raw_text' => 'Art.', 'status' => 'published']);
+
+    for ($i = 0; $i < $blocks; $i++) {
+        App\Models\LegislationSegment::create([
+            'legislation_id' => $legislation->id,
+            'original_text' => "Art. {$i} A União zelará pelo dispositivo {$i}.",
+            'char_start' => $i * 100,
+            'char_end' => $i * 100 + 40,
+            'segment_type' => 'caput',
+            'article_reference' => (string) $i,
+            'structural_marker' => "Art. {$i}",
+            'position' => $i + 1,
+            'is_block' => true,
+        ]);
+    }
+
+    return $legislation;
+}
+
+function studyAdmin(array $attributes = []): User
+{
+    $user = User::factory()->createOne($attributes);
+    $user->forceFill(['is_admin' => true])->save();
+
+    return $user;
+}
+
+/** Ids dos blocos da lei, na ordem. */
+function studyBlockIds(App\Models\Legislation $legislation): array
+{
+    return $legislation->segments()->where('is_block', true)->orderBy('char_start')->pluck('id')->all();
+}
+
+/** Uma questão Cebraspe e uma FGV, válidas. */
+function studyQuestions(): array
+{
+    return [
+        [
+            'board' => 'cebraspe',
+            'type' => 'true_false',
+            'statement' => 'A União zelará pelo dispositivo.',
+            'options' => null,
+            'correct_answer' => 'certo',
+            'explanation' => 'É o que diz o caput.',
+            'legal_basis' => 'Art. 0',
+        ],
+        [
+            'board' => 'fgv',
+            'type' => 'multiple_choice',
+            'statement' => 'João quer saber quem zelará pelo dispositivo. Assinale a correta.',
+            'options' => ['A' => 'O Município', 'B' => 'O Estado', 'C' => 'A União', 'D' => 'O Distrito Federal', 'E' => 'Ninguém'],
+            'correct_answer' => 'C',
+            'explanation' => 'C está certa pelo caput; as demais trocam o ente.',
+            'legal_basis' => 'Art. 1',
+        ],
+    ];
+}
+
+/**
+ * Grava direto no banco um material cobrindo os blocos de $from a $to (posições na lei).
+ */
+function studyMaterial(App\Models\Legislation $legislation, int $from, int $to, string $status = 'published', ?array $covered = null): App\Models\StudyMaterial
+{
+    $ids = studyBlockIds($legislation);
+    $range = array_slice($ids, $from, $to - $from + 1);
+    $covered ??= $range;
+    $service = app(App\Services\StudyMaterialService::class);
+    $skipped = $status === 'skipped';
+
+    $material = App\Models\StudyMaterial::create([
+        'legislation_id' => $legislation->id,
+        'first_block_id' => $range[0],
+        'last_block_id' => end($range),
+        'block_ids' => $skipped ? [] : $covered,
+        'content_hash' => $skipped ? null : $service->contentHash($covered),
+        'title' => $skipped ? null : "Material {$from}-{$to}",
+        'summary' => $skipped ? null : "## Resumo\n\nTexto **importante**.",
+        'status' => $status,
+        'skip_reason' => $skipped ? 'Disposições transitórias esgotadas' : null,
+        'published_at' => $status === 'published' ? now() : null,
+    ]);
+
+    if (! $skipped) {
+        $service->replaceQuestions($material, $service->validateContent([
+            'title' => 't', 'summary' => 's', 'questions' => studyQuestions(),
+        ])['questions']);
+    }
+
+    return $material;
+}
