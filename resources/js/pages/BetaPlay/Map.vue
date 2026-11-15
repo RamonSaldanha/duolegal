@@ -82,7 +82,7 @@ const sectionOfGroup = computed(() => props.sections.flatMap((section, si) => se
 const bonusSize = computed(() => unit.value * 0.95);
 
 function bonusPoint(from: Point, to: Point, fromIndex: number): Point {
-    return fromIndex % 2 === 0 ? { x: to.x, y: from.y + unit.value * 0.925 } : { x: from.x, y: from.y + unit.value * 1.675 };
+    return fromIndex % 2 === 0 ? { x: to.x, y: from.y + unit.value * 0.85 } : { x: from.x, y: from.y + unit.value * 1.675 };
 }
 
 /** Pedaço de caminho até o bônus do último quadrado da lista, que não tem quadrado seguinte. */

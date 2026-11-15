@@ -237,8 +237,17 @@ class StudyMaterialService
             'questions.min' => "O material precisa de {$min} a {$max} questões (o padrão é 2).",
             'questions.max' => "O material precisa de {$min} a {$max} questões (o padrão é 2).",
             'questions.required' => "O material precisa de {$min} a {$max} questões (o padrão é 2).",
-            'questions.*.explanation.required' => 'Toda questão precisa de explanation (comentário do gabarito).',
-            'questions.*.legal_basis.required' => 'Toda questão precisa de legal_basis (dispositivo que fundamenta o gabarito).',
+            'title.required' => 'Informe o título do material (title).',
+            'title.max' => 'O título (title) pode ter até 255 caracteres.',
+            'summary.required' => 'Informe o resumo em markdown (summary).',
+            'summary.max' => 'O resumo (summary) pode ter até 20000 caracteres.',
+            'questions.*.board.required' => 'Toda questão precisa da banca (board): cebraspe, fgv, fcc ou vunesp.',
+            'questions.*.type.required' => 'Toda questão precisa do tipo (type): true_false ou multiple_choice.',
+            'questions.*.statement.required' => 'Toda questão precisa do enunciado (statement).',
+            'questions.*.correct_answer.required' => 'Toda questão precisa do gabarito (correct_answer).',
+            'questions.*.explanation.required' => 'Toda questão precisa do comentário do gabarito (explanation).',
+            'questions.*.legal_basis.required' => 'Toda questão precisa do fundamento (legal_basis): o dispositivo que sustenta o gabarito.',
+            'questions.*.legal_basis.max' => 'O fundamento (legal_basis) pode ter até 500 caracteres.',
         ])->validate();
 
         $errors = [];

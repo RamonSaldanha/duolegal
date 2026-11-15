@@ -66,13 +66,16 @@ O trecho é um intervalo contínuo desses blocos.
 
 - **Comece sempre no primeiro bloco recebido** (`first_block_id` da resposta). O site recusa
   trecho que deixa buraco.
-- **Termine onde o assunto termina.** Use `heading_before`, os marcadores e o conteúdo. Mire em
+- **Títulos, capítulos e seções** podem vir em `heading_before` ou, o que é mais comum, no fim
+  do `text` do bloco anterior (o art. 5º termina com "TÍTULO II / Competência Tributária"). Um
+  cabeçalho no fim de um bloco anuncia o assunto do bloco seguinte, não o daquele.
+- **Termine onde o assunto termina.** Use esses cabeçalhos, os marcadores e o conteúdo. Mire em
   cerca de **10 blocos**; o site aceita de **4 a 20**. Se todos os dispositivos sobre um tema
   somam 13 blocos, o trecho tem 13.
 - **Não corte no meio de um artigo:** caput, incisos e parágrafos ficam juntos. A exceção é o
   artigo muito longo (como o art. 5º da Constituição), que pode ser dividido por tema.
-- **Deixe fora de `block_ids`** os blocos do trecho que não têm matéria: revogados, vetados ou
-  meramente remissivos. Eles continuam dentro do intervalo, só não são cobertos pelo material.
+- **Deixe fora de `block_ids`** os blocos do trecho que não têm matéria: revogados, vetados,
+  meramente remissivos ou o cabeçalho da lei (ementa e preâmbulo, que costumam ser o bloco 1). Eles continuam dentro do intervalo, só não são cobertos pelo material.
 - **Pule o trecho** (`POST /skip`), com um motivo curto, quando não houver matéria para questão:
   disposições transitórias já esgotadas, sequência de dispositivos revogados. O trecho pulado
   pode ter de 1 a 40 blocos.
