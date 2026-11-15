@@ -1,17 +1,21 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
-import { Gamepad2, Trophy, BookOpen, GraduationCap } from 'lucide-vue-next';
+import { Gamepad2, Trophy, BookOpen, GraduationCap, FlaskConical } from 'lucide-vue-next';
 import { computed } from 'vue';
 
 const page = usePage();
 const isCurrentRoute = computed(() => (url: string) => page.url.startsWith(url));
 
-const navItems = [
+const isAdmin = computed(() => page.props.auth.user?.is_admin === true);
+
+const navItems = computed(() => [
     {
         title: 'Jogar',
         href: '/play',
         icon: Gamepad2,
     },
+    // Mapa em teste: só administradores veem (a rota também exige)
+    ...(isAdmin.value ? [{ title: 'Beta', href: '/beta/play', icon: FlaskConical }] : []),
     {
         title: 'Conquistas',
         href: '/disciplines',
@@ -27,7 +31,7 @@ const navItems = [
         href: '/play/preferences',
         icon: BookOpen,
     },
-];
+]);
 </script>
 
 <template>

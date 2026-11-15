@@ -18,6 +18,15 @@ const mainNavItems = computed(() => [
         href: '/play',
         iconPath: '/icons/livro.png',
     },
+    ...(isAdmin.value
+        ? [
+            {
+                title: 'Beta',
+                href: '/beta/play',
+                iconPath: '/icons/livro.png',
+            },
+        ]
+        : []),
     {
         title: 'Conquistas',
         href: '/disciplines',

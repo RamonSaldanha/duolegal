@@ -8,6 +8,8 @@ import GameButton from '@/components/ui/GameButton.vue';
 const props = defineProps<{
     segment: ActiveSegmentData;
     controlsTarget?: string;
+    /** Esconde o ✓/✗ do resultado (a tela que usa já mostra o acerto ou o erro). */
+    hideResultIcon?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -253,6 +255,7 @@ defineExpose({ reset });
         <div v-else class="text-center py-2">
             <div v-if="segment.total_gaps > 0" class="flex items-center justify-center gap-3">
                 <div
+                    v-if="!hideResultIcon"
                     class="w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold"
                     :class="verificationResults.filter(r => r.is_correct).length >= requiredCorrect(segment.total_gaps)
                         ? 'bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400'

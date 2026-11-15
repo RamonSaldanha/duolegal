@@ -18,9 +18,16 @@ class PhaseGenerationService
      * Gera a lista intercalada de fases a partir das legislações selecionadas.
      * Cada fase inclui: id, legislation_uuid, legislation_title, block_ids,
      * block_count, show_legislation_header, is_complete, is_blocked, is_current, progress.
+     *
+     * Os dois últimos parâmetros só mudam no mapa beta (BetaPlayController); o mapa atual
+     * e a API do app usam os padrões.
      */
-    public function generatePhaseList(User $user, array $selectedUuids = []): array
-    {
+    public function generatePhaseList(
+        User $user,
+        array $selectedUuids = [],
+        int $blocksPerPhase = self::BLOCKS_PER_PHASE,
+        int $phasesPerSwitch = self::PHASES_PER_LEGISLATION_SWITCH,
+    ): array {
         $query = Legislation::where('status', 'published')
             ->with(['segments' => fn ($q) => $q->where('is_block', true)->orderBy('char_start')]);
 
@@ -36,7 +43,7 @@ class PhaseGenerationService
 
         $lawChunks = [];
         foreach ($legislations as $leg) {
-            $chunks = $leg->segments->chunk(self::BLOCKS_PER_PHASE)->values();
+            $chunks = $leg->segments->chunk($blocksPerPhase)->values();
             if ($chunks->isNotEmpty()) {
                 $lawChunks[$leg->uuid] = [
                     'legislation' => $leg,
@@ -60,7 +67,7 @@ class PhaseGenerationService
             foreach ($lawChunks as $uuid => &$data) {
                 $added = 0;
 
-                while ($added < self::PHASES_PER_LEGISLATION_SWITCH && $data['cursor'] < $data['chunks']->count()) {
+                while ($added < $phasesPerSwitch && $data['cursor'] < $data['chunks']->count()) {
                     $phaseId++;
                     $chunk = $data['chunks'][$data['cursor']];
 

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\BetaPlayController;
 use App\Http\Controllers\LegislationEditorController;
 use App\Http\Controllers\LegislationPlayController;
 use App\Http\Controllers\PlayController;
@@ -21,6 +22,14 @@ Route::middleware(['auth'])->prefix('play')->group(function () {
     // Rotas compartilhadas entre sistemas
     Route::get('no-lives', fn () => Inertia::render('Play/NoLives'))->name('play.nolives');
     Route::post('reward-life', [PlayController::class, 'rewardLife'])->name('play.reward-life');
+});
+
+// Mapa beta (quadrados com várias fases) — em teste, só para administradores; não substitui o /play
+Route::middleware(['auth', 'admin'])->prefix('beta/play')->group(function () {
+    Route::get('/', [BetaPlayController::class, 'betaMap'])->name('beta.play.map');
+    Route::get('phase/{phaseId}', [BetaPlayController::class, 'betaPhase'])->where('phaseId', '[0-9]+')->name('beta.play.phase');
+    Route::post('fail', [BetaPlayController::class, 'betaFail'])->name('beta.play.fail');
+    Route::post('finish', [BetaPlayController::class, 'betaFinish'])->name('beta.play.finish');
 });
 
 // Rotas do editor de legislações (admin)

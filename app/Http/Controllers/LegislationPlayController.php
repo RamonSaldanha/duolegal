@@ -17,7 +17,7 @@ class LegislationPlayController extends Controller
     const PHASES_PER_LEGISLATION_SWITCH = PhaseGenerationService::PHASES_PER_LEGISLATION_SWITCH;
     const PHASES_PER_PAGE = PhaseGenerationService::PHASES_PER_PAGE;
 
-    public function __construct(private PhaseGenerationService $phaseService) {}
+    public function __construct(protected PhaseGenerationService $phaseService) {}
 
     /**
      * Mapa com trilha intercalada de legislações.
@@ -642,7 +642,7 @@ class LegislationPlayController extends Controller
     /**
      * Formata segmento completado com dados de progresso do usuário.
      */
-    private function formatSegmentWithProgress(LegislationSegment $segment, $progressRecords): array
+    protected function formatSegmentWithProgress(LegislationSegment $segment, $progressRecords): array
     {
         $progress = $progressRecords->get($segment->id);
 
@@ -662,7 +662,7 @@ class LegislationPlayController extends Controller
     /**
      * Formata segmento ativo para o desafio (lacunas + opções embaralhadas).
      */
-    private function formatSegmentForChallenge(LegislationSegment $segment): array
+    protected function formatSegmentForChallenge(LegislationSegment $segment): array
     {
         $lacunas = $segment->activeLacunas()->orderBy('gap_order')->get();
         // O jogo preenche as lacunas na ordem de gap_order: numera sempre na ordem do texto,

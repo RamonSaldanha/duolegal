@@ -50,7 +50,7 @@ onBeforeUnmount(() => clearInterval(clock));
 
 <template>
     <Transition name="offer-banner" appear>
-        <div v-if="visible" class="sticky z-40 mb-4" style="top: calc(var(--app-header-h, 64px) + 8px)">
+        <div v-if="visible" data-welcome-offer class="sticky z-40 mb-4" style="top: calc(var(--app-header-h, 64px) + 8px)">
             <div
                 class="flex items-center gap-3 rounded-2xl border-2 border-pink-200 bg-white py-2.5 pl-3 pr-2 shadow-[0_4px_0_#fbcfe8] dark:border-pink-900 dark:bg-gray-800 dark:shadow-[0_4px_0_#0f0f0f]"
             >
