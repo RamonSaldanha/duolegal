@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\LegalReferenceController as AdminLegalReferenceController;
 use App\Http\Controllers\Api\LawArticleApiController;
+use App\Http\Controllers\Api\V1\Admin\StudyMaterialController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\DisciplineProgressController;
 use App\Http\Controllers\Api\V1\LegalReferenceController;
@@ -88,3 +89,15 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'throttle:120,1'])->group(funct
     Route::put('/profile/avatar', [AuthController::class, 'updateAvatar'])->name('api.profile.avatar');
     Route::delete('/profile', [AuthController::class, 'deleteAccount'])->name('api.profile.delete');
 });
+
+// Material de estudo: rotas do agente de IA (ver .claude/skills/gerar-material-estudo).
+// Exige admin e token com a habilidade `study-materials`; o token do app não serve.
+Route::prefix('v1/admin/study-materials')
+    ->middleware(['auth:sanctum', 'throttle:120,1', 'study-materials.agent'])
+    ->group(function () {
+        Route::get('/legislations', [StudyMaterialController::class, 'legislations']);
+        Route::get('/next', [StudyMaterialController::class, 'next']);
+        Route::get('/status', [StudyMaterialController::class, 'status']);
+        Route::post('/', [StudyMaterialController::class, 'store']);
+        Route::post('/skip', [StudyMaterialController::class, 'skip']);
+    });
