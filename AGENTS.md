@@ -6,7 +6,10 @@ Gamified law study app ("Memorize Direito") — Laravel 12 + Vue 3 + Inertia.js,
 ## Architecture: What an Agent Won't Guess from File Names
 
 ### No REST API
-Inertia.js renders data directly from controllers — no separate API endpoints. All data flows through `Inertia::render()` and `router.post()`/`router.get()` form submissions. The single exception is `POST /stripe/webhook`.
+Inertia.js renders data directly from controllers — no separate API endpoints for the site. All data flows through `Inertia::render()` and `router.post()`/`router.get()` form submissions. The exceptions are `POST /stripe/webhook`, the mobile app API (`/api/v1`) and the study-material routes used by AI agents (`/api/v1/admin/study-materials`).
+
+### Study material skill
+To write study material (summaries + exam-style questions) for a law, follow the skill at `.agents/skills/gerar-material-estudo/SKILL.md` (identical copy in `.claude/skills/`; a test fails if they diverge, so edit both).
 
 ### Dual Game System
 - **Legacy** (`/legado` prefix, `routes/legado.php`): Phase-based game (`PlayController`, `LearnController`). Where most active users are.
