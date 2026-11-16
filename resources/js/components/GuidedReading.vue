@@ -7,7 +7,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 // de palavras claras avança na velocidade escolhida. São dois modos, alternados no painel:
 // por blocos (uma janela de palavras que desliza palavra a palavra) e régua de leitura (uma linha
 // inteira por vez). Rolar a tela leva a leitura para o trecho que ficou à vista, e tocar numa
-// palavra leva a leitura até ela. O resumo só conta como lido quando a leitura, tocando, passou
+// palavra leva a leitura até ela; apertar e segurar o texto prende o realce. O resumo só conta como lido quando a leitura, tocando, passou
 // por quase todas as palavras: rolar ou pular até o fim não vale. Os controles ficam num painel
 // vertical flutuante, que a pessoa arrasta para perto do dedão.
 const props = defineProps<{
@@ -18,14 +18,11 @@ const props = defineProps<{
 
 const WPM_MIN = 100;
 const WPM_MAX = 800;
-const WPM_STEP = 25;
-const WPM_DEFAULT = 250;
+const WPM_STEP = 20;
+const WPM_DEFAULT = 240;
 // Leitura por blocos: palavras claras antes e depois da palavra atual
 const WINDOW_BEHIND = 1;
-const WINDOW_AHEAD = 7;
-// Rastro: palavras logo atrás do campo de visão, que apagam em dois degraus
-const TRAIL_NEAR = 3;
-const TRAIL_FAR = 3;
+const WINDOW_AHEAD = 8;
 // Parte das palavras que a leitura precisa ter percorrido, tocando, para o resumo contar como lido
 const REQUIRED_COVERAGE = 0.9;
 const WPM_KEY = 'memorize:reading-wpm';
@@ -155,41 +152,24 @@ function snap(wordIndex: number): number {
     return groupRange(Math.min(Math.max(0, wordIndex), words.length - 1))[0];
 }
 
-const PAINT_CLASSES = ['on', 'trail-near', 'trail-far'];
-
 function paint() {
     let [from, to] = groupRange(index);
-    // Onde começam os dois degraus do rastro
-    let nearFrom: number;
-    let farFrom: number;
-
     if (mode.value === 'chunk') {
         from = Math.max(0, index - WINDOW_BEHIND);
         to = Math.min(words.length - 1, index + WINDOW_AHEAD);
-        nearFrom = Math.max(0, from - TRAIL_NEAR);
-        farFrom = Math.max(0, nearFrom - TRAIL_FAR);
-    } else {
-        // Na régua, o rastro é a linha de cima
-        nearFrom = from > 0 ? groupRange(from - 1)[0] : 0;
-        farFrom = nearFrom;
     }
 
     for (let i = litFrom; i <= litTo; i++) {
-        if (i < farFrom || i > to) words[i]?.classList.remove(...PAINT_CLASSES);
+        if (i < from || i > to) words[i]?.classList.remove('on');
     }
-    for (let i = farFrom; i <= to; i++) {
-        const list = words[i].classList;
-        list.toggle('on', i >= from);
-        list.toggle('trail-near', i >= nearFrom && i < from);
-        list.toggle('trail-far', i < nearFrom);
-    }
+    for (let i = from; i <= to; i++) words[i].classList.add('on');
 
-    litFrom = farFrom;
+    litFrom = from;
     litTo = to;
 }
 
 function clearPaint() {
-    for (let i = litFrom; i <= litTo; i++) words[i]?.classList.remove(...PAINT_CLASSES);
+    for (let i = litFrom; i <= litTo; i++) words[i]?.classList.remove('on');
     litFrom = 0;
     litTo = -1;
 }
@@ -333,6 +313,7 @@ function play() {
 
 function pause() {
     stopTimer();
+    held.value = false;
     state.value = 'paused';
 }
 
@@ -403,9 +384,36 @@ function onScroll() {
     if (state.value === 'playing') schedule();
 }
 
+// === Segurar ===
+
+// Apertar e segurar o texto prende o realce onde está; soltar faz a leitura seguir
+const HOLD_MIN = 300;
+const held = ref(false);
+let holdStartedAt = 0;
+let ignoreClickUntil = 0;
+
+function onHoldStart(event: PointerEvent) {
+    if (state.value !== 'playing' || held.value) return;
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+
+    held.value = true;
+    holdStartedAt = performance.now();
+    stopTimer();
+}
+
+// Também chega quando o toque vira rolagem (pointercancel): a leitura segue
+function onHoldEnd() {
+    if (!held.value) return;
+
+    held.value = false;
+    // Soltar depois de segurar não conta como toque na palavra
+    if (performance.now() - holdStartedAt >= HOLD_MIN) ignoreClickUntil = performance.now() + 400;
+    if (state.value === 'playing') schedule();
+}
+
 // Tocar numa palavra leva a leitura até ela
 function onWordClick(event: MouseEvent) {
-    if (state.value === 'idle') return;
+    if (state.value === 'idle' || performance.now() < ignoreClickUntil) return;
     const target = (event.target as HTMLElement).closest<HTMLElement>('.rw');
     if (!target?.dataset.i) return;
 
@@ -504,7 +512,8 @@ watch(
 
 onMounted(async () => {
     const stored = Number(readStored(WPM_KEY, WPM_DEFAULT));
-    wpm.value = Number.isFinite(stored) ? Math.min(WPM_MAX, Math.max(WPM_MIN, stored)) : WPM_DEFAULT;
+    // O valor guardado entra na grade do passo atual
+    wpm.value = Number.isFinite(stored) ? Math.min(WPM_MAX, Math.max(WPM_MIN, Math.round(stored / WPM_STEP) * WPM_STEP)) : WPM_DEFAULT;
 
     if (readStored<Mode>(MODE_KEY, 'chunk') === 'line') mode.value = 'line';
 
@@ -518,6 +527,8 @@ onMounted(async () => {
               clampPanel(window.innerWidth, window.innerHeight * 0.5 - (panel.value?.offsetHeight ?? 170) / 2);
 
     window.addEventListener('resize', onResize);
+    window.addEventListener('pointerup', onHoldEnd);
+    window.addEventListener('pointercancel', onHoldEnd);
 });
 
 onBeforeUnmount(() => {
@@ -525,11 +536,20 @@ onBeforeUnmount(() => {
     if (modeHintTimer) clearTimeout(modeHintTimer);
     props.scroller?.removeEventListener('scroll', onScroll);
     window.removeEventListener('resize', onResize);
+    window.removeEventListener('pointerup', onHoldEnd);
+    window.removeEventListener('pointercancel', onHoldEnd);
 });
 </script>
 
 <template>
-    <div ref="root" class="guided-reading" :class="{ 'is-reading': state !== 'idle', 'is-paused': state === 'paused' }" @click="onWordClick">
+    <div
+        ref="root"
+        class="guided-reading"
+        :class="{ 'is-reading': state !== 'idle', 'is-paused': state === 'paused' }"
+        @click="onWordClick"
+        @pointerdown="onHoldStart"
+        @contextmenu="state === 'playing' && $event.preventDefault()"
+    >
         <StudySummary :html="html" />
     </div>
 
@@ -602,25 +622,18 @@ onBeforeUnmount(() => {
 .guided-reading :deep(.rw) {
     transition: opacity 0.25s ease;
 }
+/* Com a leitura aberta, segurar o texto prende o realce: nada de selecionar ou abrir menu */
+.guided-reading.is-reading {
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+}
 .guided-reading.is-reading :deep(.rw) {
-    opacity: 0.35;
+    opacity: 0.2;
     cursor: pointer;
 }
 .guided-reading.is-reading.is-paused :deep(.rw) {
-    opacity: 0.55;
-}
-/* Rastro do que acabou de ser lido: apaga em dois degraus, mais sutil que o campo de visão */
-.guided-reading.is-reading :deep(.rw.trail-far) {
     opacity: 0.45;
-}
-.guided-reading.is-reading :deep(.rw.trail-near) {
-    opacity: 0.6;
-}
-.guided-reading.is-reading.is-paused :deep(.rw.trail-far) {
-    opacity: 0.6;
-}
-.guided-reading.is-reading.is-paused :deep(.rw.trail-near) {
-    opacity: 0.7;
 }
 .guided-reading.is-reading :deep(.rw.on) {
     opacity: 1;
