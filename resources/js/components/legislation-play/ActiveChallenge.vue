@@ -260,7 +260,7 @@ defineExpose({ reset });
                         >(...)</span>
                         <span
                             v-else-if="!isVerified && userSelections[token.gapOrder!]"
-                            class="lacuna-filled inline-block cursor-pointer select-none rounded-lg border-2 border-gray-300 bg-white font-bold text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                            class="word-chip lacuna-filled inline-block cursor-pointer select-none rounded-lg border-2 border-gray-300 bg-white font-bold text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                             :class="{ invisible: inFlight[`gap-${token.gapOrder}`] }"
                             :data-gap="token.gapOrder"
                             role="button"
@@ -296,9 +296,14 @@ defineExpose({ reset });
                     class="inline-flex rounded-lg"
                     :class="{ 'bg-gray-200 dark:bg-gray-700': isOptionEmpty(wi) }"
                 >
-                    <GameButton variant="white" size="sm" :class="{ invisible: isOptionEmpty(wi) }" @click="selectWord(wi)">
+                    <button
+                        type="button"
+                        class="word-chip word-chip-bank select-none rounded-lg border-2 border-gray-300 bg-white font-bold text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                        :class="{ invisible: isOptionEmpty(wi) }"
+                        @click="selectWord(wi)"
+                    >
                         {{ word }}
-                    </GameButton>
+                    </button>
                 </span>
             </div>
 
@@ -361,9 +366,14 @@ defineExpose({ reset });
                     class="inline-flex rounded-lg"
                     :class="{ 'bg-gray-200 dark:bg-gray-700': isOptionEmpty(wi) }"
                 >
-                    <GameButton variant="white" size="sm" :class="{ invisible: isOptionEmpty(wi) }" @click="selectWord(wi)">
+                    <button
+                        type="button"
+                        class="word-chip word-chip-bank select-none rounded-lg border-2 border-gray-300 bg-white font-bold text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                        :class="{ invisible: isOptionEmpty(wi) }"
+                        @click="selectWord(wi)"
+                    >
                         {{ word }}
-                    </GameButton>
+                    </button>
                 </span>
             </div>
             <div class="flex justify-between pt-4 border-t">
@@ -388,29 +398,45 @@ defineExpose({ reset });
     color: #fffbcd;
 }
 
-/* A palavra na lacuna é o mesmo botão do banco (face, borda e a borda de baixo "3D"), só
-   que na medida do texto: letra um pouco menor e borda fina, para caber na linha sem
-   empurrar as de cima e de baixo. As cores vêm das mesmas classes do GameButton branco. */
-.lacuna-filled {
+/* A palavra tem a mesma aparência no banco e na lacuna: um botão na medida do texto da lei
+   (face, borda fina e a borda de baixo "3D"), com a letra a 85% do texto para caber na
+   linha sem empurrar as de cima e de baixo. As cores vêm das classes no template. */
+.word-chip {
     --edge: theme('colors.gray.300');
-    margin: 0 0.15em;
-    padding: 0 0.45em;
-    font-size: 0.85em;
     line-height: 1.35;
-    vertical-align: baseline;
     box-shadow: 0 3px 0 var(--edge);
     transition:
         transform 0.1s ease,
         box-shadow 0.1s ease;
 }
 
-.dark .lacuna-filled {
+.dark .word-chip {
     --edge: theme('colors.gray.600');
 }
 
-/* Afunda ao toque, como o botão: é assim que a palavra volta para o banco */
-.lacuna-filled:active {
+/* Afunda ao toque: é assim que a palavra vai para a lacuna e volta para o banco */
+.word-chip:active {
     transform: translateY(3px);
     box-shadow: 0 0 0 var(--edge);
+}
+
+.lacuna-filled {
+    margin: 0 0.15em;
+    padding: 0 0.45em;
+    font-size: 0.85em;
+    vertical-align: baseline;
+}
+
+/* No banco, a mesma letra da lacuna (85% do text-xl / md:text-2xl do texto) e um pouco
+   mais de respiro em volta, para o dedo acertar */
+.word-chip-bank {
+    padding: 0.2em 0.6em;
+    font-size: 1.0625rem;
+}
+
+@media (min-width: 768px) {
+    .word-chip-bank {
+        font-size: 1.275rem;
+    }
 }
 </style>
