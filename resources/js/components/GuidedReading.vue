@@ -21,8 +21,11 @@ const WPM_MAX = 800;
 const WPM_STEP = 25;
 const WPM_DEFAULT = 250;
 // Leitura por blocos: palavras claras antes e depois da palavra atual
-const WINDOW_BEHIND = 5;
-const WINDOW_AHEAD = 9;
+const WINDOW_BEHIND = 1;
+const WINDOW_AHEAD = 7;
+// Rastro: palavras logo atrás do campo de visão, que apagam em dois degraus
+const TRAIL_NEAR = 3;
+const TRAIL_FAR = 3;
 // Parte das palavras que a leitura precisa ter percorrido, tocando, para o resumo contar como lido
 const REQUIRED_COVERAGE = 0.9;
 const WPM_KEY = 'memorize:reading-wpm';
@@ -35,7 +38,7 @@ const MODE_LABELS: Record<Mode, string> = { chunk: 'Leitura por blocos', line: '
 type State = 'idle' | 'playing' | 'paused';
 
 const emit = defineEmits<{
-    // A leitura tocando percorreu o resumo (rolar ou pular até o fim não conta)
+    // A leitura tocando chegou à última palavra, tendo percorrido o resumo (rolar ou pular não conta)
     finished: [];
     // Quanto do resumo a leitura já percorreu, de 0 a 1
     progress: [fraction: number];
@@ -152,24 +155,41 @@ function snap(wordIndex: number): number {
     return groupRange(Math.min(Math.max(0, wordIndex), words.length - 1))[0];
 }
 
+const PAINT_CLASSES = ['on', 'trail-near', 'trail-far'];
+
 function paint() {
     let [from, to] = groupRange(index);
+    // Onde começam os dois degraus do rastro
+    let nearFrom: number;
+    let farFrom: number;
+
     if (mode.value === 'chunk') {
         from = Math.max(0, index - WINDOW_BEHIND);
         to = Math.min(words.length - 1, index + WINDOW_AHEAD);
+        nearFrom = Math.max(0, from - TRAIL_NEAR);
+        farFrom = Math.max(0, nearFrom - TRAIL_FAR);
+    } else {
+        // Na régua, o rastro é a linha de cima
+        nearFrom = from > 0 ? groupRange(from - 1)[0] : 0;
+        farFrom = nearFrom;
     }
 
     for (let i = litFrom; i <= litTo; i++) {
-        if (i < from || i > to) words[i]?.classList.remove('on');
+        if (i < farFrom || i > to) words[i]?.classList.remove(...PAINT_CLASSES);
     }
-    for (let i = from; i <= to; i++) words[i].classList.add('on');
+    for (let i = farFrom; i <= to; i++) {
+        const list = words[i].classList;
+        list.toggle('on', i >= from);
+        list.toggle('trail-near', i >= nearFrom && i < from);
+        list.toggle('trail-far', i < nearFrom);
+    }
 
-    litFrom = from;
+    litFrom = farFrom;
     litTo = to;
 }
 
 function clearPaint() {
-    for (let i = litFrom; i <= litTo; i++) words[i]?.classList.remove('on');
+    for (let i = litFrom; i <= litTo; i++) words[i]?.classList.remove(...PAINT_CLASSES);
     litFrom = 0;
     litTo = -1;
 }
@@ -197,7 +217,7 @@ function wordAt(fraction: number): number {
 
 /** Conta o grupo atual como lido: a leitura ficou nele o tempo da velocidade escolhida. */
 function markSeen() {
-    if (completed || !words.length) return;
+    if (!words.length) return;
 
     const [from, to] = groupRange(index);
     for (let i = from; i <= to; i++) {
@@ -207,16 +227,14 @@ function markSeen() {
     }
 
     // Avisa a tela a cada ponto percentual, não a cada grupo
-    const percent = Math.min(100, Math.floor((seenCount / (words.length * REQUIRED_COVERAGE)) * 100));
+    const percent = Math.floor((seenCount / words.length) * 100);
     if (percent !== lastPercent) {
         lastPercent = percent;
         emit('progress', percent / 100);
     }
 
-    if (seenCount >= Math.ceil(words.length * REQUIRED_COVERAGE)) {
-        completed = true;
-        emit('finished');
-    }
+    // Leu o bastante; o resumo só conta como lido quando a leitura chegar à última palavra
+    if (seenCount >= Math.ceil(words.length * REQUIRED_COVERAGE)) completed = true;
 }
 
 /** Tempo na palavra: o da velocidade, com uma pausa maior na pontuação e em palavra longa. */
@@ -281,6 +299,7 @@ function resumeAtUnread() {
 }
 
 function finish() {
+    emit('finished');
     stopTimer();
     state.value = 'idle';
     clearPaint();
@@ -356,7 +375,24 @@ function toggleMode() {
 
 // Rolou a tela com a leitura aberta: a janela vai para o trecho que ficou à vista
 function onScroll() {
-    if (state.value === 'idle' || performance.now() < autoScrollUntil) return;
+    if (state.value === 'idle') return;
+
+    // Rolagem que a própria leitura provocou: enquanto ela durar, não mexe na posição
+    const now = performance.now();
+    if (now < autoScrollUntil) {
+        autoScrollUntil = Math.max(autoScrollUntil, now + 200);
+        return;
+    }
+
+    // Só muda de lugar se a rolagem tirou a palavra atual da tela. Rolagem pequena, ou a da
+    // página que encolheu ou cresceu, não tira a leitura de onde está.
+    const scroller = props.scroller;
+    const word = words[index];
+    if (scroller && word) {
+        const box = scroller.getBoundingClientRect();
+        const rect = word.getBoundingClientRect();
+        if (rect.bottom > box.top && rect.top < box.bottom) return;
+    }
 
     // Rolar só muda de onde a leitura segue; o que foi pulado não conta como lido
     const target = snap(wordAt(0.25));
@@ -572,6 +608,19 @@ onBeforeUnmount(() => {
 }
 .guided-reading.is-reading.is-paused :deep(.rw) {
     opacity: 0.55;
+}
+/* Rastro do que acabou de ser lido: apaga em dois degraus, mais sutil que o campo de visão */
+.guided-reading.is-reading :deep(.rw.trail-far) {
+    opacity: 0.45;
+}
+.guided-reading.is-reading :deep(.rw.trail-near) {
+    opacity: 0.6;
+}
+.guided-reading.is-reading.is-paused :deep(.rw.trail-far) {
+    opacity: 0.6;
+}
+.guided-reading.is-reading.is-paused :deep(.rw.trail-near) {
+    opacity: 0.7;
 }
 .guided-reading.is-reading :deep(.rw.on) {
     opacity: 1;
