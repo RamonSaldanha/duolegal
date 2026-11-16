@@ -6,8 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * Desafio de etapa do mapa beta: quais materiais de estudo a pessoa já concluiu dentro da
- * fase paralela de uma etapa. A etapa é identificada pelo seu último bloco.
+ * Desafio de um quadrado do mapa beta: quais materiais de estudo a pessoa já concluiu no
+ * último passo do quadrado. O quadrado é identificado pelo seu último bloco.
  */
 class UserBetaCheckpoint extends Model
 {
@@ -35,7 +35,7 @@ class UserBetaCheckpoint extends Model
     }
 
     /**
-     * O que já foi feito de um material ainda não concluído nesta etapa (para a pessoa
+     * O que já foi feito de um material ainda não concluído neste quadrado (para a pessoa
      * voltar de onde parou). Ao concluir, o material sai daqui e entra em done_material_ids.
      *
      * @return array{summary: bool, answers: array<int, string>}

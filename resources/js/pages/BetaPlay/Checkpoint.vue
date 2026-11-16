@@ -20,16 +20,16 @@ import { computed, nextTick, ref } from 'vue';
 import { useReward } from 'vue-rewards';
 
 const props = defineProps<{
-    checkpoint: { key: string; number: number; total: number; completed: number };
+    checkpoint: { key: string; section_number: number; step_number: number; total: number; completed: number };
     materials: CheckpointMaterial[];
 }>();
 
 const page = usePage();
 const authUser = computed(() => page.props.auth.user as { xp: number });
 
-// A fase é uma sequência de passos: o resumo de cada material e, logo depois, as questões
-// dele. Joga os materiais ainda não feitos nesta etapa; se todos já foram, é uma revisão de
-// tudo. O desafio é demorado, então cada passo é gravado na hora (o servidor guarda o resumo
+// O desafio do quadrado é uma sequência de passos: o resumo do material e, logo depois, as
+// questões dele (normalmente um material por quadrado). Joga o que ainda não foi feito; se
+// tudo já foi, é uma revisão. Cada passo é gravado na hora (o servidor guarda o resumo
 // lido e cada resposta): quem sai no meio volta no primeiro passo que falta.
 const isReview = props.materials.every((material) => material.done);
 const queue = isReview ? props.materials : props.materials.filter((material) => !material.done);
@@ -37,10 +37,7 @@ const queue = isReview ? props.materials : props.materials.filter((material) => 
 // O que já foi feito de cada material da fila, contando o que veio guardado do servidor
 const progress = ref<Record<string, { summary: boolean; answered: number[] }>>(
     Object.fromEntries(
-        queue.map((material) => [
-            material.uuid,
-            { summary: !isReview && material.summary_read, answered: isReview ? [] : [...material.answered] },
-        ]),
+        queue.map((material) => [material.uuid, { summary: !isReview && material.summary_read, answered: isReview ? [] : [...material.answered] }]),
     ),
 );
 
@@ -75,8 +72,7 @@ const levelUp = ref<DisciplineLevelUp | null>(null);
 // A subida de estrela espera o "Continuar", para não cobrir o comentário da questão
 let pendingLevelUp: DisciplineLevelUp | null = null;
 
-// A barra é só do material em que a pessoa está: o resumo e as questões dele. Cada material
-// tem a sua, senão numa etapa com vários materiais ela quase não andava.
+// A barra é do material em que a pessoa está: o resumo e as questões dele.
 const progressPercent = computed(() => {
     const material = step.value.material;
     const made = progress.value[material.uuid];
@@ -273,7 +269,7 @@ function choiceClass(key: string) {
 </script>
 
 <template>
-    <Head :title="`Desafio da etapa ${checkpoint.number}`" />
+    <Head title="Desafio do quadrado" />
 
     <div class="flex h-dvh w-full flex-col overflow-hidden bg-white dark:bg-gray-900">
         <span id="checkpoint-confetti" class="pointer-events-none fixed left-1/2 top-1/2 z-[100]"></span>
@@ -282,7 +278,7 @@ function choiceClass(key: string) {
         <!-- ===== Fim da fase ===== -->
         <PhaseComplete
             v-if="stage === 'done'"
-            :title="isReview ? 'Revisão concluída!' : 'Fase concluída!'"
+            :title="isReview ? 'Revisão concluída!' : 'Desafio concluído!'"
             :count="answeredCount"
             :count-label="answeredCount === 1 ? 'Questão' : 'Questões'"
             :xp="xpGained"
@@ -319,7 +315,11 @@ function choiceClass(key: string) {
                     </div>
                 </div>
                 <p class="mx-auto mt-2 w-full truncate text-xs font-medium text-gray-400 dark:text-gray-500 sm:w-[95%] lg:w-[50rem]">
-                    Etapa {{ checkpoint.number }} · Material {{ materialNumber }} de {{ materials.length }} · {{ step.material.legislation_title }}
+                    {{ step.material.legislation_title }} · Passo {{ checkpoint.step_number }} de {{ checkpoint.step_number }} · Desafio<template
+                        v-if="materials.length > 1"
+                    >
+                        · Material {{ materialNumber }} de {{ materials.length }}</template
+                    >
                 </p>
             </div>
 
@@ -339,11 +339,18 @@ function choiceClass(key: string) {
                                 @progress="summaryProgress = $event"
                             />
                             <!-- O botão fica no fim do texto e só libera quando a leitura guiada percorreu o resumo -->
-                            <GameButton variant="purple" size="lg" class="mt-8 w-full" :disabled="!summaryRead || summaryConfirmed" @click="confirmSummary">Concluir</GameButton>
+                            <GameButton
+                                variant="purple"
+                                size="lg"
+                                class="mt-8 w-full"
+                                :disabled="!summaryRead || summaryConfirmed"
+                                @click="confirmSummary"
+                                >Concluir</GameButton
+                            >
                             <p v-if="!summaryRead" class="mt-3 text-center text-sm text-gray-500 dark:text-gray-400">
                                 <template v-if="summaryProgress > 0">
-                                    Leitura em {{ Math.round(summaryProgress * 100) }}%. Rolar ou pular trechos não conta: a leitura guiada precisa passar
-                                    pelo texto.
+                                    Leitura em {{ Math.round(summaryProgress * 100) }}%. Rolar ou pular trechos não conta: a leitura guiada precisa
+                                    passar pelo texto.
                                 </template>
                                 <template v-else>Toque em iniciar e acompanhe a leitura guiada até o fim para concluir.</template>
                             </p>
@@ -424,9 +431,7 @@ function choiceClass(key: string) {
                 >
                     <div class="mx-auto w-full sm:w-[95%] lg:w-[50rem]">
                         <p v-if="checkError" class="mb-3 text-sm text-red-600">Não foi possível corrigir agora. Tente de novo.</p>
-                        <GameButton variant="purple" size="lg" class="w-full" :disabled="!selected || checking" @click="check"
-                            >Responder</GameButton
-                        >
+                        <GameButton variant="purple" size="lg" class="w-full" :disabled="!selected || checking" @click="check">Responder</GameButton>
                     </div>
                 </div>
 
@@ -444,7 +449,6 @@ function choiceClass(key: string) {
                 </ResultBar>
             </div>
         </template>
-
     </div>
 </template>
 

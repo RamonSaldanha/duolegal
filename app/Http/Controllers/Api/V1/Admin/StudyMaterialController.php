@@ -57,7 +57,8 @@ class StudyMaterialController extends Controller
         $legislation = $this->findLegislation($request->query('legislation'));
 
         $layout = $this->service->layout($legislation);
-        $run = array_slice($this->service->firstPendingRun($layout), 0, StudyMaterialService::NEXT_LIMIT);
+        // O próximo quadrado do mapa (ou o que falta dele): o trecho do próximo material
+        $run = $this->service->nextRange($layout);
 
         $base = [
             'legislation' => ['uuid' => $legislation->uuid, 'title' => $legislation->title],
@@ -86,11 +87,11 @@ class StudyMaterialController extends Controller
             'complete' => false,
             'first_block_id' => $run[0],
             'previous_material_title' => $previous,
+            // O trecho é sempre o quadrado inteiro: todos os blocos abaixo, do primeiro ao último
+            'last_block_id' => end($run),
             'limits' => [
-                'material_min_blocks' => StudyMaterialService::MIN_BLOCKS,
-                'material_target_blocks' => StudyMaterialService::TARGET_BLOCKS,
-                'material_max_blocks' => StudyMaterialService::MAX_BLOCKS,
-                'skip_max_blocks' => StudyMaterialService::MAX_SKIP_BLOCKS,
+                'min_questions' => StudyMaterialService::MIN_QUESTIONS,
+                'max_questions' => StudyMaterialService::MAX_QUESTIONS,
             ],
             'blocks' => $this->formatBlocks($legislation, $blocks),
         ]);
@@ -124,8 +125,6 @@ class StudyMaterialController extends Controller
                 $legislation,
                 (int) $request->input('first_block_id'),
                 (int) $request->input('last_block_id'),
-                StudyMaterialService::MIN_BLOCKS,
-                StudyMaterialService::MAX_BLOCKS,
             );
             $covered = $this->service->validateCoveredBlocks($range, $request->input('block_ids'));
 
@@ -184,8 +183,6 @@ class StudyMaterialController extends Controller
                 $legislation,
                 (int) $request->input('first_block_id'),
                 (int) $request->input('last_block_id'),
-                1,
-                StudyMaterialService::MAX_SKIP_BLOCKS,
             );
 
             return StudyMaterial::create([

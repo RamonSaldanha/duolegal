@@ -54,7 +54,7 @@ export interface CheckpointQuestion {
 
 /** O que o servidor devolve depois de gravar um passo (resumo lido ou resposta). */
 export interface CheckpointStepResponse {
-    /** Este passo concluiu o material na etapa */
+    /** Este passo concluiu o material no quadrado */
     material_completed: boolean;
     xp_gained: number;
     discipline_level_up: DisciplineLevelUp | null;
@@ -69,7 +69,7 @@ export interface CheckpointAnswerResponse extends CheckpointStepResponse {
     legal_basis: string;
 }
 
-/** Material como a fase da etapa recebe: resumo já em HTML seguro e questões sem gabarito. */
+/** Material como o desafio do quadrado recebe: resumo já em HTML seguro e questões sem gabarito. */
 export interface CheckpointMaterial {
     uuid: string;
     title: string;

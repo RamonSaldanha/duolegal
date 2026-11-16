@@ -1,15 +1,18 @@
 ---
 name: gerar-material-estudo
-description: Gera material de estudo (um resumo em markdown e até quatro questões inéditas e difíceis no estilo Cebraspe, FGV, FCC ou Vunesp) para os dispositivos de uma lei do Memorize Direito e grava no site pelas rotas REST do admin. Use quando o usuário pedir, por exemplo, "faça questões e resumos para a CF88", "gere material de estudo para o Código Penal" ou "continue o material da Constituição". Não use para criar ou editar lacunas, blocos ou o texto das leis.
+description: Gera material de estudo (um resumo em markdown e até seis questões inéditas e difíceis no estilo Cebraspe, FGV, FCC ou Vunesp) para os dispositivos de uma lei do Memorize Direito e grava no site pelas rotas REST do admin. Use quando o usuário pedir, por exemplo, "faça questões e resumos para a CF88", "gere material de estudo para o Código Penal" ou "continue o material da Constituição". Não use para criar ou editar lacunas, blocos ou o texto das leis.
 ---
 
 # Gerar material de estudo
 
-Versão da skill: **1.2.0** (envie este valor em `skill_version`).
+Versão da skill: **2.0.0** (envie este valor em `skill_version`).
 
-Você vai ler os dispositivos de uma lei, escolher trechos que formem um assunto, escrever para
-cada trecho um resumo e até quatro questões, e gravar tudo no site. O que você grava entra
-**publicado** e aparece no mapa na hora, então cada material precisa estar pronto para o aluno.
+Você vai ler os dispositivos de uma lei, um quadrado do mapa por vez (até 40 blocos), escrever
+para cada quadrado um resumo e até seis questões, e gravar tudo no site. No jogo, o material é o
+desafio que fecha o quadrado: o aluno memoriza os dispositivos nas fases de lacunas e depois lê o
+resumo e responde as questões. As mesmas questões voltam depois numa prova com tempo (o Dia da
+prova). O que você grava entra **publicado** e aparece no mapa na hora, então cada material
+precisa estar pronto para o aluno.
 Se o usuário pedir para revisar antes de publicar, envie `"status": "draft"` em cada material. Você pode parar a qualquer momento: da próxima vez,
 o site devolve o ponto em que você parou.
 
@@ -46,7 +49,7 @@ Accept: application/json
    equilibrar as bancas.
 4. **Buscar os próximos blocos:** `GET /next?legislation={uuid}`. Se vier `"complete": true`, a
    lei terminou: avise o usuário e pare.
-5. **Escolher o trecho** (regras abaixo).
+5. **Ler o trecho inteiro** e decidir o que ele cobre (regras abaixo).
 6. **Gerar** o resumo e as questões, ou decidir pular o trecho.
 7. **Conferir** cada gabarito contra o texto recebido.
 8. **Gravar:** `POST /` (material) ou `POST /skip` (trecho pulado).
@@ -58,39 +61,42 @@ Trabalhe um trecho por vez: só busque o próximo depois que o atual foi gravado
 Ao parar, por qualquer motivo, informe: quantos materiais foram gravados, quantos trechos foram
 pulados (com os motivos) e quantos blocos ainda faltam (`pending_blocks` da última resposta).
 
-## Como escolher o trecho
+## O trecho é o quadrado
 
-`GET /next` devolve até 30 blocos pendentes em sequência. Cada bloco é um dispositivo (ou um
-grupo pequeno deles) com `id`, `article_reference`, `structural_marker`, `segment_type`,
-`heading_before` (título, capítulo ou seção que aparece logo antes dele, quando houver) e `text`.
-O trecho é um intervalo contínuo desses blocos.
+`GET /next` devolve o próximo quadrado do mapa: até 40 blocos pendentes em sequência. Cada bloco é
+um dispositivo (ou um grupo pequeno deles) com `id`, `article_reference`, `structural_marker`,
+`segment_type`, `heading_before` (título, capítulo ou seção que aparece logo antes dele, quando
+houver) e `text`.
 
-- **Comece sempre no primeiro bloco recebido** (`first_block_id` da resposta). O site recusa
-  trecho que deixa buraco.
+**Você não escolhe onde o trecho começa nem onde termina.** O trecho é exatamente o que veio: do
+`first_block_id` ao `last_block_id` da resposta. O site recusa qualquer outro intervalo, porque
+cada quadrado do mapa tem um único material. O corte segue o mapa, não o assunto, então o trecho
+pode começar ou terminar no meio de um capítulo, ou até de um artigo longo.
+
 - **Títulos, capítulos e seções** podem vir em `heading_before` ou, o que é mais comum, no fim
   do `text` do bloco anterior (o art. 5º termina com "TÍTULO II / Competência Tributária"). Um
   cabeçalho no fim de um bloco anuncia o assunto do bloco seguinte, não o daquele.
-- **Termine onde o assunto termina.** Use esses cabeçalhos, os marcadores e o conteúdo. Mire em
-  cerca de **10 blocos**; o site aceita de **4 a 20**. Se todos os dispositivos sobre um tema
-  somam 13 blocos, o trecho tem 13.
-- **Não corte no meio de um artigo:** caput, incisos e parágrafos ficam juntos. A exceção é o
-  artigo muito longo (como o art. 5º da Constituição), que pode ser dividido por tema.
+- **Trecho com mais de um assunto:** organize o resumo em partes, uma por assunto, na ordem da
+  lei, e distribua as questões entre elas.
+- **Trecho que começa ou termina no meio de um artigo:** trate só dos blocos recebidos. Não
+  adivinhe o que vem antes ou depois; se uma regra depende de um dispositivo que não veio, diga
+  isso no resumo em uma frase e não faça questão sobre ela.
 - **Deixe fora de `block_ids`** os blocos do trecho que não têm matéria: revogados, vetados,
   meramente remissivos ou o cabeçalho da lei (ementa e preâmbulo, que costumam ser o bloco 1). Eles continuam dentro do intervalo, só não são cobertos pelo material.
-- **Pule o trecho** (`POST /skip`), com um motivo curto, quando não houver matéria para questão:
-  disposições transitórias já esgotadas, sequência de dispositivos revogados. O trecho pulado
-  pode ter de 1 a 40 blocos.
-- Se os blocos recebidos acabam no meio de um assunto, feche o trecho no último ponto de corte
-  natural antes do fim; o restante volta na próxima chamada.
-- No fim da lei podem sobrar menos de 4 blocos. O site aceita um trecho menor que 4 quando ele
-  cobre todos os blocos pendentes que restam em sequência.
+- **Pule o trecho** (`POST /skip`), com um motivo curto, só quando o quadrado inteiro não tiver
+  matéria para questão: disposições transitórias já esgotadas, sequência de dispositivos
+  revogados. O pulo também vai do `first_block_id` ao `last_block_id` recebidos.
+- O último quadrado da lei pode ter poucos blocos; vale igual. O trecho também fica menor que o
+  quadrado quando parte dele já tem material antigo.
 
 `previous_material_title` é o título do material anterior: use-o para manter a continuidade e não
 repetir o mesmo título.
 
 ## Resumo
 
-Campo `summary`, em **markdown**, com **500 a 900 palavras**. Sem HTML (o site remove).
+Campo `summary`, em **markdown**, com **1000 a 1600 palavras** para um quadrado cheio (40 blocos);
+trecho menor pede menos, na mesma proporção, com pelo menos 400. O limite do site é de 20000
+caracteres. Sem HTML (o site remove).
 
 **O resumo ensina, não só resume.** Escreva para quem nunca estudou o tema e precisa sair
 entendendo. Repetir a lei com outras palavras não serve: o aluno já tem o texto da lei nas fases
@@ -147,11 +153,16 @@ naturalizados"). Sem o nome da lei e sem numeração de material.
 
 ## Questões
 
-**Quatro questões por material**, o máximo que o site aceita: uma de cada banca (Cebraspe, FGV,
-FCC e Vunesp). Só faça menos quando o trecho não tiver matéria para quatro questões que não se
-repitam (trecho curto, com um ou dois dispositivos); nesse caso, faça três, ou duas no mínimo, e
-escolha as bancas com menor contagem em `questions_by_board`. Cada questão cobra um ponto
-diferente do trecho.
+**Seis questões por material**, o máximo que o site aceita: uma de cada banca (Cebraspe, FGV, FCC
+e Vunesp) e mais duas das bancas com menor contagem em `questions_by_board`. Só faça menos quando
+o trecho não tiver matéria para seis questões que não se repitam (trecho curto, com poucos
+dispositivos); nesse caso, faça quantas couberem, duas no mínimo, começando pelas bancas com menor
+contagem. Cada questão cobra um ponto diferente, e juntas elas cobrem o trecho inteiro, não só o
+começo dele.
+
+As questões voltam no Dia da prova com tempo contado (15 segundos por item de certo/errado, 35 por
+questão de múltipla escolha). Escreva enunciados e alternativas enxutos: sem contexto que não
+decide a resposta.
 
 | Banca | `board` | `type` | Estilo |
 |---|---|---|---|
@@ -176,7 +187,7 @@ para quem nunca leu a lei, está fácil demais: reescreva.
 - **Cobre o detalhe, não a ideia geral:** exceções, ressalvas ("salvo", "exceto", "ressalvado"),
   parágrafos e incisos, prazos, quóruns, legitimados, competência, a consequência exata de cada
   hipótese.
-- **Combine dispositivos:** pelo menos duas questões por material exigem ligar dois ou mais
+- **Combine dispositivos:** pelo menos três questões por material exigem ligar dois ou mais
   dispositivos do trecho (o caput com o parágrafo que o excepciona, dois incisos que se
   confundem, a regra geral e a especial).
 - **Distratores plausíveis:** cada alternativa errada é algo que um aluno que leu a lei por cima
@@ -265,7 +276,7 @@ curl -s -H "Authorization: Bearer $MEMORIZE_TOKEN" -H "Accept: application/json"
 ```json
 { "legislation": { "uuid": "…", "title": "…" }, "total_blocks": 1840, "pending_blocks": 1650,
   "complete": false, "first_block_id": 5012, "previous_material_title": "Direitos sociais",
-  "limits": { "material_min_blocks": 4, "material_target_blocks": 10, "material_max_blocks": 20, "skip_max_blocks": 40 },
+  "last_block_id": 5051, "limits": { "min_questions": 1, "max_questions": 6 },
   "blocks": [ { "id": 5012, "article_reference": "12", "structural_marker": "Art. 12",
     "segment_type": "caput", "heading_before": "CAPÍTULO III\nDA NACIONALIDADE", "text": "Art. 12. São brasileiros: …" } ] }
 ```
@@ -282,12 +293,12 @@ curl -s -X POST -H "Authorization: Bearer $MEMORIZE_TOKEN" -H "Accept: applicati
 {
   "legislation": "UUID_DA_LEI",
   "first_block_id": 5012,
-  "last_block_id": 5024,
-  "block_ids": [5012, 5013, 5014, 5015, 5016, 5017, 5018, 5019, 5021, 5022, 5023, 5024],
+  "last_block_id": 5051,
+  "block_ids": [5012, 5013, 5014, 5015, 5016, 5017, 5018, 5019, 5021, 5022, 5023, 5024, "… até 5051"],
   "title": "Nacionalidade: brasileiros natos e naturalizados",
   "summary": "## Quem é brasileiro nato\n\nO **art. 12, I** …",
   "generated_by_model": "nome-do-modelo-que-você-é",
-  "skill_version": "1.2.0",
+  "skill_version": "2.0.0",
   "questions": [
     {
       "board": "cebraspe",
@@ -317,14 +328,14 @@ curl -s -X POST -H "Authorization: Bearer $MEMORIZE_TOKEN" -H "Accept: applicati
 }
 ```
 
-- `first_block_id` é o `first_block_id` devolvido por `/next`; `last_block_id` é o último bloco
-  do trecho que você escolheu.
-- `block_ids` lista os blocos cobertos (no exemplo, o bloco 5020, revogado, ficou de fora).
+- `first_block_id` e `last_block_id` são os devolvidos por `/next`, sem mudar.
+- `block_ids` lista os ids (números) de todos os blocos cobertos. No exemplo a lista está
+  abreviada e o bloco 5020, revogado, ficou de fora.
 - `generated_by_model` é o identificador do modelo que você é.
 
 - `status` é opcional: o padrão é `"published"`. Mande `"draft"` só se o usuário pedir para
   revisar antes de publicar.
-- O exemplo mostra duas questões para ficar curto; o material normal tem quatro, uma por banca.
+- O exemplo mostra duas questões para ficar curto; o material normal tem seis.
 
 Resposta `201`: `{ "message": "…", "material": { "uuid": "…", "status": "published", … }, "pending_blocks": 1637 }`.
 
@@ -338,7 +349,7 @@ curl -s -X POST -H "Authorization: Bearer $MEMORIZE_TOKEN" -H "Accept: applicati
 {
   "legislation": "UUID_DA_LEI",
   "first_block_id": 6200,
-  "last_block_id": 6231,
+  "last_block_id": 6239,
   "skip_reason": "Disposições transitórias já esgotadas (ADCT, arts. 1º a 12)"
 }
 ```
@@ -349,9 +360,9 @@ Resposta `201`: `{ "message": "Trecho marcado como pulado.", "material": { "stat
 
 - **"O trecho deve começar no primeiro bloco pendente"**: outro agente gravou antes, ou você
   reaproveitou blocos antigos. Chame `GET /next` de novo e refaça o trecho.
-- **"O trecho se sobrepõe a outro já gravado"**: a mensagem diz o último bloco que o trecho pode
-  ter. Termine nele ou antes.
-- **"O trecho tem N blocos; o permitido é de 4 a 20"**: junte com o assunto vizinho ou divida.
+- **"O trecho deve terminar no bloco N"**: o trecho é o quadrado inteiro. Use o `last_block_id`
+  devolvido por `GET /next`; o que não tem matéria fica fora de `block_ids`, não fora do trecho.
+- **"O material precisa de 1 a 6 questões"**: mande no máximo seis.
 - **"block_ids só pode ter blocos do trecho"**: há um id fora do intervalo; a mensagem lista
   quais.
 - **Erro em `questions.N.*`**: `N` começa em 0. Ajuste banca, tipo, alternativas ou gabarito

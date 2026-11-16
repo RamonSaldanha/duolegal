@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import PremiumUpsellModal from '@/components/PremiumUpsellModal.vue';
 import WelcomeOfferBanner from '@/components/WelcomeOfferBanner.vue';
 import GameButton from '@/components/ui/GameButton.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
-import type { BetaCheckpoint, BetaGroup, BetaSection } from '@/types/beta-play';
+import type { BetaExam, BetaGroup, BetaSection } from '@/types/beta-play';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { Book, BookOpenCheck, Check, Crown, Lock, RotateCcw } from 'lucide-vue-next';
+import { Book, BookOpenCheck, Check, Lock, RotateCcw, Timer } from 'lucide-vue-next';
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 
 const props = defineProps<{
@@ -13,7 +12,6 @@ const props = defineProps<{
     hasMoreAbove: boolean;
     hasMoreBelow: boolean;
     window: { before: number; after: number };
-    phasesPerGroup: number;
 }>();
 
 // === Grade ===
@@ -24,7 +22,7 @@ const COLUMNS = 6;
 const MAX_UNIT = 60;
 const COLUMN_PATTERN = [3, 5, 3, 1];
 // Distância entre um quadrado e o seguinte, em U. Deixa espaço vazio ao lado do caminho,
-// onde fica o desafio da etapa.
+// onde fica o Dia da prova.
 const ROW_STEP = 2.6;
 
 const windowWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1024);
@@ -78,10 +76,10 @@ function connector(from: Point, to: Point, fromIndex: number): string {
 const flatGroups = computed(() => props.sections.flatMap((section) => section.groups));
 const sectionOfGroup = computed(() => props.sections.flatMap((section, si) => section.groups.map(() => si)));
 
-// === Desafio da etapa ===
+// === Dia da prova ===
 // Fase paralela ao lado do último quadrado de cada etapa, ligada a ele por um caminho
-// pontilhado. Fica fora da trilha: não trava o avanço (o servidor a deixa fora da fase
-// atual/bloqueada).
+// pontilhado: uma prova com tempo, só com as questões dos desafios dos quadrados da etapa.
+// Fica fora da trilha e não trava o avanço.
 const CENTER_COLUMN = 3;
 
 /**
@@ -90,7 +88,7 @@ const CENTER_COLUMN = 3;
  * fase fica meia linha abaixo, na lateral livre (a oposta à do próximo quadrado), e o
  * pontilhado desce e vira.
  */
-function checkpointPlacement(from: Point, next: Point, index: number): { point: Point; d: string } {
+function examPlacement(from: Point, next: Point, index: number): { point: Point; d: string } {
     const u = unit.value;
     if (index % 2 === 1) {
         const dir = from.x > CENTER_COLUMN * u ? -1 : 1;
@@ -104,7 +102,7 @@ function checkpointPlacement(from: Point, next: Point, index: number): { point: 
 }
 
 // Índice (na trilha inteira) do último quadrado de cada etapa
-const checkpointRows = computed(() => {
+const examRows = computed(() => {
     let offset = 0;
     return props.sections.flatMap((section) => {
         const index = offset + section.groups.length - 1;
@@ -119,15 +117,15 @@ const trail = computed(() => {
     const points = positions(count + 1);
     const last = count - 1;
 
-    const checkpoints = checkpointRows.value.map(({ index, section }) => ({
+    const exams = examRows.value.map(({ index, section }) => ({
         index,
         section,
-        checkpoint: section.checkpoint,
-        ...checkpointPlacement(points[index], points[index + 1], index),
+        exam: section.exam,
+        ...examPlacement(points[index], points[index + 1], index),
     }));
 
     // A fase de um quadrado do centro fica meia linha abaixo dele: no último, pede mais altura
-    const lastBelow = count > 0 && last % 2 === 0 && checkpoints.some((c) => c.index === last);
+    const lastBelow = count > 0 && last % 2 === 0 && exams.some((e) => e.index === last);
 
     const connectors = points.slice(0, count - 1).map((point, i) => ({
         d: connector(point, points[i + 1], i),
@@ -136,7 +134,7 @@ const trail = computed(() => {
 
     return {
         points: points.slice(0, count),
-        checkpoints,
+        exams,
         height: trailHeight(count) + (lastBelow ? unit.value * 0.9 : 0),
         connectors,
     };
@@ -174,48 +172,50 @@ watch(
 // Anel de progresso do quadrado atual
 const RING_RADIUS = 30;
 const ringCircumference = 2 * Math.PI * RING_RADIUS;
-const ringOffset = (group: BetaGroup) => ringCircumference * (1 - group.completed_phases / Math.max(1, group.total_phases));
+const ringOffset = (group: BetaGroup) => ringCircumference * (1 - group.completed_steps / Math.max(1, group.total_steps));
 
-// Quadrado concluído aberto (lista de fases para revisar)
+// O passo atual do quadrado: a próxima fase ou, com as fases feitas, o desafio
+const currentStepHref = (group: BetaGroup) =>
+    group.current_phase_id
+        ? route('beta.play.phase', { phaseId: group.current_phase_id })
+        : route('beta.play.checkpoint', { checkpoint: group.challenge.key });
+const hasCurrentStep = (group: BetaGroup) => group.state === 'current' && (group.current_phase_id !== null || group.challenge.is_current);
+const hasChallenge = (group: BetaGroup) => group.challenge.key !== null && ['available', 'complete'].includes(group.challenge.state);
+
+// Quadrado concluído aberto (lista de passos para revisar)
 const openGroupId = ref<number | null>(null);
 const toggleGroup = (group: BetaGroup) => {
-    openCheckpoint.value = null;
+    openExam.value = null;
     openGroupId.value = openGroupId.value === group.id ? null : group.id;
 };
 
-// Desafio da etapa aberto (cartão com o que tem dentro e o botão)
-const openCheckpoint = ref<number | null>(null);
-const toggleCheckpoint = (index: number) => {
+// Dia da prova aberto (cartão com o que tem dentro e o botão)
+const openExam = ref<number | null>(null);
+const toggleExam = (index: number) => {
     openGroupId.value = null;
-    openCheckpoint.value = openCheckpoint.value === index ? null : index;
+    openExam.value = openExam.value === index ? null : index;
 };
-
-const checkpointOffset = (checkpoint: BetaCheckpoint) => ringCircumference * (1 - checkpoint.completed / Math.max(1, checkpoint.total));
 
 function plural(count: number, one: string, many: string): string {
     return `${count} ${count === 1 ? one : many}`;
 }
 
-function checkpointText(checkpoint: BetaCheckpoint): string {
-    const content = `${plural(checkpoint.total, 'resumo', 'resumos')} e ${plural(checkpoint.questions, 'questão', 'questões')}`;
-    switch (checkpoint.state) {
-        case 'locked':
-            return 'Conclua as fases desta etapa para liberar os resumos e as questões dela.';
-        case 'empty':
-            return 'Ainda não há resumos nem questões para os dispositivos desta etapa.';
-        case 'complete':
-            return `Você fez os ${content} dos dispositivos desta etapa. Pode revisar quando quiser.`;
-        default:
-            return `${content} sobre os dispositivos desta etapa.`;
-    }
+/** Tempo da prova por extenso: "9 min", "9 min 20 s" ou "45 s". */
+function examTime(seconds: number): string {
+    const minutes = Math.floor(seconds / 60);
+    const rest = seconds % 60;
+    return [minutes > 0 ? `${minutes} min` : '', rest > 0 ? `${rest} s` : ''].filter(Boolean).join(' ');
 }
 
-// Convite para assinar, para quem não é assinante
-const showUpsell = ref(false);
-
-function openUpsell() {
-    openCheckpoint.value = null;
-    showUpsell.value = true;
+function examText(exam: BetaExam): string {
+    switch (exam.state) {
+        case 'locked':
+            return 'Conclua todos os quadrados desta etapa, com os desafios, para liberar a prova.';
+        case 'empty':
+            return 'Ainda não há questões para os dispositivos desta etapa.';
+        default:
+            return `${plural(exam.questions, 'questão', 'questões')} que você já viu nos desafios desta etapa e ${examTime(exam.seconds)} para ir o mais longe que conseguir. Cada acerto vale ${exam.xp_per_correct} XP e errar não tira nada.`;
+    }
 }
 
 function loadMore(direction: 'above' | 'below') {
@@ -306,7 +306,6 @@ onUnmounted(() => {
     <Head title="Mapa (beta)" />
 
     <AppLayout>
-        <PremiumUpsellModal :show="showUpsell" @close="showUpsell = false" />
         <div ref="pageRef">
             <!-- Oferta de boas-vindas (24h depois do onboarding): faixa de lado a lado, logo abaixo do cabeçalho -->
             <WelcomeOfferBanner variant="strip" />
@@ -348,7 +347,7 @@ onUnmounted(() => {
                             <div class="mt-3 h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
                                 <div
                                     class="h-full rounded-full bg-green-500"
-                                    :style="{ width: `${(shownSection.completed_phases / Math.max(1, shownSection.total_phases)) * 100}%` }"
+                                    :style="{ width: `${(shownSection.completed_steps / Math.max(1, shownSection.total_steps)) * 100}%` }"
                                 />
                             </div>
                         </div>
@@ -370,19 +369,19 @@ onUnmounted(() => {
                                     :stroke-width="pathWidth"
                                     :class="line.done ? 'stroke-green-300 dark:stroke-green-800' : 'stroke-gray-200 dark:stroke-gray-700'"
                                 />
-                                <!-- Pontilhado até o desafio da etapa -->
+                                <!-- Pontilhado até o Dia da prova -->
                                 <path
-                                    v-for="cp in trail.checkpoints"
-                                    :key="`cp-line-${cp.index}`"
-                                    :d="cp.d"
+                                    v-for="ex in trail.exams"
+                                    :key="`exam-line-${ex.index}`"
+                                    :d="ex.d"
                                     fill="none"
                                     stroke-linecap="round"
                                     :stroke-width="pathWidth"
                                     :stroke-dasharray="`0 ${pathWidth * 1.9}`"
                                     :class="
-                                        cp.checkpoint.state === 'available'
+                                        ex.exam.state === 'available'
                                             ? 'stroke-purple-300 dark:stroke-purple-800'
-                                            : cp.checkpoint.state === 'complete'
+                                            : ex.exam.state === 'complete'
                                               ? 'stroke-green-300 dark:stroke-green-800'
                                               : 'stroke-gray-200 dark:stroke-gray-700'
                                     "
@@ -390,10 +389,10 @@ onUnmounted(() => {
                             </svg>
 
                             <template v-for="(group, gi) in flatGroups" :key="group.id">
-                                <!-- Quadrado atual: abre direto a próxima fase -->
+                                <!-- Quadrado atual: abre direto o próximo passo (a fase ou o desafio) -->
                                 <Link
-                                    v-if="group.state === 'current' && group.current_phase_id"
-                                    :href="route('beta.play.phase', { phaseId: group.current_phase_id })"
+                                    v-if="hasCurrentStep(group)"
+                                    :href="currentStepHref(group)"
                                     data-current-group
                                     class="node node-current absolute block"
                                     :style="{
@@ -402,7 +401,11 @@ onUnmounted(() => {
                                         width: `${nodeSize + FRAME_GAP * 2}px`,
                                         height: `${nodeSize + FRAME_GAP * 2 + FACE_DEPTH}px`,
                                     }"
-                                    :aria-label="`Começar fase ${group.completed_phases + 1} de ${group.total_phases}`"
+                                    :aria-label="
+                                        group.current_phase_id
+                                            ? `Começar passo ${group.completed_steps + 1} de ${group.total_steps}`
+                                            : `Começar o desafio: passo ${group.total_steps} de ${group.total_steps}`
+                                    "
                                 >
                                     <span
                                         class="node-frame absolute inset-0 border-4 bg-white dark:bg-gray-900"
@@ -431,7 +434,7 @@ onUnmounted(() => {
                                             />
                                         </svg>
                                         <span class="relative font-bold text-white" :style="{ fontSize: `${unit * 0.3}px` }">
-                                            {{ group.completed_phases }}/{{ group.total_phases }}
+                                            {{ group.completed_steps }}/{{ group.total_steps }}
                                         </span>
                                     </span>
                                 </Link>
@@ -447,11 +450,19 @@ onUnmounted(() => {
                                         width: `${nodeSize}px`,
                                         height: `${nodeSize}px`,
                                     }"
-                                    aria-label="Fases concluídas"
+                                    :aria-label="group.challenge.state === 'available' ? 'Fases concluídas, desafio por fazer' : 'Fases concluídas'"
                                     @click="toggleGroup(group)"
                                 >
                                     <span class="node-face absolute inset-0 flex items-center justify-center bg-green-500">
                                         <Check class="h-2/5 w-2/5 text-white" :stroke-width="3.5" />
+                                    </span>
+                                    <!-- Desafio publicado depois que a pessoa passou por aqui: fica por fazer, sem travar -->
+                                    <span
+                                        v-if="group.challenge.state === 'available'"
+                                        class="challenge-dot absolute flex items-center justify-center rounded-full"
+                                        aria-hidden="true"
+                                    >
+                                        <BookOpenCheck class="h-3.5 w-3.5" :stroke-width="2.5" />
                                     </span>
                                 </button>
 
@@ -491,106 +502,90 @@ onUnmounted(() => {
                                                 Revisar
                                             </span>
                                         </Link>
+                                        <!-- O desafio é o último passo do quadrado -->
+                                        <Link
+                                            v-if="hasChallenge(group)"
+                                            :href="route('beta.play.checkpoint', { checkpoint: group.challenge.key })"
+                                            class="flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-bold text-gray-800 hover:bg-gray-100 dark:text-gray-100 dark:hover:bg-gray-700"
+                                        >
+                                            <span>Desafio: resumo e {{ plural(group.challenge.questions, 'questão', 'questões') }}</span>
+                                            <span
+                                                v-if="group.challenge.state === 'complete'"
+                                                class="flex items-center gap-1.5 text-green-600 dark:text-green-400"
+                                            >
+                                                <RotateCcw class="h-4 w-4" />
+                                                Revisar
+                                            </span>
+                                            <span v-else class="flex items-center gap-1.5 text-purple-600 dark:text-purple-400">
+                                                <BookOpenCheck class="h-4 w-4" />
+                                                Fazer
+                                            </span>
+                                        </Link>
                                     </div>
                                 </template>
                             </template>
 
-                            <!-- Desafio da etapa: fase paralela, ligada ao último quadrado por um pontilhado -->
-                            <template v-for="cp in trail.checkpoints" :key="`cp-${cp.index}`">
+                            <!-- Dia da prova: fase paralela, ligada ao último quadrado da etapa por um pontilhado -->
+                            <template v-for="ex in trail.exams" :key="`exam-${ex.index}`">
                                 <button
                                     type="button"
-                                    class="node checkpoint absolute"
-                                    :class="`checkpoint-${cp.checkpoint.state}`"
+                                    class="node exam absolute"
+                                    :class="`exam-${ex.exam.state}`"
                                     :style="{
-                                        left: `${cp.point.x}px`,
-                                        top: `${cp.point.y}px`,
+                                        left: `${ex.point.x}px`,
+                                        top: `${ex.point.y}px`,
                                         width: `${nodeSize}px`,
                                         height: `${nodeSize}px`,
                                     }"
-                                    :aria-label="`Desafio da etapa ${cp.section.number}`"
-                                    :aria-expanded="openCheckpoint === cp.index"
-                                    @click="toggleCheckpoint(cp.index)"
+                                    :aria-label="`Dia da prova da etapa ${ex.section.number}`"
+                                    :aria-expanded="openExam === ex.index"
+                                    @click="toggleExam(ex.index)"
                                 >
                                     <span class="node-face absolute inset-0 flex items-center justify-center">
-                                        <template v-if="cp.checkpoint.state === 'available'">
-                                            <svg class="absolute h-[78%] w-[78%]" viewBox="0 0 80 80">
-                                                <circle cx="40" cy="40" :r="RING_RADIUS" fill="none" stroke-width="7" class="stroke-purple-700" />
-                                                <circle
-                                                    cx="40"
-                                                    cy="40"
-                                                    :r="RING_RADIUS"
-                                                    fill="none"
-                                                    stroke-width="7"
-                                                    stroke-linecap="round"
-                                                    class="stroke-white"
-                                                    :stroke-dasharray="ringCircumference"
-                                                    :stroke-dashoffset="checkpointOffset(cp.checkpoint)"
-                                                    transform="rotate(-90 40 40)"
-                                                />
-                                            </svg>
-                                            <span class="relative font-bold text-white" :style="{ fontSize: `${unit * 0.3}px` }">
-                                                {{ cp.checkpoint.completed }}/{{ cp.checkpoint.total }}
-                                            </span>
-                                        </template>
-                                        <BookOpenCheck v-else class="h-2/5 w-2/5" :stroke-width="2.5" />
-                                    </span>
-                                    <span
-                                        v-if="cp.checkpoint.premium_required"
-                                        class="checkpoint-crown absolute flex items-center justify-center rounded-full"
-                                        aria-hidden="true"
-                                    >
-                                        <Crown class="h-3.5 w-3.5" :stroke-width="2.5" />
+                                        <Timer class="h-2/5 w-2/5" :stroke-width="2.5" />
                                     </span>
                                 </button>
 
-                                <template v-if="openCheckpoint === cp.index">
-                                    <div class="fixed inset-0 z-20" @click="openCheckpoint = null" />
+                                <template v-if="openExam === ex.index">
+                                    <div class="fixed inset-0 z-20" @click="openExam = null" />
                                     <div
                                         class="section-card absolute left-0 right-0 z-30 rounded-2xl border-2 border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800"
-                                        :style="{ top: `${cp.point.y + nodeSize / 2 + 18}px` }"
+                                        :style="{ top: `${ex.point.y + nodeSize / 2 + 18}px` }"
                                     >
                                         <span
                                             class="absolute -top-[9px] h-4 w-4 rotate-45 border-l-2 border-t-2 border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800"
-                                            :style="{ left: `${cp.point.x - 8}px` }"
+                                            :style="{ left: `${ex.point.x - 8}px` }"
                                         />
-                                        <p class="text-lg font-bold text-gray-900 dark:text-white">Desafio da etapa {{ cp.section.number }}</p>
+                                        <p class="text-lg font-bold text-gray-900 dark:text-white">Dia da prova</p>
                                         <p class="mt-1 text-sm leading-relaxed text-gray-500 dark:text-gray-400">
-                                            {{ checkpointText(cp.checkpoint) }}
+                                            {{ examText(ex.exam) }}
                                         </p>
-                                        <p
-                                            v-if="cp.checkpoint.state === 'available' && cp.checkpoint.completed > 0"
-                                            class="mt-2 text-sm font-bold text-purple-600 dark:text-purple-400"
-                                        >
-                                            {{ cp.checkpoint.completed }} de {{ cp.checkpoint.total }} feitos
+                                        <p v-if="ex.exam.state === 'complete'" class="mt-2 text-sm font-bold text-green-600 dark:text-green-400">
+                                            Seu melhor resultado: {{ ex.exam.best_correct }} de {{ plural(ex.exam.questions, 'acerto', 'acertos') }}
                                         </p>
 
                                         <GameButton
-                                            v-if="cp.checkpoint.state === 'locked' || cp.checkpoint.state === 'empty'"
+                                            v-if="ex.exam.state === 'locked' || ex.exam.state === 'empty' || !ex.exam.key"
                                             variant="white"
                                             size="lg"
                                             class="mt-4 w-full"
                                             disabled
                                         >
-                                            {{ cp.checkpoint.state === 'locked' ? 'Bloqueado' : 'Sem conteúdo ainda' }}
+                                            {{ ex.exam.state === 'locked' ? 'Bloqueado' : 'Sem questões ainda' }}
                                         </GameButton>
                                         <GameButton
-                                            v-else-if="cp.checkpoint.premium_required"
-                                            variant="purple"
+                                            v-else
+                                            :variant="ex.exam.state === 'complete' && !ex.exam.in_progress ? 'green' : 'purple'"
                                             size="lg"
                                             class="mt-4 w-full"
-                                            @click="openUpsell"
-                                        >
-                                            Liberar com o Premium
-                                        </GameButton>
-                                        <GameButton
-                                            v-else-if="cp.checkpoint.key"
-                                            :variant="cp.checkpoint.state === 'complete' ? 'green' : 'purple'"
-                                            size="lg"
-                                            class="mt-4 w-full"
-                                            :href="route('beta.play.checkpoint', { checkpoint: cp.checkpoint.key })"
+                                            :href="route('beta.play.exam', { exam: ex.exam.key })"
                                         >
                                             {{
-                                                cp.checkpoint.state === 'complete' ? 'Revisar' : cp.checkpoint.completed > 0 ? 'Continuar' : 'Começar'
+                                                ex.exam.in_progress
+                                                    ? 'Continuar a prova'
+                                                    : ex.exam.state === 'complete'
+                                                      ? 'Fazer de novo'
+                                                      : 'Abrir a prova'
                                             }}
                                         </GameButton>
                                     </div>
@@ -703,47 +698,50 @@ onUnmounted(() => {
     box-shadow: none;
 }
 
-/* Desafio da etapa: mesmo tamanho e formato das fases, na cor própria. A borda de baixo
+/* Dia da prova: mesmo tamanho e formato dos quadrados, na cor própria. A borda de baixo
    usa --edge para o hover poder encolhê-la, como nos quadrados (efeito de apertar). */
-.checkpoint .node-face {
+.exam .node-face {
     box-shadow: 0 6px 0 0 var(--edge);
 }
-.checkpoint-available .node-face {
+.exam-available .node-face {
     --edge: theme('colors.purple.700');
     background: theme('colors.purple.500');
+    color: #fff;
 }
-.checkpoint-complete .node-face {
+.exam-complete .node-face {
     --edge: #15803d;
     background: theme('colors.green.500');
     color: #fff;
 }
-.checkpoint-locked .node-face,
-.checkpoint-empty .node-face {
+.exam-locked .node-face,
+.exam-empty .node-face {
     --edge: theme('colors.gray.300');
     background: theme('colors.gray.200');
     color: theme('colors.gray.400');
 }
-.dark .checkpoint-locked .node-face,
-.dark .checkpoint-empty .node-face {
+.dark .exam-locked .node-face,
+.dark .exam-empty .node-face {
     --edge: theme('colors.gray.800');
     background: theme('colors.gray.700');
     color: theme('colors.gray.500');
 }
-.checkpoint:hover .node-face {
+.exam:hover .node-face {
     transform: translateY(2px);
     box-shadow: 0 4px 0 0 var(--edge);
 }
-.checkpoint:active .node-face {
+.exam:active .node-face {
     transform: translateY(6px);
     box-shadow: none;
 }
-.checkpoint-crown {
+
+/* Marca do desafio por fazer num quadrado já concluído */
+.challenge-dot {
     right: -6px;
     top: -6px;
     width: 24px;
     height: 24px;
-    background: theme('colors.amber.400');
-    color: theme('colors.amber.950');
+    background: theme('colors.purple.500');
+    color: #fff;
     box-shadow: 0 0 0 3px hsl(var(--background));
 }
 

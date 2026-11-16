@@ -310,7 +310,7 @@ onUnmounted(() => {
                     </div>
                 </div>
                 <p class="mx-auto mt-2 w-full truncate text-xs font-medium text-gray-400 dark:text-gray-500 sm:w-[95%] lg:w-[50rem]">
-                    {{ legislation.title }} · Fase {{ phaseNumber }} de {{ phasesPerGroup }}
+                    {{ legislation.title }} · Passo {{ phaseNumber }} de {{ phasesPerGroup }}
                 </p>
             </div>
 

@@ -18,29 +18,23 @@ use Illuminate\Validation\ValidationException;
 /**
  * Material de estudo (resumo + questões) gravado por agentes de IA.
  *
- * O agente escolhe um "trecho": intervalo contínuo de blocos de uma lei, do primeiro ao
- * último, sempre começando no primeiro bloco pendente. Um bloco é pendente enquanto não
- * está dentro de nenhum trecho (com material ou pulado). A posição é medida por char_start,
- * então um bloco criado depois no meio de um trecho já pertence a ele.
+ * Cada material cobre um "trecho": intervalo contínuo de blocos de uma lei, do primeiro
+ * bloco pendente até o fim do quadrado do mapa beta em que ele está (um material por
+ * quadrado). Um bloco é pendente enquanto não está dentro de nenhum trecho (com material ou
+ * pulado). A posição é medida por char_start, então um bloco criado depois no meio de um
+ * trecho já pertence a ele.
+ *
+ * O quadrado é o mesmo para todos os usuários: as fases são cortadas de 10 em 10 blocos a
+ * partir do início da lei e a troca de lei acontece sempre em múltiplos de 4 fases.
  */
 class StudyMaterialService
 {
-    /** Tamanho do trecho de um material. O agente mira em TARGET_BLOCKS. */
-    public const MIN_BLOCKS = 4;
-
-    public const TARGET_BLOCKS = 10;
-
-    public const MAX_BLOCKS = 20;
-
-    /** Tamanho de um trecho pulado. */
-    public const MAX_SKIP_BLOCKS = 40;
-
-    /** Blocos pendentes devolvidos de cada vez ao agente. */
-    public const NEXT_LIMIT = 30;
+    /** Blocos de um quadrado do mapa beta: o tamanho máximo de um trecho. */
+    public const SQUARE_BLOCKS = BetaPlayController::BETA_BLOCKS_PER_PHASE * BetaPlayController::PHASES_PER_GROUP;
 
     public const MIN_QUESTIONS = 1;
 
-    public const MAX_QUESTIONS = 4;
+    public const MAX_QUESTIONS = 6;
 
     /**
      * Blocos da lei em ordem, cada um com `id`, `char_start` e `pending`.
@@ -109,71 +103,57 @@ class StudyMaterialService
     }
 
     /**
-     * Confere o trecho pedido e devolve os ids dos blocos dele, em ordem.
+     * O próximo trecho da lei: do primeiro bloco pendente até o fim do quadrado dele (ou até
+     * o último bloco pendente em sequência, se um trecho já gravado começa antes do fim do
+     * quadrado). Vazio quando a lei não tem bloco pendente.
+     *
+     * @return array<int, int> ids em ordem
+     */
+    public function nextRange(array $layout): array
+    {
+        $run = $this->firstPendingRun($layout);
+
+        if (! $run) {
+            return [];
+        }
+
+        $position = array_search($run[0], array_column($layout, 'id'), true);
+        $leftInSquare = self::SQUARE_BLOCKS - ($position % self::SQUARE_BLOCKS);
+
+        return array_slice($run, 0, $leftInSquare);
+    }
+
+    /**
+     * Confere o trecho pedido e devolve os ids dos blocos dele, em ordem. O trecho tem de ser
+     * exatamente o próximo da lei (nextRange): um material, ou um pulo, por quadrado.
      *
      * @return array<int, int>
      *
      * @throws ValidationException
      */
-    public function validateRange(Legislation $legislation, int $firstBlockId, int $lastBlockId, int $min, int $max): array
+    public function validateRange(Legislation $legislation, int $firstBlockId, int $lastBlockId): array
     {
-        $layout = $this->layout($legislation);
-        $run = $this->firstPendingRun($layout);
+        $range = $this->nextRange($this->layout($legislation));
 
-        if (! $run) {
+        if (! $range) {
             throw ValidationException::withMessages([
                 'legislation' => 'Esta lei não tem blocos pendentes: todos já estão em algum trecho.',
             ]);
         }
 
-        if ($firstBlockId !== $run[0]) {
+        if ($firstBlockId !== $range[0]) {
             throw ValidationException::withMessages([
-                'first_block_id' => "O trecho deve começar no primeiro bloco pendente da lei (id {$run[0]}), sem deixar buraco. Recebido: {$firstBlockId}. Use GET /next para ver os blocos pendentes.",
+                'first_block_id' => "O trecho deve começar no primeiro bloco pendente da lei (id {$range[0]}), sem deixar buraco. Recebido: {$firstBlockId}. Use GET /next para ver os blocos pendentes.",
             ]);
         }
 
-        $ids = array_column($layout, 'id');
-        $firstIndex = array_search($firstBlockId, $ids, true);
-        $lastIndex = array_search($lastBlockId, $ids, true);
+        $last = end($range);
 
-        if ($lastIndex === false) {
-            throw ValidationException::withMessages([
-                'last_block_id' => "O bloco {$lastBlockId} não é um bloco desta lei.",
-            ]);
-        }
-
-        if ($lastIndex < $firstIndex) {
-            throw ValidationException::withMessages([
-                'last_block_id' => 'last_block_id deve ser o próprio first_block_id ou um bloco depois dele na ordem da lei.',
-            ]);
-        }
-
-        $range = array_slice($ids, $firstIndex, $lastIndex - $firstIndex + 1);
-        $lastPending = end($run);
-
-        if (count($range) > count($run)) {
-            $taken = $range[count($run)];
+        if ($lastBlockId !== $last) {
+            $size = count($range);
 
             throw ValidationException::withMessages([
-                'last_block_id' => "O trecho se sobrepõe a outro já gravado: o bloco {$taken} já pertence a um trecho. O último bloco que este trecho pode ter é {$lastPending}.",
-            ]);
-        }
-
-        $size = count($range);
-
-        if ($size > $max) {
-            throw ValidationException::withMessages([
-                'last_block_id' => "O trecho tem {$size} blocos; o permitido é de {$min} a {$max}.",
-            ]);
-        }
-
-        // Menos que o mínimo só quando o trecho fecha toda a sequência pendente (fim da lei
-        // ou buraco deixado por um trecho apagado); senão a lei nunca ficaria completa.
-        if ($size < $min && $size !== count($run)) {
-            $available = count($run);
-
-            throw ValidationException::withMessages([
-                'last_block_id' => "O trecho tem {$size} blocos; o permitido é de {$min} a {$max}. Há {$available} blocos pendentes em sequência a partir do bloco {$run[0]}.",
+                'last_block_id' => "O trecho deve terminar no bloco {$last}: cada material cobre o quadrado inteiro do mapa ({$size} blocos, do {$range[0]} ao {$last}), que são os blocos devolvidos por GET /next. Recebido: {$lastBlockId}. Blocos sem matéria ficam fora de block_ids, mas dentro do trecho.",
             ]);
         }
 
@@ -234,9 +214,9 @@ class StudyMaterialService
             'questions.*.explanation' => ['required', 'string', 'max:5000'],
             'questions.*.legal_basis' => ['required', 'string', 'max:500'],
         ], [
-            'questions.min' => "O material precisa de {$min} a {$max} questões (o padrão é 2).",
-            'questions.max' => "O material precisa de {$min} a {$max} questões (o padrão é 2).",
-            'questions.required' => "O material precisa de {$min} a {$max} questões (o padrão é 2).",
+            'questions.min' => "O material precisa de {$min} a {$max} questões (o padrão é {$max}).",
+            'questions.max' => "O material precisa de {$min} a {$max} questões (o padrão é {$max}).",
+            'questions.required' => "O material precisa de {$min} a {$max} questões (o padrão é {$max}).",
             'title.required' => 'Informe o título do material (title).',
             'title.max' => 'O título (title) pode ter até 255 caracteres.',
             'summary.required' => 'Informe o resumo em markdown (summary).',
@@ -409,85 +389,72 @@ class StudyMaterialService
     }
 
     /**
-     * Desafio de cada etapa do mapa beta: a fase paralela ao fim da etapa. Ela reúne só os
-     * materiais publicados e atuais cujo último bloco cai nesta etapa; os de outras etapas
-     * ficam cada um no seu desafio e não se repetem. Só libera quando a etapa inteira está
-     * concluída e há ao menos um material.
+     * Desafio de cada quadrado do mapa beta (o último passo dele): os materiais publicados e
+     * atuais cujo último bloco cai no quadrado, na ordem da lei, e quantos a pessoa já
+     * concluiu ali. Normalmente é um material por quadrado; material gravado antes dessa regra
+     * pode dividir o quadrado com outro. Uma consulta para a trilha inteira.
      *
-     * @param  array<int, array{complete: bool, block_ids: array<int, int>}>  $sections  etapas na ordem da trilha
-     * @return array<int, array<string, mixed>> uma por etapa, na mesma ordem
+     * @param  array<int, array<int, int>>  $squares  ids dos blocos de cada quadrado, na ordem da trilha
+     * @return array<int, array<string, mixed>> um por quadrado, com as mesmas chaves
      */
-    public function checkpoints(User $user, array $sections): array
+    public function squareChallenges(User $user, array $squares): array
     {
-        $sections = array_values($sections);
+        $squareOf = [];
         $order = [];
-        $sectionOf = [];
         $anchors = [];
-        foreach ($sections as $si => $section) {
-            foreach ($section['block_ids'] as $blockId) {
+        foreach ($squares as $key => $blockIds) {
+            foreach ($blockIds as $blockId) {
                 $order[$blockId] = count($order);
-                $sectionOf[$blockId] = $si;
+                $squareOf[$blockId] = $key;
             }
-            $anchors[$si] = $section['block_ids'] ? (int) end($section['block_ids']) : null;
+            $anchors[$key] = $blockIds ? (int) end($blockIds) : null;
         }
 
         $materials = collect();
-        foreach (array_chunk(array_keys($sectionOf), 5000) as $chunk) {
+        foreach (array_chunk(array_keys($squareOf), 5000) as $chunk) {
             $materials = $materials->merge(
                 StudyMaterial::where('status', StudyMaterial::STATUS_PUBLISHED)
                     ->whereIn('last_block_id', $chunk)
-                    ->withCount('questions')
+                    ->withCount([
+                        'questions',
+                        'questions as true_false_count' => fn ($query) => $query->where('type', StudyQuestion::TYPE_TRUE_FALSE),
+                    ])
                     ->get()
             );
         }
 
         $stale = array_flip($this->staleIds($materials));
-        $materials = $materials
+        $bySquare = $materials
             ->reject(fn (StudyMaterial $material) => isset($stale[$material->id]))
             ->sortBy(fn (StudyMaterial $material) => $order[$material->last_block_id])
-            ->values();
+            ->groupBy(fn (StudyMaterial $material) => $squareOf[$material->last_block_id]);
 
         $anchorIds = array_values(array_filter($anchors));
-        $uuids = DB::table('legislation_segments')->whereIn('id', $anchorIds)->pluck('uuid', 'id');
-        $progress = UserBetaCheckpoint::where('user_id', $user->id)
-            ->whereIn('legislation_segment_id', $anchorIds)
-            ->get()
-            ->keyBy('legislation_segment_id');
+        $uuids = collect();
+        $progress = collect();
+        foreach (array_chunk($anchorIds, 5000) as $chunk) {
+            $uuids = $uuids->union(DB::table('legislation_segments')->whereIn('id', $chunk)->pluck('uuid', 'id'));
+            $progress = $progress->union(
+                UserBetaCheckpoint::where('user_id', $user->id)->whereIn('legislation_segment_id', $chunk)->get()->keyBy('legislation_segment_id')
+            );
+        }
 
-        $premium = $user->hasInfiniteLives();
         $result = [];
-        $next = 0;
-
-        foreach ($sections as $si => $section) {
-            // Só os materiais desta etapa: os das anteriores ficam no desafio de cada uma
-            $ids = [];
-            $questions = 0;
-            while ($next < $materials->count() && $sectionOf[$materials[$next]->last_block_id] === $si) {
-                $ids[] = $materials[$next]->id;
-                $questions += (int) $materials[$next]->questions_count;
-                $next++;
-            }
-
-            $anchor = $anchors[$si];
-            $total = count($ids);
+        foreach ($squares as $key => $blockIds) {
+            $own = $bySquare->get($key, collect());
+            $ids = $own->pluck('id')->all();
+            $anchor = $anchors[$key];
             $done = $anchor && $progress->has($anchor)
                 ? count(array_intersect($ids, $progress->get($anchor)->doneIds()))
                 : 0;
 
-            $result[$si] = [
+            $result[$key] = [
                 'key' => $anchor ? $uuids->get($anchor) : null,
-                'state' => match (true) {
-                    ! $section['complete'] => 'locked',
-                    $total === 0 => 'empty',
-                    $done >= $total => 'complete',
-                    default => 'available',
-                },
-                'total' => $total,
+                'total' => count($ids),
                 'completed' => $done,
-                'questions' => $questions,
-                // Quem não assina vê a fase e recebe o convite para assinar
-                'premium_required' => ! $premium,
-                // Só para uso interno; sai antes de ir para a tela
+                'questions' => (int) $own->sum('questions_count'),
+                'true_false_questions' => (int) $own->sum('true_false_count'),
+                // Só para uso interno; saem antes de ir para a tela
                 'anchor_block_id' => $anchor,
                 'material_ids' => $ids,
             ];

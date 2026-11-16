@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Legislation;
 use App\Models\LegislationSegment;
 use App\Models\User;
+use App\Models\UserBetaExam;
 use App\Models\UserLegislationSelection;
 use App\Models\UserSegmentProgress;
 use App\Services\StudyMaterialService;
@@ -17,9 +18,12 @@ use Inertia\Inertia;
 /**
  * Mapa beta (/beta/play): quadrados no lugar das bolas, cada quadrado com várias fases.
  *
- * Usa as mesmas tabelas do mapa atual (o progresso é por bloco, em user_segment_progress),
- * então nada aqui exige migration. A diferença é que a fase só grava no fim: quem sai no
- * meio não ganha nada e recomeça a fase.
+ * Usa as mesmas tabelas do mapa atual (o progresso é por bloco, em user_segment_progress).
+ * A diferença é que a fase só grava no fim: quem sai no meio não ganha nada e recomeça a fase.
+ *
+ * O quadrado que tem material de estudo ganha um passo a mais, o desafio (resumo e questões
+ * do quadrado, em BetaCheckpointController), e o quadrado seguinte só abre depois dele. Ao
+ * lado do último quadrado de cada etapa fica o Dia da prova (BetaExamController).
  */
 class BetaPlayController extends LegislationPlayController
 {
@@ -37,11 +41,18 @@ class BetaPlayController extends LegislationPlayController
 
     const SECTIONS_AFTER = 4;
 
+    /** Dia da prova: segundos por questão de certo/errado e de múltipla escolha, e XP por acerto. */
+    const EXAM_SECONDS_TRUE_FALSE = 15;
+
+    const EXAM_SECONDS_MULTIPLE_CHOICE = 35;
+
+    const EXAM_XP_PER_CORRECT = 15;
+
     public function betaMap(Request $request)
     {
         $user = Auth::user();
 
-        $sections = $this->withCheckpoints($user, $this->buildSections($this->betaPhases($user)));
+        $sections = $this->forScreen($this->trail($user)['sections']);
 
         $currentIndex = 0;
         foreach ($sections as $i => $section) {
@@ -65,7 +76,6 @@ class BetaPlayController extends LegislationPlayController
                 'before' => $before - self::SECTIONS_BEFORE,
                 'after' => $after - self::SECTIONS_AFTER,
             ],
-            'phasesPerGroup' => self::PHASES_PER_GROUP,
         ]);
     }
 
@@ -77,12 +87,14 @@ class BetaPlayController extends LegislationPlayController
             return redirect()->route('play.nolives');
         }
 
-        $phases = $this->betaPhases($user);
-        $phase = $this->findPlayablePhase($phases, $phaseId);
+        $trail = $this->trail($user);
+        $phase = $this->findPlayablePhase($trail['phases'], $phaseId);
 
         if (! $phase) {
             return redirect()->route('beta.play.map');
         }
+
+        [$stepNumber, $stepCount] = $this->positionInGroup($trail['sections'], $phaseId);
 
         $blocks = $this->phaseBlocks($phase);
         $pending = $this->blocksToPlay($user, $phase, $blocks);
@@ -115,8 +127,9 @@ class BetaPlayController extends LegislationPlayController
         return Inertia::render('BetaPlay/Phase', [
             'legislation' => ['uuid' => $legislation->uuid, 'title' => $legislation->title],
             'phaseId' => $phaseId,
-            'phaseNumber' => $this->positionInGroup($phases, $phaseId),
-            'phasesPerGroup' => self::PHASES_PER_GROUP,
+            // Passo dentro do quadrado; o desafio, quando o quadrado tem material, é o último
+            'phaseNumber' => $stepNumber,
+            'phasesPerGroup' => $stepCount,
             'isReview' => $phase['is_complete'],
             'challenges' => $pending->map(fn ($block) => $this->formatSegmentForChallenge($block))->values(),
             // Texto da fase inteira e o que vem antes dela, com as respostas já gravadas
@@ -168,8 +181,7 @@ class BetaPlayController extends LegislationPlayController
         ]);
 
         $user = Auth::user();
-        $phases = $this->betaPhases($user);
-        $phase = $this->findPlayablePhase($phases, (int) $validated['phase_id']);
+        $phase = $this->findPlayablePhase($this->trail($user)['phases'], (int) $validated['phase_id']);
 
         abort_if(! $phase, 422, 'Fase indisponível.');
 
@@ -255,90 +267,178 @@ class BetaPlayController extends LegislationPlayController
     }
 
     /**
-     * Agrupa as fases em trechos (mesma lei) e cada trecho em quadrados de PHASES_PER_GROUP fases.
+     * A trilha inteira do usuário: as fases e as etapas (mesma lei), cada etapa com os seus
+     * quadrados de PHASES_PER_GROUP fases, o desafio de cada quadrado e o Dia da prova.
+     *
+     * O desafio é o último passo do quadrado que tem material. Ele trava só a passagem para o
+     * quadrado seguinte: se a próxima fase a jogar é a primeira de um quadrado e o desafio do
+     * quadrado anterior está por fazer, a fase fica bloqueada e o passo atual é o desafio.
+     * Quem já passou adiante (material publicado depois) não é puxado de volta: o desafio
+     * fica aberto no quadrado concluído.
+     *
+     * @return array{phases: array<int, array<string, mixed>>, sections: array<int, array<string, mixed>>}
      */
-    protected function buildSections(array $phases): array
+    protected function trail(User $user): array
     {
+        $phases = $this->betaPhases($user);
         $maxPerSection = self::PHASES_PER_GROUP * self::GROUPS_PER_SECTION;
 
+        // Etapas: os índices das fases seguidas da mesma lei
         $runs = [];
-        foreach ($phases as $phase) {
+        foreach ($phases as $index => $phase) {
             $last = count($runs) - 1;
             if (
                 $last < 0
-                || $runs[$last][0]['legislation_uuid'] !== $phase['legislation_uuid']
+                || $phases[$runs[$last][0]]['legislation_uuid'] !== $phase['legislation_uuid']
                 || count($runs[$last]) >= $maxPerSection
             ) {
                 $runs[] = [];
                 $last++;
             }
-            $runs[$last][] = $phase;
+            $runs[$last][] = $index;
         }
 
-        $sections = [];
-        foreach ($runs as $index => $run) {
-            $groups = [];
+        // Quadrados na ordem da trilha: os índices das fases de cada um
+        $squares = [];
+        $squaresOfRun = [];
+        foreach ($runs as $ri => $run) {
             foreach (array_chunk($run, self::PHASES_PER_GROUP) as $chunk) {
+                $squaresOfRun[$ri][] = count($squares);
+                $squares[] = $chunk;
+            }
+        }
+
+        $challenges = app(StudyMaterialService::class)->squareChallenges($user, array_map(
+            fn (array $chunk) => array_merge(...array_map(fn (int $index) => $phases[$index]['block_ids'], $chunk)),
+            $squares,
+        ));
+        $pending = fn (int $square) => $challenges[$square]['completed'] < $challenges[$square]['total'];
+
+        // O desafio que trava o avanço: o do quadrado logo antes da próxima fase a jogar,
+        // quando ela abre um quadrado novo (ou quando a trilha acabou)
+        $currentIndex = array_key_first(array_filter($phases, fn ($phase) => $phase['is_current']));
+        $finished = $phases !== [] && $currentIndex === null && end($phases)['is_complete'];
+        $blocking = null;
+        foreach ($squares as $square => $chunk) {
+            $next = $squares[$square + 1][0] ?? null;
+            if (($next !== null ? $next === $currentIndex : $finished) && $pending($square)) {
+                $blocking = $square;
+            }
+        }
+
+        if ($blocking !== null && $currentIndex !== null) {
+            $phases[$currentIndex]['is_current'] = false;
+            $phases[$currentIndex]['is_blocked'] = true;
+        }
+
+        // A etapa é identificada pelo último bloco dela, que é o do último quadrado
+        $anchors = [];
+        foreach ($squaresOfRun as $ri => $own) {
+            $anchors[$ri] = $challenges[end($own)]['anchor_block_id'];
+        }
+        $exams = UserBetaExam::where('user_id', $user->id)
+            ->whereIn('legislation_segment_id', array_values(array_filter($anchors)))
+            ->get()
+            ->keyBy('legislation_segment_id');
+
+        $sections = [];
+        foreach ($runs as $ri => $run) {
+            $groups = [];
+            foreach ($squaresOfRun[$ri] as $square) {
+                $chunk = array_map(fn (int $index) => $phases[$index], $squares[$square]);
                 $completed = count(array_filter($chunk, fn ($p) => $p['is_complete']));
                 $current = collect($chunk)->firstWhere('is_current', true);
+                $phasesDone = $completed === count($chunk);
+
+                $has = $challenges[$square]['total'] > 0;
+                $challengeDone = $has && ! $pending($square);
 
                 $groups[] = [
                     'id' => $chunk[0]['id'],
-                    'state' => $completed === count($chunk) ? 'complete' : ($current ? 'current' : 'locked'),
+                    'state' => $current || $square === $blocking ? 'current' : ($phasesDone ? 'complete' : 'locked'),
                     'completed_phases' => $completed,
                     'total_phases' => count($chunk),
+                    // Passos do quadrado: as fases e, quando há material, o desafio
+                    'completed_steps' => $completed + ($challengeDone ? 1 : 0),
+                    'total_steps' => count($chunk) + ($has ? 1 : 0),
                     'current_phase_id' => $current['id'] ?? null,
-                    // Só para uso interno (desafio da etapa); sai antes de ir para a tela
-                    'block_ids' => array_merge(...array_column($chunk, 'block_ids')),
                     'phases' => array_map(fn ($p) => [
                         'id' => $p['id'],
                         'is_complete' => $p['is_complete'],
                         'is_current' => $p['is_current'],
                     ], $chunk),
+                    'challenge' => [
+                        // none: quadrado sem material · locked: faltam fases · available · complete
+                        'state' => match (true) {
+                            ! $has => 'none',
+                            ! $phasesDone => 'locked',
+                            $challengeDone => 'complete',
+                            default => 'available',
+                        },
+                        // É o passo atual da trilha: o quadrado seguinte espera por ele
+                        'is_current' => $square === $blocking,
+                    ] + $challenges[$square],
                 ];
             }
 
-            $completedPhases = array_sum(array_column($groups, 'completed_phases'));
-
             $sections[] = [
-                'number' => $index + 1,
-                'legislation_title' => $run[0]['legislation_title'],
-                'completed_phases' => $completedPhases,
+                'number' => $ri + 1,
+                'legislation_title' => $phases[$run[0]]['legislation_title'],
+                'completed_phases' => array_sum(array_column($groups, 'completed_phases')),
                 'total_phases' => count($run),
+                'completed_steps' => array_sum(array_column($groups, 'completed_steps')),
+                'total_steps' => array_sum(array_column($groups, 'total_steps')),
                 'is_current' => collect($groups)->contains('state', 'current'),
                 'groups' => $groups,
+                'exam' => $this->examOf($groups, $anchors[$ri], $exams->get($anchors[$ri])),
             ];
         }
 
-        return $sections;
+        return ['phases' => $phases, 'sections' => $sections];
     }
 
     /**
-     * Desafio de cada etapa (a fase paralela ao fim dela), só com os materiais da própria
-     * etapa. Calculado sobre a trilha inteira, antes de recortar a janela do mapa.
-     *
-     * @return array<int, array<string, mixed>> as etapas com 'checkpoint' e, por enquanto, os campos internos
+     * Dia da prova da etapa: só as questões dos desafios dos quadrados dela, com tempo. Libera
+     * quando todas as fases e todos os desafios da etapa estão feitos. Fica fora do avanço da
+     * trilha e não gasta vida.
      */
-    protected function checkpointsFor(User $user, array $sections): array
+    private function examOf(array $groups, ?int $anchor, ?UserBetaExam $exam): array
     {
-        return app(StudyMaterialService::class)->checkpoints($user, array_map(fn ($section) => [
-            'complete' => $section['completed_phases'] === $section['total_phases'],
-            'block_ids' => array_merge(...array_column($section['groups'], 'block_ids')),
-        ], $sections));
+        $challenges = array_column($groups, 'challenge');
+        $questions = array_sum(array_column($challenges, 'questions'));
+        $trueFalse = array_sum(array_column($challenges, 'true_false_questions'));
+
+        $done = collect($groups)->every(fn ($group) => $group['completed_steps'] === $group['total_steps']);
+
+        return [
+            'key' => $challenges ? end($challenges)['key'] : null,
+            // locked: falta concluir a etapa · empty: sem questões · available · complete: já entregou uma prova
+            'state' => match (true) {
+                ! $done => 'locked',
+                $questions === 0 => 'empty',
+                $exam !== null && $exam->attempts > 0 => 'complete',
+                default => 'available',
+            },
+            'questions' => $questions,
+            'seconds' => $trueFalse * self::EXAM_SECONDS_TRUE_FALSE + ($questions - $trueFalse) * self::EXAM_SECONDS_MULTIPLE_CHOICE,
+            'xp_per_correct' => self::EXAM_XP_PER_CORRECT,
+            'best_correct' => min($questions, (int) ($exam?->best_correct ?? 0)),
+            'in_progress' => (bool) $exam?->isRunning(),
+            // Só para uso interno; saem antes de ir para a tela
+            'anchor_block_id' => $anchor,
+            'material_ids' => array_merge([], ...array_column($challenges, 'material_ids')),
+        ];
     }
 
-    /**
-     * Põe em cada etapa o seu desafio. Fica fora do cálculo de fase atual/bloqueada: o
-     * desafio nunca trava o avanço.
-     */
-    private function withCheckpoints(User $user, array $sections): array
+    /** Tira das etapas o que é só de uso interno, antes de mandar para a tela. */
+    private function forScreen(array $sections): array
     {
-        $checkpoints = $this->checkpointsFor($user, $sections);
+        $internal = ['anchor_block_id' => true, 'material_ids' => true, 'true_false_questions' => true];
 
-        foreach ($sections as $si => &$section) {
-            $section['checkpoint'] = array_diff_key($checkpoints[$si], ['anchor_block_id' => true, 'material_ids' => true]);
+        foreach ($sections as &$section) {
+            $section['exam'] = array_diff_key($section['exam'], $internal);
             foreach ($section['groups'] as &$group) {
-                unset($group['block_ids']);
+                $group['challenge'] = array_diff_key($group['challenge'], $internal);
             }
             unset($group);
         }
@@ -386,19 +486,23 @@ class BetaPlayController extends LegislationPlayController
         return $blocks->reject(fn ($block) => $done->has($block->id))->values();
     }
 
-    /** Posição da fase dentro do quadrado (1 a PHASES_PER_GROUP). */
-    private function positionInGroup(array $phases, int $phaseId): int
+    /**
+     * Posição da fase dentro do quadrado e quantos passos ele tem.
+     *
+     * @return array{0: int, 1: int}
+     */
+    private function positionInGroup(array $sections, int $phaseId): array
     {
-        foreach ($this->buildSections($phases) as $section) {
+        foreach ($sections as $section) {
             foreach ($section['groups'] as $group) {
                 foreach ($group['phases'] as $i => $phase) {
                     if ($phase['id'] === $phaseId) {
-                        return $i + 1;
+                        return [$i + 1, $group['total_steps']];
                     }
                 }
             }
         }
 
-        return 1;
+        return [1, self::PHASES_PER_GROUP];
     }
 }

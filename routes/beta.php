@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\BetaCheckpointController;
+use App\Http\Controllers\BetaExamController;
 use App\Http\Controllers\BetaPlayController;
 use App\Http\Controllers\LegislationEditorController;
 use App\Http\Controllers\LegislationPlayController;
@@ -32,10 +33,16 @@ Route::middleware(['auth', 'admin'])->prefix('beta/play')->group(function () {
     Route::post('fail', [BetaPlayController::class, 'betaFail'])->name('beta.play.fail');
     Route::post('finish', [BetaPlayController::class, 'betaFinish'])->name('beta.play.finish');
 
-    // Desafio da etapa: fase paralela com os resumos e as questões da etapa, só para assinantes
-    Route::get('etapa/{checkpoint}', [BetaCheckpointController::class, 'show'])->whereUuid('checkpoint')->name('beta.play.checkpoint');
-    Route::post('etapa/{checkpoint}/answer', [BetaCheckpointController::class, 'answer'])->whereUuid('checkpoint')->name('beta.play.checkpoint.answer');
-    Route::post('etapa/{checkpoint}/summary', [BetaCheckpointController::class, 'summary'])->whereUuid('checkpoint')->name('beta.play.checkpoint.summary');
+    // Desafio do quadrado: o último passo do quadrado, com o resumo e as questões dele
+    Route::get('desafio/{checkpoint}', [BetaCheckpointController::class, 'show'])->whereUuid('checkpoint')->name('beta.play.checkpoint');
+    Route::post('desafio/{checkpoint}/answer', [BetaCheckpointController::class, 'answer'])->whereUuid('checkpoint')->name('beta.play.checkpoint.answer');
+    Route::post('desafio/{checkpoint}/summary', [BetaCheckpointController::class, 'summary'])->whereUuid('checkpoint')->name('beta.play.checkpoint.summary');
+
+    // Dia da prova: fase paralela ao fim da etapa, com tempo, só com as questões dos desafios dela
+    Route::get('prova/{exam}', [BetaExamController::class, 'show'])->whereUuid('exam')->name('beta.play.exam');
+    Route::post('prova/{exam}/start', [BetaExamController::class, 'start'])->whereUuid('exam')->name('beta.play.exam.start');
+    Route::post('prova/{exam}/answer', [BetaExamController::class, 'answer'])->whereUuid('exam')->name('beta.play.exam.answer');
+    Route::post('prova/{exam}/finish', [BetaExamController::class, 'finish'])->whereUuid('exam')->name('beta.play.exam.finish');
 });
 
 // Rotas do editor de legislações (admin)

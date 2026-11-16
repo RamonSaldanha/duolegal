@@ -20,11 +20,12 @@ use Inertia\Inertia;
 use Inertia\Response;
 
 /**
- * Desafio da etapa no mapa beta: a fase paralela ao fim de cada etapa. Reúne os resumos e as
- * questões (materiais de estudo escritos por um agente de IA e publicados pelo admin) dos
- * dispositivos da própria etapa. Só para assinantes, não consome vida e fica fora do avanço
- * das fases. Como é demorado, cada passo (resumo lido, questão respondida) é gravado na hora
- * e a pessoa volta de onde parou. O gabarito nunca vai para o navegador antes da resposta.
+ * Desafio do quadrado no mapa beta: o último passo do quadrado que tem material de estudo
+ * (resumo e questões escritos por um agente de IA e publicados pelo admin) sobre os
+ * dispositivos dele. Abre quando as fases do quadrado estão feitas, não consome vida e o
+ * quadrado seguinte só abre depois dele. Cada passo (resumo lido, questão respondida) é
+ * gravado na hora e a pessoa volta de onde parou. O gabarito nunca vai para o navegador antes
+ * da resposta.
  */
 class BetaCheckpointController extends BetaPlayController
 {
@@ -40,7 +41,7 @@ class BetaCheckpointController extends BetaPlayController
 
         abort_if(! $found, 404);
 
-        if ($found['premium_required'] || ! in_array($found['state'], ['available', 'complete'], true)) {
+        if (! in_array($found['state'], ['available', 'complete'], true)) {
             return redirect()->route('beta.play.map');
         }
 
@@ -51,11 +52,12 @@ class BetaCheckpointController extends BetaPlayController
         return Inertia::render('BetaPlay/Checkpoint', [
             'checkpoint' => [
                 'key' => $found['key'],
-                'number' => $found['number'],
+                'section_number' => $found['section_number'],
+                'step_number' => $found['step_number'],
                 'total' => $found['total'],
                 'completed' => $found['completed'],
             ],
-            // Na ordem da trilha; a tela volta ao primeiro passo ainda não feito nesta etapa
+            // Na ordem da lei; a tela volta ao primeiro passo ainda não feito neste quadrado
             'materials' => $this->materials($found)->map(function (StudyMaterial $material) use ($service, $done, $progress) {
                 $partial = $progress->partial($material->id);
 
@@ -97,7 +99,7 @@ class BetaCheckpointController extends BetaPlayController
 
     /**
      * Corrige uma questão, devolve o gabarito comentado e guarda a resposta; vale a primeira
-     * resposta dada a cada questão. Com a última questão o material fica concluído na etapa
+     * resposta dada a cada questão. Com a última questão o material fica concluído no quadrado
      * e o XP sai na hora, só na primeira conclusão. Em material já concluído (revisão) só
      * corrige.
      */
@@ -133,14 +135,17 @@ class BetaCheckpointController extends BetaPlayController
 
     // ==================== PRIVATE METHODS ====================
 
-    /** O desafio da etapa cujo último bloco tem esse uuid, na trilha do usuário. */
+    /** O desafio do quadrado cujo último bloco tem esse uuid, na trilha do usuário. */
     private function findCheckpoint(User $user, string $key): ?array
     {
-        $sections = $this->buildSections($this->betaPhases($user));
-
-        foreach ($this->checkpointsFor($user, $sections) as $si => $checkpoint) {
-            if ($checkpoint['key'] !== null && $checkpoint['key'] === $key) {
-                return $checkpoint + ['number' => $sections[$si]['number']];
+        foreach ($this->trail($user)['sections'] as $section) {
+            foreach ($section['groups'] as $group) {
+                if ($group['challenge']['key'] !== null && $group['challenge']['key'] === $key) {
+                    return $group['challenge'] + [
+                        'section_number' => $section['number'],
+                        'step_number' => $group['total_steps'],
+                    ];
+                }
             }
         }
 
@@ -153,14 +158,13 @@ class BetaCheckpointController extends BetaPlayController
         $found = $this->findCheckpoint($user, $key);
 
         abort_if(! $found, 404);
-        abort_if($found['premium_required'], 403, 'O desafio da etapa é exclusivo para assinantes.');
-        abort_if(! in_array($found['state'], ['available', 'complete'], true), 403, 'Conclua as fases desta etapa para liberar o desafio.');
+        abort_if(! in_array($found['state'], ['available', 'complete'], true), 403, 'Conclua as fases deste quadrado para liberar o desafio.');
 
         return $found;
     }
 
     /**
-     * O desafio e o material pedido, que precisa estar no desafio desta etapa.
+     * O desafio e o material pedido, que precisa estar no desafio deste quadrado.
      *
      * @return array{0: array<string, mixed>, 1: StudyMaterial}
      */
@@ -176,8 +180,8 @@ class BetaCheckpointController extends BetaPlayController
 
     /**
      * Guarda um passo (resumo lido ou resposta) do material e, se com ele todas as questões
-     * ficaram respondidas, conclui o material na etapa e dá o XP da primeira conclusão.
-     * Material já concluído na etapa é revisão: nada é gravado.
+     * ficaram respondidas, conclui o material no quadrado e dá o XP da primeira conclusão.
+     * Material já concluído no quadrado é revisão: nada é gravado.
      *
      * @param  callable(array{summary: bool, answers: array<int, string>}): array  $step  recebe e devolve o que já foi feito do material
      * @return array<string, mixed> o que a tela precisa saber depois do passo

@@ -66,8 +66,9 @@ test('lista as leis com blocos pendentes e materiais por status', function () {
         ->assertJsonPath('legislations.0.materials.skipped', 1);
 });
 
-test('next avança depois de um material e depois de um trecho pulado', function () {
-    $legislation = studyLegislation(60);
+test('next devolve o quadrado inteiro e avança depois de um material e de um trecho pulado', function () {
+    // Um quadrado do mapa tem 40 blocos: a lei de 90 tem dois quadrados cheios e um de 10
+    $legislation = studyLegislation(90);
     $ids = studyBlockIds($legislation);
     $token = agentToken();
 
@@ -75,35 +76,40 @@ test('next avança depois de um material e depois de um trecho pulado', function
         ->assertSuccessful()
         ->assertJsonPath('complete', false)
         ->assertJsonPath('first_block_id', $ids[0])
-        ->assertJsonCount(30, 'blocks')
+        ->assertJsonPath('last_block_id', $ids[39])
+        ->assertJsonPath('limits.max_questions', 6)
+        ->assertJsonCount(40, 'blocks')
         ->assertJsonPath('blocks.0.text', 'Art. 0 A União zelará pelo dispositivo 0.')
         ->assertJsonPath('blocks.0.structural_marker', 'Art. 0')
         ->assertJsonPath('previous_material_title', null);
 
-    $this->withToken($token)->postJson(STUDY_API, agentPayload($legislation, 0, 9))
+    $this->withToken($token)->postJson(STUDY_API, agentPayload($legislation, 0, 39))
         ->assertCreated()
         ->assertJsonPath('material.status', 'published')
         ->assertJsonPath('pending_blocks', 50);
 
     $this->withToken($token)->getJson(STUDY_API.'/next?legislation='.$legislation->uuid)
-        ->assertJsonPath('first_block_id', $ids[10])
+        ->assertJsonPath('first_block_id', $ids[40])
+        ->assertJsonPath('last_block_id', $ids[79])
         ->assertJsonPath('previous_material_title', 'Organização da União');
 
     $this->withToken($token)->postJson(STUDY_API.'/skip', [
         'legislation' => $legislation->uuid,
-        'first_block_id' => $ids[10],
-        'last_block_id' => $ids[49],
+        'first_block_id' => $ids[40],
+        'last_block_id' => $ids[79],
         'skip_reason' => 'Sequência de dispositivos revogados',
     ])->assertCreated()->assertJsonPath('material.status', 'skipped');
 
+    // O último quadrado da lei é menor
     $this->withToken($token)->getJson(STUDY_API.'/next?legislation='.$legislation->uuid)
-        ->assertJsonPath('first_block_id', $ids[50])
+        ->assertJsonPath('first_block_id', $ids[80])
+        ->assertJsonPath('last_block_id', $ids[89])
         ->assertJsonCount(10, 'blocks');
 
     $material = StudyMaterial::where('status', 'published')->firstOrFail();
     expect($material->published_at)->not->toBeNull()
         ->and($material->questions)->toHaveCount(2)
-        ->and($material->block_ids)->toBe(array_slice($ids, 0, 10))
+        ->and($material->block_ids)->toBe(array_slice($ids, 0, 40))
         ->and($material->content_hash)->toHaveLength(64)
         ->and($material->generated_by_model)->toBe('claude-teste')
         ->and($material->questions[1]->options)->toHaveKeys(['A', 'B', 'C', 'D', 'E']);
@@ -119,62 +125,75 @@ test('next avisa quando a lei está completa', function () {
         ->assertJsonCount(0, 'blocks');
 });
 
-test('o trecho não pode deixar buraco nem se sobrepor a outro', function () {
-    $legislation = studyLegislation(40);
+test('o trecho começa no primeiro bloco pendente e cobre o quadrado inteiro', function () {
+    $legislation = studyLegislation(90);
     $token = agentToken();
 
     // Buraco: começa depois do primeiro pendente
-    $this->withToken($token)->postJson(STUDY_API, agentPayload($legislation, 2, 11))
+    $this->withToken($token)->postJson(STUDY_API, agentPayload($legislation, 2, 39))
         ->assertStatus(422)
         ->assertJsonValidationErrors('first_block_id');
 
-    studyMaterial($legislation, 0, 9, 'draft');
-
-    // Sobreposição no início: o bloco 5 já pertence ao primeiro trecho
-    $this->withToken($token)->postJson(STUDY_API, agentPayload($legislation, 5, 14))
+    // Termina antes do fim do quadrado, ou passa dele
+    $this->withToken($token)->postJson(STUDY_API, agentPayload($legislation, 0, 19))
         ->assertStatus(422)
-        ->assertJsonValidationErrors('first_block_id');
-
-    // Sobreposição no fim: um trecho mais adiante limita onde este pode terminar
-    studyMaterial($legislation, 20, 29, 'draft');
-    $this->withToken($token)->postJson(STUDY_API, agentPayload($legislation, 10, 22))
+        ->assertJsonValidationErrors('last_block_id');
+    $this->withToken($token)->postJson(STUDY_API, agentPayload($legislation, 0, 40))
         ->assertStatus(422)
         ->assertJsonValidationErrors('last_block_id');
 
-    expect(StudyMaterial::count())->toBe(2);
+    $this->withToken($token)->postJson(STUDY_API, agentPayload($legislation, 0, 39))->assertCreated();
+
+    // Sobreposição: o bloco 35 já pertence ao primeiro trecho
+    $this->withToken($token)->postJson(STUDY_API, agentPayload($legislation, 35, 79))
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('first_block_id');
+
+    $this->withToken($token)->postJson(STUDY_API, agentPayload($legislation, 40, 79))->assertCreated();
+
+    // O último quadrado da lei tem só 10 blocos: o trecho vai até o fim da lei
+    $this->withToken($token)->postJson(STUDY_API, agentPayload($legislation, 80, 85))->assertStatus(422);
+    $this->withToken($token)->postJson(STUDY_API, agentPayload($legislation, 80, 89))->assertCreated();
+
+    expect(StudyMaterial::count())->toBe(3);
 });
 
-test('o trecho tem de 4 a 20 blocos, salvo quando fecha a sequência pendente', function () {
-    $legislation = studyLegislation(43);
-    $token = agentToken();
-
-    $this->withToken($token)->postJson(STUDY_API, agentPayload($legislation, 0, 2))
-        ->assertStatus(422)->assertJsonValidationErrors('last_block_id');
-
-    $this->withToken($token)->postJson(STUDY_API, agentPayload($legislation, 0, 20))
-        ->assertStatus(422)->assertJsonValidationErrors('last_block_id');
-
-    $this->withToken($token)->postJson(STUDY_API, agentPayload($legislation, 0, 19))->assertCreated();
-    $this->withToken($token)->postJson(STUDY_API, agentPayload($legislation, 20, 39))->assertCreated();
-
-    // Sobraram 3 blocos no fim da lei: 2 não fecham a sequência, 3 fecham
-    $this->withToken($token)->postJson(STUDY_API, agentPayload($legislation, 40, 41))->assertStatus(422);
-    $this->withToken($token)->postJson(STUDY_API, agentPayload($legislation, 40, 42))->assertCreated();
-});
-
-test('block_ids precisa ser um subconjunto não vazio do trecho', function () {
-    $legislation = studyLegislation(30);
+test('com um trecho antigo no meio do quadrado, o próximo vai só até onde está livre', function () {
+    $legislation = studyLegislation(90);
     $ids = studyBlockIds($legislation);
     $token = agentToken();
 
-    $this->withToken($token)->postJson(STUDY_API, agentPayload($legislation, 0, 9, ['block_ids' => [$ids[0], $ids[15]]]))
+    // Material gravado antes da regra do quadrado: termina no meio do primeiro
+    studyMaterial($legislation, 0, 9, 'draft');
+    studyMaterial($legislation, 20, 29, 'draft');
+
+    $this->withToken($token)->getJson(STUDY_API.'/next?legislation='.$legislation->uuid)
+        ->assertJsonPath('first_block_id', $ids[10])
+        ->assertJsonPath('last_block_id', $ids[19]);
+    $this->withToken($token)->postJson(STUDY_API, agentPayload($legislation, 10, 22))
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('last_block_id');
+    $this->withToken($token)->postJson(STUDY_API, agentPayload($legislation, 10, 19))->assertCreated();
+
+    // Depois dele, o resto do quadrado
+    $this->withToken($token)->getJson(STUDY_API.'/next?legislation='.$legislation->uuid)
+        ->assertJsonPath('first_block_id', $ids[30])
+        ->assertJsonPath('last_block_id', $ids[39]);
+});
+
+test('block_ids precisa ser um subconjunto não vazio do trecho', function () {
+    $legislation = studyLegislation(50);
+    $ids = studyBlockIds($legislation);
+    $token = agentToken();
+
+    $this->withToken($token)->postJson(STUDY_API, agentPayload($legislation, 0, 39, ['block_ids' => [$ids[0], $ids[45]]]))
         ->assertStatus(422)->assertJsonValidationErrors('block_ids');
 
-    $this->withToken($token)->postJson(STUDY_API, agentPayload($legislation, 0, 9, ['block_ids' => []]))
+    $this->withToken($token)->postJson(STUDY_API, agentPayload($legislation, 0, 39, ['block_ids' => []]))
         ->assertStatus(422)->assertJsonValidationErrors('block_ids');
 
     // Deixar blocos de fora (revogados) é permitido
-    $this->withToken($token)->postJson(STUDY_API, agentPayload($legislation, 0, 9, ['block_ids' => [$ids[0], $ids[3], $ids[9]]]))
+    $this->withToken($token)->postJson(STUDY_API, agentPayload($legislation, 0, 39, ['block_ids' => [$ids[0], $ids[3], $ids[9]]]))
         ->assertCreated()
         ->assertJsonPath('material.covered_blocks', 3);
 });
@@ -200,20 +219,20 @@ test('banca e tipo precisam ser coerentes', function (array $change, string $fie
     'sem fundamento' => [['index' => 1, 'data' => ['legal_basis' => null]], 'questions.1.legal_basis'],
 ]);
 
-test('o material aceita de 1 a 4 questões', function () {
+test('o material aceita de 1 a 6 questões', function () {
     $legislation = studyLegislation(20);
     $token = agentToken();
-    $five = array_fill(0, 5, studyQuestions()[0]);
+    $seven = array_fill(0, 7, studyQuestions()[0]);
 
-    $this->withToken($token)->postJson(STUDY_API, agentPayload($legislation, 0, 9, ['questions' => []]))
+    $this->withToken($token)->postJson(STUDY_API, agentPayload($legislation, 0, 19, ['questions' => []]))
         ->assertStatus(422)->assertJsonValidationErrors('questions');
-    $this->withToken($token)->postJson(STUDY_API, agentPayload($legislation, 0, 9, ['questions' => $five]))
+    $this->withToken($token)->postJson(STUDY_API, agentPayload($legislation, 0, 19, ['questions' => $seven]))
         ->assertStatus(422)->assertJsonValidationErrors('questions');
-    $this->withToken($token)->postJson(STUDY_API, agentPayload($legislation, 0, 9, ['questions' => [studyQuestions()[0]]]))
+    $this->withToken($token)->postJson(STUDY_API, agentPayload($legislation, 0, 19, ['questions' => array_slice($seven, 0, 6)]))
         ->assertCreated();
 });
 
-test('trecho pulado aceita de 1 a 40 blocos e exige motivo', function () {
+test('trecho pulado é o quadrado inteiro e exige motivo', function () {
     $legislation = studyLegislation(60);
     $ids = studyBlockIds($legislation);
     $token = agentToken();
@@ -225,11 +244,11 @@ test('trecho pulado aceita de 1 a 40 blocos e exige motivo', function () {
         'skip_reason' => $reason,
     ]);
 
-    $skip(0, 0, null)->assertStatus(422)->assertJsonValidationErrors('skip_reason');
-    $skip(1, 3)->assertStatus(422)->assertJsonValidationErrors('first_block_id');
-    $skip(0, 40)->assertStatus(422)->assertJsonValidationErrors('last_block_id');
-    $skip(0, 0)->assertCreated();
-    $skip(1, 40)->assertCreated();
+    $skip(0, 39, null)->assertStatus(422)->assertJsonValidationErrors('skip_reason');
+    $skip(1, 39)->assertStatus(422)->assertJsonValidationErrors('first_block_id');
+    $skip(0, 9)->assertStatus(422)->assertJsonValidationErrors('last_block_id');
+    $skip(0, 39)->assertCreated();
+    $skip(40, 59)->assertCreated();
 });
 
 test('apagar material ou trecho pulado devolve os blocos a pendente', function () {
@@ -298,13 +317,13 @@ test('bloco criado depois no meio de um trecho não vira pendente', function () 
 test('o agente pode gravar como rascunho quando pedirem revisão antes', function () {
     $legislation = studyLegislation(30);
 
-    $this->withToken(agentToken())->postJson(STUDY_API, agentPayload($legislation, 0, 9) + ['status' => 'draft'])
+    $this->withToken(agentToken())->postJson(STUDY_API, agentPayload($legislation, 0, 29) + ['status' => 'draft'])
         ->assertCreated()
         ->assertJsonPath('material.status', 'draft');
 
     expect(StudyMaterial::firstOrFail()->published_at)->toBeNull();
 
-    $this->withToken(agentToken())->postJson(STUDY_API, agentPayload($legislation, 10, 19) + ['status' => 'skipped'])
+    $this->withToken(agentToken())->postJson(STUDY_API, agentPayload($legislation, 0, 29) + ['status' => 'skipped'])
         ->assertStatus(422)
         ->assertJsonValidationErrors('status');
 });
