@@ -251,7 +251,7 @@ test('revogar apaga só tokens do agente do próprio admin', function () {
 });
 
 test('o zip da skill traz a pasta com o SKILL.md', function () {
-    $response = $this->actingAs(studyAdmin())->get('/admin/study-materials/skill.zip')->assertSuccessful();
+    $response = $this->actingAs(studyAdmin())->get('/admin/study-materials/baixar-skill')->assertSuccessful();
 
     $zip = new ZipArchive;
     expect($zip->open($response->baseResponse->getFile()->getPathname()))->toBeTrue()

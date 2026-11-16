@@ -69,7 +69,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     Route::get('study-materials/instalar', [StudyMaterialController::class, 'install'])->name('admin.study-materials.install');
     Route::post('study-materials/tokens', [StudyMaterialController::class, 'createToken'])->name('admin.study-materials.tokens.store');
     Route::delete('study-materials/tokens/{token}', [StudyMaterialController::class, 'revokeToken'])->whereNumber('token')->name('admin.study-materials.tokens.destroy');
-    Route::get('study-materials/skill.zip', [StudyMaterialController::class, 'downloadSkill'])->name('admin.study-materials.skill');
+    // Sem ".zip" no endereço: o nginx de produção trata essa extensão como arquivo estático e devolve 404
+    Route::get('study-materials/baixar-skill', [StudyMaterialController::class, 'downloadSkill'])->name('admin.study-materials.skill');
 
     Route::get('study-materials/{studyMaterial}', [StudyMaterialController::class, 'edit'])->whereUuid('studyMaterial')->name('admin.study-materials.edit');
     Route::put('study-materials/{studyMaterial}', [StudyMaterialController::class, 'update'])->whereUuid('studyMaterial')->name('admin.study-materials.update');
