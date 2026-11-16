@@ -32,10 +32,10 @@ Route::middleware(['auth', 'admin'])->prefix('beta/play')->group(function () {
     Route::post('fail', [BetaPlayController::class, 'betaFail'])->name('beta.play.fail');
     Route::post('finish', [BetaPlayController::class, 'betaFinish'])->name('beta.play.finish');
 
-    // Desafio da etapa: fase paralela com os resumos e as questões até ali, só para assinantes
+    // Desafio da etapa: fase paralela com os resumos e as questões da etapa, só para assinantes
     Route::get('etapa/{checkpoint}', [BetaCheckpointController::class, 'show'])->whereUuid('checkpoint')->name('beta.play.checkpoint');
     Route::post('etapa/{checkpoint}/answer', [BetaCheckpointController::class, 'answer'])->whereUuid('checkpoint')->name('beta.play.checkpoint.answer');
-    Route::post('etapa/{checkpoint}/finish', [BetaCheckpointController::class, 'finish'])->whereUuid('checkpoint')->name('beta.play.checkpoint.finish');
+    Route::post('etapa/{checkpoint}/summary', [BetaCheckpointController::class, 'summary'])->whereUuid('checkpoint')->name('beta.play.checkpoint.summary');
 });
 
 // Rotas do editor de legislações (admin)

@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import GameButton from '@/components/ui/GameButton.vue';
+import { playCorrect } from '@/lib/sounds';
 import { Check, X } from 'lucide-vue-next';
+import { onMounted } from 'vue';
 
 // Barra de resultado no pé da fase: sobe depois da resposta, na cor do acerto ou do erro,
 // com o aviso, os detalhes (slot) e o botão de seguir. A mesma nas fases de lacunas e no
 // desafio da etapa, para o aviso de acerto ser igual nos dois.
-withDefaults(
+const props = withDefaults(
     defineProps<{
         correct: boolean;
         title?: string;
@@ -15,6 +17,11 @@ withDefaults(
 );
 
 defineEmits<{ continue: [] }>();
+
+// Todo acerto tem som; o erro fica em silêncio
+onMounted(() => {
+    if (props.correct) playCorrect();
+});
 </script>
 
 <template>

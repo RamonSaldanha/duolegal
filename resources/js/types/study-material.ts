@@ -52,20 +52,21 @@ export interface CheckpointQuestion {
     options: Record<string, string> | null;
 }
 
-export interface CheckpointAnswerResponse {
-    is_correct: boolean;
-    correct_answer: string;
-    explanation: string;
-    legal_basis: string;
-}
-
-export interface CheckpointFinishResponse {
-    correct_count: number;
-    total: number;
+/** O que o servidor devolve depois de gravar um passo (resumo lido ou resposta). */
+export interface CheckpointStepResponse {
+    /** Este passo concluiu o material na etapa */
+    material_completed: boolean;
     xp_gained: number;
     discipline_level_up: DisciplineLevelUp | null;
     checkpoint: { completed: number; total: number };
     user: { xp: number };
+}
+
+export interface CheckpointAnswerResponse extends CheckpointStepResponse {
+    is_correct: boolean;
+    correct_answer: string;
+    explanation: string;
+    legal_basis: string;
 }
 
 /** Material como a fase da etapa recebe: resumo já em HTML seguro e questões sem gabarito. */
@@ -76,4 +77,7 @@ export interface CheckpointMaterial {
     summary_html: string;
     questions: CheckpointQuestion[];
     done: boolean;
+    /** Progresso guardado de um material ainda não concluído: resumo lido e questões respondidas */
+    summary_read: boolean;
+    answered: number[];
 }

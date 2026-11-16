@@ -21,9 +21,10 @@ use Inertia\Response;
 
 /**
  * Desafio da etapa no mapa beta: a fase paralela ao fim de cada etapa. Reúne os resumos e as
- * questões (materiais de estudo escritos por um agente de IA e publicados pelo admin) de todos
- * os dispositivos da trilha até ali. Só para assinantes, não consome vida e fica fora do
- * avanço das fases. O gabarito nunca vai para o navegador antes da resposta.
+ * questões (materiais de estudo escritos por um agente de IA e publicados pelo admin) dos
+ * dispositivos da própria etapa. Só para assinantes, não consome vida e fica fora do avanço
+ * das fases. Como é demorado, cada passo (resumo lido, questão respondida) é gravado na hora
+ * e a pessoa volta de onde parou. O gabarito nunca vai para o navegador antes da resposta.
  */
 class BetaCheckpointController extends BetaPlayController
 {
@@ -43,7 +44,8 @@ class BetaCheckpointController extends BetaPlayController
             return redirect()->route('beta.play.map');
         }
 
-        $done = array_flip($this->doneIds($user, $found));
+        $progress = $this->progress($user, $found) ?? new UserBetaCheckpoint;
+        $done = array_flip($progress->doneIds());
         $service = app(StudyMaterialService::class);
 
         return Inertia::render('BetaPlay/Checkpoint', [
@@ -53,26 +55,52 @@ class BetaCheckpointController extends BetaPlayController
                 'total' => $found['total'],
                 'completed' => $found['completed'],
             ],
-            // Na ordem da trilha; a tela começa pelo primeiro ainda não feito nesta etapa
-            'materials' => $this->materials($found)->map(fn (StudyMaterial $material) => [
-                'uuid' => $material->uuid,
-                'title' => $material->title,
-                'legislation_title' => $material->legislation->title,
-                'summary_html' => $service->renderSummary($material->summary),
-                // Sem gabarito, comentário nem fundamento: chegam depois de cada resposta
-                'questions' => $material->questions->map(fn (StudyQuestion $question) => [
-                    'position' => $question->position,
-                    'board' => $question->board,
-                    'type' => $question->type,
-                    'statement' => $question->statement,
-                    'options' => $question->options,
-                ])->values(),
-                'done' => isset($done[$material->id]),
-            ])->values(),
+            // Na ordem da trilha; a tela volta ao primeiro passo ainda não feito nesta etapa
+            'materials' => $this->materials($found)->map(function (StudyMaterial $material) use ($service, $done, $progress) {
+                $partial = $progress->partial($material->id);
+
+                return [
+                    'uuid' => $material->uuid,
+                    'title' => $material->title,
+                    'legislation_title' => $material->legislation->title,
+                    'summary_html' => $service->renderSummary($material->summary),
+                    // Sem gabarito, comentário nem fundamento: chegam depois de cada resposta
+                    'questions' => $material->questions->map(fn (StudyQuestion $question) => [
+                        'position' => $question->position,
+                        'board' => $question->board,
+                        'type' => $question->type,
+                        'statement' => $question->statement,
+                        'options' => $question->options,
+                    ])->values(),
+                    'done' => isset($done[$material->id]),
+                    // O que ficou guardado de um material ainda não concluído
+                    'summary_read' => $partial['summary'],
+                    'answered' => array_map('intval', array_keys($partial['answers'])),
+                ];
+            })->values(),
         ]);
     }
 
-    /** Corrige uma questão e devolve o gabarito comentado. Não grava nada. */
+    /**
+     * Resumo lido até o fim. Fica guardado para a pessoa não ter de ler de novo se sair
+     * antes de responder as questões.
+     */
+    public function summary(Request $request, string $checkpoint): JsonResponse
+    {
+        $validated = $request->validate(['material' => ['required', 'uuid']]);
+
+        $user = Auth::user();
+        [$found, $material] = $this->authorizeMaterial($user, $checkpoint, $validated['material']);
+
+        return response()->json($this->record($user, $found, $material, fn (array $partial) => ['summary' => true] + $partial));
+    }
+
+    /**
+     * Corrige uma questão, devolve o gabarito comentado e guarda a resposta; vale a primeira
+     * resposta dada a cada questão. Com a última questão o material fica concluído na etapa
+     * e o XP sai na hora, só na primeira conclusão. Em material já concluído (revisão) só
+     * corrige.
+     */
     public function answer(Request $request, string $checkpoint): JsonResponse
     {
         $validated = $request->validate([
@@ -81,116 +109,26 @@ class BetaCheckpointController extends BetaPlayController
             'answer' => ['required', 'string', 'max:10'],
         ]);
 
-        $material = $this->authorizeMaterial(Auth::user(), $checkpoint, $validated['material']);
+        $user = Auth::user();
+        [$found, $material] = $this->authorizeMaterial($user, $checkpoint, $validated['material']);
 
         $question = $material->questions->firstWhere('position', (int) $validated['position']);
         abort_if(! $question, 422, 'Questão inexistente.');
 
+        $answer = $validated['answer'];
+        $saved = $this->record($user, $found, $material, function (array $partial) use ($question, &$answer) {
+            $answer = $partial['answers'][$question->position] ?? $answer;
+            $partial['answers'][$question->position] = $answer;
+
+            return $partial;
+        });
+
         return response()->json([
-            'is_correct' => $this->isCorrect($question, $validated['answer']),
+            'is_correct' => $this->isCorrect($question, $answer),
             'correct_answer' => $question->correct_answer,
             'explanation' => $question->explanation,
             'legal_basis' => $question->legal_basis,
-        ]);
-    }
-
-    /**
-     * Fim da fase: recebe todos os materiais jogados de uma vez, recalcula os acertos no
-     * servidor, marca os materiais como feitos nesta etapa e só então dá o XP, apenas pelos
-     * materiais concluídos pela primeira vez. Sair no meio não grava nada.
-     */
-    public function finish(Request $request, string $checkpoint): JsonResponse
-    {
-        $validated = $request->validate([
-            'results' => ['required', 'array', 'min:1'],
-            'results.*.material' => ['required', 'uuid', 'distinct'],
-            'results.*.answers' => ['present', 'array'],
-            'results.*.answers.*' => ['required', 'string', 'max:10'],
-        ]);
-
-        $user = Auth::user();
-        $found = $this->authorizedCheckpoint($user, $checkpoint);
-
-        $materials = StudyMaterial::whereIn('uuid', array_column($validated['results'], 'material'))
-            ->with('questions')
-            ->get()
-            ->keyBy('uuid');
-
-        // Corrige tudo antes de gravar qualquer coisa
-        $graded = [];
-        foreach ($validated['results'] as $result) {
-            $material = $materials->get($result['material']);
-            abort_if(! $material || ! in_array($material->id, $found['material_ids'], true), 404);
-
-            $answers = [];
-            $correct = 0;
-            foreach ($material->questions as $question) {
-                $answer = $result['answers'][$question->position] ?? null;
-                abort_if($answer === null, 422, 'Responda todas as questões.');
-
-                $answers[$question->position] = $answer;
-                $correct += $this->isCorrect($question, $answer) ? 1 : 0;
-            }
-
-            $graded[] = ['material' => $material, 'answers' => $answers, 'correct' => $correct];
-        }
-
-        // XP por lei, para a conquista de cada disciplina
-        $xpByLegislation = DB::transaction(function () use ($user, $graded, $found) {
-            $progress = UserBetaCheckpoint::where('user_id', $user->id)
-                ->where('legislation_segment_id', $found['anchor_block_id'])
-                ->lockForUpdate()
-                ->first() ?? new UserBetaCheckpoint([
-                    'user_id' => $user->id,
-                    'legislation_segment_id' => $found['anchor_block_id'],
-                    'done_material_ids' => [],
-                ]);
-            $progress->done_material_ids = array_values(array_unique([
-                ...$progress->doneIds(),
-                ...array_map(fn ($item) => $item['material']->id, $graded),
-            ]));
-            $progress->save();
-
-            $xpByLegislation = [];
-            foreach ($graded as ['material' => $material, 'answers' => $answers, 'correct' => $correct]) {
-                $record = UserStudyMaterial::where('user_id', $user->id)
-                    ->where('study_material_id', $material->id)
-                    ->lockForUpdate()
-                    ->first() ?? new UserStudyMaterial(['user_id' => $user->id, 'study_material_id' => $material->id]);
-
-                $first = $record->completed_at === null;
-
-                $record->fill([
-                    'answers' => $answers,
-                    'correct_count' => $correct,
-                    'completed_at' => $record->completed_at ?? now(),
-                ])->save();
-
-                if ($first) {
-                    $xp = $user->boostedXp(self::MATERIAL_XP_BASE + self::MATERIAL_XP_PER_CORRECT * $correct);
-                    $user->addXp($xp, 'study_material', $material->id, $material->legislation_id);
-                    $xpByLegislation[$material->legislation_id] = ($xpByLegislation[$material->legislation_id] ?? 0) + $xp;
-                }
-            }
-
-            return $xpByLegislation;
-        });
-
-        $levelUp = null;
-        foreach ($xpByLegislation as $legislationId => $xp) {
-            $levelUp ??= app(XpService::class)->detectDisciplineLevelUp($user, $legislationId, $xp);
-        }
-
-        $doneNow = count(array_intersect($found['material_ids'], $this->doneIds($user, $found)));
-
-        return response()->json([
-            'correct_count' => array_sum(array_column($graded, 'correct')),
-            'total' => array_sum(array_map(fn ($item) => $item['material']->questions->count(), $graded)),
-            'xp_gained' => array_sum($xpByLegislation),
-            'discipline_level_up' => $levelUp,
-            'checkpoint' => ['completed' => $doneNow, 'total' => $found['total']],
-            'user' => ['xp' => $user->xp],
-        ]);
+        ] + $saved);
     }
 
     // ==================== PRIVATE METHODS ====================
@@ -221,15 +159,98 @@ class BetaCheckpointController extends BetaPlayController
         return $found;
     }
 
-    /** O material pedido, que precisa estar no desafio desta etapa. */
-    private function authorizeMaterial(User $user, string $key, string $materialUuid): StudyMaterial
+    /**
+     * O desafio e o material pedido, que precisa estar no desafio desta etapa.
+     *
+     * @return array{0: array<string, mixed>, 1: StudyMaterial}
+     */
+    private function authorizeMaterial(User $user, string $key, string $materialUuid): array
     {
         $found = $this->authorizedCheckpoint($user, $key);
 
         $material = StudyMaterial::where('uuid', $materialUuid)->with('questions')->first();
         abort_if(! $material || ! in_array($material->id, $found['material_ids'], true), 404);
 
-        return $material;
+        return [$found, $material];
+    }
+
+    /**
+     * Guarda um passo (resumo lido ou resposta) do material e, se com ele todas as questões
+     * ficaram respondidas, conclui o material na etapa e dá o XP da primeira conclusão.
+     * Material já concluído na etapa é revisão: nada é gravado.
+     *
+     * @param  callable(array{summary: bool, answers: array<int, string>}): array  $step  recebe e devolve o que já foi feito do material
+     * @return array<string, mixed> o que a tela precisa saber depois do passo
+     */
+    private function record(User $user, array $found, StudyMaterial $material, callable $step): array
+    {
+        $key = ['user_id' => $user->id, 'legislation_segment_id' => $found['anchor_block_id']];
+        UserBetaCheckpoint::firstOrCreate($key, ['done_material_ids' => []]);
+
+        [$completed, $xp] = DB::transaction(function () use ($user, $key, $material, $step) {
+            $progress = UserBetaCheckpoint::where($key)->lockForUpdate()->firstOrFail();
+            $partial = $step($progress->partial($material->id));
+
+            if (in_array($material->id, $progress->doneIds(), true)) {
+                return [false, 0];
+            }
+
+            $pending = $progress->in_progress ?? [];
+            $positions = $material->questions->pluck('position')->all();
+
+            // Ainda falta questão: só guarda o passo
+            if (array_diff($positions, array_keys($partial['answers']))) {
+                $pending[$material->id] = $partial;
+                $progress->update(['in_progress' => $pending]);
+
+                return [false, 0];
+            }
+
+            unset($pending[$material->id]);
+            $progress->update([
+                'done_material_ids' => [...$progress->doneIds(), $material->id],
+                'in_progress' => $pending ?: null,
+            ]);
+
+            $correct = $material->questions
+                ->filter(fn (StudyQuestion $question) => $this->isCorrect($question, $partial['answers'][$question->position]))
+                ->count();
+
+            $record = UserStudyMaterial::where('user_id', $user->id)
+                ->where('study_material_id', $material->id)
+                ->lockForUpdate()
+                ->first() ?? new UserStudyMaterial(['user_id' => $user->id, 'study_material_id' => $material->id]);
+
+            $first = $record->completed_at === null;
+
+            $record->fill([
+                'answers' => $partial['answers'],
+                'correct_count' => $correct,
+                'completed_at' => $record->completed_at ?? now(),
+            ])->save();
+
+            if (! $first) {
+                return [true, 0];
+            }
+
+            $xp = $user->boostedXp(self::MATERIAL_XP_BASE + self::MATERIAL_XP_PER_CORRECT * $correct);
+            $user->addXp($xp, 'study_material', $material->id, $material->legislation_id);
+
+            return [true, $xp];
+        });
+
+        return [
+            'material_completed' => $completed,
+            'xp_gained' => $xp,
+            'discipline_level_up' => $xp > 0
+                ? app(XpService::class)->detectDisciplineLevelUp($user, $material->legislation_id, $xp)
+                : null,
+            'checkpoint' => [
+                'completed' => count(array_intersect($found['material_ids'], $this->progress($user, $found)?->doneIds() ?? [])),
+                'total' => $found['total'],
+            ],
+            'user' => ['xp' => $user->xp],
+        ];
     }
 
     /** @return Collection<int, StudyMaterial> */
@@ -244,12 +265,11 @@ class BetaCheckpointController extends BetaPlayController
             ->values();
     }
 
-    /** @return array<int, int> */
-    private function doneIds(User $user, array $checkpoint): array
+    private function progress(User $user, array $checkpoint): ?UserBetaCheckpoint
     {
         return UserBetaCheckpoint::where('user_id', $user->id)
             ->where('legislation_segment_id', $checkpoint['anchor_block_id'])
-            ->first()?->doneIds() ?? [];
+            ->first();
     }
 
     private function isCorrect(StudyQuestion $question, string $answer): bool

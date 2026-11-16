@@ -10,6 +10,7 @@ import LevelUpOverlay from '@/components/LevelUpOverlay.vue';
 import PhaseComplete from '@/components/PhaseComplete.vue';
 import ResultBar from '@/components/ResultBar.vue';
 import GameButton from '@/components/ui/GameButton.vue';
+import { playPhaseComplete } from '@/lib/sounds';
 import type { BetaFailResponse, BetaFinishResponse } from '@/types/beta-play';
 import type { ActiveSegmentData, CompletedSegmentData, DisciplineLevelUp, SegmentAnswer } from '@/types/legislation-play';
 import { requiredCorrect } from '@/types/legislation-play';
@@ -131,16 +132,6 @@ const { reward: confettiReward } = useReward('beta-confetti', 'confetti', {
     spread: 90,
 });
 
-function playSuccessAudio() {
-    try {
-        const audio = new Audio('/bell-win.wav');
-        audio.volume = 0.7;
-        audio.play().catch(() => {});
-    } catch {
-        // Sem som não atrapalha o jogo
-    }
-}
-
 async function handleSubmit(data: ChallengeResult) {
     const isPass = data.correct_count >= requiredCorrect(data.total_count);
 
@@ -205,7 +196,7 @@ async function finish() {
 
         await nextTick();
         confettiReward();
-        playSuccessAudio();
+        playPhaseComplete();
         levelUp.value = response.data.discipline_level_up;
     } catch {
         stage.value = 'failed-to-save';

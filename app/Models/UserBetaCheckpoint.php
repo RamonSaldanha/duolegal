@@ -15,10 +15,12 @@ class UserBetaCheckpoint extends Model
         'user_id',
         'legislation_segment_id',
         'done_material_ids',
+        'in_progress',
     ];
 
     protected $casts = [
         'done_material_ids' => 'array',
+        'in_progress' => 'array',
     ];
 
     public function user(): BelongsTo
@@ -30,5 +32,18 @@ class UserBetaCheckpoint extends Model
     public function doneIds(): array
     {
         return array_map('intval', $this->done_material_ids ?? []);
+    }
+
+    /**
+     * O que já foi feito de um material ainda não concluído nesta etapa (para a pessoa
+     * voltar de onde parou). Ao concluir, o material sai daqui e entra em done_material_ids.
+     *
+     * @return array{summary: bool, answers: array<int, string>}
+     */
+    public function partial(int $materialId): array
+    {
+        $partial = $this->in_progress[$materialId] ?? [];
+
+        return ['summary' => (bool) ($partial['summary'] ?? false), 'answers' => $partial['answers'] ?? []];
     }
 }

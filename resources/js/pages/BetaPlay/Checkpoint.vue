@@ -4,18 +4,19 @@ import LevelUpOverlay from '@/components/LevelUpOverlay.vue';
 import PhaseComplete from '@/components/PhaseComplete.vue';
 import ResultBar from '@/components/ResultBar.vue';
 import GameButton from '@/components/ui/GameButton.vue';
+import { playPhaseComplete } from '@/lib/sounds';
 import type { DisciplineLevelUp } from '@/types/legislation-play';
 import {
     boardLabel,
     type CheckpointAnswerResponse,
-    type CheckpointFinishResponse,
     type CheckpointMaterial,
     type CheckpointQuestion,
+    type CheckpointStepResponse,
 } from '@/types/study-material';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import axios from 'axios';
 import { X } from 'lucide-vue-next';
-import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
+import { computed, nextTick, ref } from 'vue';
 import { useReward } from 'vue-rewards';
 
 const props = defineProps<{
@@ -28,19 +29,35 @@ const authUser = computed(() => page.props.auth.user as { xp: number });
 
 // A fase é uma sequência de passos: o resumo de cada material e, logo depois, as questões
 // dele. Joga os materiais ainda não feitos nesta etapa; se todos já foram, é uma revisão de
-// tudo. Como na fase normal, nada é gravado antes do fim: o XP vem só ao terminar.
+// tudo. O desafio é demorado, então cada passo é gravado na hora (o servidor guarda o resumo
+// lido e cada resposta): quem sai no meio volta no primeiro passo que falta.
 const isReview = props.materials.every((material) => material.done);
 const queue = isReview ? props.materials : props.materials.filter((material) => !material.done);
 
+// O que já foi feito de cada material da fila, contando o que veio guardado do servidor
+const progress = ref<Record<string, { summary: boolean; answered: number[] }>>(
+    Object.fromEntries(
+        queue.map((material) => [
+            material.uuid,
+            { summary: !isReview && material.summary_read, answered: isReview ? [] : [...material.answered] },
+        ]),
+    ),
+);
+
 type Step = { kind: 'summary'; material: CheckpointMaterial } | { kind: 'question'; material: CheckpointMaterial; question: CheckpointQuestion };
 
-const steps: Step[] = queue.flatMap((material) => [
-    { kind: 'summary' as const, material },
-    ...material.questions.map((question) => ({ kind: 'question' as const, material, question })),
-]);
-const totalQuestions = steps.filter((step) => step.kind === 'question').length;
+// Só os passos que faltam
+const steps: Step[] = queue.flatMap((material) => {
+    const saved = progress.value[material.uuid];
+    return [
+        ...(saved.summary ? [] : [{ kind: 'summary' as const, material }]),
+        ...material.questions
+            .filter((question) => !saved.answered.includes(question.position))
+            .map((question) => ({ kind: 'question' as const, material, question })),
+    ];
+});
 
-const stage = ref<'playing' | 'saving' | 'failed-to-save' | 'done'>('playing');
+const stage = ref<'playing' | 'done'>('playing');
 const stepIndex = ref(0);
 const step = computed(() => steps[stepIndex.value]);
 
@@ -49,20 +66,23 @@ const checking = ref(false);
 const checkError = ref(false);
 // Gabarito comentado da questão atual: só chega do servidor depois da resposta
 const feedback = ref<CheckpointAnswerResponse | null>(null);
-// Respostas por material (uuid) e posição da questão
-const answers = ref<Record<string, Record<number, string>>>({});
+// Só o que foi respondido nesta visita, para a tela do fim
 const correctCount = ref(0);
 const answeredCount = ref(0);
 
 const xpGained = ref(0);
 const levelUp = ref<DisciplineLevelUp | null>(null);
-const showExitConfirm = ref(false);
+// A subida de estrela espera o "Continuar", para não cobrir o comentário da questão
+let pendingLevelUp: DisciplineLevelUp | null = null;
 
-// O passo atual conta como feito quando o resumo é deixado para trás ou a questão é respondida
+// A barra é só do material em que a pessoa está: o resumo e as questões dele. Cada material
+// tem a sua, senão numa etapa com vários materiais ela quase não andava.
 const progressPercent = computed(() => {
-    if (stage.value !== 'playing') return 100;
-    return ((stepIndex.value + (feedback.value || summaryConfirmed.value ? 1 : 0)) / Math.max(1, steps.length)) * 100;
+    const material = step.value.material;
+    const made = progress.value[material.uuid];
+    return (((made.summary ? 1 : 0) + made.answered.length) / (1 + material.questions.length)) * 100;
 });
+const materialNumber = computed(() => props.materials.indexOf(step.value.material) + 1);
 const accuracy = computed(() => (answeredCount.value > 0 ? Math.round((correctCount.value / answeredCount.value) * 100) : 100));
 
 const questionNumber = computed(() => {
@@ -143,6 +163,26 @@ const summaryProgress = ref(0);
 // Depois do "Concluir", a barra de resultado aparece antes de seguir para as questões
 const summaryConfirmed = ref(false);
 
+/** O servidor gravou um passo: soma o XP, se o material foi concluído com ele. */
+function applyStep(data: CheckpointStepResponse) {
+    xpGained.value += data.xp_gained;
+    authUser.value.xp = data.user.xp;
+    pendingLevelUp = data.discipline_level_up ?? pendingLevelUp;
+}
+
+function confirmSummary() {
+    const material = step.value.material;
+    summaryConfirmed.value = true;
+    progress.value[material.uuid].summary = true;
+    if (isReview) return;
+
+    // Se não gravar, a pessoa só relê o resumo caso saia antes de terminar o material
+    axios
+        .post<CheckpointStepResponse>(route('beta.play.checkpoint.summary', { checkpoint: props.checkpoint.key }), { material: material.uuid })
+        .then(({ data }) => applyStep(data))
+        .catch(() => {});
+}
+
 async function goTo(index: number) {
     stepIndex.value = index;
     summaryRead.value = false;
@@ -169,9 +209,10 @@ async function check() {
             position: current.question.position,
             answer: selected.value,
         });
-        (answers.value[current.material.uuid] ??= {})[current.question.position] = selected.value;
+        progress.value[current.material.uuid].answered.push(current.question.position);
         answeredCount.value++;
         if (data.is_correct) correctCount.value++;
+        applyStep(data);
         feedback.value = data;
 
         // O comentário aparece embaixo das alternativas
@@ -185,6 +226,10 @@ async function check() {
 }
 
 function advance() {
+    if (pendingLevelUp) {
+        levelUp.value = pendingLevelUp;
+        pendingLevelUp = null;
+    }
     if (stepIndex.value < steps.length - 1) {
         goTo(stepIndex.value + 1);
         return;
@@ -198,65 +243,18 @@ const { reward: confettiReward } = useReward('checkpoint-confetti', 'confetti', 
     spread: 90,
 });
 
-function playSuccessAudio() {
-    try {
-        const audio = new Audio('/bell-win.wav');
-        audio.volume = 0.7;
-        audio.play().catch(() => {});
-    } catch {
-        // Sem som não atrapalha
-    }
-}
-
+// Tudo já foi gravado passo a passo; aqui é só a comemoração
 async function finish() {
-    stage.value = 'saving';
-
-    try {
-        const { data } = await axios.post<CheckpointFinishResponse>(route('beta.play.checkpoint.finish', { checkpoint: props.checkpoint.key }), {
-            results: queue.map((material) => ({ material: material.uuid, answers: answers.value[material.uuid] ?? {} })),
-        });
-
-        xpGained.value = data.xp_gained;
-        authUser.value.xp = data.user.xp;
-        stage.value = 'done';
-
-        await nextTick();
-        confettiReward();
-        playSuccessAudio();
-        levelUp.value = data.discipline_level_up;
-    } catch {
-        stage.value = 'failed-to-save';
-    }
+    stage.value = 'done';
+    await nextTick();
+    confettiReward();
+    playPhaseComplete();
 }
 
-// Sair no meio perde a fase, como nas fases normais
-let leaving = false;
-const started = computed(() => stepIndex.value > 0 || feedback.value !== null);
-
-function exit() {
-    if (stage.value === 'playing' && started.value) {
-        showExitConfirm.value = true;
-        return;
-    }
-    backToMap();
-}
-
+// Sair a qualquer momento não perde nada: o que foi feito já está guardado
 function backToMap() {
-    leaving = true;
     router.visit(route('beta.play.map'));
 }
-
-function warnBeforeUnload(event: BeforeUnloadEvent) {
-    if (!leaving && stage.value !== 'done' && started.value) {
-        event.preventDefault();
-    }
-}
-
-onMounted(async () => {
-    window.addEventListener('beforeunload', warnBeforeUnload);
-    await nextTick();
-});
-onUnmounted(() => window.removeEventListener('beforeunload', warnBeforeUnload));
 
 function choiceClass(key: string) {
     if (!feedback.value) {
@@ -285,36 +283,23 @@ function choiceClass(key: string) {
         <PhaseComplete
             v-if="stage === 'done'"
             :title="isReview ? 'Revisão concluída!' : 'Fase concluída!'"
-            :count="totalQuestions"
-            :count-label="totalQuestions === 1 ? 'Questão' : 'Questões'"
+            :count="answeredCount"
+            :count-label="answeredCount === 1 ? 'Questão' : 'Questões'"
             :xp="xpGained"
             :accuracy="accuracy"
             @continue="backToMap"
         />
 
-        <!-- ===== Gravando / erro ao gravar ===== -->
-        <div v-else-if="stage !== 'playing'" class="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center">
-            <template v-if="stage === 'saving'">
-                <div class="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-purple-500 dark:border-gray-700" />
-                <p class="font-medium text-gray-500 dark:text-gray-400">Guardando seu progresso...</p>
-            </template>
-            <template v-else>
-                <p class="text-lg font-bold text-gray-900 dark:text-white">Não foi possível guardar a fase</p>
-                <p class="text-gray-500 dark:text-gray-400">Suas respostas continuam aqui. Confira a conexão e tente de novo.</p>
-                <GameButton variant="purple" size="lg" @click="finish">Tentar de novo</GameButton>
-            </template>
-        </div>
-
         <!-- ===== Jogo ===== -->
         <template v-else>
-            <!-- Topo: sair e progresso da fase -->
+            <!-- Topo: sair e progresso do material -->
             <div class="shrink-0 px-3 pt-4 md:px-4">
                 <div class="mx-auto flex w-full items-center gap-3 sm:w-[95%] lg:w-[50rem]">
                     <button
                         type="button"
                         class="-ml-1 rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-200"
-                        aria-label="Sair da fase"
-                        @click="exit"
+                        aria-label="Voltar ao mapa"
+                        @click="backToMap"
                     >
                         <X class="h-6 w-6" />
                     </button>
@@ -325,11 +310,16 @@ function choiceClass(key: string) {
                         aria-valuemin="0"
                         aria-valuemax="100"
                     >
-                        <div class="h-full rounded-full bg-green-500 transition-all duration-500" :style="{ width: `${progressPercent}%` }" />
+                        <!-- A chave zera a barra de uma vez ao trocar de material, em vez de ela voltar deslizando -->
+                        <div
+                            :key="step.material.uuid"
+                            class="h-full rounded-full bg-green-500 transition-all duration-500"
+                            :style="{ width: `${progressPercent}%` }"
+                        />
                     </div>
                 </div>
                 <p class="mx-auto mt-2 w-full truncate text-xs font-medium text-gray-400 dark:text-gray-500 sm:w-[95%] lg:w-[50rem]">
-                    Desafio da etapa {{ checkpoint.number }} · {{ step.material.legislation_title }}
+                    Etapa {{ checkpoint.number }} · Material {{ materialNumber }} de {{ materials.length }} · {{ step.material.legislation_title }}
                 </p>
             </div>
 
@@ -349,7 +339,7 @@ function choiceClass(key: string) {
                                 @progress="summaryProgress = $event"
                             />
                             <!-- O botão fica no fim do texto e só libera quando a leitura guiada percorreu o resumo -->
-                            <GameButton variant="purple" size="lg" class="mt-8 w-full" :disabled="!summaryRead || summaryConfirmed" @click="summaryConfirmed = true">Concluir</GameButton>
+                            <GameButton variant="purple" size="lg" class="mt-8 w-full" :disabled="!summaryRead || summaryConfirmed" @click="confirmSummary">Concluir</GameButton>
                             <p v-if="!summaryRead" class="mt-3 text-center text-sm text-gray-500 dark:text-gray-400">
                                 <template v-if="summaryProgress > 0">
                                     Leitura em {{ Math.round(summaryProgress * 100) }}%. Rolar ou pular trechos não conta: a leitura guiada precisa passar
@@ -448,23 +438,13 @@ function choiceClass(key: string) {
                     <p v-if="!feedback.is_correct">
                         Gabarito: <span class="font-bold capitalize">{{ feedback.correct_answer }}</span>
                     </p>
+                    <p v-if="feedback.material_completed && feedback.xp_gained > 0" class="font-bold">
+                        Material concluído: +{{ feedback.xp_gained }} XP
+                    </p>
                 </ResultBar>
             </div>
         </template>
 
-        <!-- Confirmação de saída -->
-        <div v-if="showExitConfirm" class="fixed inset-0 z-[150] flex items-end justify-center bg-black/50 p-4 sm:items-center">
-            <div class="w-full max-w-sm rounded-2xl bg-white p-5 dark:bg-gray-800">
-                <h2 class="text-lg font-bold text-gray-900 dark:text-white">Sair da fase?</h2>
-                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                    O progresso e o XP só são guardados quando você termina a fase. Se sair agora, vai recomeçar.
-                </p>
-                <div class="mt-5 flex flex-col gap-3">
-                    <GameButton variant="purple" class="w-full" @click="showExitConfirm = false">Continuar jogando</GameButton>
-                    <GameButton variant="white" class="w-full" @click="backToMap">Sair mesmo assim</GameButton>
-                </div>
-            </div>
-        </div>
     </div>
 </template>
 

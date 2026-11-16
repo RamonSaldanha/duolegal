@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { ActiveSegmentData, SegmentAnswer } from '@/types/legislation-play';
 import { requiredCorrect } from '@/types/legislation-play';
-import { ref, computed } from 'vue';
+import { ref, computed, nextTick } from 'vue';
 import { RefreshCw } from 'lucide-vue-next';
 import GameButton from '@/components/ui/GameButton.vue';
 
@@ -33,6 +33,8 @@ interface DisplayToken {
 
 // Estado das seleções do jogador: gap_order -> palavra selecionada
 const userSelections = ref<Record<number, string>>({});
+// De qual botão do banco veio cada palavra: gap_order -> índice em segment.options
+const selectedOption = ref<Record<number, number>>({});
 const isVerified = ref(false);
 const verificationResults = ref<SegmentAnswer[]>([]);
 
@@ -77,30 +79,71 @@ const displayTokens = computed((): DisplayToken[] => {
     });
 });
 
-// Palavras disponíveis (não selecionadas)
-const availableOptions = computed(() => {
-    // Conta quantas vezes cada palavra foi selecionada
-    const selectedCounts: Record<string, number> = {};
-    for (const word of Object.values(userSelections.value)) {
-        selectedCounts[word] = (selectedCounts[word] || 0) + 1;
-    }
-    // Conta quantas vezes cada opção aparece no total
-    const totalCounts: Record<string, number> = {};
-    for (const word of props.segment.options) {
-        totalCounts[word] = (totalCounts[word] || 0) + 1;
-    }
-    // Remove as selecionadas
-    const result: string[] = [];
-    const usedCounts: Record<string, number> = {};
-    for (const word of props.segment.options) {
-        usedCounts[word] = (usedCounts[word] || 0) + 1;
-        const used = selectedCounts[word] || 0;
-        if (usedCounts[word] > used) {
-            result.push(word);
-        }
-    }
-    return result;
-});
+// O banco não se reorganiza: a palavra usada deixa o lugar dela vazio, e volta para lá
+const usedOptions = computed(() => new Set(Object.values(selectedOption.value)));
+
+// Enquanto a palavra voa entre o banco e a lacuna, o destino fica escondido
+// ('gap-<gap_order>' ou 'option-<índice>')
+const inFlight = ref<Record<string, boolean>>({});
+const textRef = ref<HTMLElement | null>(null);
+const optionSlots = new Map<number, HTMLElement>();
+
+function setOptionSlot(index: number, element: unknown) {
+    if (element instanceof HTMLElement) optionSlots.set(index, element);
+    else optionSlots.delete(index);
+}
+
+const isOptionEmpty = (index: number) => usedOptions.value.has(index) || !!inFlight.value[`option-${index}`];
+
+const FLIGHT_MS = 220;
+const center = (rect: DOMRect) => ({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
+
+/**
+ * Leva uma cópia do botão da palavra de um ponto a outro da tela (do banco até a lacuna, ou
+ * de volta) e só então mostra o destino. Quem pediu menos movimento não vê a animação.
+ */
+function fly(optionIndex: number, from: DOMRect, to: DOMRect, destination: string) {
+    const button = optionSlots.get(optionIndex)?.firstElementChild;
+    if (!(button instanceof HTMLElement) || !button.animate || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    // O lugar do botão no banco não muda, então a cópia nasce ali e é deslocada
+    const home = button.getBoundingClientRect();
+    const origin = center(home);
+    const start = center(from);
+    const end = center(to);
+
+    const ghost = button.cloneNode(true) as HTMLElement;
+    ghost.classList.remove('invisible');
+    Object.assign(ghost.style, {
+        position: 'fixed',
+        left: `${home.left}px`,
+        top: `${home.top}px`,
+        width: `${home.width}px`,
+        height: `${home.height}px`,
+        margin: '0',
+        zIndex: '200',
+        pointerEvents: 'none',
+        transition: 'none',
+    });
+    document.body.appendChild(ghost);
+    inFlight.value[destination] = true;
+
+    const land = () => {
+        ghost.remove();
+        delete inFlight.value[destination];
+    };
+    ghost
+        .animate(
+            [
+                { transform: `translate(${start.x - origin.x}px, ${start.y - origin.y}px)` },
+                { transform: `translate(${end.x - origin.x}px, ${end.y - origin.y}px)` },
+            ],
+            { duration: FLIGHT_MS, easing: 'cubic-bezier(0.3, 0.7, 0.3, 1)' },
+        )
+        .finished.then(land, land);
+}
+
+const gapElement = (gapOrder: number) => textRef.value?.querySelector<HTMLElement>(`[data-gap="${gapOrder}"]`) ?? null;
 
 const hasLacunas = computed(() => props.segment.lacunas.length > 0);
 
@@ -118,21 +161,44 @@ function nextEmptyGapOrder(): number | null {
     return null;
 }
 
-function selectWord(word: string) {
-    if (isVerified.value) return;
+async function selectWord(optionIndex: number) {
+    if (isVerified.value || usedOptions.value.has(optionIndex)) return;
     const gapOrder = nextEmptyGapOrder();
     if (gapOrder === null) return;
-    userSelections.value[gapOrder] = word;
+
+    const from = optionSlots.get(optionIndex)?.getBoundingClientRect();
+    userSelections.value[gapOrder] = props.segment.options[optionIndex];
+    selectedOption.value[gapOrder] = optionIndex;
+
+    // A palavra sai do banco e vai até a lacuna que ela preenche
+    inFlight.value[`gap-${gapOrder}`] = true;
+    await nextTick();
+    delete inFlight.value[`gap-${gapOrder}`];
+    const to = gapElement(gapOrder)?.getBoundingClientRect();
+    if (from && to) fly(optionIndex, from, to, `gap-${gapOrder}`);
 }
 
-function unselectGap(gapOrder: number) {
+async function unselectGap(gapOrder: number) {
     if (isVerified.value) return;
+    const optionIndex = selectedOption.value[gapOrder];
+    const from = gapElement(gapOrder)?.getBoundingClientRect();
+
     delete userSelections.value[gapOrder];
+    delete selectedOption.value[gapOrder];
+    if (optionIndex === undefined || !from) return;
+
+    // A palavra volta para o lugar dela no banco
+    inFlight.value[`option-${optionIndex}`] = true;
+    await nextTick();
+    delete inFlight.value[`option-${optionIndex}`];
+    const to = optionSlots.get(optionIndex)?.getBoundingClientRect();
+    if (to) fly(optionIndex, from, to, `option-${optionIndex}`);
 }
 
 function clearAll() {
     if (isVerified.value) return;
     userSelections.value = {};
+    selectedOption.value = {};
 }
 
 function verify() {
@@ -166,6 +232,7 @@ function getVerificationResult(gapOrder: number): SegmentAnswer | undefined {
 // Reset quando o segmento muda
 function reset() {
     userSelections.value = {};
+    selectedOption.value = {};
     isVerified.value = false;
     verificationResults.value = [];
 }
@@ -176,7 +243,7 @@ defineExpose({ reset });
 <template>
     <div class="relative py-6">
         <!-- Texto com lacunas (fica dentro do scroll) -->
-        <div class="font-body text-xl md:text-2xl leading-relaxed text-gray-900 dark:text-white font-medium whitespace-pre-line">
+        <div ref="textRef" class="font-body text-xl md:text-2xl leading-relaxed text-gray-900 dark:text-white font-medium whitespace-pre-line">
             <p>
                 <span
                     v-if="segment.structural_marker"
@@ -193,9 +260,13 @@ defineExpose({ reset });
                         >(...)</span>
                         <span
                             v-else-if="!isVerified && userSelections[token.gapOrder!]"
-                            class="lacuna-filled inline-flex items-center font-bold mx-0.5 cursor-pointer px-1.5 py-0.5 rounded transition-all"
+                            class="lacuna-filled inline-block cursor-pointer select-none rounded-lg border-2 border-gray-300 bg-white font-bold text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                            :class="{ invisible: inFlight[`gap-${token.gapOrder}`] }"
+                            :data-gap="token.gapOrder"
+                            role="button"
+                            :aria-label="`Tirar ${userSelections[token.gapOrder!]} da lacuna`"
                             @click="unselectGap(token.gapOrder!)"
-                        >{{ userSelections[token.gapOrder!] }}<span class="lacuna-remove-indicator ml-1 text-sm font-bold" style="vertical-align: -1px">×</span></span>
+                        >{{ userSelections[token.gapOrder!] }}</span>
                         <!-- Após verificar -->
                         <span
                             v-else-if="isVerified && getVerificationResult(token.gapOrder!)?.is_correct"
@@ -217,15 +288,18 @@ defineExpose({ reset });
         <div v-if="!isVerified">
             <!-- Botões de palavras -->
             <div v-if="hasLacunas" class="flex flex-wrap gap-3 pt-4 mb-6">
-                <GameButton
-                    v-for="(word, wi) in availableOptions"
+                <!-- A palavra usada deixa o lugar vazio (cinza) e volta para ele ao sair da lacuna -->
+                <span
+                    v-for="(word, wi) in segment.options"
                     :key="wi"
-                    variant="white"
-                    size="sm"
-                    @click="selectWord(word)"
+                    :ref="(element) => setOptionSlot(wi, element)"
+                    class="inline-flex rounded-lg"
+                    :class="{ 'bg-gray-200 dark:bg-gray-700': isOptionEmpty(wi) }"
                 >
-                    {{ word }}
-                </GameButton>
+                    <GameButton variant="white" size="sm" :class="{ invisible: isOptionEmpty(wi) }" @click="selectWord(wi)">
+                        {{ word }}
+                    </GameButton>
+                </span>
             </div>
 
             <!-- Ações -->
@@ -279,15 +353,18 @@ defineExpose({ reset });
     <template v-if="!controlsTarget">
         <div v-if="!isVerified" class="px-3">
             <div v-if="hasLacunas" class="flex flex-wrap gap-3 pt-4 mb-6">
-                <GameButton
-                    v-for="(word, wi) in availableOptions"
+                <!-- A palavra usada deixa o lugar vazio (cinza) e volta para ele ao sair da lacuna -->
+                <span
+                    v-for="(word, wi) in segment.options"
                     :key="wi"
-                    variant="white"
-                    size="sm"
-                    @click="selectWord(word)"
+                    :ref="(element) => setOptionSlot(wi, element)"
+                    class="inline-flex rounded-lg"
+                    :class="{ 'bg-gray-200 dark:bg-gray-700': isOptionEmpty(wi) }"
                 >
-                    {{ word }}
-                </GameButton>
+                    <GameButton variant="white" size="sm" :class="{ invisible: isOptionEmpty(wi) }" @click="selectWord(wi)">
+                        {{ word }}
+                    </GameButton>
+                </span>
             </div>
             <div class="flex justify-between pt-4 border-t">
                 <GameButton v-if="hasLacunas" variant="white" size="sm" class="flex items-center gap-2" @click="clearAll">
@@ -311,36 +388,29 @@ defineExpose({ reset });
     color: #fffbcd;
 }
 
+/* A palavra na lacuna é o mesmo botão do banco (face, borda e a borda de baixo "3D"), só
+   que na medida do texto: letra um pouco menor e borda fina, para caber na linha sem
+   empurrar as de cima e de baixo. As cores vêm das mesmas classes do GameButton branco. */
 .lacuna-filled {
-    background-color: rgb(240, 249, 255);
-    border-bottom: 2px solid rgb(56, 189, 248);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-    color: rgb(30, 41, 59);
-    line-height: 1.2;
+    --edge: theme('colors.gray.300');
+    margin: 0 0.15em;
+    padding: 0 0.45em;
+    font-size: 0.85em;
+    line-height: 1.35;
     vertical-align: baseline;
-    font-size: inherit;
+    box-shadow: 0 3px 0 var(--edge);
+    transition:
+        transform 0.1s ease,
+        box-shadow 0.1s ease;
 }
 
-:global(.dark) .lacuna-filled {
-    background-color: rgb(30, 59, 138);
-    border-bottom-color: rgb(5, 36, 121);
-    color: rgb(226, 232, 240);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+.dark .lacuna-filled {
+    --edge: theme('colors.gray.600');
 }
 
-.lacuna-remove-indicator {
-    color: rgb(148, 163, 184);
-}
-
-:global(.dark) .lacuna-remove-indicator {
-    color: rgba(239, 239, 239, 0.7);
-}
-
-.lacuna-filled:hover .lacuna-remove-indicator {
-    color: rgb(239, 68, 68);
-}
-
-:global(.dark) .lacuna-filled:hover .lacuna-remove-indicator {
-    color: rgb(252, 165, 165);
+/* Afunda ao toque, como o botão: é assim que a palavra volta para o banco */
+.lacuna-filled:active {
+    transform: translateY(3px);
+    box-shadow: 0 0 0 var(--edge);
 }
 </style>
