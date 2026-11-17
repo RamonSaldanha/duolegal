@@ -14,7 +14,9 @@ use Inertia\Inertia;
 class LegislationPlayController extends Controller
 {
     const BLOCKS_PER_PHASE = PhaseGenerationService::BLOCKS_PER_PHASE;
+
     const PHASES_PER_LEGISLATION_SWITCH = PhaseGenerationService::PHASES_PER_LEGISLATION_SWITCH;
+
     const PHASES_PER_PAGE = PhaseGenerationService::PHASES_PER_PAGE;
 
     public function __construct(protected PhaseGenerationService $phaseService) {}
@@ -653,6 +655,8 @@ class LegislationPlayController extends Controller
             'segment_type' => $segment->segment_type,
             'article_reference' => $segment->article_reference,
             'structural_marker' => $segment->structural_marker,
+            // Vetado ou revogado: só o rótulo. Só o beta mostra o aviso.
+            'historical_label' => $segment->historicalLabel(),
             'answers' => $progress?->answers,
             'is_completed' => $progress?->is_completed ?? false,
             'best_score' => $progress?->best_score ?? 0,
@@ -682,6 +686,8 @@ class LegislationPlayController extends Controller
             'segment_type' => $segment->segment_type,
             'article_reference' => $segment->article_reference,
             'structural_marker' => $segment->structural_marker,
+            // Vetado ou revogado: só o rótulo. Só o beta mostra o aviso.
+            'historical_label' => $segment->historicalLabel(),
             'lacunas' => $correctLacunas->map(fn ($l, $i) => [
                 'gap_order' => $i + 1,
                 'word' => $l->word,

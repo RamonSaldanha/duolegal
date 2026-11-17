@@ -22,6 +22,8 @@ export interface CompletedSegmentData {
     segment_type: string;
     article_reference: string | null;
     structural_marker: string | null;
+    /** Rótulo do dispositivo vetado ou revogado (bloco sem texto); null nos demais. */
+    historical_label?: string | null;
     answers: SegmentAnswer[] | null;
     is_completed: boolean;
     best_score: number;
@@ -40,6 +42,8 @@ export interface ActiveSegmentData {
     segment_type: string;
     article_reference: string | null;
     structural_marker: string | null;
+    /** Rótulo do dispositivo vetado ou revogado (bloco sem texto); null nos demais. */
+    historical_label?: string | null;
     lacunas: LacunaData[];
     options: string[];
     total_gaps: number;

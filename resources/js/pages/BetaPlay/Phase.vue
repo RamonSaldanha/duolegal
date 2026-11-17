@@ -323,7 +323,7 @@ onUnmounted(() => {
                             <div class="h-6 w-6 animate-spin rounded-full border-2 border-gray-300 border-t-blue-500 dark:border-gray-600" />
                         </div>
 
-                        <CompletedSegment v-for="block in blocksAbove" :key="block.uuid" :segment="block" />
+                        <CompletedSegment v-for="block in blocksAbove" :key="block.uuid" :segment="block" show-historical />
 
                         <div v-if="active" ref="activeRef">
                             <ActiveChallenge
@@ -331,6 +331,7 @@ onUnmounted(() => {
                                 :segment="active"
                                 controls-target="#beta-controls"
                                 hide-result
+                                show-historical
                                 @submit="handleSubmit"
                             />
                         </div>

@@ -65,7 +65,7 @@ const PHASES_PER_JOURNEY = 24;        // UI pagination — phases per journey
 1. **PASSO 1:** Build phase structure with law intercalation. Phases distribute across modules so users alternate between multiple laws rather than completing one law fully before starting another.
 2. **PASSO 2:** Walk phases sequentially: calculate progress per phase, find the first incomplete unblocked phase (marked `is_current`), block all phases after it. Regular phases require all articles attempted; review phases require all in-scope articles ≥ 100%.
 
-**Revoked article handling:** Articles containing only a header like "Art. 123." (no content, no gaps) auto-complete as 100%. This handles repealed Brazilian legal articles without requiring deletion.
+**Revoked article handling:** Articles containing only a header like "Art. 123." (no content, no gaps) auto-complete as 100%. This handles repealed Brazilian legal articles without requiring deletion. In the beta trail (`/beta/play`) the same idea applies to blocks: `LegislationSegment::historicalLabel()` detects a block left with only its label ("IX-A -;", "Art. 194."), because the import strips the "(VETADO)"/"(Revogado)" text. The beta still plays it as a normal challenge (it must be verified to finish the phase), but gives no XP for it and shows a note explaining it was vetoed or revoked. The legacy map and the app API are unchanged.
 
 **Progress rules:**
 

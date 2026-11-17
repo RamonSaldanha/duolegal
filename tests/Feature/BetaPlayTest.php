@@ -183,3 +183,45 @@ test('errar um desafio tira a vida na hora, sem gravar progresso', function () {
 
     expect(UserSegmentProgress::where('user_id', $user->id)->count())->toBe(0);
 });
+
+test('dispositivo vetado ou revogado continua sendo desafio, mas não dá XP', function () {
+    $legislation = betaLegislation(25);
+    $user = betaAdmin(['lives' => 5]);
+    $blocks = $legislation->segments()->orderBy('char_start')->get();
+
+    // A importação tira o texto e a marca: sobra só o rótulo
+    $blocks[2]->update(['original_text' => "IX-A -;\u{00A0}\u{00A0}"]);
+    $blocks[5]->update(['original_text' => 'Art. 194.']);
+
+    $this->actingAs($user)->get('/beta/play/phase/1')
+        ->assertSuccessful()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->has('challenges', 10)
+            ->where('challenges.2.historical_label', 'IX-A')
+            ->where('challenges.5.historical_label', 'Art. 194')
+            ->where('challenges.0.historical_label', null)
+            ->where('phaseBlocks.2.historical_label', 'IX-A'));
+
+    // Os dez precisam ser vencidos; só os oito com texto dão XP
+    $this->actingAs($user)->postJson('/beta/play/finish', [
+        'phase_id' => 1,
+        'results' => betaResults($blocks->take(10)),
+    ])->assertSuccessful()->assertJsonPath('xp_gained', 80);
+
+    expect(UserSegmentProgress::where('user_id', $user->id)->where('is_completed', true)->count())->toBe(10);
+});
+
+test('o rótulo histórico só aparece em bloco sem texto', function (string $text, ?string $label) {
+    expect((new LegislationSegment(['original_text' => $text]))->historicalLabel())->toBe($label);
+})->with([
+    ["IX-A -;\u{00A0}\u{00A0}", 'IX-A'],
+    ['Art. 1.463.', 'Art. 1.463'],
+    ['Art. 819-A.', 'Art. 819-A'],
+    ['§ 3º  .', '§ 3º'],
+    ['Parágrafo único.', 'Parágrafo único'],
+    ['a) ;', 'a)'],
+    ['IV - os pródigos.', null],
+    ['II - ano;', null],
+    ['Art. 569. Cabe:', null],
+    ['§ 1º Em um ano:', null],
+]);

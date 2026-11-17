@@ -4,6 +4,8 @@ import { computed } from 'vue';
 
 const props = defineProps<{
     segment: CompletedSegmentData;
+    /** Explica por que o bloco vetado ou revogado está vazio (só no beta). */
+    showHistorical?: boolean;
 }>();
 
 interface DisplayToken {
@@ -71,6 +73,9 @@ const tokens = computed((): DisplayToken[] => {
                     v-else-if="token.answer && !token.answer.is_correct"
                     class="mx-0.5 inline"
                 ><span class="bg-red-100/50 dark:bg-red-900/20 text-red-400/70 dark:text-red-400/50 rounded-full px-2 py-0.5 line-through decoration-2 text-base">{{ token.answer.user_word }}</span> <span class="bg-green-100/60 dark:bg-green-900/30 text-green-700/70 dark:text-green-300/70 rounded-full px-2.5 py-0.5 font-bold">{{ token.answer.correct_word }}</span></span><span v-else>{{ token.text }}</span></template>
+        </p>
+        <p v-if="showHistorical && segment.historical_label" class="mt-1 text-sm font-medium text-gray-400 dark:text-gray-500">
+            Dispositivo vetado ou revogado: o texto foi retirado da lei e fica aqui só como registro.
         </p>
     </div>
 </template>

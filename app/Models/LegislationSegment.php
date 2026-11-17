@@ -63,4 +63,30 @@ class LegislationSegment extends Model
     {
         return $this->hasMany(SegmentLacuna::class)->where('is_active', true);
     }
+
+    /**
+     * Rótulo do dispositivo vetado ou revogado ("Art. 194", "§ 4º", "IX-A"), ou null.
+     *
+     * A importação tira o texto riscado e as marcas "(VETADO)" e "(Revogado)", então o bloco
+     * fica só com o rótulo e a pontuação ("IX-A -;", "§ 4º ."). Não dá para saber qual dos
+     * dois foi, só que o dispositivo não tem mais texto.
+     */
+    public function historicalLabel(): ?string
+    {
+        $text = trim(preg_replace('/[\s\x{00A0}]+/u', ' ', $this->original_text));
+
+        $label = '(?:'
+            .'art\.?\s*\d[\d.]*\s*[º°o]?(?:\s*-\s*(?-i:[A-Z]{1,3}))?'
+            .'|§\s*\d+\s*[º°o]?(?:\s*-\s*(?-i:[A-Z]{1,3}))?'
+            .'|par[áa]grafo\s+[úu]nico'
+            .'|(?-i:[IVXLCDM]+)(?:\s*-\s*(?-i:[A-Z]{1,3}))?'
+            .'|(?-i:[a-z])\)'
+            .')';
+
+        if (! preg_match('/^('.$label.')[\s.;:,\-–—]*$/iu', $text, $match)) {
+            return null;
+        }
+
+        return rtrim($match[1], ' .');
+    }
 }

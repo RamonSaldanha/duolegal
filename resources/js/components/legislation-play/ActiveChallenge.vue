@@ -12,6 +12,8 @@ const props = defineProps<{
     hideResultIcon?: boolean;
     // A tela mostra o resultado por conta própria (barra de resultado)
     hideResult?: boolean;
+    /** Explica por que o bloco vetado ou revogado está vazio (só no beta). */
+    showHistorical?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -278,6 +280,9 @@ defineExpose({ reset });
                             :title="`Correto: ${token.correctWord}`"
                         >{{ getVerificationResult(token.gapOrder!)?.user_word }}</span>
                     </template><span v-else>{{ token.text }}</span></template>
+            </p>
+            <p v-if="showHistorical && segment.historical_label" class="mt-1 text-sm font-medium text-gray-400 dark:text-gray-500">
+                Dispositivo vetado ou revogado: o texto foi retirado da lei e fica aqui só como registro.
             </p>
         </div>
     </div>

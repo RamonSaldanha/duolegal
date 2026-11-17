@@ -220,8 +220,9 @@ class BetaPlayController extends LegislationPlayController
                     $result['answers']
                 );
 
-                // XP só na primeira conclusão do bloco (mesma conta do mapa atual)
-                if (! $done->has($block->id)) {
+                // XP só na primeira conclusão do bloco (mesma conta do mapa atual). O bloco
+                // vetado ou revogado é jogado normalmente, mas não tem texto e não dá XP.
+                if (! $done->has($block->id) && $block->historicalLabel() === null) {
                     $gaps = $block->lacunas->where('is_correct', true)->count();
                     $xp = $user->boostedXp(max(10, $gaps * 5));
                     $user->addXp($xp, 'legislation', $block->id, $block->legislation_id);
