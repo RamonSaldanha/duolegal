@@ -100,7 +100,7 @@ const PHASES_PER_JOURNEY = 24;        // UI pagination — phases per journey
 
 ### Perfil público
 
-Só no site: cada linha do ranking da web abre `/perfil/{uuid}` (`PublicProfileController`). O app e a API não têm essa tela.
+Cada linha do ranking abre o perfil: na web, `/perfil/{uuid}` (`PublicProfileController`); no app, `GET /api/v1/profiles/{uuid}`, que usa o mesmo `payload()`. O ranking da API traz o `uuid` de cada linha. As Configurações do app usam `GET /api/v1/settings`, `PUT /api/v1/settings/achievements` e `PUT /api/v1/settings/emails`; a descrição é salva por `PATCH /api/v1/profile` (`bio`).
 
 - **Campos:** o controller escolhe um a um o que sai (primeiro e último nome, `publicAvatarConfig()`, `bio`, ofensiva atual e as conquistas com estrela, sem XP). Não mande o model inteiro para a tela.
 - **Conquistas exibidas:** `users.hidden_achievements` guarda as disciplinas que a pessoa escondeu em Configurações, então uma conquista nova aparece sozinha. As escondidas não saem do servidor.
@@ -127,6 +127,16 @@ Resumo em markdown + questões no estilo de banca, escritos por um agente de IA 
 - **Sons:** `resources/js/lib/sounds.ts` gera os sons com a Web Audio API. `ResultBar` toca o de acerto sempre que aparece como acerto; o erro é silencioso.
 - **Resumo:** guardado em markdown puro e convertido por `StudyMaterialService::renderSummary` (`Str::markdown`, HTML embutido removido, links inseguros bloqueados). A tela só usa `v-html` com esse HTML, pelo componente `StudySummary`.
 - **Skill:** `.claude/skills/gerar-material-estudo/SKILL.md`, com cópia idêntica em `.agents/skills/` (um teste falha se divergirem). A página `/admin/study-materials/instalar` gera o token, monta o `.zip` a partir dessa pasta e traz os comandos por ferramenta. Mudou uma rota ou regra de validação: atualize a skill e o número de versão dela.
+
+### Mapa novo no app (API `/trail`)
+
+O app (`memorize-mobile`) joga o mapa beta pelas rotas `/api/v1/trail` (`routes/api.php`): mapa, fase, `fail`, `finish`, desafio do quadrado e Dia da prova.
+
+- **Mesma regra da web:** `Api\V1\TrailController`, `TrailChallengeController` e `TrailExamController` herdam os controllers do beta. Os dados saem de `mapPayload`, `phasePayload`, `checkpointPayload` e `examPayload`, que a web também usa; as rotas JSON (`betaFail`, `betaFinish`, `summary`, `answer`, `start`, `finish`) são as mesmas. Mudou a regra no beta, vale para o app.
+- **Quem vê:** `config('trail.audience')` (`TRAIL_AUDIENCE=admins|everyone`, padrão `admins`), pelo middleware `trail`. Vale para `/beta/play` na web e para a API. `/me` manda `map_version` (`squares` ou `classic`) e o app mostra o mapa que o servidor mandar. Virar para `everyone` libera nos dois sem build nova.
+- **Recusas em JSON:** onde a web redireciona, a API responde `403 no_lives`, `409 unavailable` ou `403 trail_disabled`.
+- **Resumo:** o desafio da API manda também `summary_blocks` (`StudyMaterialService::summaryBlocks`), o resumo em blocos tirado da mesma árvore do CommonMark, para o app desenhar e fazer a leitura guiada.
+- **App antigo:** as rotas `/api/v1/play/*` continuam; quem tem build antiga segue no mapa atual.
 
 ### Shared Data via Middleware
 

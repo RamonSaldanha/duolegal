@@ -6,7 +6,7 @@ import { computed } from 'vue';
 const page = usePage();
 const isCurrentRoute = computed(() => (url: string) => page.url.startsWith(url));
 
-const isAdmin = computed(() => page.props.auth.user?.is_admin === true);
+const usesTrail = computed(() => page.props.auth.user?.uses_trail === true);
 
 const navItems = computed(() => [
     {
@@ -14,8 +14,8 @@ const navItems = computed(() => [
         href: '/play',
         icon: Gamepad2,
     },
-    // Mapa em teste: só administradores veem (a rota também exige)
-    ...(isAdmin.value ? [{ title: 'Beta', href: '/beta/play', icon: FlaskConical }] : []),
+    // Mapa novo: só quem config('trail.audience') libera (a rota também exige)
+    ...(usesTrail.value ? [{ title: 'Beta', href: '/beta/play', icon: FlaskConical }] : []),
     {
         title: 'Conquistas',
         href: '/disciplines',

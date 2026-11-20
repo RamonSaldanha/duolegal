@@ -36,20 +36,35 @@ class BetaCheckpointController extends BetaPlayController
 
     public function show(string $checkpoint): Response|RedirectResponse
     {
-        $user = Auth::user();
+        $payload = $this->checkpointPayload(Auth::user(), $checkpoint);
+
+        return $payload === 'unavailable'
+            ? redirect()->route('beta.play.map')
+            : Inertia::render('BetaPlay/Checkpoint', $payload);
+    }
+
+    /**
+     * Os dados do desafio, ou 'unavailable' se ele ainda não abre (404 se não existe na trilha
+     * do usuário). Com `$withBlocks`, cada material leva também `summary_blocks`, o resumo em
+     * blocos para o app desenhar.
+     *
+     * @return array<string, mixed>|'unavailable'
+     */
+    protected function checkpointPayload(User $user, string $checkpoint, bool $withBlocks = false): array|string
+    {
         $found = $this->findCheckpoint($user, $checkpoint);
 
         abort_if(! $found, 404);
 
         if (! in_array($found['state'], ['available', 'complete'], true)) {
-            return redirect()->route('beta.play.map');
+            return 'unavailable';
         }
 
         $progress = $this->progress($user, $found) ?? new UserBetaCheckpoint;
         $done = array_flip($progress->doneIds());
         $service = app(StudyMaterialService::class);
 
-        return Inertia::render('BetaPlay/Checkpoint', [
+        return [
             'checkpoint' => [
                 'key' => $found['key'],
                 'section_number' => $found['section_number'],
@@ -58,7 +73,7 @@ class BetaCheckpointController extends BetaPlayController
                 'completed' => $found['completed'],
             ],
             // Na ordem da lei; a tela volta ao primeiro passo ainda não feito neste quadrado
-            'materials' => $this->materials($found)->map(function (StudyMaterial $material) use ($service, $done, $progress) {
+            'materials' => $this->materials($found)->map(function (StudyMaterial $material) use ($service, $done, $progress, $withBlocks) {
                 $partial = $progress->partial($material->id);
 
                 return [
@@ -66,6 +81,7 @@ class BetaCheckpointController extends BetaPlayController
                     'title' => $material->title,
                     'legislation_title' => $material->legislation->title,
                     'summary_html' => $service->renderSummary($material->summary),
+                ] + ($withBlocks ? ['summary_blocks' => $service->summaryBlocks($material->summary)] : []) + [
                     // Sem gabarito, comentário nem fundamento: chegam depois de cada resposta
                     'questions' => $material->questions->map(fn (StudyQuestion $question) => [
                         'position' => $question->position,
@@ -80,7 +96,7 @@ class BetaCheckpointController extends BetaPlayController
                     'answered' => array_map('intval', array_keys($partial['answers'])),
                 ];
             })->values(),
-        ]);
+        ];
     }
 
     /**

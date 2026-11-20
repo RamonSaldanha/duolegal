@@ -152,6 +152,12 @@ class User extends Authenticatable
         return $this->is_admin === true;
     }
 
+    /** Joga o mapa novo (quadrados de 4 fases)? Decidido por config('trail.audience'). */
+    public function usesTrailMap(): bool
+    {
+        return config('trail.audience') === 'everyone' || $this->isAdmin();
+    }
+
     /**
      * Define a relação com referências legais
      */

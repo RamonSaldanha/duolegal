@@ -8,9 +8,14 @@ use App\Http\Controllers\Api\V1\DisciplineProgressController;
 use App\Http\Controllers\Api\V1\LegalReferenceController;
 use App\Http\Controllers\Api\V1\OnboardingController;
 use App\Http\Controllers\Api\V1\PlayController;
+use App\Http\Controllers\Api\V1\PublicProfileController;
 use App\Http\Controllers\Api\V1\RankingController;
+use App\Http\Controllers\Api\V1\SettingsController;
 use App\Http\Controllers\Api\V1\StreakController;
 use App\Http\Controllers\Api\V1\SubscriptionController;
+use App\Http\Controllers\Api\V1\TrailChallengeController;
+use App\Http\Controllers\Api\V1\TrailController;
+use App\Http\Controllers\Api\V1\TrailExamController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -60,8 +65,34 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'throttle:120,1'])->group(funct
     Route::get('/play/preferences', [PlayController::class, 'preferences']);
     Route::put('/play/preferences', [PlayController::class, 'savePreferences']);
 
+    // Mapa novo (quadrados de 4 fases): os mesmos dados de /beta/play na web, para quem
+    // config('trail.audience') libera. `map_version` em /me diz ao app qual mapa mostrar.
+    Route::middleware('trail')->prefix('trail')->group(function () {
+        Route::get('/', [TrailController::class, 'index']);
+        Route::get('/phases/{phaseId}', [TrailController::class, 'phase'])->where('phaseId', '[0-9]+');
+        Route::post('/fail', [TrailController::class, 'betaFail']);
+        Route::post('/finish', [TrailController::class, 'betaFinish']);
+
+        Route::get('/challenges/{checkpoint}', [TrailChallengeController::class, 'challenge'])->whereUuid('checkpoint');
+        Route::post('/challenges/{checkpoint}/summary', [TrailChallengeController::class, 'summary'])->whereUuid('checkpoint');
+        Route::post('/challenges/{checkpoint}/answer', [TrailChallengeController::class, 'answer'])->whereUuid('checkpoint');
+
+        Route::get('/exams/{exam}', [TrailExamController::class, 'exam'])->whereUuid('exam');
+        Route::post('/exams/{exam}/start', [TrailExamController::class, 'start'])->whereUuid('exam');
+        Route::post('/exams/{exam}/answer', [TrailExamController::class, 'answer'])->whereUuid('exam');
+        Route::post('/exams/{exam}/finish', [TrailExamController::class, 'finish'])->whereUuid('exam');
+    });
+
     // Ranking
     Route::get('/ranking', [RankingController::class, 'index']);
+
+    // Perfil público de quem está no ranking (pelo uuid, para ninguém listar os usuários por id)
+    Route::get('/profiles/{user:uuid}', [PublicProfileController::class, 'profile']);
+
+    // Configurações do perfil: descrição, conquistas no perfil público, e-mails de lembrete
+    Route::get('/settings', [SettingsController::class, 'show']);
+    Route::put('/settings/achievements', [SettingsController::class, 'updateAchievements']);
+    Route::put('/settings/emails', [SettingsController::class, 'updateEmails']);
 
     // Ofensiva (streak de dias consecutivos)
     Route::get('/streak', [StreakController::class, 'show']);

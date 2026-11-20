@@ -14,6 +14,25 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use League\CommonMark\Environment\Environment;
+use League\CommonMark\Extension\CommonMark\CommonMarkCoreExtension;
+use League\CommonMark\Extension\CommonMark\Node\Block\BlockQuote;
+use League\CommonMark\Extension\CommonMark\Node\Block\FencedCode;
+use League\CommonMark\Extension\CommonMark\Node\Block\Heading;
+use League\CommonMark\Extension\CommonMark\Node\Block\IndentedCode;
+use League\CommonMark\Extension\CommonMark\Node\Block\ListBlock;
+use League\CommonMark\Extension\CommonMark\Node\Block\ThematicBreak;
+use League\CommonMark\Extension\CommonMark\Node\Inline\Code;
+use League\CommonMark\Extension\CommonMark\Node\Inline\Emphasis;
+use League\CommonMark\Extension\CommonMark\Node\Inline\Strong;
+use League\CommonMark\Extension\GithubFlavoredMarkdownExtension;
+use League\CommonMark\Extension\Table\Table;
+use League\CommonMark\Extension\Table\TableSection;
+use League\CommonMark\Node\Block\Paragraph;
+use League\CommonMark\Node\Inline\Newline;
+use League\CommonMark\Node\Inline\Text;
+use League\CommonMark\Node\Node;
+use League\CommonMark\Parser\MarkdownParser;
 
 /**
  * Material de estudo (resumo + questões) gravado por agentes de IA.
@@ -487,6 +506,110 @@ class StudyMaterialService
             'html_input' => 'strip',
             'allow_unsafe_links' => false,
         ]);
+    }
+
+    /**
+     * O mesmo resumo de renderSummary(), em blocos para o app desenhar sem HTML: títulos,
+     * parágrafos, listas, citações, tabelas e linhas. O texto vem em trechos com o estilo
+     * (`bold`, `italic`, `code`); links viram texto e HTML embutido some, como no HTML.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function summaryBlocks(?string $markdown): array
+    {
+        $environment = new Environment(['html_input' => 'strip', 'allow_unsafe_links' => false]);
+        $environment->addExtension(new CommonMarkCoreExtension);
+        $environment->addExtension(new GithubFlavoredMarkdownExtension);
+
+        $document = (new MarkdownParser($environment))->parse($markdown ?? '');
+
+        return $this->markdownBlocks($document);
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    private function markdownBlocks(Node $parent): array
+    {
+        $blocks = [];
+
+        foreach ($parent->children() as $node) {
+            $block = match (true) {
+                $node instanceof Heading => ['type' => 'heading', 'level' => $node->getLevel(), 'inlines' => $this->markdownInlines($node)],
+                $node instanceof Paragraph => ['type' => 'paragraph', 'inlines' => $this->markdownInlines($node)],
+                $node instanceof ListBlock => [
+                    'type' => 'list',
+                    'ordered' => $node->getListData()->type === ListBlock::TYPE_ORDERED,
+                    'start' => $node->getListData()->start ?? 1,
+                    'items' => array_map(fn (Node $item) => $this->markdownBlocks($item), iterator_to_array($node->children(), false)),
+                ],
+                $node instanceof BlockQuote => ['type' => 'quote', 'blocks' => $this->markdownBlocks($node)],
+                $node instanceof Table => $this->markdownTable($node),
+                $node instanceof ThematicBreak => ['type' => 'rule'],
+                $node instanceof FencedCode, $node instanceof IndentedCode => ['type' => 'code', 'text' => rtrim($node->getLiteral())],
+                default => null,
+            };
+
+            // Parágrafo ou título que ficou vazio (só tinha HTML) não entra
+            if ($block !== null && ($block['inlines'] ?? null) !== []) {
+                $blocks[] = $block;
+            }
+        }
+
+        return $blocks;
+    }
+
+    /** @return array{type: 'table', head: array<int, mixed>, rows: array<int, mixed>} */
+    private function markdownTable(Table $table): array
+    {
+        $head = [];
+        $rows = [];
+
+        foreach ($table->children() as $section) {
+            foreach ($section->children() as $row) {
+                $cells = array_map(fn (Node $cell) => $this->markdownInlines($cell), iterator_to_array($row->children(), false));
+
+                if ($section instanceof TableSection && $section->isHead()) {
+                    $head = $cells;
+                } else {
+                    $rows[] = $cells;
+                }
+            }
+        }
+
+        return ['type' => 'table', 'head' => $head, 'rows' => $rows];
+    }
+
+    /**
+     * Trechos de texto com o estilo de cada um; trechos vizinhos com o mesmo estilo se juntam.
+     *
+     * @param  array<string, true>  $style
+     * @return array<int, array<string, mixed>>
+     */
+    private function markdownInlines(Node $parent, array $style = []): array
+    {
+        $spans = [];
+
+        foreach ($parent->children() as $node) {
+            $found = match (true) {
+                $node instanceof Text => [['text' => $node->getLiteral()] + $style],
+                $node instanceof Code => [['text' => $node->getLiteral(), 'code' => true] + $style],
+                $node instanceof Newline => [['text' => $node->getType() === Newline::HARDBREAK ? "\n" : ' '] + $style],
+                $node instanceof Strong => $this->markdownInlines($node, ['bold' => true] + $style),
+                $node instanceof Emphasis => $this->markdownInlines($node, ['italic' => true] + $style),
+                // Link, tachado e o que mais tiver texto dentro: só o texto. HTML embutido some.
+                default => $this->markdownInlines($node, $style),
+            };
+
+            foreach ($found as $span) {
+                $last = array_key_last($spans);
+                if ($last !== null && array_diff_key($spans[$last], ['text' => 1]) == array_diff_key($span, ['text' => 1])) {
+                    $spans[$last]['text'] .= $span['text'];
+                } else {
+                    $spans[] = $span;
+                }
+            }
+        }
+
+        return $spans;
     }
 
     /**

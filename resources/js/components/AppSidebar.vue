@@ -11,6 +11,7 @@ import AppLogo from './AppLogo.vue';
 
 const page = usePage();
 const isAdmin = computed(() => page.props.auth.user?.is_admin);
+const usesTrail = computed(() => page.props.auth.user?.uses_trail === true);
 
 const mainNavItems = computed(() => [
     {
@@ -18,7 +19,7 @@ const mainNavItems = computed(() => [
         href: '/play',
         iconPath: '/icons/livro.png',
     },
-    ...(isAdmin.value
+    ...(usesTrail.value
         ? [
             {
                 title: 'Beta',

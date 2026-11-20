@@ -21,6 +21,16 @@ class PublicProfileController extends Controller
      */
     public function show(Request $request, User $user): Response
     {
+        return Inertia::render('Profile/Show', $this->payload($request, $user));
+    }
+
+    /**
+     * Os dados do perfil, iguais para a web e para o app.
+     *
+     * @return array{profile: array<string, mixed>, achievements: mixed}
+     */
+    protected function payload(Request $request, User $user): array
+    {
         $names = preg_split('/\s+/', trim($user->name));
 
         // Mesma fonte da página Conquistas, para os números sempre baterem. As que a
@@ -30,7 +40,7 @@ class PublicProfileController extends Controller
             ->map(fn (array $progress) => Arr::only($progress, ['uuid', 'name', 'stars', 'badge_url', 'icon', 'color']))
             ->values();
 
-        return Inertia::render('Profile/Show', [
+        return [
             'profile' => [
                 'first_name' => $names[0],
                 'last_name' => count($names) > 1 ? end($names) : '',
@@ -40,6 +50,6 @@ class PublicProfileController extends Controller
                 'is_self' => $request->user()->is($user),
             ],
             'achievements' => $achievements,
-        ]);
+        ];
     }
 }

@@ -1,0 +1,39 @@
+<?php
+
+namespace App\Http\Controllers\Api\V1;
+
+use App\Http\Controllers\BetaPlayController;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+
+/**
+ * Mapa novo (quadrados de 4 fases) para o app. Os dados são os mesmos que a web recebe em
+ * /beta/play, montados pelos mesmos métodos; `fail` e `finish` são os da web, herdados.
+ */
+class TrailController extends BetaPlayController
+{
+    /** GET /v1/trail?before=&after= */
+    public function index(Request $request): JsonResponse
+    {
+        return response()->json($this->mapPayload($request->user(), $request));
+    }
+
+    /** GET /v1/trail/phases/{phaseId} */
+    public function phase(Request $request, int $phaseId): JsonResponse
+    {
+        $payload = $this->phasePayload($request->user(), $phaseId);
+
+        return is_array($payload) ? response()->json($payload) : self::refusal($payload);
+    }
+
+    /**
+     * Por que algo do mapa não abre, no formato que o app lê: `no_lives` (403) ou
+     * `unavailable` (409, bloqueado ou já sem nada a jogar).
+     */
+    public static function refusal(string $code): JsonResponse
+    {
+        return $code === 'no_lives'
+            ? response()->json(['message' => 'Você está sem vidas.', 'code' => 'no_lives'], 403)
+            : response()->json(['message' => 'Este passo do mapa não está disponível.', 'code' => 'unavailable'], 409);
+    }
+}

@@ -116,6 +116,7 @@ export interface BetaFailResponse {
     lost_life: boolean;
     lives: number;
     redirect_url: string | null;
+    out_of_lives: boolean;
 }
 
 export interface BetaFinishResponse {

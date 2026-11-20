@@ -27,6 +27,9 @@ class UserResource extends JsonResource
             'needs_onboarding' => $this->onboarding_completed_at === null,
             // Oferta de boas-vindas (15% no anual), para o banner do mapa. Nula fora das 24h.
             'welcome_offer' => app(OnboardingService::class)->welcomeOffer($this->resource),
+            // Qual mapa o app mostra: o novo, de quadrados (/v1/trail), ou o atual (/v1/play/map).
+            // Decidido por config('trail.audience').
+            'map_version' => $this->usesTrailMap() ? 'squares' : 'classic',
         ];
     }
 }

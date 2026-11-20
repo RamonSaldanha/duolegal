@@ -11,6 +11,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rules;
 
 class AuthController extends Controller
@@ -130,6 +131,7 @@ class AuthController extends Controller
         $validated = $request->validate([
             'name' => ['sometimes', 'string', 'max:255'],
             'email' => ['sometimes', 'string', 'email', 'max:255', 'unique:users,email,'.$request->user()->id],
+            'bio' => ['sometimes', 'nullable', 'string', 'max:160'],
         ]);
 
         $user = $request->user();
@@ -138,6 +140,11 @@ class AuthController extends Controller
         }
         if (isset($validated['email'])) {
             $user->email = $validated['email'];
+        }
+        // Descrição do perfil público: uma frase, como em Configurações da web
+        if (array_key_exists('bio', $validated)) {
+            $bio = Str::squish((string) $validated['bio']);
+            $user->bio = $bio === '' ? null : $bio;
         }
         $user->save();
 

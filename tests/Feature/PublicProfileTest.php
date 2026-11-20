@@ -240,7 +240,8 @@ test('uuid, descrição e conquistas escondidas ficam fora do JSON cru do usuár
         ->assertJsonMissingPath('hidden_achievements');
 });
 
-test('o ranking do site traz o uuid e o da API continua sem ele', function () {
+// O app ganhou o perfil público em 19/11/2026: o ranking da API passou a trazer o uuid também.
+test('o ranking do site e o da API trazem o uuid', function () {
     $top = User::factory()->create();
     $top->addXp(50, 'test');
     $user = User::factory()->create();
@@ -256,8 +257,9 @@ test('o ranking do site traz o uuid e o da API continua sem ele', function () {
 
     $this->getJson('/api/v1/ranking')
         ->assertOk()
-        ->assertJsonMissingPath('top_users.0.uuid')
-        ->assertJsonPath('top_users.0.id', $top->id);
+        ->assertJsonPath('top_users.0.uuid', $top->uuid)
+        ->assertJsonPath('top_users.0.id', $top->id)
+        ->assertJsonPath('top_users.1.uuid', $user->uuid);
 });
 
 test('o admin apaga a descrição e o admin vê o texto antes', function () {

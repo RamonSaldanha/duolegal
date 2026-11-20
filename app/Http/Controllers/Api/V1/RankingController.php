@@ -33,6 +33,8 @@ class RankingController extends Controller
 
             return [
                 'id' => $u->id,
+                // Abre o perfil público no app (/v1/profiles/{uuid})
+                'uuid' => $u->uuid,
                 'first_name' => $nameParts[0],
                 'last_name' => $nameParts[1] ?? '',
                 'xp' => (int) $u->total_xp,
@@ -49,6 +51,7 @@ class RankingController extends Controller
             $nameParts = explode(' ', $user->name, 2);
             $currentUserData = [
                 'id' => $user->id,
+                'uuid' => $user->uuid,
                 'first_name' => $nameParts[0],
                 'last_name' => $nameParts[1] ?? '',
                 'xp' => $currentUserXp,

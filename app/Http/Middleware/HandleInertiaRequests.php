@@ -59,6 +59,8 @@ class HandleInertiaRequests extends Middleware
                         'current_streak' => $request->user()->effectiveStreak(),
                         'avatar_config' => $request->user()->publicAvatarConfig(),
                         'is_admin' => $request->user()->isAdmin(),
+                        // Joga o mapa novo (config('trail.audience'))
+                        'uses_trail' => $request->user()->usesTrailMap(),
                         'has_infinite_lives' => $request->user()->hasActiveSubscription(),
                         // Informações de depuração apenas para administradores
                         'debug_info' => $request->user()->isAdmin() ? [

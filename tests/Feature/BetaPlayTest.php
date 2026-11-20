@@ -69,6 +69,14 @@ test('o mapa beta só abre para administradores', function () {
     expect($user->fresh()->lives)->toBe(5);
 });
 
+test('com TRAIL_AUDIENCE=everyone o mapa beta abre para todo mundo', function () {
+    config(['trail.audience' => 'everyone']);
+    betaLegislation(10);
+    $user = User::factory()->createOne(['lives' => 5]);
+
+    $this->actingAs($user)->get('/beta/play')->assertSuccessful();
+});
+
 test('o mapa beta junta 4 fases de 10 blocos em cada quadrado', function () {
     betaLegislation(85);
     $user = betaAdmin();

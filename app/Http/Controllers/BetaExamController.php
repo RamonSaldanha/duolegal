@@ -34,13 +34,27 @@ class BetaExamController extends BetaPlayController
 
     public function show(string $exam): Response|RedirectResponse
     {
-        $user = Auth::user();
+        $payload = $this->examPayload(Auth::user(), $exam);
+
+        return $payload === 'unavailable'
+            ? redirect()->route('beta.play.map')
+            : Inertia::render('BetaPlay/Exam', $payload);
+    }
+
+    /**
+     * Os dados do Dia da prova, ou 'unavailable' se ele ainda não abre (404 se não existe na
+     * trilha do usuário). Uma tentativa esquecida aberta com o prazo vencido é entregue antes.
+     *
+     * @return array<string, mixed>|'unavailable'
+     */
+    protected function examPayload(User $user, string $exam): array|string
+    {
         $found = $this->findExam($user, $exam);
 
         abort_if(! $found, 404);
 
         if (! in_array($found['state'], ['available', 'complete'], true)) {
-            return redirect()->route('beta.play.map');
+            return 'unavailable';
         }
 
         $questions = $this->questions($found);
@@ -55,7 +69,7 @@ class BetaExamController extends BetaPlayController
             return $row;
         });
 
-        return Inertia::render('BetaPlay/Exam', [
+        return [
             'exam' => [
                 'key' => $found['key'],
                 'section_number' => $found['section_number'],
@@ -69,7 +83,7 @@ class BetaExamController extends BetaPlayController
             ],
             // Prova em andamento: a tela volta direto nela, com o tempo que resta
             'attempt' => $row?->isRunning() ? $this->attemptPayload($user, $row, $questions) : null,
-        ]);
+        ];
     }
 
     /** Começa uma tentativa (ou devolve a que já está em andamento): sorteia a ordem e marca o prazo. */

@@ -50,8 +50,28 @@ class BetaPlayController extends LegislationPlayController
 
     public function betaMap(Request $request)
     {
-        $user = Auth::user();
+        return Inertia::render('BetaPlay/Map', $this->mapPayload(Auth::user(), $request));
+    }
 
+    public function betaPhase(int $phaseId)
+    {
+        $payload = $this->phasePayload(Auth::user(), $phaseId);
+
+        return match ($payload) {
+            'no_lives' => redirect()->route('play.nolives'),
+            'unavailable' => redirect()->route('beta.play.map'),
+            default => Inertia::render('BetaPlay/Phase', $payload),
+        };
+    }
+
+    /**
+     * O mapa: as etapas em volta da atual (mais `before`/`after` etapas, quando a tela pede).
+     * A web e a API do app recebem os mesmos dados.
+     *
+     * @return array<string, mixed>
+     */
+    protected function mapPayload(User $user, Request $request): array
+    {
         $sections = $this->forScreen($this->trail($user)['sections']);
 
         $currentIndex = 0;
@@ -68,7 +88,7 @@ class BetaPlayController extends LegislationPlayController
         $start = max(0, $currentIndex - $before);
         $end = min(count($sections), $currentIndex + $after + 1);
 
-        return Inertia::render('BetaPlay/Map', [
+        return [
             'sections' => array_slice($sections, $start, $end - $start),
             'hasMoreAbove' => $start > 0,
             'hasMoreBelow' => $end < count($sections),
@@ -76,22 +96,26 @@ class BetaPlayController extends LegislationPlayController
                 'before' => $before - self::SECTIONS_BEFORE,
                 'after' => $after - self::SECTIONS_AFTER,
             ],
-        ]);
+        ];
     }
 
-    public function betaPhase(int $phaseId)
+    /**
+     * Os dados da fase, ou por que ela não abre: 'no_lives' (sem vidas) ou 'unavailable'
+     * (bloqueada, inexistente ou sem desafio a jogar). A web e a API recebem os mesmos dados.
+     *
+     * @return array<string, mixed>|'no_lives'|'unavailable'
+     */
+    protected function phasePayload(User $user, int $phaseId): array|string
     {
-        $user = Auth::user();
-
         if (! $user->hasLives()) {
-            return redirect()->route('play.nolives');
+            return 'no_lives';
         }
 
         $trail = $this->trail($user);
         $phase = $this->findPlayablePhase($trail['phases'], $phaseId);
 
         if (! $phase) {
-            return redirect()->route('beta.play.map');
+            return 'unavailable';
         }
 
         [$stepNumber, $stepCount] = $this->positionInGroup($trail['sections'], $phaseId);
@@ -100,7 +124,7 @@ class BetaPlayController extends LegislationPlayController
         $pending = $this->blocksToPlay($user, $phase, $blocks);
 
         if ($pending->isEmpty()) {
-            return redirect()->route('beta.play.map');
+            return 'unavailable';
         }
 
         // Blocos anteriores da mesma lei, para rolar o texto para cima (como no /play)
@@ -124,7 +148,7 @@ class BetaPlayController extends LegislationPlayController
             ->where('char_start', '<', $earlier->first()->char_start)
             ->exists();
 
-        return Inertia::render('BetaPlay/Phase', [
+        return [
             'legislation' => ['uuid' => $legislation->uuid, 'title' => $legislation->title],
             'phaseId' => $phaseId,
             // Passo dentro do quadrado; o desafio, quando o quadrado tem material, é o último
@@ -136,7 +160,7 @@ class BetaPlayController extends LegislationPlayController
             'phaseBlocks' => $blocks->map(fn ($block) => $this->formatSegmentWithProgress($block, $progress))->values(),
             'earlierBlocks' => $earlier->map(fn ($block) => $this->formatSegmentWithProgress($block, $progress))->values(),
             'hasMoreAbove' => $hasMoreAbove,
-        ]);
+        ];
     }
 
     /**
@@ -158,6 +182,8 @@ class BetaPlayController extends LegislationPlayController
             'lost_life' => $lostLife,
             'lives' => $user->lives,
             'redirect_url' => $outOfLives ? route('play.nolives') : null,
+            // Para o app, que não segue redirect_url
+            'out_of_lives' => $outOfLives,
         ]);
     }
 
