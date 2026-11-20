@@ -26,9 +26,8 @@ Route::middleware(['auth'])->prefix('play')->group(function () {
     Route::post('reward-life', [PlayController::class, 'rewardLife'])->name('play.reward-life');
 });
 
-// Mapa beta (quadrados com várias fases): só para quem config('trail.audience') libera
-// (administradores, por padrão); não substitui o /play
-Route::middleware(['auth', 'trail'])->prefix('beta/play')->group(function () {
+// Mapa beta (quadrados com várias fases) — em teste, só para administradores; não substitui o /play
+Route::middleware(['auth', 'admin'])->prefix('beta/play')->group(function () {
     Route::get('/', [BetaPlayController::class, 'betaMap'])->name('beta.play.map');
     Route::get('phase/{phaseId}', [BetaPlayController::class, 'betaPhase'])->where('phaseId', '[0-9]+')->name('beta.play.phase');
     Route::post('fail', [BetaPlayController::class, 'betaFail'])->name('beta.play.fail');

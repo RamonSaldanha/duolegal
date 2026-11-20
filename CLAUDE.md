@@ -130,11 +130,11 @@ Resumo em markdown + questões no estilo de banca, escritos por um agente de IA 
 
 ### Mapa novo no app (API `/trail`)
 
-O app (`memorize-mobile`) joga o mapa beta pelas rotas `/api/v1/trail` (`routes/api.php`): mapa, fase, `fail`, `finish`, desafio do quadrado e Dia da prova.
+No app novo (`memorize-mobile`), o mapa beta é o único mapa, jogado pelas rotas `/api/v1/trail` (`routes/api.php`): mapa, fase, `fail`, `finish`, desafio do quadrado e Dia da prova.
 
 - **Mesma regra da web:** `Api\V1\TrailController`, `TrailChallengeController` e `TrailExamController` herdam os controllers do beta. Os dados saem de `mapPayload`, `phasePayload`, `checkpointPayload` e `examPayload`, que a web também usa; as rotas JSON (`betaFail`, `betaFinish`, `summary`, `answer`, `start`, `finish`) são as mesmas. Mudou a regra no beta, vale para o app.
-- **Quem vê:** `config('trail.audience')` (`TRAIL_AUDIENCE=admins|everyone`, padrão `admins`), pelo middleware `trail`. Vale para `/beta/play` na web e para a API. `/me` manda `map_version` (`squares` ou `classic`) e o app mostra o mapa que o servidor mandar. Virar para `everyone` libera nos dois sem build nova.
-- **Recusas em JSON:** onde a web redireciona, a API responde `403 no_lives`, `409 unavailable` ou `403 trail_disabled`.
+- **Quem vê:** pela API, todo aluno logado (quem instalou o app novo já está no mapa novo). Na web, `/beta/play` segue só para administradores (middleware `admin`) e o `/play` continua sendo o mapa dos alunos.
+- **Recusas em JSON:** onde a web redireciona, a API responde `403 no_lives` ou `409 unavailable`.
 - **Resumo:** o desafio da API manda também `summary_blocks` (`StudyMaterialService::summaryBlocks`), o resumo em blocos tirado da mesma árvore do CommonMark, para o app desenhar e fazer a leitura guiada.
 - **App antigo:** as rotas `/api/v1/play/*` continuam; quem tem build antiga segue no mapa atual.
 

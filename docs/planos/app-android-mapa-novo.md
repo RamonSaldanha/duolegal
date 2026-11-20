@@ -8,10 +8,12 @@ Native).
 - O app passa a ter tudo o que a web tem para o aluno, incluindo o mapa novo e os badges com
   estrelas. Isso inclui o perfil público, que antes era só do site.
 - Sem sistema de atualização fora da loja. O registro na Play Store vem depois.
+- O app novo já vem com o mapa novo para todos, no lugar do mapa antigo. Sem chave no servidor:
+  a barreira é instalar o APK novo. Na web, o beta segue só para administradores.
 
 ## Status (19/11/2026, fim do dia)
 
-Passos 1 a 5 feitos, sem commit, nas branches `claude/mobile-web-feature-comparison-*` dos dois
+Passos 1 a 5 feitos, nas branches `claude/mobile-web-feature-comparison-*` dos dois
 repositórios. API: Pest passa (268; os 2 que falham, exportar CSV do admin e dashboard, testam
 código que não mudou). App: `tsc` e o pacote Android (`expo export`) passam. **Falta jogar no
 celular**: nada disso foi aberto num aparelho ou emulador.
@@ -41,14 +43,15 @@ e-mail (abrem no navegador), desafios entre amigos (não aparecem no menu da web
 
 ## Quem vê o mapa novo
 
-Uma chave no servidor, `TRAIL_AUDIENCE=admins|everyone` (padrão `admins`), vale para a web e para
-o app. `/me` ganha `map_version: "squares" | "classic"`; o app mostra o mapa que o servidor mandar.
-Virar para `everyone` libera para todo mundo sem build nova.
+No app novo, todo mundo: é o único mapa dele, e o mapa antigo saiu do app. As rotas `/trail` da API
+abrem para qualquer aluno logado. Builds antigas seguem no `/play`, que continua no servidor. Na
+web nada muda: `/beta/play` só para administradores. (Chegou a existir uma chave `TRAIL_AUDIENCE`
+para isso; saiu no mesmo dia, por não ser necessária.)
 
 ## Ordem
 
 1. **App:** mesclar `avatar-mobile`.
-2. **API do mapa novo** (`routes/api.php`, `v1`, `auth:sanctum` + a chave):
+2. **API do mapa novo** (`routes/api.php`, `v1`, `auth:sanctum`):
 
    | Rota | Faz |
    |---|---|

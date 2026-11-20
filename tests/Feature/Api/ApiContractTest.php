@@ -14,9 +14,9 @@ uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
  * cada entrada do ranking — sempre por publicAvatarConfig(). O model continua
  * escondendo o campo, então `/api/user` e quem serializa o User inteiro não o
  * recebem. O onboarding do app entrou do mesmo jeito: `needs_onboarding` e
- * `welcome_offer` só no UserResource, nunca no User serializado. Depois vieram
- * `map_version` em /me (qual mapa o app mostra) e o `uuid` no ranking (abre o
- * perfil público). Mudou um desses campos? Estes testes quebram.
+ * `welcome_offer` só no UserResource, nunca no User serializado. Depois veio o
+ * `uuid` no ranking (abre o perfil público). Mudou um desses campos? Estes
+ * testes quebram.
  */
 function userWithAvatar(): User
 {
@@ -46,7 +46,6 @@ test('GET /api/v1/me devolve exatamente estes campos', function () {
         'avatar_config',
         'needs_onboarding',
         'welcome_offer',
-        'map_version',
     ]);
 });
 

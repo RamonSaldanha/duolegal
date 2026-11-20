@@ -22,7 +22,6 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->validateCsrfTokens(except: ['emails/sair/*']);
         $middleware->alias([
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
-            'trail' => \App\Http\Middleware\EnsureTrailAccess::class,
             'stripe' => \App\Http\Middleware\StripeWebhookMiddleware::class,
             'study-materials.agent' => \App\Http\Middleware\StudyMaterialAgent::class,
         ]);

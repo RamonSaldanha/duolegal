@@ -40,7 +40,6 @@ export interface User {
     xp?: number;
     has_infinite_lives?: boolean;
     is_admin?: boolean;
-    uses_trail?: boolean;
     debug_info?: {
         has_active_subscription: boolean;
         on_trial: boolean;

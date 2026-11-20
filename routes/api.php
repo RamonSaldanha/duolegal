@@ -65,9 +65,9 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'throttle:120,1'])->group(funct
     Route::get('/play/preferences', [PlayController::class, 'preferences']);
     Route::put('/play/preferences', [PlayController::class, 'savePreferences']);
 
-    // Mapa novo (quadrados de 4 fases): os mesmos dados de /beta/play na web, para quem
-    // config('trail.audience') libera. `map_version` em /me diz ao app qual mapa mostrar.
-    Route::middleware('trail')->prefix('trail')->group(function () {
+    // Mapa novo (quadrados de 4 fases): o mapa do app novo, para todo aluno. Os dados são os
+    // de /beta/play na web (que segue só para administradores). O app antigo usa /play.
+    Route::prefix('trail')->group(function () {
         Route::get('/', [TrailController::class, 'index']);
         Route::get('/phases/{phaseId}', [TrailController::class, 'phase'])->where('phaseId', '[0-9]+');
         Route::post('/fail', [TrailController::class, 'betaFail']);

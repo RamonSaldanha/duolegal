@@ -11,7 +11,8 @@ use Laravel\Sanctum\Sanctum;
 
 // Mapa novo pela API do app (/api/v1/trail). As regras são as da web (testadas em
 // BetaPlayTest, BetaCheckpointTest e BetaExamTest); aqui se confere que o app recebe os
-// mesmos dados, que os recusos chegam em JSON com código e que a chave TRAIL_AUDIENCE vale.
+// mesmos dados, que as recusas chegam em JSON com código e que qualquer aluno joga pelo app
+// (na web, o /beta/play segue só para administradores).
 
 /** Lei com $blocks blocos de 1 lacuna cada (a fase precisa de lacuna para ser vencida). */
 function trailLegislation(int $blocks): Legislation
@@ -42,10 +43,10 @@ function trailLegislation(int $blocks): Legislation
     return $legislation;
 }
 
-/** Quem joga pelo app nos testes: admin (a chave padrão libera só eles), com vidas. */
+/** Quem joga pelo app nos testes: um aluno comum, com vidas. */
 function trailPlayer(array $attributes = []): User
 {
-    $user = studyAdmin($attributes + ['lives' => 5]);
+    $user = User::factory()->createOne($attributes + ['lives' => 5]);
     Sanctum::actingAs($user);
 
     return $user;
@@ -72,26 +73,16 @@ function trailKey(Legislation $legislation, int $block): string
     return LegislationSegment::findOrFail(studyBlockIds($legislation)[$block])->uuid;
 }
 
-test('a chave TRAIL_AUDIENCE decide quem recebe o mapa novo', function () {
+test('qualquer aluno joga o mapa novo pelo app; na web ele segue só para administradores', function () {
     trailLegislation(10);
-    $user = User::factory()->createOne(['lives' => 5]);
-    Sanctum::actingAs($user);
+    $user = trailPlayer();
 
-    $this->getJson('/api/v1/me')->assertJsonPath('map_version', 'classic');
-    $this->getJson('/api/v1/trail')
-        ->assertForbidden()
-        ->assertJsonPath('code', 'trail_disabled');
-
-    config(['trail.audience' => 'everyone']);
-
-    $this->getJson('/api/v1/me')->assertJsonPath('map_version', 'squares');
     $this->getJson('/api/v1/trail')->assertOk();
+    $this->actingAs($user)->get('/beta/play')->assertRedirect(route('play.map'));
 });
 
-test('administrador recebe o mapa novo por padrão', function () {
-    trailPlayer();
-
-    $this->getJson('/api/v1/me')->assertJsonPath('map_version', 'squares');
+test('o mapa novo pelo app exige login', function () {
+    $this->getJson('/api/v1/trail')->assertUnauthorized();
 });
 
 test('o mapa chega com etapas, quadrados, desafio e prova, sem campos internos', function () {
