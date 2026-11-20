@@ -60,6 +60,7 @@ class DisciplineController extends Controller
             ->get()
             ->map(fn (Discipline $discipline) => array_merge($discipline->toArray(), [
                 'badge_url' => $this->stars->badgeUrl($discipline, DisciplineStarService::MAX_STARS),
+                'badge_outdated' => $discipline->badgeOutdated(),
             ]));
 
         return Inertia::render('admin/Disciplines/Index', [
@@ -152,6 +153,16 @@ class DisciplineController extends Controller
 
         return redirect()->route('admin.disciplines.index')
             ->with('success', 'Disciplina atualizada com sucesso.');
+    }
+
+    /** Só as imagens do badge, desenhadas de novo no navegador (botão "Redesenhar" da lista). */
+    public function redrawBadge(Request $request, Discipline $discipline)
+    {
+        $validated = $request->validate($this->badgeRules(required: true));
+
+        $this->saveBadge($discipline, $request, $validated);
+
+        return back();
     }
 
     public function destroy(Discipline $discipline)

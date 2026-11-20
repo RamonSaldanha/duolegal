@@ -48,6 +48,17 @@ class Discipline extends Model
         return 'uuid';
     }
 
+    /**
+     * Início do estilo chapado dos badges (20/11/2026). Imagens geradas no admin antes disso têm
+     * a arte antiga e são redesenhadas pelo botão da lista de disciplinas.
+     */
+    public const BADGE_STYLE_SINCE = 1795143600;
+
+    public function badgeOutdated(): bool
+    {
+        return $this->badge_version !== null && $this->badge_version < self::BADGE_STYLE_SINCE;
+    }
+
     /** Pasta, no disco local, das imagens geradas pelo admin. */
     public function badgeImagesDirectory(): string
     {

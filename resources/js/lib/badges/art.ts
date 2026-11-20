@@ -1,17 +1,17 @@
 // @ts-nocheck
 /* eslint-disable */
-// Copiado do Ateliê de Badges (artefato no claude.ai), sem a sombra externa do brasão.
+// Copiado do Ateliê de Badges (artefato no claude.ai), estilo chapado.
 // Mude a arte lá e copie de novo; aqui só os exports são próprios deste arquivo.
 import { FONT_B64 } from './font';
 
 /* ---------- Paletas ---------- */
 const SHIELD_SWATCHES = [
-  ["Roxo", "#7d6cf2"], ["Turquesa", "#2fc4b6"], ["Coral", "#f2583e"], ["Verde", "#3cc45a"],
-  ["Laranja", "#ffa42b"], ["Azul", "#3d8bf2"], ["Vinho", "#b8325a"], ["Prata", "#b4bccf"]
+  ["Verde-água", "#2E9D94"], ["Azul", "#4C7BE8"], ["Roxo", "#9B5CF6"], ["Terracota", "#E0805F"],
+  ["Manteiga", "#F0DFA0"], ["Vermelho", "#E8505B"], ["Verde", "#3FB06A"], ["Marinho", "#34306A"]
 ];
 const RIBBON_SWATCHES = [
-  ["Rosa", "#f23d9c"], ["Laranja", "#ff7a1f"], ["Amarelo", "#ffc21a"], ["Vermelho", "#f0364a"],
-  ["Turquesa", "#22cfc0"], ["Azul", "#3b82f6"], ["Roxo", "#8b5cf6"], ["Verde", "#2fbf6b"]
+  ["Roxo", "#9B5CF6"], ["Verde-água", "#2E9D94"], ["Terracota", "#E0805F"], ["Manteiga", "#F0DFA0"],
+  ["Vermelho", "#E8505B"], ["Azul", "#4C7BE8"], ["Verde", "#3FB06A"], ["Marinho", "#34306A"]
 ];
 
 /* ---------- Cor ---------- */
@@ -669,7 +669,7 @@ function starsSVG(u, n) {
   return `<g filter="url(#${u}-ds)">${out.join("")}</g>`;
 }
 
-function badgeSVG(b, u, standalone = false) {
+function badgeSVGLegacy(b, u, standalone = false) {
   const sh = validHex(b.shield, "#7d6cf2"), rb = validHex(b.ribbon, "#f23d9c");
   const S = {
     ext: adj(sh, -0.22, 0.02), rimA: adj(sh, 0.07), rimB: adj(sh, -0.1, 0.05),
@@ -700,11 +700,12 @@ function badgeSVG(b, u, standalone = false) {
     <linearGradient id="${u}-band" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${R.top}"/><stop offset=".5" stop-color="${R.mid}"/><stop offset="1" stop-color="${R.bot}"/></linearGradient>
     <linearGradient id="${u}-tail" x1="1" y1="0" x2="0" y2="0"><stop offset="0" stop-color="${R.fold}"/><stop offset=".42" stop-color="${R.tailB}"/><stop offset="1" stop-color="${R.tailA}"/></linearGradient>
     <clipPath id="${u}-fc"><path d="${face}"/></clipPath>
+    <filter id="${u}-bs" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="7" stdDeviation="6" flood-color="#07062a" flood-opacity=".45"/></filter>
     <filter id="${u}-ds" x="-25%" y="-25%" width="150%" height="160%"><feDropShadow dx="0" dy="3" stdDeviation="2.6" flood-color="#0b0a33" flood-opacity=".33"/></filter>
     <path id="${u}-tp" d="M18,151 Q120,171 222,151"/>
     <linearGradient id="${u}-star" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff3a6"/><stop offset=".45" stop-color="#ffcb1f"/><stop offset="1" stop-color="#f59a0c"/></linearGradient>
   </defs>
-  <g>
+  <g filter="url(#${u}-bs)">
     <path d="${ext}" fill="${S.ext}"/>
     <path d="${outer}" fill="url(#${u}-rim)"/>
     <path d="${outer}" fill="none" stroke="url(#${u}-edge)" stroke-width="2.2"/>
@@ -729,5 +730,455 @@ function badgeSVG(b, u, standalone = false) {
   </g>
 </svg>`;
 }
+
+/* ---------- Estilo chapado (flat), alinhado às ilustrações do site ---------- */
+function lum(hex) {
+  const v = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255).map(c => c <= .03928 ? c / 12.92 : Math.pow((c + .055) / 1.055, 2.4));
+  return .2126 * v[0] + .7152 * v[1] + .0722 * v[2];
+}
+function illusConstFlat(u) {
+  const W = "#F6F7FB", S1 = "#DCE1EC", S2 = "#C3CADB", NV = "#262245";
+  const tower = x => `<rect x="${x}" y="20" width="14" height="80" rx="1.5" fill="${W}"/>
+    <rect x="${x + 9.5}" y="20" width="4.5" height="80" fill="${S1}"/>
+    ${Array.from({ length: 12 }, (_, i) => `<rect x="${x + 2.5}" y="${25.2 + i * 6}" width="6" height="1.6" rx=".8" fill="${S2}"/>`).join("")}`;
+  return `
+    <rect x="195.2" y="24" width="3.4" height="96" rx="1.7" fill="${S1}"/>
+    <circle cx="196.9" cy="23" r="3" fill="#FFC533"/>
+    <g transform="translate(198.6 27)">
+      <path d="M0,0 Q9,-4 18,0 T36,0 L36,23 Q27,19 18,23 T0,23 Z" fill="#2FA35B"/>
+      <path d="M18,3.6 L32,11.5 L18,19.4 L4,11.5 Z" fill="#FFC533"/>
+      <circle cx="18" cy="11.5" r="5" fill="#2F4FB5"/>
+      <path d="M13.2,10.7 Q18,9 22.8,12.3 L22.6,13.6 Q18,10.6 13.4,12 Z" fill="${W}"/>
+    </g>
+    ${tower(103)}${tower(123)}
+    <rect x="116" y="46" width="8" height="9" fill="${S1}"/>
+    <rect x="46" y="118" width="148" height="15" rx="2" fill="${S1}"/>
+    ${Array.from({ length: 11 }, (_, i) => `<rect x="${54 + i * 12.6}" y="122.5" width="7" height="7" rx="1.4" fill="${S2}"/>`).join("")}
+    <rect x="36" y="100" width="168" height="19" rx="3" fill="${W}"/>
+    <rect x="36" y="113" width="168" height="6" rx="0" fill="${S1}"/>
+    <path d="M47,100.5 A27,22 0 0 1 101,100.5 Z" fill="${W}"/>
+    <path d="M74,78.5 A27,22 0 0 1 101,100.5 L74,100.5 Z" fill="${S1}"/>
+    <path d="M138,78 Q140,100.5 166,100.5 Q192,100.5 194,78 Z" fill="${W}"/>
+    <path d="M166,100.5 Q192,100.5 194,78 L166,78 Z" fill="${S1}"/>
+    <ellipse cx="166" cy="78" rx="28" ry="5.4" fill="${S2}"/>
+    <ellipse cx="166" cy="79.2" rx="23" ry="3.2" fill="#AEB6CB"/>
+`;
+}
+function badgeSVG(b, u, standalone = false) {
+  const sh = validHex(b.shield, "#2E9D94"), rb = validHex(b.ribbon, "#9B5CF6");
+  const S = { rim: sh, face: adj(sh, 0.06, -0.02), base: adj(sh, -0.14, 0.02) };
+  const R = { band: rb, tail: adj(rb, -0.1, -0.12), fold: adj(rb, -0.18, -0.12) };
+  const txt = lum(rb) > 0.4 ? "#262245" : "#FFFFFF";
+  const text = (b.text || "").trim(), fs = fitSize(text);
+  const outer = roundPoly(hexPts(120, 106, 86), 14), ext = roundPoly(hexPts(120, 113, 86), 14), face = roundPoly(hexPts(120, 106, 70), 10);
+  const tail = "M-39,-16 L20,-16 L20,16 L-39,16 L-26,0 Z";
+  const tailG = `<g transform="translate(48 163) rotate(-60)"><path d="${tail}" fill="${R.tail}"/></g>`;
+  const n = clamp(parseInt(b.stars, 10) || 0, 0, 5);
+  let stars = "";
+  for (let i = 0; i < n; i++) {
+    const x = 120 + (i - (n - 1) / 2) * 23, dx = (x - 120) / 42, y = 194 - dx * dx * 7;
+    const big = n % 2 === 1 && i === (n - 1) / 2, R2 = big ? 11 : 9.6;
+    stars += `<path d="${starPath(x, y, R2)}" fill="#FFC533" stroke="#FFC533" stroke-width="2.4" stroke-linejoin="round"/>`;
+  }
+  const flatIcon = FLAT_ICONS[b.icon];
+  const legacy = ICONS[b.icon] || ICONS.penal;
+  const fontCss = standalone ? `<style>@font-face{font-family:"Fredoka";font-weight:600;src:url(data:font/woff2;base64,${FONT_B64}) format("woff2");}</style>` : "";
+  const sizeAttr = standalone ? ' width="1024" height="1024"' : "";
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240"${sizeAttr}>${fontCss}
+    <defs><path id="${u}-tp" d="M18,151 Q120,171 222,151"/>
+      <filter id="${u}-ds" x="-25%" y="-25%" width="150%" height="160%"><feDropShadow dx="0" dy="3" stdDeviation="2.6" flood-color="#0b0a33" flood-opacity=".33"/></filter></defs>
+    <path d="${ext}" fill="${S.base}"/>
+    <path d="${outer}" fill="${S.rim}"/>
+    <path d="${face}" fill="${S.face}"/>
+    ${flatIcon ? flatIcon(u) : legacy.draw(u)}
+    ${tailG}<g transform="translate(240 0) scale(-1 1)">${tailG}</g>
+    <path d="M32,166 L52,170.6 L32,171.5 Z" fill="${R.fold}"/>
+    <path d="M208,166 L188,170.6 L208,171.5 Z" fill="${R.fold}"/>
+    <path d="M32,135 Q120,156 208,135 L208,166 Q120,187 32,166 Z" fill="${R.band}"/>
+    <text font-family="Fredoka, sans-serif" font-weight="600" font-size="${fs}" letter-spacing=".4" text-anchor="middle" dy=".36em" fill="${txt}"><textPath href="#${u}-tp" startOffset="50%">${esc(text)}</textPath></text>
+    ${stars}
+  </svg>`;
+}
+
+/* Paleta chapada comum */
+const F = { W: "#F6F7FB", S1: "#DCE1EC", S2: "#C3CADB", S3: "#A9B2C8", NV: "#262245", Y: "#FFC533", R: "#E8505B", RD: "#B83A47", G: "#2FA35B", GD: "#23864A" };
+
+function illusPenalFlat(u) {
+  // Cela: janela de pedra com grades, céu noturno com lua, e algema presa numa barra
+  const arch = (x0, x1, top, bot) => { const r = (x1 - x0) / 2, cy = top + r; return `M${x0},${bot} L${x0},${cy} A${r},${r} 0 0 1 ${x1},${cy} L${x1},${bot} Z`; };
+  const bars = [97, 112.2, 127.4, 142.6];
+  return `
+    <defs><clipPath id="${u}-win"><path d="${arch(82, 158, 36, 116)}"/></clipPath></defs>
+    <g transform="translate(0 16)">
+    <path d="${arch(70, 170, 24, 118)}" fill="${F.S1}"/>
+    <path d="M120,24 A50,50 0 0 1 170,74 L170,118 L158,118 L158,74 A38,38 0 0 0 120,36 Z" fill="${F.S2}"/>
+    <g fill="${F.S2}">
+      <rect x="70" y="92" width="12" height="3"/><rect x="70" y="106" width="12" height="3"/>
+      <rect x="158" y="86" width="12" height="3" fill="${F.S3}"/><rect x="158" y="102" width="12" height="3" fill="${F.S3}"/>
+    </g>
+    ${[150, 120, 90, 60, 30].map(d => { const r = d * Math.PI / 180, c = Math.cos(r), sn = Math.sin(r); return `<line x1="${(120 + 38 * c).toFixed(1)}" y1="${(74 - 38 * sn).toFixed(1)}" x2="${(120 + 50 * c).toFixed(1)}" y2="${(74 - 50 * sn).toFixed(1)}" stroke="${d > 90 ? F.S2 : F.S3}" stroke-width="2.6"/>`; }).join("")}
+    <path d="${arch(82, 158, 36, 116)}" fill="${F.S3}"/>
+    <g clip-path="url(#${u}-win)">
+      <path d="${arch(87, 163, 41, 121)}" fill="${F.NV}"/>
+      <circle cx="117" cy="55" r="11" fill="${F.Y}"/>
+      <circle cx="122.5" cy="51" r="9.6" fill="${F.NV}"/>
+      ${[[138, 50, 2.2], [150, 66, 1.6], [122, 47, 1.4], [146, 88, 1.3], [96, 82, 1.5]].map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${F.Y}"/>`).join("")}
+      ${bars.map(x => `<rect x="${x - 3.2}" y="30" width="6.4" height="90" fill="${F.S1}"/><rect x="${x}" y="30" width="3.2" height="90" fill="${F.S2}"/>`).join("")}
+      <rect x="80" y="70" width="80" height="5.5" fill="${F.S1}"/><rect x="80" y="73" width="80" height="2.5" fill="${F.S2}"/>
+    </g>
+    <rect x="62" y="113" width="116" height="9" rx="2" fill="${F.W}"/>
+    <rect x="62" y="119" width="116" height="5" rx="2" fill="${F.S1}"/>
+    <g transform="translate(0 -16)">
+    <ellipse cx="142.6" cy="82" rx="11" ry="4" fill="none" stroke="${F.S3}" stroke-width="4.2"/>
+    <rect x="139.4" y="76" width="6.4" height="12" fill="${F.S1}"/><rect x="142.6" y="76" width="3.2" height="12" fill="${F.S2}"/>
+    <path d="M131.6,82 A11,4 0 0 0 153.6,82" fill="none" stroke="${F.W}" stroke-width="4.2" stroke-linecap="round"/>
+    <rect x="138.6" y="84.4" width="8" height="8.6" rx="2.4" fill="${F.S2}"/>
+    <circle cx="142.6" cy="88.4" r="1.3" fill="${F.NV}"/>
+    ${[[96, 2.2, 3], [100.8, 1, 3], [105.6, 2.2, 3]].map(([y, rx, ry]) => `<ellipse cx="142.6" cy="${y}" rx="${rx}" ry="${ry}" fill="none" stroke="${F.S3}" stroke-width="1.9"/>`).join("")}
+    <rect x="138.1" y="108.4" width="9" height="9" rx="2.6" fill="${F.S2}"/>
+    <circle cx="142.6" cy="112.4" r="1.3" fill="${F.NV}"/>
+    <circle cx="142.6" cy="127.4" r="11" fill="none" stroke="${F.W}" stroke-width="5.8"/>
+    <path d="M153.6,127.4 A11,11 0 0 1 134.8,135.2" fill="none" stroke="${F.S2}" stroke-width="5.8"/>
+    </g>
+    </g>
+  `;
+}
+
+function illusCivilFlat(u) {
+  // Contrato assinado com lacre + caneta-tinteiro, chapado
+  const lumps = Array.from({ length: 10 }, (_, i) => {
+    const a = i * 36 * Math.PI / 180; return `<circle cx="${(142 + 12.6 * Math.cos(a)).toFixed(1)}" cy="${(120 + 12.6 * Math.sin(a)).toFixed(1)}" r="4.6"/>`;
+  }).join("");
+  const paper = "M70,38 H138 L158,58 V134 Q158,140 152,140 H70 Q64,140 64,134 V44 Q64,38 70,38 Z";
+  return `
+    <g transform="rotate(5 112 90)"><path d="${paper}" fill="${F.S1}"/></g>
+    <g transform="rotate(-9 112 90)">
+      <path d="${paper}" fill="#FFFFFF"/>
+      <path d="M138,38 L138,52 Q138,58 144,58 L158,58 Z" fill="${F.S1}"/>
+      <rect x="74" y="50" width="44" height="6.5" rx="3.2" fill="${F.NV}"/>
+      <rect x="74" y="65" width="74" height="4" rx="2" fill="${F.S1}"/>
+      <rect x="74" y="74" width="66" height="4" rx="2" fill="${F.S1}"/>
+      <rect x="74" y="83" width="74" height="4" rx="2" fill="${F.S1}"/>
+      <rect x="74" y="92" width="48" height="4" rx="2" fill="${F.S1}"/>
+      <rect x="74" y="120" width="48" height="1.8" rx=".9" fill="${F.S2}"/>
+      <path d="M76,116 c5,-11 10,-9 8,-1 s6,-12 10,-6 s3,7 9,-2 s7,-4 15,1" fill="none" stroke="#4C7BE8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+      <g fill="${F.R}">${lumps}<circle cx="142" cy="120" r="13.5"/></g>
+      <circle cx="142" cy="120" r="9" fill="${F.RD}"/>
+      <circle cx="142" cy="120" r="7" fill="${F.R}"/>
+      <text x="142" y="120" dy=".36em" text-anchor="middle" font-family="Fredoka, sans-serif" font-weight="600" font-size="10" fill="${F.RD}">§</text>
+    </g>
+    <g transform="translate(117 109) rotate(-48)">
+      <path d="M0,0 L18,-6.8 Q22.5,0 18,6.8 Z" fill="${F.Y}"/>
+      <path d="M0,0 L18,0 L18,6.8 Q22.5,0 18,6.8 Z M0,0 L18,6.8 L18,0 Z" fill="#E5A91F"/>
+      <rect x="2.5" y="-.6" width="11.5" height="1.2" rx=".6" fill="#9A6A10"/>
+      <circle cx="14.5" cy="0" r="1.5" fill="#9A6A10"/>
+      <rect x="17" y="-8" width="16" height="16" rx="3" fill="${F.NV}"/>
+      <rect x="35" y="-10.5" width="85" height="21" rx="10.5" fill="#4C7BE8"/>
+      <path d="M35,0 L120,0 L120,0 A10.5,10.5 0 0 1 109.5,10.5 L45.5,10.5 A10.5,10.5 0 0 1 35,0 Z" fill="#3A63C8"/>
+      <rect x="31" y="-10.5" width="6" height="21" rx="2" fill="${F.Y}"/>
+      <rect x="80" y="-11" width="6" height="22" rx="2" fill="${F.Y}"/>
+      <rect x="86" y="-14" width="27" height="4.2" rx="2.1" fill="${F.Y}"/>
+      <circle cx="111" cy="-11.6" r="2.8" fill="${F.Y}"/>
+      <ellipse cx="118.5" cy="0" rx="2.2" ry="7" fill="#E5A91F"/>
+    </g>`;
+}
+
+function illusConsumidorFlat(u) {
+  // Sacola de compras + etiqueta + escudo do CDC, chapado
+  const shield = "M0,-29 Q14,-23 27,-25 L27,1 Q27,21 0,31 Q-27,21 -27,1 L-27,-25 Q-14,-23 0,-29 Z";
+  const inner = "M0,-24 Q11.5,-19 22.5,-20.6 L22.5,1 Q22.5,17.4 0,25.8 Q-22.5,17.4 -22.5,1 L-22.5,-20.6 Q-11.5,-19 0,-24 Z";
+  const BAG = "#E0805F", BAGD = "#C4664A", BAGI = "#8E4A36";
+  return `
+    <path d="M88,59 C88,24 100,22 106,22 C114,22 124,26 124,59" fill="none" stroke="${BAGI}" stroke-width="5" stroke-linecap="round"/>
+    <path d="M60,64 L80,57 L148,57 L128,64 Z" fill="${BAGI}"/>
+    <path d="M128,64 L148,57 L148,139 L128,144 Z" fill="${BAGD}"/>
+    <path d="M128,64 L148,57 L138,74 Z" fill="#A9533B"/>
+    <rect x="136.8" y="74" width="2.4" height="67" fill="#B05A40"/>
+    <rect x="60" y="64" width="68" height="80" rx="3" fill="${BAG}"/>
+    <g transform="translate(94 104)" fill="none" stroke="#FFFFFF" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M-17,-13 L-11,-13 L-6,6 L13,6 L17,-7 L-9,-7"/>
+      <circle cx="-3" cy="13" r="2.8" fill="#FFFFFF" stroke="none"/><circle cx="10" cy="13" r="2.8" fill="#FFFFFF" stroke="none"/>
+    </g>
+    <path d="M76,66 C76,29 88,27 94,27 C102,27 112,31 112,66" fill="none" stroke="#A9533B" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="76" cy="69" r="2.4" fill="${BAGI}"/><circle cx="112" cy="69" r="2.4" fill="${BAGI}"/>
+    <path d="M76,70 Q66,76 57,83" fill="none" stroke="${F.NV}" stroke-width="1.4"/>
+    <g transform="translate(52 94) rotate(-62)">
+      <path d="M-12,-9 L10,-9 Q14,-9 14,-5 L14,5 Q14,9 10,9 L-12,9 L-20,0 Z" fill="${F.Y}"/>
+      <path d="M-20,0 L14,0 L14,5 Q14,9 10,9 L-12,9 Z" fill="#F2B21E"/>
+      <circle cx="-13" cy="0" r="2.4" fill="${F.W}"/>
+      <text x="2" y="0" dy=".36em" text-anchor="middle" font-family="Fredoka, sans-serif" font-weight="600" font-size="9.5" fill="#8A5A0A">R$</text>
+    </g>
+    <g transform="translate(157 110) rotate(9)">
+      <path d="${shield}" fill="${F.Y}"/>
+      <path d="${inner}" fill="#4C7BE8"/>
+      <path d="M0,-24 Q11.5,-19 22.5,-20.6 L22.5,1 Q22.5,17.4 0,25.8 Z" fill="#3A63C8"/>
+      <path d="M-11,0 L-3,8.5 L12,-8" fill="none" stroke="#FFFFFF" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>`;
+}
+
+function coinStackFlat(x, baseY, n) {
+  let g = "";
+  for (let i = 0; i < n; i++) {
+    const y = baseY - i * 6.2;
+    g += `<ellipse cx="${x}" cy="${y + 5}" rx="19" ry="6.6" fill="#E09A12"/>
+      <rect x="${x - 19}" y="${y}" width="38" height="5" fill="#F2B21E"/>
+      <rect x="${x + 4}" y="${y}" width="15" height="5" fill="#E8A516"/>
+      <ellipse cx="${x}" cy="${y}" rx="19" ry="6.6" fill="${F.Y}"/>`;
+  }
+  const top = baseY - (n - 1) * 6.2;
+  g += `<ellipse cx="${x}" cy="${top}" rx="13" ry="4.2" fill="#F7BB2A"/>
+    <g transform="translate(${x} ${top}) scale(1 .38)"><text x="0" y="0" dy=".36em" text-anchor="middle" font-family="Fredoka, sans-serif" font-weight="600" font-size="17" fill="#B9800C">R$</text></g>`;
+  return g;
+}
+function illusTributarioFlat(u) {
+  // Calculadora com 27,5% + pilhas de moedas, chapado
+  const keys = [];
+  for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) {
+    const op = c === 3, eq = r === 3 && c === 3;
+    const top = eq ? F.G : op ? "#FF9F43" : F.W, base = eq ? F.GD : op ? "#E0802A" : F.S2;
+    keys.push(`<rect x="${-24 + c * 13}" y="${-4 + r * 11.5}" width="10.5" height="9" rx="2.4" fill="${base}"/>
+      <rect x="${-24 + c * 13}" y="${-4 + r * 11.5}" width="10.5" height="7" rx="2.4" fill="${top}"/>`);
+  }
+  return `
+    <g transform="translate(146 74) rotate(13)">
+      <rect x="-31" y="-46" width="64" height="96" rx="9" fill="#1C1938" transform="translate(3 3)"/>
+      <rect x="-31" y="-46" width="64" height="96" rx="9" fill="#34306A"/>
+      <rect x="-25" y="-36" width="52" height="25" rx="4" fill="#1C1938"/>
+      <rect x="-23" y="-34" width="48" height="21" rx="3" fill="#BFE8C8"/>
+      <text x="22" y="-23.5" dy=".36em" text-anchor="end" font-family="Fredoka, sans-serif" font-weight="600" font-size="14" fill="#245A3A">27,5%</text>
+      ${keys.join("")}
+    </g>
+    ${coinStackFlat(116, 132, 4)}
+    ${coinStackFlat(80, 128, 7)}`;
+}
+const FLAT_ICONS = { const: illusConstFlat, penal: illusPenalFlat, civil: illusCivilFlat, consumidor: illusConsumidorFlat, tributario: illusTributarioFlat };
+
+function illusProcessoFlat(u) {
+  // Autos do processo + martelo do juiz com base, chapado
+  const folderPath = "M-32,-36 L-12,-36 L-8,-41 L8,-41 L12,-36 L32,-36 Q35,-36 35,-33 L35,40 Q35,43 32,43 L-32,43 Q-35,43 -35,40 L-35,-33 Q-35,-36 -32,-36 Z";
+  const WD = "#B5713F", WDD = "#8E5530", WDL = "#C98A55";
+  return `
+    <g transform="translate(98 102) rotate(-3)">
+      <rect x="-28" y="-44" width="56" height="70" rx="2" fill="${F.S1}" transform="rotate(4)"/>
+      <rect x="-29" y="-40" width="56" height="70" rx="2" fill="${F.W}"/>
+      <path d="${folderPath}" fill="#F2C66D"/>
+      <path d="M-35,22 L35,22 L35,40 Q35,43 32,43 L-32,43 Q-35,43 -35,40 Z" fill="#E3AF52"/>
+      <rect x="-22" y="-20" width="44" height="30" rx="3" fill="${F.W}"/>
+      <text x="0" y="-12" dy=".36em" text-anchor="middle" font-family="Fredoka, sans-serif" font-weight="600" font-size="9.5" letter-spacing=".8" fill="${F.NV}">AUTOS</text>
+      <rect x="-15" y="-1" width="30" height="3" rx="1.5" fill="${F.S1}"/>
+      <rect x="-15" y="4.5" width="20" height="3" rx="1.5" fill="${F.S1}"/>
+      <g transform="translate(0 -40)">
+        <path d="M-7,-5 L-5,-15 L5,-15 L7,-5" fill="none" stroke="${F.S2}" stroke-width="2.4" stroke-linejoin="round"/>
+        <rect x="-10" y="-5" width="20" height="10" rx="2.2" fill="${F.NV}"/>
+      </g>
+    </g>
+    <ellipse cx="150" cy="134" rx="27" ry="8" fill="${WDD}"/>
+    <rect x="123" y="124" width="54" height="10" fill="${WDD}"/>
+    <ellipse cx="150" cy="124" rx="27" ry="8" fill="${WD}"/>
+    <ellipse cx="150" cy="124" rx="18" ry="5" fill="#A3653A"/>
+    <g transform="translate(146 98) rotate(38)">
+      <rect x="-4.6" y="-88" width="9.2" height="80" rx="4.6" fill="${WD}"/>
+      <rect x="0" y="-86" width="4.6" height="78" rx="2.3" fill="${WDD}"/>
+      <ellipse cx="0" cy="-88" rx="6.4" ry="4.4" fill="${WDL}"/>
+      <rect x="-6" y="-22" width="12" height="5" rx="1.6" fill="${F.Y}"/>
+      <rect x="-27" y="-12" width="54" height="24" rx="7" fill="${WD}"/>
+      <rect x="-27" y="2" width="54" height="10" rx="5" fill="${WDD}"/>
+      <rect x="-18" y="-12.6" width="5.5" height="25.2" rx="1.2" fill="${F.Y}"/>
+      <rect x="12.5" y="-12.6" width="5.5" height="25.2" rx="1.2" fill="${F.Y}"/>
+      <rect x="-18" y="2" width="5.5" height="10.6" rx="1.2" fill="#F2B21E"/>
+      <rect x="12.5" y="2" width="5.5" height="10.6" rx="1.2" fill="#F2B21E"/>
+      <ellipse cx="-27" cy="0" rx="4" ry="11.6" fill="${WDL}"/>
+      <ellipse cx="27" cy="0" rx="4" ry="11.6" fill="#7A4524"/>
+    </g>`;
+}
+FLAT_ICONS.processo = illusProcessoFlat;
+
+function illusEstatutoFlat(u) {
+  // Pasta executiva com balança + Estatuto da Advocacia, chapado
+  const LB = "#A9653A", LD = "#8E5530", LDD = "#6E3F22";
+  return `
+    <g transform="translate(138 90) scale(.86) rotate(7) translate(-140 -96)">
+      <path d="M118,58 L118,42 Q118,34 126,34 L154,34 Q162,34 162,42 L162,58" fill="none" stroke="${LDD}" stroke-width="7.4" stroke-linecap="round"/>
+      <rect x="84" y="59" width="112" height="82" rx="10" fill="${LDD}"/>
+      <rect x="84" y="56" width="112" height="82" rx="10" fill="${LD}"/>
+      <path d="M84,66 Q84,56 94,56 L186,56 Q196,56 196,66 L196,84 Q140,94 84,84 Z" fill="${LB}"/>
+      <path d="M90,92 Q140,102 190,92" fill="none" stroke="${LDD}" stroke-width="1.6" stroke-dasharray="3.4 3"/>
+      <rect x="104" y="80" width="12" height="13" rx="2.4" fill="${F.Y}"/>
+      <rect x="164" y="80" width="12" height="13" rx="2.4" fill="${F.Y}"/>
+      <rect x="107.5" y="85" width="5" height="2.4" rx="1.2" fill="#B9800C"/><rect x="167.5" y="85" width="5" height="2.4" rx="1.2" fill="#B9800C"/>
+      <g transform="translate(140 116)" fill="none" stroke="${F.Y}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M0,-14 L0,12 M-8,12 L8,12 M-17,-9 L17,-9"/>
+        <circle cx="0" cy="-15.5" r="2.2" fill="${F.Y}" stroke="none"/>
+        <path d="M-17,-9 L-22,2 M-17,-9 L-12,2 M17,-9 L12,2 M17,-9 L22,2"/>
+        <path d="M-23,2 Q-17,8 -11,2 Z M11,2 Q17,8 23,2 Z" fill="${F.Y}"/>
+      </g>
+    </g>
+    <g transform="translate(78 108) rotate(-10) scale(.74)">
+      <rect x="-23" y="-37" width="52" height="72" rx="5" fill="#2E4FAE"/>
+      <rect x="-22" y="-34" width="48" height="66" rx="2" fill="${F.W}"/>
+      <rect x="18" y="-32" width="3" height="62" fill="#E6E2D6"/>
+      <rect x="-30" y="-38" width="48" height="72" rx="5" fill="#4C7BE8"/>
+      <rect x="-30" y="-38" width="9" height="72" rx="4.5" fill="#3A63C8"/>
+      <rect x="-17" y="-31" width="30" height="58" rx="3" fill="none" stroke="${F.Y}" stroke-width="1.6"/>
+      <path d="${starPath(-2, -19, 5.8)}" fill="${F.Y}"/>
+      <text x="-2" y="-3" dy=".36em" text-anchor="middle" font-family="Fredoka, sans-serif" font-weight="600" font-size="5.3" fill="${F.Y}">ESTATUTO</text>
+      <rect x="-12" y="4" width="20" height="1.6" rx=".8" fill="${F.Y}"/>
+      <text x="-2" y="13" dy=".36em" text-anchor="middle" font-family="Fredoka, sans-serif" font-weight="600" font-size="6.6" fill="${F.W}">8.906/94</text>
+    </g>`;
+}
+FLAT_ICONS.estatuto = illusEstatutoFlat;
+
+function illusPrevidenciaFlat(u) {
+  // Cofrinho recebendo moeda + ampulheta, chapado
+  const P = "#F4A3BA", PD = "#E07F9E", PDD = "#C9668A", PL = "#FAC6D5", PN = "#B9506F";
+  const WD = "#B5713F", WDD = "#8E5530";
+  return `
+    <defs><clipPath id="${u}-pigc"><ellipse cx="114" cy="92" rx="45" ry="33"/></clipPath></defs>
+    <g transform="translate(0 13)">
+    ${[[79, 126.5], [119, 128]].map(([x, b]) => `<path d="M${x},106 L${x + .8},${b - 4} Q${x + .8},${b} ${x + 7.5},${b} Q${x + 14.2},${b} ${x + 14.2},${b - 4} L${x + 15},106 Z" fill="${PDD}"/>`).join("")}
+    ${[[85, 131], [125, 132.5]].map(([x, b]) => `<path d="M${x},106 L${x + 1},${b - 4.5} Q${x + 1},${b} ${x + 8.5},${b} Q${x + 16},${b} ${x + 16},${b - 4.5} L${x + 17},106 Z" fill="${PD}"/>
+      <path d="M${x + 9},106 L${x + 17},106 L${x + 16},${b - 4.5} Q${x + 16},${b} ${x + 9},${b} Z" fill="${PDD}"/>`).join("")}
+    <path d="M155,86 q11,-3 10,-11 q-1,-6 -7,-3 q-4,3 1,7" fill="none" stroke="${PD}" stroke-width="3.4" stroke-linecap="round"/>
+    <path d="M80,72 Q74,52 82,46 Q92,50 96,64 Z" fill="${PDD}" transform="translate(88 68) scale(.76) translate(-88 -68)"/>
+    <ellipse cx="114" cy="92" rx="45" ry="33" fill="${PD}"/>
+    <g clip-path="url(#${u}-pigc)"><ellipse cx="108" cy="86" rx="45" ry="32" fill="${P}"/></g>
+    <g transform="translate(106 65) scale(.76) translate(-106 -65)">
+      <path d="M98,66 Q100,44 112,42 Q118,52 114,66 Z" fill="${PD}"/>
+      <path d="M103,63 Q104.5,52 110,49.5 Q112.5,56 110.5,63 Q107,64.5 103,63 Z" fill="${PL}"/>
+    </g>
+    <ellipse cx="131" cy="66" rx="10" ry="2.6" fill="${PN}" transform="rotate(14 131 66)"/>
+    <ellipse cx="72" cy="101" rx="9.5" ry="11.5" fill="${PDD}"/>
+    <ellipse cx="68.5" cy="101" rx="9.5" ry="11.5" fill="${PL}"/>
+    <ellipse cx="65.4" cy="101" rx="1.9" ry="3.6" fill="${PN}"/>
+    <ellipse cx="71.6" cy="101" rx="1.9" ry="3.6" fill="${PN}"/>
+    <ellipse cx="74" cy="84" rx="2.9" ry="3.8" fill="${F.NV}"/>
+    <ellipse cx="91" cy="83" rx="3.4" ry="4.4" fill="${F.NV}"/>
+    <ellipse cx="94" cy="98" rx="7" ry="4" fill="#F08BA8"/>
+    <g transform="translate(8.4 -6)">
+      <circle cx="122.6" cy="44.6" r="14" fill="#E09A12"/>
+      <circle cx="122.6" cy="42.6" r="14" fill="${F.Y}"/>
+      <circle cx="122.6" cy="42.6" r="10" fill="#F7BB2A"/>
+      <text x="122.6" y="42.6" dy=".36em" text-anchor="middle" font-family="Fredoka, sans-serif" font-weight="600" font-size="10" fill="#B9800C">R$</text>
+    </g>
+    </g>
+    <g transform="translate(166 108) rotate(10)">
+      <path d="M-12,-22 Q-12,-6 -2,0 Q-12,6 -12,22 L12,22 Q12,6 2,0 Q12,-6 12,-22 Z" fill="#DCEFFA"/>
+      <path d="M0,-22 L12,-22 Q12,-6 2,0 Q12,6 12,22 L0,22 Z" fill="#C4E0F2"/>
+      <path d="M-8,-12 Q-6,-5 -1,-2 L1,-2 Q6,-5 8,-12 Z" fill="${F.Y}"/>
+      <rect x="-.8" y="0" width="1.6" height="14" fill="#F2B21E"/>
+      <path d="M-11,22 Q-9,12 0,11 Q9,12 11,22 Z" fill="${F.Y}"/>
+      <path d="M0,11 Q9,12 11,22 L0,22 Z" fill="#F2B21E"/>
+      <rect x="-15.5" y="-22" width="3.6" height="44" rx="1.8" fill="${WD}"/>
+      <rect x="11.9" y="-22" width="3.6" height="44" rx="1.8" fill="${WDD}"/>
+      <rect x="-17" y="-29" width="34" height="7" rx="3" fill="${WD}"/>
+      <rect x="-17" y="-25" width="34" height="3" fill="${WDD}"/>
+      <rect x="-17" y="22" width="34" height="7" rx="3" fill="${WD}"/>
+      <rect x="-17" y="26" width="34" height="3" rx="1.5" fill="${WDD}"/>
+    </g>`;
+}
+FLAT_ICONS.previdencia = illusPrevidenciaFlat;
+
+function illusTrabalhoFlat(u) {
+  // Capacete + chave de boca + Carteira de Trabalho, chapado
+  const dome = "M-34,0 A34,33 0 0 1 34,0 A34,7.5 0 0 1 -34,0 Z";
+  const Y2 = "#F2B21E", Y3 = "#E09A12";
+  return `
+    <defs><clipPath id="${u}-dome"><path d="${dome}"/></clipPath></defs>
+    <g transform="translate(127 66) rotate(8) scale(1.22)">
+      <ellipse cx="-3" cy="5" rx="48" ry="12.5" fill="${Y3}"/>
+      <ellipse cx="-3" cy="2" rx="48" ry="12.5" fill="${Y2}"/>
+      <path d="${dome}" fill="${F.Y}"/>
+      <g clip-path="url(#${u}-dome)"><path d="M8,-40 L40,-40 L40,12 L8,12 Z" fill="${Y2}"/></g>
+      <path d="M-7.5,-32 Q-8.4,-12 -8.6,6.6" fill="none" stroke="${Y2}" stroke-width="2.2" stroke-linecap="round"/>
+      <path d="M7.5,-32 Q8.4,-12 8.6,6.6" fill="none" stroke="${Y3}" stroke-width="2.2" stroke-linecap="round"/>
+    </g>
+    <g transform="translate(138 103) rotate(36)">
+      <rect x="-44" y="-5.6" width="68" height="11.2" rx="5.6" fill="${F.S1}"/>
+      <path d="M-44,0 L24,0 L24,0 A5.6,5.6 0 0 1 18.4,5.6 L-38.4,5.6 A5.6,5.6 0 0 1 -44,0 Z" fill="${F.S2}"/>
+      <path d="M20,-6.5 L24,-12 Q33,-16.5 42,-12 L46.5,-6 L37,-3.8 L37,3.8 L46.5,6 L42,12 Q33,16.5 24,12 L20,6.5 Z" fill="${F.S1}"/>
+      <path d="M20,0 L37,0 L37,3.8 L46.5,6 L42,12 Q33,16.5 24,12 L20,6.5 Z" fill="${F.S2}"/>
+      <circle cx="-36" cy="0" r="2.6" fill="${F.S3}"/>
+    </g>
+    <g transform="translate(101 106) rotate(-8) scale(1.04)">
+      <rect x="-24" y="-34" width="51" height="70" rx="5" fill="#1E3A80"/>
+      <rect x="-23" y="-33" width="48" height="66" rx="3" fill="${F.W}"/>
+      <rect x="18" y="-31" width="3" height="62" fill="#E6E2D6"/>
+      <rect x="-28" y="-36" width="47" height="70" rx="5.5" fill="#2E4FAE"/>
+      <rect x="-28" y="-36" width="7" height="70" rx="3.5" fill="#243F8E"/>
+      <text x="-3.5" y="-24" dy=".36em" text-anchor="middle" font-family="Fredoka, sans-serif" font-weight="600" font-size="5.6" letter-spacing=".2" fill="${F.Y}">CARTEIRA DE</text>
+      <text x="-3.5" y="-16" dy=".36em" text-anchor="middle" font-family="Fredoka, sans-serif" font-weight="600" font-size="7.4" letter-spacing=".2" fill="${F.Y}">TRABALHO</text>
+      <circle cx="-3.5" cy="4" r="10.5" fill="${F.Y}"/>
+      <circle cx="-3.5" cy="4" r="8.2" fill="#243F8E"/>
+      <path d="${starPath(-3.5, 4.6, 5.4)}" fill="${F.Y}"/>
+      <rect x="-16" y="22" width="25" height="2" rx="1" fill="${F.Y}"/>
+      <rect x="-12" y="26.4" width="17" height="1.8" rx=".9" fill="#E8C056"/>
+    </g>`;
+}
+FLAT_ICONS.trabalho = illusTrabalhoFlat;
+
+function illusAdministrativoFlat(u) {
+  // Portaria com "DEFERIDO" + carimbo de madeira, chapado
+  const WT = "#C98A55", WD = "#B5713F", WDD = "#8E5530";
+  return `
+    <defs><clipPath id="${u}-knob"><ellipse cx="4" cy="-35" rx="14" ry="12.5"/></clipPath></defs>
+    <g transform="translate(-8 2) rotate(-6 98 100)">
+      <rect x="62" y="56" width="72" height="88" rx="4" fill="${F.W}"/>
+      <circle cx="98" cy="67" r="5.6" fill="${F.Y}"/>
+      <path d="${starPath(98, 67.4, 3.4)}" fill="${F.W}"/>
+      <text x="98" y="79" dy=".36em" text-anchor="middle" font-family="Fredoka, sans-serif" font-weight="600" font-size="7" letter-spacing=".6" fill="${F.NV}">PORTARIA</text>
+      <rect x="72" y="88" width="52" height="3.4" rx="1.7" fill="${F.S1}"/>
+      <rect x="72" y="95" width="46" height="3.4" rx="1.7" fill="${F.S1}"/>
+      <rect x="72" y="102" width="52" height="3.4" rx="1.7" fill="${F.S1}"/>
+      <rect x="72" y="109" width="30" height="3.4" rx="1.7" fill="${F.S1}"/>
+      <g transform="translate(103 126) rotate(-11)">
+        <rect x="-25" y="-9" width="50" height="18" rx="2.5" fill="none" stroke="${F.R}" stroke-width="2"/>
+        <rect x="-21.6" y="-5.8" width="43.2" height="11.6" rx="1.5" fill="none" stroke="${F.R}" stroke-width=".9"/>
+        <text x="0" y="0" dy=".36em" text-anchor="middle" font-family="Fredoka, sans-serif" font-weight="600" font-size="7.2" letter-spacing=".5" fill="${F.R}">DEFERIDO</text>
+      </g>
+    </g>
+    <g transform="translate(151 72) rotate(14) scale(1.34)">
+      <path d="M24,19 L32,13 L32,19 L24,25.5 Z" fill="${F.RD}"/>
+      <rect x="-24" y="19" width="48" height="6.5" fill="${F.R}"/>
+      <path d="M24,6 L32,0 L32,14 L24,20 Z" fill="${WDD}"/>
+      <rect x="-24" y="6" width="48" height="14" fill="${WD}"/>
+      <path d="M-24,6 L-16,0 L32,0 L24,6 Z" fill="${WT}"/>
+      <ellipse cx="4" cy="3" rx="7.5" ry="2.4" fill="${WDD}"/>
+      <rect x="-1.5" y="-26" width="11" height="29" rx="3" fill="${WD}"/>
+      <rect x="4" y="-26" width="5.5" height="29" rx="2.5" fill="${WDD}"/>
+      <ellipse cx="4" cy="-35" rx="14" ry="12.5" fill="${F.R}"/>
+      <g clip-path="url(#${u}-knob)"><ellipse cx="9" cy="-31" rx="14" ry="12.5" fill="${F.RD}"/><ellipse cx="2" cy="-38" rx="14" ry="12.5" fill="${F.R}"/></g>
+    </g>`;
+}
+FLAT_ICONS.administrativo = illusAdministrativoFlat;
+
+function boxFlat(x0, x1, y0, y1, dx, dy, front, side, top) {
+  return `<path d="M${x1},${y0} L${x1 + dx},${y0 + dy} L${x1 + dx},${y1 + dy} L${x1},${y1} Z" fill="${side}"/>
+    <path d="M${x0},${y0} L${x0 + dx},${y0 + dy} L${x1 + dx},${y0 + dy} L${x1},${y0} Z" fill="${top}"/>
+    <rect x="${x0}" y="${y0}" width="${x1 - x0}" height="${y1 - y0}" fill="${front}"/>`;
+}
+function illusEmpresarialFlat(u) {
+  // Prédios + gráfico de barras + seta de crescimento, chapado
+  const win = (x0, cols, y0, rows, w, h, gx, gy, lit, off) => {
+    let s = "";
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+      const on = lit.includes(r * cols + c);
+      s += `<rect x="${x0 + c * (w + gx)}" y="${y0 + r * (h + gy)}" width="${w}" height="${h}" rx="1" fill="${on ? F.Y : off}"/>`;
+    }
+    return s;
+  };
+  return `<g transform="translate(9 0)">
+    ${boxFlat(66, 98, 60, 136, 12, -6, "#8B7CE8", "#6F60CC", "#B8AEF3")}
+    ${win(71, 3, 67, 7, 6, 5.4, 4, 4.4, [4, 9, 13], "#D9D3FA")}
+    ${boxFlat(102, 144, 28, 136, 14, -7, "#4C7BE8", "#3A63C8", "#8FB0F2")}
+    ${win(108, 4, 36, 10, 6, 5.6, 3.6, 4.4, [2, 7, 9, 18, 21, 27, 32], "#BFD4FA")}
+    ${Array.from({ length: 10 }, (_, i) => `<path d="M147,${31.5 + i * 10} L155,${27.5 + i * 10} L155,${30 + i * 10} L147,${34 + i * 10} Z" fill="#5A80DC"/>`).join("")}
+    ${boxFlat(56, 70, 116, 138, 7, -4, F.Y, "#E09A12", "#FCD65E")}
+    ${boxFlat(76, 90, 102, 138, 7, -4, F.Y, "#E09A12", "#FCD65E")}
+    ${boxFlat(96, 110, 86, 138, 7, -4, F.Y, "#E09A12", "#FCD65E")}
+    <path d="M50,108 L84,88 L100,98 L150,60" fill="none" stroke="${F.G}" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M140.5,52.5 L163,49 L157.5,71 Z" fill="${F.G}" stroke="${F.G}" stroke-width="2.4" stroke-linejoin="round"/>
+  </g>`;
+}
+FLAT_ICONS.empresarial = illusEmpresarialFlat;
 
 export { ICONS, RIBBON_SWATCHES, SHIELD_SWATCHES, badgeSVG };

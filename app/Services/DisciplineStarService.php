@@ -19,6 +19,9 @@ class DisciplineStarService
 {
     public const MAX_STARS = 5;
 
+    /** Versão das artes de public/img/badges. Suba ao redesenhá-las. */
+    public const ORIGINAL_BADGES_VERSION = 2;
+
     private const FIVE_STAR_FACTOR = 72.52;
 
     /** Parte da meta de 5 estrelas exigida para 2, 3, 4 e 5 estrelas. */
@@ -263,7 +266,11 @@ class DisciplineStarService
             return route('disciplines.badge', ['discipline' => $discipline, 'stars' => $stars, 'v' => $discipline->badge_version]);
         }
 
-        return $discipline->badge_key ? asset("img/badges/{$discipline->badge_key}-{$stars}.png") : null;
+        // O ?v= troca a URL quando as artes originais são redesenhadas, para o app e o navegador
+        // não mostrarem a imagem antiga guardada em cache.
+        return $discipline->badge_key
+            ? asset("img/badges/{$discipline->badge_key}-{$stars}.png").'?v='.self::ORIGINAL_BADGES_VERSION
+            : null;
     }
 
     /** Fixa as metas assim que a disciplina oferece XP. Metas já fixadas não mudam. */

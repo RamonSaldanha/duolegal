@@ -95,7 +95,8 @@ const PHASES_PER_JOURNEY = 24;        // UI pagination — phases per journey
 - **XP antigo:** a origem `migration` foi distribuída por área em `discipline_xp_credits`. O ranking e o XP do usuário não mudam.
 - **App já instalado:** a API mantém `level`, `current_xp_in_level`, `xp_for_next_level` e `progress_percent`, porque builds antigas desenham o badge antigo com eles. Os campos novos (`stars`, `next_star_xp`, `badge_url`) são só acréscimos; não remova nem mude o formato dos antigos.
 - **Conversão:** `php artisan disciplines:convert-to-stars` simula; `--force` grava; `--recalculate` recalcula metas fixadas sem tirar estrelas.
-- **Artes:** `public/img/badges/{badge_key}-{estrelas}.png` (0 = bloqueado) são as originais. Disciplina sem arte usa o `DisciplineBadge` antigo.
+- **Artes:** `public/img/badges/{badge_key}-{estrelas}.png` (0 = bloqueado) são as originais. A URL leva `?v=` (`DisciplineStarService::ORIGINAL_BADGES_VERSION`); suba o número ao redesenhá-las, senão o app e o navegador mostram a imagem antiga do cache. Disciplina sem arte usa o `DisciplineBadge` antigo.
+- **Estilo chapado:** desde 20/11/2026 a arte é chapada (sem sombra, brilho nem degradê) e usa a paleta do editor (`SHIELD_SWATCHES`). Badge gerado no admin antes disso (`Discipline::BADGE_STYLE_SINCE`) aparece na lista de disciplinas com o botão "Redesenhar no estilo novo", que desenha de novo no navegador e envia para `PUT /admin/disciplines/{uuid}/badge`.
 - **Criar ou editar badge:** o formulário do admin (`StarBadgeEditor`) desenha os 6 PNGs no navegador com `resources/js/lib/badges/art.ts` e os envia. Eles ficam em `storage/app/private/discipline-badges/{uuid}`, são servidos por `/discipline-badges/{uuid}/{estrelas}` e têm prioridade sobre as originais. Ilustração nova exige mudar `art.ts` e `BADGE_ILLUSTRATIONS` em `Admin\DisciplineController`.
 
 ### Perfil público

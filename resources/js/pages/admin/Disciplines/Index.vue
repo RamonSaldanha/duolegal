@@ -4,7 +4,9 @@ import { Head, Link, router } from '@inertiajs/vue3';
 import { type BreadcrumbItem } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Edit, Plus, Trash2 } from 'lucide-vue-next';
+import { Edit, Plus, RefreshCw, Trash2 } from 'lucide-vue-next';
+import { type BadgeConfig, exportBadgeImages } from '@/lib/badges/export';
+import { computed, ref } from 'vue';
 import {
   Table,
   TableBody,
@@ -24,6 +26,8 @@ const props = defineProps<{
     description?: string;
     legislations_count: number;
     badge_url: string | null;
+    badge_config: BadgeConfig | null;
+    badge_outdated: boolean;
   }>;
 }>();
 
@@ -31,6 +35,37 @@ const breadcrumbs: BreadcrumbItem[] = [
   { title: 'Dashboard', href: '/dashboard' },
   { title: 'Disciplinas', href: '/admin/disciplines' },
 ];
+
+// Badges gerados no admin antes do estilo chapado: o navegador desenha de novo e envia, um por vez.
+const outdated = computed(() => props.disciplines.filter((discipline) => discipline.badge_outdated && discipline.badge_config));
+const redrawing = ref(false);
+const redrawError = ref('');
+
+const sendBadge = (uuid: string, config: BadgeConfig, images: File[]) =>
+  new Promise<void>((resolve, reject) => {
+    router.post(route('admin.disciplines.badge', uuid as any), { badge_config: config, badge_images: images, _method: 'put' }, {
+      forceFormData: true,
+      preserveScroll: true,
+      onSuccess: () => resolve(),
+      onError: () => reject(new Error('rejected')),
+      onCancel: () => reject(new Error('cancelled')),
+    });
+  });
+
+const redrawBadges = async () => {
+  redrawing.value = true;
+  redrawError.value = '';
+  try {
+    for (const discipline of [...outdated.value]) {
+      const config = { ...discipline.badge_config! };
+      await sendBadge(discipline.uuid, config, await exportBadgeImages(config));
+    }
+  } catch {
+    redrawError.value = 'Não foi possível redesenhar todos os badges. Tente de novo.';
+  } finally {
+    redrawing.value = false;
+  }
+};
 
 const deleteDiscipline = (uuid: string, name: string) => {
   if (confirm(`Tem certeza que deseja excluir a disciplina "${name}"?\n\nEsta acao nao pode ser desfeita.`)) {
@@ -64,6 +99,17 @@ const deleteDiscipline = (uuid: string, name: string) => {
         </CardHeader>
 
         <CardContent>
+          <div v-if="outdated.length" class="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border p-4">
+            <p class="text-sm">
+              {{ outdated.length === 1 ? '1 badge feito aqui ainda está' : `${outdated.length} badges feitos aqui ainda estão` }} com a arte antiga.
+              <span v-if="redrawError" class="block text-destructive">{{ redrawError }}</span>
+            </p>
+            <Button :disabled="redrawing" @click="redrawBadges">
+              <RefreshCw class="mr-2 h-4 w-4" :class="{ 'animate-spin': redrawing }" />
+              {{ redrawing ? 'Redesenhando…' : 'Redesenhar no estilo novo' }}
+            </Button>
+          </div>
+
           <Table>
             <TableCaption>Lista de disciplinas cadastradas</TableCaption>
             <TableHeader>

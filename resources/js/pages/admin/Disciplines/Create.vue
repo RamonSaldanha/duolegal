@@ -38,7 +38,7 @@ const form = ref({
   legislation_ids: [] as number[],
 });
 
-const badge = ref<BadgeConfig>({ icon: 'penal', text: '', shield: '#3d8bf2', ribbon: '#ffc21a' });
+const badge = ref<BadgeConfig>({ icon: 'penal', text: '', shield: '#4C7BE8', ribbon: '#F0DFA0' });
 
 const errors = ref<Record<string, string>>({});
 const processing = ref(false);

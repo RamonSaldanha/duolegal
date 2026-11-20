@@ -59,6 +59,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     Route::post('disciplines', [DisciplineController::class, 'store'])->name('admin.disciplines.store');
     Route::get('disciplines/{discipline}/edit', [DisciplineController::class, 'edit'])->name('admin.disciplines.edit');
     Route::put('disciplines/{discipline}', [DisciplineController::class, 'update'])->name('admin.disciplines.update');
+    Route::put('disciplines/{discipline}/badge', [DisciplineController::class, 'redrawBadge'])->name('admin.disciplines.badge');
     Route::delete('disciplines/{discipline}', [DisciplineController::class, 'destroy'])->name('admin.disciplines.destroy');
 
     // Material de estudo (resumos + questões gravados por agentes de IA)

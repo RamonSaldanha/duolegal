@@ -51,7 +51,7 @@ const form = ref({
   legislation_ids: [...props.selectedLegislationIds],
 });
 
-const savedBadge = props.discipline.badge_config ?? { icon: 'penal', text: '', shield: '#3d8bf2', ribbon: '#ffc21a' };
+const savedBadge = props.discipline.badge_config ?? { icon: 'penal', text: '', shield: '#4C7BE8', ribbon: '#F0DFA0' };
 const badge = ref<BadgeConfig>({ ...savedBadge });
 const badgeChanged = computed(() => (Object.keys(savedBadge) as (keyof BadgeConfig)[]).some((key) => savedBadge[key] !== badge.value[key]));
 

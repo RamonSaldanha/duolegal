@@ -130,7 +130,7 @@ test('ganho de estrela é detectado uma vez, com dados para a celebração', fun
         ->and($first['old_level'])->toBe(0)
         ->and($first['new_level'])->toBe(1)
         ->and($first['stars'])->toBe(1)
-        ->and($first['badge_url'])->toEndWith('/img/badges/tributario-1.png');
+        ->and($first['badge_url'])->toEndWith('/img/badges/tributario-1.png?v='.DisciplineStarService::ORIGINAL_BADGES_VERSION);
 
     $user->addXp(10, 'legislation', 2, $law->id);
     expect($xp->detectDisciplineLevelUp($user, $law->id, 10))->toBeNull();
@@ -174,7 +174,7 @@ test('a API segue compatível com o app instalado e acrescenta os campos novos',
         'next_star_xp' => 2000,
         'icon' => 'Receipt',
         'color' => '#047857',
-    ])->and($item['badge_url'])->toEndWith('/img/badges/tributario-3.png');
+    ])->and($item['badge_url'])->toEndWith('/img/badges/tributario-3.png?v='.DisciplineStarService::ORIGINAL_BADGES_VERSION);
 
     $locked = collect($response->json('discipline_progress'))->firstWhere('id', $empty->id);
     expect($locked)->toMatchArray(['total_xp' => 0, 'level' => 1, 'stars' => 0, 'badge_url' => null])
@@ -320,4 +320,36 @@ test('editar sem mexer no badge preserva a arte e as metas; trocar a arte muda a
 
     $this->actingAs($admin)->delete("/admin/disciplines/{$discipline->uuid}")->assertRedirect();
     Storage::disk('local')->assertMissing($discipline->badgeImagesDirectory().'/5.png');
+});
+
+test('badge gerado antes do estilo chapado aparece como antigo e é redesenhado pela lista', function () {
+    Storage::fake('local');
+    $law = lawWithBlocks('CTN', 2);
+    $discipline = disciplineWithThresholds($law);
+    $discipline->update([
+        'badge_config' => ['icon' => 'tributario', 'text' => 'Tributarista', 'shield' => '#E0805F', 'ribbon' => '#2E9D94'],
+        'badge_version' => Discipline::BADGE_STYLE_SINCE - 1,
+    ]);
+    $admin = User::factory()->createOne(['is_admin' => true]);
+
+    $this->actingAs($admin)->get('/admin/disciplines')
+        ->assertInertia(fn ($page) => $page->where('disciplines.0.badge_outdated', true));
+
+    $this->actingAs($admin)
+        ->put("/admin/disciplines/{$discipline->uuid}/badge", ['badge_config' => ['icon' => 'inventada', 'text' => 'X', 'shield' => '#E0805F', 'ribbon' => '#2E9D94']])
+        ->assertSessionHasErrors(['badge_config.icon', 'badge_images']);
+
+    $this->actingAs($admin)
+        ->put("/admin/disciplines/{$discipline->uuid}/badge", badgeFormData(['badge_config' => $discipline->badge_config]))
+        ->assertRedirect();
+
+    $discipline->refresh();
+    expect($discipline->badgeOutdated())->toBeFalse()
+        ->and($discipline->name)->not->toBe('Direito Digital')
+        ->and($discipline->star_thresholds)->toBe([100, 500, 2000, 5000]);
+    Storage::disk('local')->assertExists($discipline->badgeImagesDirectory().'/0.png');
+
+    $this->actingAs(User::factory()->createOne())
+        ->put("/admin/disciplines/{$discipline->uuid}/badge", badgeFormData());
+    expect($discipline->fresh()->badge_version)->toBe($discipline->badge_version);
 });
