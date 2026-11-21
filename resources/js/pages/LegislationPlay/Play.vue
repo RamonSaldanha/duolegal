@@ -387,7 +387,7 @@ function showXpGainedNotification(xpGained: number) {
             </div>
 
             <!-- Área de controles fixa (teleport target) -->
-            <div class="shrink-0 px-3 md:px-4 pb-4">
+            <div class="shrink-0 border-t-2 border-gray-200 px-3 pb-4 dark:border-gray-800 md:px-4">
                 <div id="play-controls" class="w-full sm:w-[95%] lg:w-[50rem] mx-auto" />
             </div>
         </div>

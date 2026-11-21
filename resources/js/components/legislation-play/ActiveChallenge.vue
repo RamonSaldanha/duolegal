@@ -312,8 +312,8 @@ defineExpose({ reset });
                 </span>
             </div>
 
-            <!-- Ações -->
-            <div class="flex justify-between pt-4 border-t">
+            <!-- Ações. A linha de cima fica no rodapé de quem recebe o teleport, na largura toda da tela -->
+            <div class="flex justify-between pt-4">
                 <GameButton
                     v-if="hasLacunas"
                     variant="white"
