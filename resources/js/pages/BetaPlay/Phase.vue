@@ -10,6 +10,7 @@ import LevelUpOverlay from '@/components/LevelUpOverlay.vue';
 import PhaseComplete from '@/components/PhaseComplete.vue';
 import ResultBar from '@/components/ResultBar.vue';
 import GameButton from '@/components/ui/GameButton.vue';
+import IconButton from '@/components/ui/IconButton.vue';
 import { playPhaseComplete } from '@/lib/sounds';
 import type { BetaFailResponse, BetaFinishResponse } from '@/types/beta-play';
 import type { ActiveSegmentData, CompletedSegmentData, DisciplineLevelUp, SegmentAnswer } from '@/types/legislation-play';
@@ -292,14 +293,9 @@ onUnmounted(() => {
             <!-- Topo: sair, progresso da fase, vidas -->
             <div class="shrink-0 px-3 pt-4 md:px-4">
                 <div class="mx-auto flex w-full items-center gap-3 sm:w-[95%] lg:w-[50rem]">
-                    <button
-                        type="button"
-                        class="-ml-1 rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-200"
-                        aria-label="Sair da fase"
-                        @click="exit"
-                    >
+                    <IconButton label="Sair da fase" class="-ml-2 shrink-0" @click="exit">
                         <X class="h-6 w-6" />
-                    </button>
+                    </IconButton>
                     <div class="h-3 flex-1 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
                         <div class="h-full rounded-full bg-green-500 transition-all duration-500" :style="{ width: `${progressPercent}%` }" />
                     </div>

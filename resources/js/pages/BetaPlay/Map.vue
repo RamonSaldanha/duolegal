@@ -331,7 +331,7 @@ onUnmounted(() => {
                         <p class="text-gray-400 dark:text-gray-500">Selecione legislações para estudar.</p>
                     </div>
 
-                    <button v-if="hasMoreAbove" type="button" class="more-button mb-6" @click="loadMore('above')">Ver trechos anteriores</button>
+                    <button v-if="hasMoreAbove" type="button" class="mz-btn mz-sm mz-outline mb-6 flex w-full" @click="loadMore('above')">Ver trechos anteriores</button>
 
                     <template v-if="shownSection">
                         <!-- Cartão da etapa: um só, parado no topo; o título muda conforme a etapa que passa por ele -->
@@ -594,7 +594,7 @@ onUnmounted(() => {
                         </div>
                     </template>
 
-                    <button v-if="hasMoreBelow" type="button" class="more-button mt-2" @click="loadMore('below')">Ver mais trechos</button>
+                    <button v-if="hasMoreBelow" type="button" class="mz-btn mz-sm mz-outline mt-2 flex w-full" @click="loadMore('below')">Ver mais trechos</button>
                 </div>
             </div>
         </div>
@@ -745,7 +745,4 @@ onUnmounted(() => {
     box-shadow: 0 0 0 3px hsl(var(--background));
 }
 
-.more-button {
-    @apply block w-full rounded-xl border-2 border-gray-200 px-4 py-2.5 text-sm font-bold text-gray-500 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800;
-}
 </style>

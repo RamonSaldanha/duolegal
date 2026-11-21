@@ -402,6 +402,89 @@ html {
         background-size: 100% 100%;
     }
 
+    /* Cartão de escolha (alternativa, opção, plano). O estado só troca --c: o contorno e a base
+       saem dela, então apertar afunda igual em qualquer estado. Azul quando escolhido, verde e
+       vermelho quando corrigido, roxo no Premium; is-dim apaga as que sobraram na correção. */
+    .mz-choice {
+        --c: hsl(var(--border));
+        --key: hsl(var(--muted-foreground));
+        display: flex;
+        width: 100%;
+        align-items: center;
+        gap: 12px;
+        border: 0;
+        border-radius: 16px;
+        background: hsl(var(--card));
+        padding: 14px 16px;
+        text-align: left;
+        color: hsl(var(--foreground));
+        box-shadow:
+            inset 0 0 0 2px var(--c),
+            0 4px 0 var(--c);
+        -webkit-tap-highlight-color: transparent;
+        transition:
+            transform 0.08s ease,
+            box-shadow 0.08s ease,
+            background-color 0.15s ease,
+            opacity 0.15s ease;
+    }
+    button.mz-choice {
+        cursor: pointer;
+    }
+    @media (hover: hover) {
+        button.mz-choice:not(:disabled):not(.is-selected):not(.is-right):not(.is-wrong):not(.is-premium):hover {
+            background: hsl(var(--secondary));
+        }
+    }
+    button.mz-choice:not(:disabled):active {
+        transform: translateY(4px);
+        box-shadow:
+            inset 0 0 0 2px var(--c),
+            0 0 0 var(--c);
+    }
+    .mz-choice:focus-visible {
+        outline: 3px solid hsl(var(--ring));
+        outline-offset: 2px;
+    }
+    button.mz-choice:disabled {
+        cursor: default;
+    }
+    .mz-choice.is-selected {
+        --c: var(--mz-choice);
+        --key: var(--mz-choice-ink);
+        background: var(--mz-choice-soft);
+    }
+    .mz-choice.is-premium {
+        --c: var(--mz-premium);
+        --key: var(--mz-premium);
+        background: color-mix(in srgb, var(--mz-premium) 10%, hsl(var(--card)));
+    }
+    .mz-choice.is-right {
+        --c: var(--mz-ok);
+        --key: var(--mz-ok-ink);
+        background: var(--mz-ok-soft);
+    }
+    .mz-choice.is-wrong {
+        --c: var(--mz-bad);
+        --key: var(--mz-bad-ink);
+        background: var(--mz-bad-soft);
+    }
+    .mz-choice.is-dim {
+        opacity: 0.6;
+    }
+    .mz-choice-key {
+        display: grid;
+        place-items: center;
+        width: 28px;
+        height: 28px;
+        flex: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--key);
+        box-shadow: inset 0 0 0 2px var(--c);
+    }
+
     /* Roda de carregando, dentro do botão */
     .mz-spin {
         width: 1.1em;

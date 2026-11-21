@@ -570,7 +570,7 @@ onBeforeUnmount(() => {
             <GripHorizontal class="h-3.5 w-3.5 text-gray-400" aria-hidden="true" />
 
             <div class="relative">
-                <button type="button" class="panel-button" :aria-label="`Modo: ${MODE_LABELS[mode]}. Trocar o modo de leitura`" @click="toggleMode">
+                <button type="button" class="mz-btn mz-sm mz-sq mz-tonal" :aria-label="`Modo: ${MODE_LABELS[mode]}. Trocar o modo de leitura`" @click="toggleMode">
                     <WholeWord v-if="mode === 'chunk'" class="h-4 w-4" />
                     <Rows3 v-else class="h-4 w-4" />
                 </button>
@@ -586,7 +586,7 @@ onBeforeUnmount(() => {
                 </Transition>
             </div>
 
-            <button type="button" class="panel-button" :disabled="wpm >= WPM_MAX" aria-label="Aumentar a velocidade" @click="changeSpeed(1)">
+            <button type="button" class="mz-btn mz-sm mz-sq mz-tonal" :disabled="wpm >= WPM_MAX" aria-label="Aumentar a velocidade" @click="changeSpeed(1)">
                 <Plus class="h-4 w-4" />
             </button>
 
@@ -595,13 +595,13 @@ onBeforeUnmount(() => {
                 <span class="mt-0.5 text-[9px] text-gray-500 dark:text-gray-400" title="palavras por minuto">ppm</span>
             </div>
 
-            <button type="button" class="panel-button" :disabled="wpm <= WPM_MIN" aria-label="Diminuir a velocidade" @click="changeSpeed(-1)">
+            <button type="button" class="mz-btn mz-sm mz-sq mz-tonal" :disabled="wpm <= WPM_MIN" aria-label="Diminuir a velocidade" @click="changeSpeed(-1)">
                 <Minus class="h-4 w-4" />
             </button>
 
             <button
                 type="button"
-                class="panel-button panel-button-main mt-1"
+                class="mz-btn mz-sm mz-sq mz-main mt-1"
                 :aria-label="state === 'playing' ? 'Pausar a leitura guiada' : 'Iniciar a leitura guiada'"
                 @click="toggle"
             >
@@ -656,21 +656,4 @@ onBeforeUnmount(() => {
     cursor: grabbing;
 }
 
-.panel-button {
-    @apply flex h-8 w-8 items-center justify-center rounded-lg bg-gray-100 text-gray-700 transition-colors dark:bg-gray-700 dark:text-gray-200;
-}
-.panel-button:disabled {
-    @apply cursor-not-allowed opacity-40;
-}
-@media (hover: hover) {
-    .panel-button:not(:disabled):hover {
-        @apply bg-gray-200 dark:bg-gray-600;
-    }
-    .panel-button-main:not(:disabled):hover {
-        @apply bg-purple-600;
-    }
-}
-.panel-button-main {
-    @apply bg-purple-500 text-white dark:bg-purple-500 dark:text-white;
-}
 </style>

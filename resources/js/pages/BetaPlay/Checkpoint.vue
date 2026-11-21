@@ -4,6 +4,7 @@ import LevelUpOverlay from '@/components/LevelUpOverlay.vue';
 import PhaseComplete from '@/components/PhaseComplete.vue';
 import ResultBar from '@/components/ResultBar.vue';
 import GameButton from '@/components/ui/GameButton.vue';
+import IconButton from '@/components/ui/IconButton.vue';
 import { playPhaseComplete } from '@/lib/sounds';
 import type { DisciplineLevelUp } from '@/types/legislation-play';
 import {
@@ -254,17 +255,15 @@ function backToMap() {
 
 function choiceClass(key: string) {
     if (!feedback.value) {
-        return selected.value === key
-            ? 'border-purple-500 bg-purple-50 dark:bg-purple-950/40'
-            : 'border-gray-200 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800';
+        return selected.value === key ? 'is-selected' : '';
     }
     if (key.toLowerCase() === feedback.value.correct_answer.toLowerCase()) {
-        return 'border-green-500 bg-green-50 dark:bg-green-950/40';
+        return 'is-right';
     }
     if (key === selected.value) {
-        return 'border-red-400 bg-red-50 dark:bg-red-950/40';
+        return 'is-wrong';
     }
-    return 'border-gray-200 opacity-70 dark:border-gray-700';
+    return 'is-dim';
 }
 </script>
 
@@ -291,14 +290,9 @@ function choiceClass(key: string) {
             <!-- Topo: sair e progresso do material -->
             <div class="shrink-0 px-3 pt-4 md:px-4">
                 <div class="mx-auto flex w-full items-center gap-3 sm:w-[95%] lg:w-[50rem]">
-                    <button
-                        type="button"
-                        class="-ml-1 rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-200"
-                        aria-label="Voltar ao mapa"
-                        @click="backToMap"
-                    >
+                    <IconButton label="Voltar ao mapa" class="-ml-2 shrink-0" @click="backToMap">
                         <X class="h-6 w-6" />
-                    </button>
+                    </IconButton>
                     <div
                         class="h-3 flex-1 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700"
                         role="progressbar"
@@ -379,9 +373,9 @@ function choiceClass(key: string) {
                                     v-for="choice in choices"
                                     :key="choice.key"
                                     type="button"
-                                    class="choice flex w-full select-none items-start gap-3 rounded-xl border-2 px-4 py-3 text-left text-sm text-gray-800 dark:text-gray-100"
+                                    class="choice mz-choice select-none text-sm"
                                     :class="[choiceClass(choice.key), { 'is-dragging': drag?.key === choice.key && drag.horizontal }]"
-                                    :style="{ transform: `translateX(${choiceOffset(choice.key)}px)` }"
+                                    :style="{ translate: `${choiceOffset(choice.key)}px 0` }"
                                     :disabled="!!feedback"
                                     :aria-pressed="selected === choice.key"
                                     @pointerdown="onChoicePointerDown($event, choice.key)"
@@ -392,7 +386,7 @@ function choiceClass(key: string) {
                                 >
                                     <span
                                         v-if="step.question.type === 'multiple_choice'"
-                                        class="font-bold"
+                                        class="mz-choice-key"
                                         :class="{ 'line-through opacity-50': struck[choice.key] }"
                                         >{{ choice.key }}</span
                                     >
@@ -453,12 +447,20 @@ function choiceClass(key: string) {
 </template>
 
 <style scoped>
-/* Deixa a rolagem vertical com o navegador e o arrasto horizontal com a alternativa */
+/* Deixa a rolagem vertical com o navegador e o arrasto horizontal com a alternativa. O arrasto
+   usa translate, e o afundar do .mz-choice usa transform: um não apaga o outro. */
 .choice {
     touch-action: pan-y;
-    transition: transform 0.2s ease;
+    transition:
+        translate 0.2s ease,
+        transform 0.08s ease,
+        box-shadow 0.08s ease,
+        background-color 0.15s ease,
+        opacity 0.15s ease;
 }
 .choice.is-dragging {
-    transition: none;
+    transition:
+        transform 0.08s ease,
+        box-shadow 0.08s ease;
 }
 </style>

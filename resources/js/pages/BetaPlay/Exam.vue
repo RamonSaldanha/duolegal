@@ -2,6 +2,7 @@
 import LevelUpOverlay from '@/components/LevelUpOverlay.vue';
 import ResultBar from '@/components/ResultBar.vue';
 import GameButton from '@/components/ui/GameButton.vue';
+import IconButton from '@/components/ui/IconButton.vue';
 import { playPhaseComplete } from '@/lib/sounds';
 import type { BetaExamAnswerResponse, BetaExamAttempt, BetaExamGiven, BetaExamResult } from '@/types/beta-play';
 import type { DisciplineLevelUp } from '@/types/legislation-play';
@@ -228,17 +229,15 @@ function leave() {
 
 function choiceClass(key: string) {
     if (!feedback.value) {
-        return selected.value === key
-            ? 'border-purple-500 bg-purple-50 dark:bg-purple-950/40'
-            : 'border-gray-200 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800';
+        return selected.value === key ? 'is-selected' : '';
     }
     if (key.toLowerCase() === feedback.value.correct_answer.toLowerCase()) {
-        return 'border-green-500 bg-green-50 dark:bg-green-950/40';
+        return 'is-right';
     }
     if (key === feedback.value.answer) {
-        return 'border-red-400 bg-red-50 dark:bg-red-950/40';
+        return 'is-wrong';
     }
-    return 'border-gray-200 opacity-70 dark:border-gray-700';
+    return 'is-dim';
 }
 
 const answerLabel = (item: { type: string; options: Record<string, string> | null }, key: string) =>
@@ -293,7 +292,7 @@ const answerLabel = (item: { type: string; options: Record<string, string> | nul
                 </div>
 
                 <p v-if="startError" class="mb-3 text-center text-sm text-red-600">Não foi possível começar agora. Tente de novo.</p>
-                <GameButton variant="purple" size="lg" class="w-full" :disabled="starting" @click="start">Começar a prova</GameButton>
+                <GameButton variant="premium" size="lg" class="w-full" :disabled="starting" @click="start">Começar a prova</GameButton>
                 <GameButton variant="white" size="lg" class="mt-3 w-full" @click="backToMap">Voltar ao mapa</GameButton>
             </div>
         </div>
@@ -303,14 +302,9 @@ const answerLabel = (item: { type: string; options: Record<string, string> | nul
             <!-- Topo: sair, progresso, relógio e XP somado -->
             <div class="shrink-0 px-3 pt-4 md:px-4">
                 <div class="mx-auto flex w-full items-center gap-3 sm:w-[95%] lg:w-[50rem]">
-                    <button
-                        type="button"
-                        class="-ml-1 rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-200"
-                        aria-label="Sair da prova"
-                        @click="leave"
-                    >
+                    <IconButton label="Sair da prova" class="-ml-2 shrink-0" @click="leave">
                         <X class="h-6 w-6" />
-                    </button>
+                    </IconButton>
                     <div
                         class="h-3 flex-1 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700"
                         role="progressbar"
@@ -359,13 +353,13 @@ const answerLabel = (item: { type: string; options: Record<string, string> | nul
                                 v-for="choice in choices"
                                 :key="choice.key"
                                 type="button"
-                                class="flex w-full items-start gap-3 rounded-xl border-2 px-4 py-3 text-left text-sm text-gray-800 dark:text-gray-100"
+                                class="mz-choice text-sm"
                                 :class="choiceClass(choice.key)"
                                 :disabled="!!feedback"
                                 :aria-pressed="selected === choice.key"
                                 @click="selected = choice.key"
                             >
-                                <span v-if="question.type === 'multiple_choice'" class="font-bold">{{ choice.key }}</span>
+                                <span v-if="question.type === 'multiple_choice'" class="mz-choice-key">{{ choice.key }}</span>
                                 <span class="min-w-0 flex-1" :class="{ 'font-bold': question.type === 'true_false' }">{{ choice.text }}</span>
                             </button>
                         </div>
@@ -375,7 +369,7 @@ const answerLabel = (item: { type: string; options: Record<string, string> | nul
                 <div v-if="!feedback" class="shrink-0 border-t-2 border-gray-100 px-3 pb-5 pt-4 dark:border-gray-800 md:px-4">
                     <div class="mx-auto w-full sm:w-[95%] lg:w-[50rem]">
                         <p v-if="checkError" class="mb-3 text-sm text-red-600">Não foi possível corrigir agora. Tente de novo.</p>
-                        <GameButton variant="purple" size="lg" class="w-full" :disabled="!selected || checking" @click="check">Responder</GameButton>
+                        <GameButton variant="premium" size="lg" class="w-full" :disabled="!selected || checking" @click="check">Responder</GameButton>
                     </div>
                 </div>
 
@@ -399,7 +393,7 @@ const answerLabel = (item: { type: string; options: Record<string, string> | nul
                     <p class="mt-1 text-sm leading-relaxed text-gray-500 dark:text-gray-400">
                         O tempo não para se você sair. Entregando agora, você recebe o XP dos acertos até aqui.
                     </p>
-                    <GameButton variant="purple" size="lg" class="mt-4 w-full" @click="confirmingExit = false">Continuar a prova</GameButton>
+                    <GameButton variant="premium" size="lg" class="mt-4 w-full" @click="confirmingExit = false">Continuar a prova</GameButton>
                     <GameButton variant="white" size="lg" class="mt-3 w-full" @click="finish">Entregar a prova</GameButton>
                 </div>
             </div>
