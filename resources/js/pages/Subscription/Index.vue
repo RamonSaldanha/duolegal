@@ -3,7 +3,7 @@
 
     <!-- Layout Checkout -->
     <template v-if="!hasActiveSubscription">
-        <div class="min-h-screen bg-white dark:bg-gray-900">
+        <div class="min-h-screen bg-background">
             <!-- Header -->
             <div class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
                 <div class="max-w-6xl mx-auto px-4 h-18 flex items-center justify-between">
@@ -305,7 +305,7 @@
 
     <!-- Layout para usuários com assinatura ativa -->
     <template v-else>
-        <div class="min-h-screen bg-white dark:bg-gray-900">
+        <div class="min-h-screen bg-background">
             <!-- Header -->
             <div class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
                 <div class="max-w-6xl mx-auto px-4 h-18 flex items-center justify-between">

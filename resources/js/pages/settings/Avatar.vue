@@ -152,7 +152,7 @@ const submit = () => form.put(route('avatar.update'), { preserveScroll: true });
                         leave="transition ease-in-out"
                         leave-to="opacity-0"
                     >
-                        <p class="text-sm text-neutral-600">Salvo.</p>
+                        <p class="text-sm text-gray-600">Salvo.</p>
                     </TransitionRoot>
                 </div>
             </div>

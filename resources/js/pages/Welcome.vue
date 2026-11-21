@@ -183,7 +183,7 @@ const toggleFaq = (i: number) => {
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="true" />
         <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     </Head>
-    <div class="lp-root flex min-h-screen flex-col items-center overflow-x-clip bg-white text-gray-800 dark:bg-gray-900 dark:text-gray-100">
+    <div class="lp-root flex min-h-screen flex-col items-center overflow-x-clip bg-background text-gray-800 dark:bg-background dark:text-gray-100">
         <!-- Header -->
         <header
             class="sticky top-0 z-50 w-full border-b bg-white transition-shadow duration-300 dark:bg-gray-900"

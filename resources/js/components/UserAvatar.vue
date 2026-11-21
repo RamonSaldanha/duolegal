@@ -16,7 +16,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
     config: null,
     name: '',
-    fallbackClass: 'bg-neutral-200 text-black dark:bg-neutral-700 dark:text-white',
+    fallbackClass: 'bg-gray-200 text-black dark:bg-gray-700 dark:text-white',
     animated: false,
 });
 

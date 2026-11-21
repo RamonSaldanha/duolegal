@@ -7,7 +7,7 @@
         <link rel="canonical" :href="route('public.search', { q: query })" />
     </Head>
 
-    <div class="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100">
+    <div class="min-h-screen bg-background">
         <!-- Navbar -->
         <PublicNavbar />
 

@@ -135,7 +135,7 @@ const toggleAchievement = (id: number, visible: boolean) => {
                                 :href="route('verification.send')"
                                 method="post"
                                 as="button"
-                                class="text-foreground underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:!decoration-current dark:decoration-neutral-500"
+                                class="text-foreground underline decoration-gray-300 underline-offset-4 transition-colors duration-300 ease-out hover:!decoration-current dark:decoration-gray-500"
                             >
                                 Clique aqui para reenviar o email de verificação.
                             </Link>
@@ -156,7 +156,7 @@ const toggleAchievement = (id: number, visible: boolean) => {
                             leave="transition ease-in-out"
                             leave-to="opacity-0"
                         >
-                            <p class="text-sm text-neutral-600">Salvo.</p>
+                            <p class="text-sm text-gray-600">Salvo.</p>
                         </TransitionRoot>
                     </div>
                 </form>

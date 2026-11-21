@@ -8,7 +8,7 @@
         <link rel="canonical" :href="route('public.law', { legalReference: law.slug || law.uuid })" />
     </Head>
 
-    <div class="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 dark:from-gray-900 dark:to-black">
+    <div class="min-h-screen bg-background">
         <!-- Navbar -->
         <PublicNavbar />
 

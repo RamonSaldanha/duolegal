@@ -32,7 +32,7 @@
         
     </Head>
 
-    <div class="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 dark:from-gray-900 dark:to-black">
+    <div class="min-h-screen bg-background">
         <!-- Navbar -->
         <PublicNavbar />
         
@@ -91,7 +91,7 @@
                 </div>
 
                 <!-- Artigo atual -->
-                <Card class="mb-6 border-0 p-0 bg-gradient-to-br from-slate-50 to-gray-100 dark:from-gray-900 dark:to-black">
+                <Card class="mb-6 border-0 p-0 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-black">
                     <CardHeader class="">
                         <CardTitle>Art. {{ article.article_reference }} - Leia e responda:</CardTitle>
                     </CardHeader>

@@ -67,7 +67,7 @@ import AppLogo from '@/components/AppLogo.vue';
         <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     </Head>
     
-    <div class="flex min-h-screen flex-col bg-white text-gray-800">
+    <div class="flex min-h-screen flex-col bg-background text-gray-800">
         <!-- Header -->
         <header class="w-full bg-white border-b border-gray-200 sticky top-0 z-50">
             <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
@@ -88,7 +88,7 @@ import AppLogo from '@/components/AppLogo.vue';
         </header>
 
         <!-- Hero Section -->
-        <section class="w-full py-16 bg-gradient-to-br from-slate-50 to-gray-100">
+        <section class="w-full py-16 bg-gradient-to-br from-gray-50 to-gray-100">
             <div class="mx-auto max-w-4xl px-4 sm:px-6 text-center">
                 <div class="flex justify-center mb-6">
                     <div class="p-4 bg-orange-100 rounded-full">
