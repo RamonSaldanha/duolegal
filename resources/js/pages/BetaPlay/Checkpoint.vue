@@ -2,7 +2,7 @@
 import Notice from '@/components/ui/Notice.vue';
 import GuidedReading from '@/components/GuidedReading.vue';
 import LevelUpOverlay from '@/components/LevelUpOverlay.vue';
-import PhaseComplete from '@/components/PhaseComplete.vue';
+import PhaseEnd from '@/components/beta-preview/PhaseEnd.vue';
 import ResultBar from '@/components/ResultBar.vue';
 import GameButton from '@/components/ui/GameButton.vue';
 import IconButton from '@/components/ui/IconButton.vue';
@@ -28,6 +28,8 @@ const props = defineProps<{
 
 const page = usePage();
 const authUser = computed(() => page.props.auth.user as { xp: number });
+// Quem assina pula o convite Premium do fim de fase
+const isSubscriber = computed(() => Boolean((page.props.auth.user as { has_infinite_lives?: boolean }).has_infinite_lives));
 
 // O desafio do quadrado é uma sequência de passos: o resumo do material e, logo depois, as
 // questões dele (normalmente um material por quadrado). Joga o que ainda não foi feito; se
@@ -276,14 +278,16 @@ function choiceClass(key: string) {
         <LevelUpOverlay :level-up="levelUp" @done="levelUp = null" />
 
         <!-- ===== Fim da fase ===== -->
-        <PhaseComplete
+        <PhaseEnd
             v-if="stage === 'done'"
-            :title="isReview ? 'Revisão concluída!' : 'Desafio concluído!'"
+            :title="isReview ? 'Revisão' : 'Desafio'"
+            :mark="isReview ? 'concluída!' : 'concluído!'"
+            :premium="isSubscriber"
             :count="answeredCount"
             :count-label="answeredCount === 1 ? 'Questão' : 'Questões'"
             :xp="xpGained"
             :accuracy="accuracy"
-            @continue="backToMap"
+            @done="backToMap"
         />
 
         <!-- ===== Jogo ===== -->

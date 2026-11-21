@@ -29,6 +29,8 @@ Route::middleware(['auth'])->prefix('play')->group(function () {
 // Mapa beta (quadrados com várias fases) — em teste, só para administradores; não substitui o /play
 Route::middleware(['auth', 'admin'])->prefix('beta/play')->group(function () {
     Route::get('/', [BetaPlayController::class, 'betaMap'])->name('beta.play.map');
+    // Prévia das telas novas de fim de fase e convite Premium (ainda fora do jogo)
+    Route::get('previa/fim', fn () => Inertia::render('BetaPlay/PreviewEnd'))->name('beta.play.preview.end');
     Route::get('phase/{phaseId}', [BetaPlayController::class, 'betaPhase'])->where('phaseId', '[0-9]+')->name('beta.play.phase');
     Route::post('fail', [BetaPlayController::class, 'betaFail'])->name('beta.play.fail');
     Route::post('finish', [BetaPlayController::class, 'betaFinish'])->name('beta.play.finish');

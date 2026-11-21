@@ -7,7 +7,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
 import ActiveChallenge from '@/components/legislation-play/ActiveChallenge.vue';
 import CompletedSegment from '@/components/legislation-play/CompletedSegment.vue';
 import LevelUpOverlay from '@/components/LevelUpOverlay.vue';
-import PhaseComplete from '@/components/PhaseComplete.vue';
+import PhaseEnd from '@/components/beta-preview/PhaseEnd.vue';
 import ResultBar from '@/components/ResultBar.vue';
 import GameButton from '@/components/ui/GameButton.vue';
 import IconButton from '@/components/ui/IconButton.vue';
@@ -38,6 +38,8 @@ const props = defineProps<{
 
 const page = usePage();
 const authUser = computed(() => page.props.auth.user as { lives: number; xp: number; has_infinite_lives?: boolean });
+// Quem assina pula o convite Premium do fim de fase
+const isSubscriber = computed(() => Boolean((page.props.auth.user as { has_infinite_lives?: boolean }).has_infinite_lives));
 
 // A fase inteira fica no navegador: nada é gravado antes do último desafio.
 const queue = ref<ActiveSegmentData[]>([...props.challenges]);
@@ -265,14 +267,16 @@ onUnmounted(() => {
         <LevelUpOverlay :level-up="levelUp" @done="levelUp = null" />
 
         <!-- ===== Fim da fase ===== -->
-        <PhaseComplete
+        <PhaseEnd
             v-if="stage === 'done'"
-            :title="isReview ? 'Revisão concluída!' : 'Fase concluída!'"
+            :title="isReview ? 'Revisão' : 'Fase'"
+            :mark="'concluída!'"
+            :premium="isSubscriber"
             :count="total"
             count-label="Desafios"
             :xp="xpGained"
             :accuracy="accuracy"
-            @continue="backToMap"
+            @done="backToMap"
         />
 
         <!-- ===== Gravando / erro ao gravar ===== -->
