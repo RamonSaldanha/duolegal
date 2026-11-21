@@ -258,7 +258,7 @@ async function handleSubmit(data: {
 function showXpGainedNotification(xpGained: number) {
     const notification = document.createElement('div');
     notification.textContent = `+${xpGained} XP`;
-    notification.className = 'fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-purple-500 text-white px-4 py-2 rounded-lg font-bold text-lg shadow-lg';
+    notification.className = 'fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-brand text-brand-ink px-4 py-2 rounded-lg font-bold text-lg shadow-lg';
     notification.style.animation = 'xpGain 2s ease-out forwards';
 
     const style = document.createElement('style');

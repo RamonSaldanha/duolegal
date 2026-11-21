@@ -49,8 +49,8 @@ const userLives = computed(() => page.props.auth.user?.lives ?? 0);
         <div class="flex items-center gap-3">
             <!-- XP Counter -->
             <div v-if="auth.user?.xp !== undefined" class="flex items-center gap-1">
-                <span class="text-xs font-bold text-purple-500 bg-purple-100 dark:bg-purple-900/30 px-2 py-1 rounded">XP</span>
-                <span class="font-bold text-purple-500">{{ auth.user.xp }}</span>
+                <span class="rounded bg-brand-soft px-2 py-1 text-xs font-bold text-brand-soft-ink">XP</span>
+                <span class="font-bold text-brand-soft-ink dark:text-brand">{{ auth.user.xp }}</span>
             </div>
 
             <!-- Lives Counter -->

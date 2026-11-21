@@ -44,7 +44,7 @@ const navItems = computed(() => [
                 class="flex flex-1 flex-col items-center justify-center py-2 transition-colors"
                 :class="[
                     isCurrentRoute(item.href)
-                        ? 'text-purple-600 dark:text-purple-400'
+                        ? 'text-brand-soft-ink dark:text-brand'
                         : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
                 ]"
             >

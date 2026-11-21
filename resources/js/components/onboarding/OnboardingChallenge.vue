@@ -87,7 +87,7 @@ function playSuccessAudio() {
 function showXpGained(amount: number) {
     const el = document.createElement('div');
     el.textContent = `+${amount} XP`;
-    el.className = 'onboarding-xp-gain fixed left-1/2 top-20 z-50 rounded-lg bg-purple-500 px-4 py-2 text-lg font-bold text-white shadow-lg';
+    el.className = 'onboarding-xp-gain fixed left-1/2 top-20 z-50 rounded-lg bg-brand px-4 py-2 text-lg font-bold text-brand-ink shadow-lg';
     document.body.appendChild(el);
     setTimeout(() => el.remove(), 2000);
 }

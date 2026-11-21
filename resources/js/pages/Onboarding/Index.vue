@@ -307,7 +307,7 @@ const BENEFITS = [
                             />
                         </div>
                         <span
-                            class="ob-float absolute -right-14 top-3 rounded-full border-2 border-purple-200 bg-white px-3 py-1 text-sm font-extrabold text-purple-600 shadow-[0_4px_0_#e9d5ff] dark:border-purple-900 dark:bg-gray-800 dark:text-purple-300 dark:shadow-[0_4px_0_theme(colors.purple.900)]"
+                            class="ob-float absolute -right-14 top-3 rounded-full bg-brand-soft px-3 py-1 text-sm font-extrabold text-brand-soft-ink"
                             style="--d: 0.5s"
                         >
                             +25 XP

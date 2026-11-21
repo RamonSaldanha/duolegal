@@ -149,7 +149,7 @@
                                 <div class="text-xs text-muted-foreground">Tentativas</div>
                             </div>
                             <div class="text-center p-3 bg-muted/50 rounded-lg">
-                                <div class="text-2xl font-bold text-purple-500">{{ bestStreak }}</div>
+                                <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ bestStreak }}</div>
                                 <div class="text-xs text-muted-foreground">Melhor Sequência</div>
                             </div>
                         </div>

@@ -80,10 +80,10 @@ const getPositionStyle = (position: number) => {
         text: 'text-blue-600',
     };
     if (position === 3) return {
-        badge: 'bg-purple-500 text-white',
-        ring: 'ring-2 ring-purple-400/30',
-        avatar: 'bg-purple-100 text-purple-700',
-        text: 'text-purple-600',
+        badge: 'bg-orange-700 text-white',
+        ring: 'ring-2 ring-orange-600/30',
+        avatar: 'bg-orange-100 text-orange-800',
+        text: 'text-orange-700',
     };
     return {
         badge: 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300',

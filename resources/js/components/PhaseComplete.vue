@@ -37,7 +37,7 @@ const { shown: shownXp } = useCountUp(toRef(props, 'xp'), { from: 0, delay: 300 
                     <div class="mt-0.5 text-sm text-gray-500 dark:text-gray-400">{{ countLabel }}</div>
                 </div>
                 <div class="px-2 py-3 text-center">
-                    <div class="flex items-center justify-center gap-1.5 text-xl font-bold tabular-nums text-purple-500">
+                    <div class="flex items-center justify-center gap-1.5 text-xl font-bold tabular-nums text-brand-soft-ink dark:text-brand">
                         <Zap class="h-5 w-5" />
                         {{ shownXp }}
                     </div>

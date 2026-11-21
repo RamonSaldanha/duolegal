@@ -516,7 +516,7 @@ onUnmounted(() => {
                                                 <RotateCcw class="h-4 w-4" />
                                                 Revisar
                                             </span>
-                                            <span v-else class="flex items-center gap-1.5 text-purple-600 dark:text-purple-400">
+                                            <span v-else class="flex items-center gap-1.5 text-brand-soft-ink dark:text-brand">
                                                 <BookOpenCheck class="h-4 w-4" />
                                                 Fazer
                                             </span>
@@ -740,8 +740,8 @@ onUnmounted(() => {
     top: -6px;
     width: 24px;
     height: 24px;
-    background: theme('colors.purple.500');
-    color: #fff;
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
     box-shadow: 0 0 0 3px hsl(var(--background));
 }
 

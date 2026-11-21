@@ -47,12 +47,12 @@ watch(
 
 <template>
     <div class="relative flex items-center gap-1" :class="{ 'xp-counting': animating }">
-        <span class="rounded bg-purple-100 px-2 py-1 text-xs font-bold text-purple-500 dark:bg-purple-900/30">XP</span>
-        <span class="xp-value whitespace-nowrap text-sm font-bold tabular-nums text-purple-500 sm:text-base">{{ shown }}</span>
+        <span class="rounded bg-brand-soft px-2 py-1 text-xs font-bold text-brand-soft-ink">XP</span>
+        <span class="xp-value whitespace-nowrap text-sm font-bold tabular-nums text-brand-soft-ink dark:text-brand sm:text-base">{{ shown }}</span>
         <span
             v-if="gained > 0"
             :key="gained"
-            class="xp-gain pointer-events-none absolute -bottom-5 right-0 whitespace-nowrap text-xs font-bold text-purple-500"
+            class="xp-gain pointer-events-none absolute -bottom-5 right-0 whitespace-nowrap text-xs font-bold text-brand-soft-ink dark:text-brand"
             aria-hidden="true"
             @animationend="gained = 0"
             >+{{ gained }}</span

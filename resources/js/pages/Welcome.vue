@@ -397,7 +397,7 @@ const toggleFaq = (i: number) => {
                 <div class="lp-hero-demo relative mx-auto w-full max-w-[460px]">
                     <!-- Etiquetas flutuando nos cantos do card -->
                     <div
-                        class="lp-float absolute -right-8 -top-5 z-30 hidden items-center gap-2 rounded-2xl border-2 border-purple-200 bg-purple-50 px-3 py-2 text-sm font-extrabold text-purple-700 shadow-[0_4px_0_#e9d5ff] dark:border-purple-900 dark:bg-purple-950 dark:text-purple-300 dark:shadow-[0_4px_0_#3b0764] sm:flex"
+                        class="lp-float absolute -right-8 -top-5 z-30 hidden items-center gap-2 rounded-2xl bg-brand-soft px-3 py-2 text-sm font-extrabold text-brand-soft-ink sm:flex"
                         style="animation-delay: -1.2s"
                         aria-hidden="true"
                     >
@@ -627,14 +627,14 @@ const toggleFaq = (i: number) => {
                 </div>
                 <div v-reveal="120" class="order-1 lg:order-2">
                     <h2 class="heading-font mb-5 text-4xl font-bold text-gray-800 dark:text-white sm:text-5xl">
-                        Cada artigo vale <span class="text-purple-600 dark:text-purple-400">XP</span>
+                        Cada artigo vale <span class="text-brand-edge dark:text-brand">XP</span>
                     </h2>
                     <p class="mb-6 text-xl text-gray-600 dark:text-gray-300">
                         Suba no ranking estudando lei seca. Monte seu avatar, vista a toga e mostre quem chega primeiro na aprovação.
                     </p>
                     <div class="flex flex-wrap gap-3">
                         <span
-                            class="inline-flex items-center gap-2 rounded-xl bg-purple-50 px-3 py-2 font-bold text-purple-700 dark:bg-purple-950/50 dark:text-purple-300"
+                            class="inline-flex items-center gap-2 rounded-xl bg-brand-soft px-3 py-2 font-bold text-brand-soft-ink"
                         >
                             <Zap class="h-4 w-4 fill-current" /> XP por fase
                         </span>
