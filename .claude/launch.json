@@ -29,6 +29,17 @@
         "--port=8001"
       ],
       "port": 8001
+    },
+    {
+      "name": "docs-design",
+      "runtimeExecutable": "php",
+      "runtimeArgs": [
+        "-S",
+        "127.0.0.1:8090",
+        "-t",
+        "docs/design"
+      ],
+      "port": 8090
     }
   ]
 }

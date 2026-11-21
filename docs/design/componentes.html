@@ -1,0 +1,1941 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- Guia de componentes do Memorize. Fonte única: edite aqui e publique de novo o artefato (ver CLAUDE.md). -->
+<title>Componentes do Memorize</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Instrument Sans com o 700 da proposta. O site hoje baixa só até 600 (resources/views/app.blade.php); o negrito falso aparece simulado na seção 01. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Roboto:wght@400;500;700;800&display=swap">
+<style>
+/* Layout: inventário em seções numeradas, cada botão num palco branco com a ficha técnica embaixo. */
+:root {
+    --bg: #f6f6f3;
+    --surface: #ffffff;
+    --ink: #1b1b19;
+    --muted: #686862;
+    --line: #e3e3dd;
+    --accent: #1d7d74;
+    --accent-soft: #e7f3f1;
+    --accent-edge: #2e9d94;
+    --warn: #a2520a;
+    --warn-soft: #fdf2e2;
+    --warn-line: #f2cf9c;
+    --code-bg: #efefea;
+    --ok: #16794a;
+    --ok-soft: #e6f5ec;
+    --ok-line: #a8dcbd;
+    --bad: #b42323;
+    --bad-soft: #fcebea;
+    --bad-line: #f0b4b0;
+    --font: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
+    --font-app: 'Roboto', system-ui, sans-serif;
+    --mono: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+        --bg: #121211;
+        --surface: #1b1b1a;
+        --ink: #ecece8;
+        --muted: #a3a39c;
+        --line: #2f2f2c;
+        --accent: #6fd0c5;
+        --accent-soft: #16302d;
+        --accent-edge: #2e9d94;
+        --warn: #f3b766;
+        --warn-soft: #33250f;
+        --warn-line: #6a4b1c;
+        --code-bg: #262624;
+        --ok: #7fd9a5; --ok-soft: #12301f; --ok-line: #2c6a45;
+        --bad: #f59a93; --bad-soft: #3a1714; --bad-line: #7a2e28;
+        color-scheme: dark;
+    }
+}
+:root[data-theme="dark"] {
+    --bg: #121211;
+    --surface: #1b1b1a;
+    --ink: #ecece8;
+    --muted: #a3a39c;
+    --line: #2f2f2c;
+    --accent: #6fd0c5;
+    --accent-soft: #16302d;
+    --accent-edge: #2e9d94;
+    --warn: #f3b766;
+    --warn-soft: #33250f;
+    --warn-line: #6a4b1c;
+    --code-bg: #262624;
+    --ok: #7fd9a5; --ok-soft: #12301f; --ok-line: #2c6a45;
+    --bad: #f59a93; --bad-soft: #3a1714; --bad-line: #7a2e28;
+    color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font);
+    font-size: 15px;
+    line-height: 1.55;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 1120px; margin: 0 auto; padding-block: 40px 80px; display: flex; flex-direction: column; gap: 64px; }
+h1, h2, h3 { text-wrap: balance; margin: 0; }
+p { margin: 0; }
+code { font-family: var(--mono); font-size: 12.5px; background: var(--code-bg); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+a { color: var(--accent); }
+
+/* Topo */
+.intro { display: flex; flex-direction: column; gap: 18px; max-width: 760px; }
+.eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+.intro h1 { font-size: clamp(34px, 6vw, 52px); line-height: 1.05; font-weight: 600; letter-spacing: -.02em; }
+.intro p { font-size: 17px; color: var(--muted); max-width: 64ch; }
+.counts { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-top: 8px; }
+.count { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+.count b { display: block; font-size: 28px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.count span { font-size: 13px; color: var(--muted); }
+
+/* Cabeçalho de seção, no formato da referência */
+.sec { display: flex; flex-direction: column; gap: 22px; }
+.sec-h {
+    display: flex; align-items: center; justify-content: center; gap: 12px; text-align: center;
+    padding: 16px 20px; border: 2px solid var(--accent-edge); border-bottom-width: 6px; border-radius: 16px;
+    background: var(--accent-soft); color: var(--accent);
+    font-size: clamp(21px, 3.6vw, 30px); font-weight: 600; letter-spacing: -.01em;
+}
+.sec-h .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent-edge); flex: none; }
+.sec-lead { color: var(--muted); max-width: 72ch; }
+
+/* Cartões de botão */
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+.spec { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; min-width: 0; }
+.stage {
+    background: #ffffff; color: #171717; border-bottom: 1px solid var(--line);
+    padding: 26px 18px 30px; display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: center; min-height: 128px;
+    font-family: var(--font);
+}
+.stage.col { flex-direction: column; align-items: stretch; }
+.stage.dark-stage { background: #171717; color: #fafafa; }
+.spec-body { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.spec h3 { font-size: 16px; font-weight: 600; }
+.where { font-size: 13px; color: var(--muted); }
+.facts { display: grid; grid-template-columns: auto 1fr; gap: 3px 12px; margin: 0; font-size: 13px; }
+.facts dt { color: var(--muted); }
+.facts dd { margin: 0; min-width: 0; }
+.flag { font-size: 13px; background: var(--warn-soft); border: 1px solid var(--warn-line); color: var(--ink); border-radius: 8px; padding: 8px 10px; }
+.flag b { color: var(--warn); }
+.tag { display: inline-block; font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; padding: 2px 7px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+
+/* Tabelas */
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 12px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); background: var(--bg); }
+tr:last-child td { border-bottom: 0; }
+td.k { font-weight: 600; white-space: nowrap; }
+
+/* Cores */
+.swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 18px 14px; }
+.sw { display: flex; flex-direction: column; gap: 8px; align-items: stretch; }
+.sw .name { font-size: 14px; font-weight: 600; text-align: center; }
+.sw .chip {
+    height: 66px; border-radius: 14px; display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 13px; font-weight: 600; border: 4px solid; box-shadow: 0 4px 0 var(--e);
+}
+.sw .note { font-size: 12px; color: var(--muted); text-align: center; }
+
+/* Tipografia */
+.type-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+.type-card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 6px; }
+.type-card .sample { font-size: 30px; line-height: 1.2; }
+.type-card small { color: var(--muted); font-size: 13px; }
+
+/* ===== Réplicas dos botões ===== */
+button { font: inherit; -webkit-tap-highlight-color: transparent; }
+.stage button, .stage a.btnlike { cursor: pointer; text-decoration: none; }
+.ico { width: 20px; height: 20px; flex: none; }
+
+/* GameButton do site (resources/js/components/ui/GameButton.vue) */
+.gb { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-radius: 8px; border: 4px solid var(--edge); font-family: var(--font); font-weight: 700; box-shadow: 0 4px 0 var(--edge); transition: transform .1s ease, box-shadow .1s ease, background-color .15s ease; }
+.gb.white { --edge: #d4d4d4; background: #fff; color: #171717; }
+.gb.green { --edge: #15803d; background: #22c55e; color: #fff; }
+.gb.purple { --edge: #7e22ce; background: #a855f7; color: #fff; }
+.gb.red { --edge: #b91c1c; background: #ef4444; color: #fff; }
+.gb.blue { --edge: #1d4ed8; background: #3b82f6; color: #fff; }
+.gb.sm { padding: 6px 12px; font-size: 14px; line-height: 20px; }
+.gb.md { padding: 8px 16px; font-size: 16px; line-height: 24px; }
+.gb.lg { padding: 10px 20px; font-size: 16px; line-height: 24px; }
+.gb:disabled { opacity: .5; cursor: not-allowed; }
+.gb.purple:disabled { background: #a3a3a3; --edge: #525252; }
+@media (hover: hover) {
+    .gb.green:not(:disabled):hover { background: #16a34a; }
+    .gb.purple:not(:disabled):hover { background: #9333ea; }
+    .gb.red:not(:disabled):hover { background: #dc2626; }
+    .gb.blue:not(:disabled):hover { background: #2563eb; }
+    .gb:not(:disabled):hover { transform: translateY(2px); box-shadow: 0 2px 0 var(--edge); }
+}
+.gb:not(:disabled):active { transform: translateY(4px); box-shadow: 0 0 0 var(--edge); }
+
+/* GameButton do app (memorize-mobile/src/components/ui/GameButton.tsx): borda 3, sombra 6, afunda 5, letra do sistema */
+.ab { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-radius: 8px; border: 3px solid var(--edge); font-family: var(--font-app); font-weight: 700; box-shadow: 0 6px 0 var(--edge); margin-bottom: 6px; transition: transform .08s ease, box-shadow .08s ease; }
+.ab.white { --edge: #d4d4d4; background: #fff; color: #262626; }
+.ab.green { --edge: #15803d; background: #22c55e; color: #fff; }
+.ab.purple { --edge: #7c3aed; background: #a855f7; color: #fff; }
+.ab.red { --edge: #b91c1c; background: #ef4444; color: #fff; }
+.ab.blue { --edge: #1d4ed8; background: #3b82f6; color: #fff; }
+.ab.sm { padding: 6px 12px; font-size: 13px; }
+.ab.md { padding: 10px 16px; font-size: 15px; }
+.ab.lg { padding: 14px 24px; font-size: 17px; }
+.ab:disabled { background: #a3a3a3; --edge: #525252; color: #fff; cursor: not-allowed; }
+.ab:not(:disabled):active { transform: translateY(5px); box-shadow: 0 1px 0 var(--edge); }
+
+/* .ob-cta do onboarding e .gift-cta do presente */
+.obcta { display: inline-flex; width: 100%; align-items: center; justify-content: center; gap: 8px; border-radius: 8px; border: 4px solid #15803d; background: #22c55e; padding: 12px 24px; font-size: 18px; line-height: 28px; font-weight: 700; color: #fff; box-shadow: 0 4px 0 #15803d; transition: transform .12s, box-shadow .12s, background-color .15s; }
+@media (hover: hover) { .obcta:hover:not(:disabled) { background: #16a34a; transform: translateY(2px); box-shadow: 0 2px 0 #15803d; } }
+.obcta:active:not(:disabled) { transform: translateY(4px); box-shadow: none; }
+.obcta:disabled { cursor: not-allowed; border-color: #d4d4d4; background: #e5e5e5; color: #a3a3a3; box-shadow: 0 4px 0 #d4d4d4; }
+.obcta.pulse:not(:disabled) { animation: pulse 2.4s ease-in-out 1.2s infinite; }
+@keyframes pulse { 0%, 100% { scale: 1; } 50% { scale: 1.02; } }
+.giftcta:disabled { cursor: wait; opacity: .8; border-color: #15803d; background: #22c55e; color: #fff; box-shadow: 0 4px 0 #15803d; }
+
+/* .unsub-cta do descadastro de e-mail */
+.unsub { display: inline-flex; width: 100%; align-items: center; justify-content: center; border-radius: 8px; border: 4px solid #d4d4d4; background: #fff; padding: 12px 24px; font-size: 16.8px; font-weight: 700; color: #374151; box-shadow: 0 4px 0 #d4d4d4; transition: transform .12s, box-shadow .12s; }
+.unsub.back { border-color: #15803d; background: #22c55e; color: #fff; box-shadow: 0 4px 0 #15803d; }
+@media (hover: hover) { .unsub:hover { transform: translateY(2px); box-shadow: 0 2px 0 #d4d4d4; } .unsub.back:hover { box-shadow: 0 2px 0 #15803d; } }
+.unsub:active { transform: translateY(4px); box-shadow: none !important; }
+
+/* .btn-press do LegislationPlay/Play.vue */
+.press { display: inline-flex; align-items: center; gap: 8px; padding: 10px 24px; border-radius: 8px; border: 2px solid; font-size: 14px; font-weight: 700; transition: transform .1s, box-shadow .1s; }
+.press.green { background: #22c55e; border-color: #15803d; color: #fff; box-shadow: 0 3px 0 #15803d; }
+.press.gray { background: #e5e5e5; border-color: #a3a3a3; color: #262626; box-shadow: 0 3px 0 #9ca3af; }
+.press:hover { transform: translateY(3px); box-shadow: none; }
+
+/* Jornadas do mapa legado */
+.journey { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 6px 12px; border-radius: 8px; border: 4px solid var(--e); box-shadow: 0 6px 0 var(--e); color: #fff; font-size: 14px; font-weight: 700; transition: all .15s; }
+.journey.green { --e: #15803d; background: #22c55e; }
+.journey.blue { --e: #1d4ed8; background: #3b82f6; }
+.journey:hover { transform: translateY(2px); box-shadow: 0 4px 0 var(--e); }
+.journey:active { transform: translateY(4px); box-shadow: 0 2px 0 var(--e); }
+.journey-title { padding: 8px 24px; border-radius: 8px; border: 4px solid #b45309; background: #f59e0b; color: #fff; box-shadow: 0 6px 0 #b45309; text-align: center; font-weight: 700; line-height: 1.2; }
+.journey-title small { display: block; font-size: 12px; font-weight: 700; opacity: .9; }
+
+/* Páginas públicas de busca e exercício (classe game-button sem efeito fora do componente) */
+.pub { display: inline-flex; align-items: center; justify-content: center; font-weight: 700; border-radius: 8px; border: 4px solid; transition: all .15s; }
+.pub.green { background: #22c55e; color: #fff; border-color: #15803d; box-shadow: 0 4px 0 #15803d; padding: 12px 22px; }
+.pub.green:hover { background: #16a34a; transform: translateY(4px); box-shadow: 0 2px 0 #15803d; }
+.pub.white { background: #fff; color: #171717; border-color: #d4d4d4; padding: 8px 16px; font-size: 14px; }
+.pub.white:hover { transform: translateY(4px); }
+.pub.pill { border-width: 2px; border-color: #e5e5e5; border-radius: 999px; background: #fff; color: #525252; padding: 4px 12px; font-size: 14px; font-weight: 500; }
+.pub.pill:hover { background: #f0fdf4; color: #16a34a; border-color: #86efac; transform: translateY(4px); }
+
+/* Termos, cookies e privacidade */
+.legal { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 14px 28px; font-size: 20px; font-weight: 700; border-radius: 8px; border: 4px solid; transition: all .15s; }
+.legal.orange { background: #f97316; border-color: #c2410c; color: #fff; }
+.legal.blue { background: #2563eb; border-color: #1e40af; color: #fff; }
+.legal.green { background: #22c55e; border-color: #15803d; color: #fff; }
+.legal.white { background: #fff; border-color: #d4d4d4; color: #171717; }
+.legal:hover { transform: translateY(4px); }
+
+/* Chips 3D pequenos */
+/* "Garantir" do lembrete de oferta, como ficou em 20/11: borda da cor da base, afundar rápido e
+   escurecer só em quem tem mouse (no toque o tom claro ficava preso depois de soltar). */
+.chip-offer { border-radius: 12px; border: 2px solid #15803d; background: #22c55e; padding: 8px 12px; font-size: 12px; font-weight: 800; letter-spacing: .03em; text-transform: uppercase; color: #fff; box-shadow: 0 3px 0 #15803d; transition: transform .1s, box-shadow .1s, background-color .1s; }
+@media (hover: hover) { .chip-offer:hover { background: #16a34a; } }
+.chip-offer:active { transform: translateY(3px); box-shadow: none; }
+.offer-card { width: 100%; display: flex; align-items: center; gap: 12px; border-radius: 16px; border: 2px solid #fbcfe8; background: #fff; padding: 10px 8px 10px 12px; box-shadow: 0 4px 0 #fbcfe8; text-align: left; }
+.offer-card .gift { width: 40px; height: 40px; flex: none; border-radius: 12px; background: #fce7f3; color: #ec4899; display: grid; place-items: center; }
+.offer-card .txt-col { flex: 1; min-width: 0; font-size: 14px; line-height: 1.25; }
+.offer-card .txt-col b { display: block; color: #171717; }
+.offer-card .txt-col span { color: #737373; }
+.offer-card .txt-col em { font-style: normal; font-weight: 600; color: #db2777; font-variant-numeric: tabular-nums; }
+.chip-yellow { border-radius: 12px; border: 2px solid #fef08a; background: #fefce8; padding: 8px 16px; font-size: 14px; font-weight: 700; color: #854d0e; box-shadow: 0 4px 0 #fef08a; transition: all .15s; }
+.chip-yellow:hover { transform: translateY(-2px); }
+.chip-law { border-radius: 12px; border: 2px solid #e5e5e5; background: #fff; padding: 8px 12px; font-size: 14px; font-weight: 600; color: #525252; box-shadow: 0 3px 0 #e5e5e5; transition: transform .15s, box-shadow .15s; }
+.chip-law:hover { background: #fafafa; }
+.chip-law:active { transform: translateY(3px); box-shadow: none; }
+
+/* shadcn Button (components/ui/button) */
+.sh { display: inline-flex; align-items: center; justify-content: center; gap: 8px; white-space: nowrap; border-radius: 6px; font-size: 14px; font-weight: 500; height: 36px; padding: 0 16px; border: 0; transition: background-color .15s, color .15s; }
+.sh.default { background: #171717; color: #fafafa; box-shadow: 0 1px 3px rgba(0,0,0,.1), 0 1px 2px -1px rgba(0,0,0,.1); }
+.sh.default:hover { background: rgba(23,23,23,.9); }
+.sh.destructive { background: #ef4444; color: #fafafa; box-shadow: 0 1px 2px rgba(0,0,0,.05); }
+.sh.destructive:hover { background: rgba(239,68,68,.9); }
+.sh.outline { background: #fff; color: #0a0a0a; border: 1px solid #e5e5e5; box-shadow: 0 1px 2px rgba(0,0,0,.05); }
+.sh.outline:hover, .sh.ghost:hover { background: #f5f5f5; }
+.sh.secondary { background: #f5f5f5; color: #171717; box-shadow: 0 1px 2px rgba(0,0,0,.05); }
+.sh.secondary:hover { background: rgba(245,245,245,.8); }
+.sh.ghost { background: transparent; color: #0a0a0a; }
+.sh.link { background: transparent; color: #171717; text-underline-offset: 4px; }
+.sh.link:hover { text-decoration: underline; }
+.sh.small { height: 32px; padding: 0 12px; font-size: 12px; }
+.sh.icon { width: 36px; padding: 0; }
+.sh:focus-visible { outline: 2px solid #0a0a0a; outline-offset: 2px; }
+
+/* Chapados e de texto */
+.flat-orange { display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; background: #f97316; padding: 12px 24px; font-weight: 700; color: #fff; border: 0; box-shadow: 0 4px 6px -1px rgba(0,0,0,.1), 0 2px 4px -2px rgba(0,0,0,.1); }
+.flat-orange:hover { background: #ea580c; }
+.fab { display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; background: #2563eb; color: #fff; padding: 12px 16px; font-size: 14px; font-weight: 500; border: 0; box-shadow: 0 10px 15px -3px rgba(0,0,0,.1), 0 4px 6px -4px rgba(0,0,0,.1); transition: all .2s; }
+.fab:hover { background: #1d4ed8; transform: scale(1.05); }
+.fab.round-purple { background: #9333ea; padding: 12px; }
+.fab.round-purple:hover { background: #7e22ce; transform: scale(1.1); }
+.flat-blue { display: inline-flex; align-items: center; gap: 8px; border-radius: 8px; background: #2563eb; color: #fff; padding: 8px 16px; font-weight: 500; border: 0; }
+.flat-blue:hover { background: #1d4ed8; }
+.flat-gray { display: inline-flex; align-items: center; gap: 8px; border-radius: 8px; background: #f5f5f5; color: #404040; padding: 8px 16px; font-size: 14px; font-weight: 500; border: 0; }
+.flat-gray:hover { background: #e5e5e5; }
+.pill-outline { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; border: 2px solid #e5e5e5; background: #fff; padding: 8px 14px; font-size: 12px; font-weight: 700; color: #525252; }
+.pill-outline:hover { border-color: #c084fc; color: #9333ea; }
+.more { display: block; width: 100%; border-radius: 12px; border: 2px solid #e5e5e5; background: transparent; padding: 10px 16px; font-size: 14px; font-weight: 700; color: #737373; }
+.more:hover { background: #f5f5f5; }
+.dashed { display: block; width: 100%; border-radius: 16px; border: 2px dashed #d4d4d4; background: transparent; padding: 12px 16px; font-size: 14px; font-weight: 700; color: #737373; }
+.dashed:hover { border-color: #a3a3a3; color: #404040; }
+.page-btn { border-radius: 8px; border: 1px solid #d4d4d4; background: #fff; padding: 8px 12px; font-size: 14px; font-weight: 500; color: #171717; }
+.page-btn:hover { background: #fafafa; }
+.page-btn.on { background: #171717; color: #fafafa; border-color: #171717; }
+.txt { background: none; border: 0; padding: 8px 12px; border-radius: 12px; font-size: 14px; font-weight: 700; color: #a3a3a3; }
+.txt:hover { background: #f5f5f5; color: #525252; }
+.txt.dark { color: #737373; }
+.txt.dark:hover { background: none; color: #404040; }
+.txt.danger:hover { color: #ef4444; background: none; }
+.txt.upper { text-transform: uppercase; letter-spacing: .05em; color: #a3a3a3; }
+.txt.upper:hover { background: none; color: #525252; }
+.txt.link { color: #171717; font-size: 12px; font-weight: 400; padding: 0; }
+.txt.link:hover { text-decoration: underline; background: none; }
+
+/* Ícones */
+.ib { display: inline-flex; align-items: center; justify-content: center; border: 0; background: none; color: #a3a3a3; }
+.ib:hover { background: #f5f5f5; color: #525252; }
+.ib-ob { width: 40px; height: 40px; border-radius: 12px; }
+.ib-beta { padding: 4px; border-radius: 8px; }
+.ib-beta .ico { width: 24px; height: 24px; }
+.ib-round { padding: 6px; border-radius: 999px; color: #737373; }
+.ib-round2 { padding: 8px; border-radius: 999px; }
+.ib-sq { padding: 8px; border-radius: 8px; color: #525252; }
+.ib-banner { width: 32px; height: 32px; border-radius: 8px; }
+.panel { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 8px; background: #f5f5f5; color: #404040; border: 0; }
+.panel:hover { background: #e5e5e5; }
+.panel.main { background: #a855f7; color: #fff; }
+.panel.main:hover { background: #9333ea; }
+.ib-cap { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 11px; color: #737373; text-align: center; max-width: 92px; }
+
+/* Opções */
+/* Opção do onboarding como ficou em 20/11: o estado só troca --c (contorno e base iguais), o mouse
+   não levanta o cartão e apertar afunda em qualquer estado, inclusive na opção já escolhida. */
+.opt { --c: #e5e5e5; display: flex; width: 100%; align-items: center; gap: 16px; border-radius: 16px; border: 2px solid var(--c); background: #fff; padding: 14px 16px; text-align: left; box-shadow: 0 4px 0 var(--c); color: #171717; transition: transform .15s, background-color .15s, border-color .15s, box-shadow .15s; }
+.opt:hover { background: #fafafa; }
+.opt[aria-checked="true"] { --c: #60a5fa; background: #eff6ff; }
+.opt.done { --c: #86efac; background: #f0fdf4; }
+.opt:active { transform: translateY(4px); box-shadow: 0 0 0 var(--c); }
+.opt[aria-checked="false"]:hover { border-color: #d4d4d4; }
+.opt .tint { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex: none; }
+.opt .tint .ico { width: 24px; height: 24px; }
+.opt .t { flex: 1; min-width: 0; }
+.opt .t b { display: block; font-weight: 700; }
+.opt .t span { display: block; font-size: 14px; color: #737373; }
+.opt .check { width: 28px; height: 28px; border-radius: 50%; background: #3b82f6; color: #fff; display: none; align-items: center; justify-content: center; flex: none; }
+.opt[aria-checked="true"] .check { display: flex; }
+.t-blue { background: #dbeafe; color: #2563eb; }
+.t-purple { background: #f3e8ff; color: #9333ea; }
+.t-green { background: #dcfce7; color: #16a34a; }
+
+.choice { display: flex; width: 100%; align-items: flex-start; gap: 12px; border-radius: 12px; border: 2px solid #e5e5e5; background: #fff; padding: 12px 16px; text-align: left; font-size: 14px; color: #262626; }
+.choice:hover { background: #fafafa; }
+.choice b { font-weight: 700; }
+.choice[aria-pressed="true"] { border-color: #a855f7; background: #faf5ff; }
+.choice.right { border-color: #22c55e; background: #f0fdf4; }
+.choice.wrong { border-color: #f87171; background: #fef2f2; }
+.choice.other { opacity: .7; }
+
+.plan { position: relative; border-radius: 12px; border: 2px solid #e5e5e5; background: #fff; padding: 12px 14px; text-align: left; font-size: 14px; color: #171717; flex: 1 1 110px; }
+.plan b { display: block; font-size: 15px; }
+.plan[aria-pressed="true"] { border-color: #a855f7; background: #faf5ff; }
+.tile { display: flex; flex-direction: column; align-items: center; gap: 6px; border-radius: 16px; border: 2px solid #e5e5e5; background: #fff; padding: 8px; font-size: 12px; color: #525252; width: 76px; }
+.tile .face { width: 44px; height: 44px; border-radius: 50%; background: #fde68a; }
+.tile[aria-pressed="true"] { border-color: #a855f7; background: #faf5ff; }
+.sw-btn { width: 56px; height: 56px; border-radius: 16px; border: 2px solid #e5e5e5; background: #fff; display: grid; place-items: center; }
+.sw-btn i { width: 30px; height: 30px; border-radius: 50%; display: block; }
+.sw-btn[aria-pressed="true"] { border-color: #a855f7; background: #faf5ff; }
+.seg { display: inline-flex; gap: 2px; background: #f5f5f5; border-radius: 999px; padding: 4px; }
+.seg button { border: 0; background: none; border-radius: 999px; padding: 8px 16px; font-size: 14px; font-weight: 600; color: #737373; }
+.seg button[aria-pressed="true"] { background: #fff; color: #171717; box-shadow: 0 1px 2px rgba(0,0,0,.05); }
+.seg.sq { border-radius: 8px; }
+.seg.sq button { border-radius: 6px; padding: 6px 14px; font-weight: 400; }
+.word { border-radius: 8px; border: 2px solid #d4d4d4; background: #fff; color: #171717; font-weight: 700; padding: 3px 10px; font-size: 17px; line-height: 1.35; box-shadow: 0 3px 0 #d4d4d4; transition: transform .1s, box-shadow .1s; }
+.word:active { transform: translateY(3px); box-shadow: 0 0 0 #d4d4d4; }
+
+/* Mapa beta */
+.node { position: relative; width: 72px; height: 72px; border: 0; background: none; padding: 0; }
+.node .face { position: absolute; inset: 0; border-radius: 24%; display: flex; align-items: center; justify-content: center; color: #fff; box-shadow: 0 6px 0 0 var(--e); transition: transform .1s, box-shadow .1s; }
+.node .face .ico { width: 40%; height: 40%; }
+.node.cur .face { --e: #1d4ed8; background: #3b82f6; }
+.node.ok .face { --e: #15803d; background: #22c55e; }
+.node.lock .face { --e: #d4d4d4; background: #e5e5e5; color: #a3a3a3; }
+.node.exam .face { --e: #7e22ce; background: #a855f7; }
+.node:not(.lock):hover .face { transform: translateY(2px); box-shadow: 0 4px 0 0 var(--e); }
+.node:not(.lock):active .face { transform: translateY(6px); box-shadow: none; }
+.node-wrap { display: flex; flex-direction: column; align-items: center; gap: 12px; font-size: 12px; color: #737373; }
+.frame { padding: 6px; border-radius: 22px; border: 3px solid #60a5fa; }
+
+/* Comparação lado a lado */
+.phones { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 20px; }
+.phone { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 12px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.phone-label { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.phone-label b { font-size: 16px; }
+.phone-label code { font-size: 12px; }
+.screen { background: #fff; color: #171717; border-radius: 12px; border: 1px solid var(--line); overflow: hidden; display: flex; flex-direction: column; font-family: var(--font); }
+.scr-top { display: flex; align-items: center; gap: 12px; padding: 12px 14px; }
+.bar { flex: 1; border-radius: 999px; background: #f5f5f5; overflow: hidden; }
+.bar i { display: block; height: 100%; border-radius: 999px; background: #22c55e; position: relative; }
+.bar.ob { height: 14px; }
+.bar.ob i::after { content: ""; position: absolute; left: 8px; right: 8px; top: 3px; height: 3px; border-radius: 999px; background: rgba(255,255,255,.35); }
+.bar.beta { height: 12px; background: #e5e5e5; }
+.scr-body { padding: 6px 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+.bubble-row { display: flex; align-items: flex-end; gap: 10px; }
+.avatar { width: 48px; height: 48px; border-radius: 50%; background: #c4b5fd; flex: none; }
+.bubble { border-radius: 16px 16px 16px 6px; border: 2px solid #e5e5e5; padding: 10px 14px; font-size: 17px; font-weight: 700; line-height: 1.3; }
+.q { font-size: 15px; line-height: 1.5; color: #262626; }
+.q-tag { font-size: 12px; font-weight: 700; color: #9333ea; text-transform: uppercase; letter-spacing: .04em; }
+.scr-foot { border-top: 2px solid #f5f5f5; padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+.foot-note { font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: #a3a3a3; text-align: center; }
+
+details { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+details + details { margin-top: 8px; }
+summary { cursor: pointer; padding: 12px 16px; font-weight: 600; display: flex; justify-content: space-between; gap: 12px; }
+summary span { color: var(--muted); font-weight: 400; font-size: 13px; }
+details ul { margin: 0; padding: 0 16px 14px 34px; font-size: 13px; display: flex; flex-direction: column; gap: 4px; }
+details li { overflow-wrap: anywhere; }
+
+.foot { color: var(--muted); font-size: 13px; border-top: 1px solid var(--line); padding-top: 18px; }
+
+/* Marca de "afunda ao clicar" em cada cartão do inventário */
+.pt { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 999px; border: 1px solid; }
+.pt::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.pt.yes { color: var(--ok); border-color: var(--ok-line); background: var(--ok-soft); }
+.pt.no { color: var(--bad); border-color: var(--bad-line); background: var(--bad-soft); }
+.pt.bad { color: var(--warn); border-color: var(--warn-line); background: var(--warn-soft); }
+
+/* Divisor entre a proposta e o inventário */
+.part { display: flex; flex-direction: column; gap: 10px; border-top: 2px solid var(--line); padding-top: 28px; }
+.part h2 { font-size: clamp(26px, 4.4vw, 38px); font-weight: 600; letter-spacing: -.02em; }
+.part p { color: var(--muted); max-width: 70ch; }
+.status-chip { align-self: flex-start; font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--warn); background: var(--warn-soft); border: 1px solid var(--warn-line); border-radius: 999px; padding: 3px 10px; }
+
+/* ===== Proposta ===== */
+/* Tokens das propostas. "Tom" troca o neutro e abaixa a saturação das cores: vivo (hoje),
+   papel (off-white quente) e pastel. Os avisos usam os mesmos tokens para o botão de dentro. */
+#proposta, #avisos-proposta {
+    --stage: #ffffff;
+    --n-face: #ffffff; --n-line: #e5e5e5; --n-edge: #e5e5e5; --n-ink: #262626; --n-ink2: #404040; --n-muted: #737373; --n-tint: #f5f5f5; --n-tint2: #ebebeb; --n-off: #e5e5e5; --n-off-ink: #a3a3a3; --n-off-edge: #d4d4d4;
+    --y: #f6c402; --y-edge: #c49a00; --y-hover: #ffd21f; --y-ink: #3a2e00; --y-soft: #fef5c7; --y-soft2: #fdeb99; --y-soft-ink: #6b5200; --y-mark: #fde047;
+    --dg: #ef4444; --dg-edge: #b91c1c; --dg-hover: #dc2626; --dg-ink: #ffffff; --dg-soft: #fee2e2; --dg-soft2: #fecaca; --dg-soft-ink: #b91c1c;
+    --ch: #60a5fa; --ch-soft: #eff6ff; --ch-key: #2563eb;
+    --okc: #4ade80; --ok-bg: #f0fdf4; --ok-key: #16a34a;
+    --bdc: #f87171; --bad-bg: #fef2f2; --bad-key: #dc2626;
+    --ring: #2563eb;
+    --p: var(--y); --p-edge: var(--y-edge); --p-hover: var(--y-hover); --p-ink: var(--y-ink);
+}
+#proposta[data-tone="papel"] {
+    --stage: #f8f6f1;
+    --n-face: #fffdf8; --n-line: #e4ded2; --n-edge: #e4ded2; --n-ink: #2b2925; --n-ink2: #47433c; --n-muted: #78726a; --n-tint: #efebe3; --n-tint2: #e6e1d6; --n-off: #ebe7df; --n-off-ink: #a8a297; --n-off-edge: #dcd6ca;
+    --y: #efc12f; --y-edge: #b38c17; --y-hover: #f5cc4a; --y-ink: #332800; --y-soft: #f6ecc8; --y-soft2: #f0dfa6; --y-soft-ink: #5e4800; --y-mark: #f3d873;
+    --dg: #c0473e; --dg-edge: #8e322b; --dg-hover: #b03f37; --dg-ink: #ffffff; --dg-soft: #f5e2df; --dg-soft2: #edd0cb; --dg-soft-ink: #993a32;
+    --ch: #87a5d8; --ch-soft: #edf1f8; --ch-key: #3c5f9e;
+    --okc: #86c39c; --ok-bg: #edf5ef; --ok-key: #2e7348;
+    --bdc: #e1928a; --bad-bg: #f9edeb; --bad-key: #a8423a;
+    --ring: #3c5f9e;
+}
+#proposta[data-tone="pastel"] {
+    --stage: #f5f3ee;
+    --n-face: #fffefa; --n-line: #e6e1d7; --n-edge: #ddd7cb; --n-ink: #34322d; --n-ink2: #4b4842; --n-muted: #7e786e; --n-tint: #eeebe4; --n-tint2: #e5e1d8; --n-off: #ebe8e1; --n-off-ink: #aba599; --n-off-edge: #ddd8ce;
+    --y: #f2d571; --y-edge: #c7a740; --y-hover: #f5dd88; --y-ink: #3b3000; --y-soft: #f8f0d4; --y-soft2: #f1e4b6; --y-soft-ink: #5e4a00; --y-mark: #f5e39b;
+    --dg: #e5958d; --dg-edge: #b8635b; --dg-hover: #e8a29b; --dg-ink: #4a1510; --dg-soft: #f8e7e4; --dg-soft2: #f0d6d2; --dg-soft-ink: #9a3d35;
+    --ch: #a7bfe6; --ch-soft: #f0f4fb; --ch-key: #4267a6;
+    --okc: #a8d6b6; --ok-bg: #f0f7f2; --ok-key: #2e7348;
+    --bdc: #eeb0a9; --bad-bg: #fbf0ee; --bad-key: #a8423a;
+    --ring: #4267a6;
+}
+#proposta[data-primary="verde"] { --p: #22c55e; --p-edge: #15803d; --p-hover: #16a34a; --p-ink: #ffffff; }
+#proposta[data-primary="azul"] { --p: #3b82f6; --p-edge: #1d4ed8; --p-hover: #2563eb; --p-ink: #ffffff; }
+/* Palco escuro da proposta: neutros escuros; as cores de ação continuam as mesmas */
+#proposta .stage.dark-stage, #avisos-proposta .stage.dark-stage {
+    --stage: #171717; --n-face: #262626; --n-line: #404040; --n-edge: #0f0f0f; --n-ink: #f5f5f5; --n-ink2: #d4d4d4; --n-muted: #a3a3a3; --n-tint: #2a2a2a; --n-tint2: #353535; --n-off: #333333; --n-off-ink: #737373; --n-off-edge: #1f1f1f;
+    --y-soft: #3a3000; --y-soft2: #4a3d00; --y-soft-ink: #fde68a; --y-mark: #8a6d00;
+    --dg-soft: #3b1414; --dg-soft2: #4c1a1a; --dg-soft-ink: #fca5a5;
+    --ch: #3b82f6; --ch-soft: #172554; --ch-key: #93c5fd;
+    --ring: #93c5fd;
+}
+#proposta[data-tone="papel"] .stage.dark-stage, #proposta[data-tone="pastel"] .stage.dark-stage {
+    --stage: #1b1a17; --n-face: #282622; --n-line: #3d3a34; --n-edge: #100f0d; --n-ink: #eeebe4; --n-ink2: #d3cfc6; --n-muted: #a6a096; --n-tint: #2d2b27; --n-tint2: #37342f; --n-off: #312f2a; --n-off-ink: #77726a; --n-off-edge: #1d1c19;
+    --y-soft: #3a3214; --y-soft2: #4a4019; --y-soft-ink: #f1dc95; --y-mark: #7c6522;
+    --dg-soft: #3a1c19; --dg-soft2: #4a2420; --dg-soft-ink: #efb0a8;
+    --ch: #6f8fc7; --ch-soft: #1c2537; --ch-key: #b3c7ea;
+    --ring: #b3c7ea;
+}
+#proposta .stage, #avisos-proposta .stage { background: var(--stage); color: var(--n-ink); transition: background-color .2s; }
+
+.picker { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+.picker > span { font-weight: 600; min-width: 108px; }
+.picker .opts { display: flex; flex-wrap: wrap; gap: 8px; }
+.picker button { --c: var(--line); display: inline-flex; align-items: center; gap: 8px; border-radius: 12px; border: 2px solid var(--c); background: var(--surface); color: var(--ink); padding: 7px 12px; font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: 0 3px 0 var(--c); transition: transform .1s, box-shadow .1s; }
+.picker button i { width: 16px; height: 16px; border-radius: 5px; display: block; }
+.picker button i.duo { background: linear-gradient(135deg, var(--a) 50%, var(--b) 50%); box-shadow: inset 0 0 0 1px rgba(0,0,0,.12); }
+.picker button[aria-pressed="true"] { --c: var(--accent-edge); }
+.picker button:active { transform: translateY(3px); box-shadow: 0 0 0 var(--c); }
+.picker small { color: var(--muted); font-size: 13px; flex-basis: 100%; }
+.pickers { display: flex; flex-direction: column; gap: 10px; }
+
+.rules { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+.rule .num { font-family: var(--mono); font-size: 12px; color: var(--accent); font-weight: 600; }
+
+/* Botão proposto: cor só na face e na base, sem borda nas cores; o neutro tem contorno de 2 px */
+.pb { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: 12px; font-family: var(--font); font-weight: 700; letter-spacing: -.005em; cursor: pointer; white-space: nowrap; transition: transform .08s ease, box-shadow .08s ease, background-color .15s ease; }
+.pb .ico { width: 18px; height: 18px; }
+.pb.xs { min-height: 32px; padding: 0 12px; font-size: 13px; border-radius: 10px; --d: 2px; }
+.pb.s { min-height: 40px; padding: 0 16px; font-size: 14px; --d: 3px; }
+.pb.m { min-height: 48px; padding: 0 20px; font-size: 16px; --d: 4px; }
+.pb.l { min-height: 56px; padding: 0 24px; font-size: 18px; --d: 4px; }
+.pb.full { width: 100%; }
+.pb { box-shadow: 0 var(--d, 4px) 0 var(--e); }
+.pb.main { --e: var(--p-edge); background: var(--p); color: var(--p-ink); }
+.pb.second { --e: var(--n-edge); background: var(--n-face); color: var(--n-ink2); box-shadow: inset 0 0 0 2px var(--n-line), 0 var(--d, 4px) 0 var(--n-edge); }
+.pb.danger { --e: var(--dg-edge); background: var(--dg); color: var(--dg-ink); }
+
+@media (hover: hover) {
+    .pb.main:not(:disabled):hover { background: var(--p-hover); }
+    .pb.second:not(:disabled):hover { background: var(--n-tint); }
+    .pb.danger:not(:disabled):hover { background: var(--dg-hover); }
+}
+.pb:not(:disabled):active { transform: translateY(var(--d, 4px)); box-shadow: 0 0 0 var(--e); }
+.pb.second:not(:disabled):active { box-shadow: inset 0 0 0 2px var(--n-line), 0 0 0 var(--n-edge); }
+.pb:disabled { background: var(--n-off); color: var(--n-off-ink); box-shadow: 0 var(--d, 4px) 0 var(--n-off-edge); cursor: not-allowed; }
+.pb.text { background: none; box-shadow: none; color: var(--n-muted); min-height: 40px; padding: 0 12px; }
+.pb.text:hover { color: var(--n-ink2); }
+.pb.text:active { transform: translateY(2px); box-shadow: none; }
+.pb.busy { cursor: progress; }
+.spin { width: 18px; height: 18px; border-radius: 50%; border: 2.5px solid currentColor; border-right-color: transparent; animation: spin .8s linear infinite; flex: none; }
+@keyframes spin { to { rotate: 360deg; } }
+
+/* Cartão de escolha. O estado (escolhido, certo, errado) só troca a cor --c, e o contorno e a base
+   saem dela. Assim, apertar um cartão em qualquer estado afunda do mesmo jeito: a regra do estado
+   não repõe a base por cima da regra de apertado. */
+.pchoice { --c: var(--n-line); --ink-key: var(--n-muted); display: flex; width: 100%; align-items: center; gap: 12px; border: 0; border-radius: 16px; background: var(--n-face); padding: 14px 16px; text-align: left; font-size: 15px; color: var(--n-ink); cursor: pointer; box-shadow: inset 0 0 0 2px var(--c), 0 4px 0 var(--c); transition: transform .08s, box-shadow .08s, background-color .15s; }
+.pchoice b { width: 28px; height: 28px; flex: none; border-radius: 8px; display: grid; place-items: center; font-size: 14px; box-shadow: inset 0 0 0 2px var(--c); color: var(--ink-key); }
+.pchoice[aria-pressed="true"] { --c: var(--ch); --ink-key: var(--ch-key); background: var(--ch-soft); }
+.pchoice.right { --c: var(--okc); --ink-key: var(--ok-key); background: var(--ok-bg); }
+.pchoice.wrong { --c: var(--bdc); --ink-key: var(--bad-key); background: var(--bad-bg); }
+button.pchoice:active { transform: translateY(4px); box-shadow: inset 0 0 0 2px var(--c), 0 0 0 var(--c); }
+.pchip { border: 0; border-radius: 12px; background: var(--n-face); padding: 8px 14px; font-size: 15px; font-weight: 700; color: var(--n-ink); cursor: pointer; box-shadow: inset 0 0 0 2px var(--n-line), 0 3px 0 var(--n-edge); transition: transform .08s, box-shadow .08s; }
+.pchip:active { transform: translateY(3px); box-shadow: inset 0 0 0 2px var(--n-line), 0 0 0 var(--n-edge); }
+.picon { width: 40px; height: 40px; border: 0; border-radius: 12px; background: none; color: var(--n-muted); display: inline-grid; place-items: center; cursor: pointer; transition: transform .08s, background-color .15s; }
+.picon .ico { width: 24px; height: 24px; }
+.picon:hover { background: var(--n-tint); color: var(--n-ink2); }
+.picon:active { transform: translateY(2px); background: var(--n-tint2); }
+
+/* ===== Botões calmos: mesmos traços do 3D, sem base =====
+   Canto, peso da letra, contorno de 2 px e cor por papel iguais aos do botão que afunda.
+   Ao apertar não descem: a face escurece um tom e ganha uma sombra de 2 px por dentro, em cima,
+   como uma tecla apertada ("aperta para dentro"). Assim o toque responde sem fingir profundidade. */
+.fb { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: 12px; background: none; font-family: var(--font); font-weight: 700; letter-spacing: -.005em; color: var(--n-ink2); cursor: pointer; white-space: nowrap; text-decoration: none; transition: background-color .12s, box-shadow .12s, color .12s; }
+.fb .ico { width: 18px; height: 18px; }
+.fb.xs { min-height: 32px; padding: 0 12px; font-size: 13px; border-radius: 10px; }
+.fb.s { min-height: 40px; padding: 0 16px; font-size: 14px; }
+.fb.m { min-height: 48px; padding: 0 20px; font-size: 16px; }
+.fb.full { width: 100%; }
+.fb.sq { padding: 0; aspect-ratio: 1; }
+.fb.sq .ico { width: 20px; height: 20px; }
+.fb.xs.sq .ico { width: 16px; height: 16px; }
+
+.fb.tonal { background: var(--n-tint); color: var(--n-ink); }
+.fb.tonal.y { background: var(--y-soft); color: var(--y-soft-ink); }
+.fb.tonal.dg { background: var(--dg-soft); color: var(--dg-soft-ink); }
+.fb.outline { box-shadow: inset 0 0 0 2px var(--n-line); color: var(--n-ink); }
+.fb.dashed { box-shadow: none; outline: 2px dashed var(--n-line); outline-offset: -2px; color: var(--n-muted); }
+.fb.ghost { color: var(--n-muted); }
+@media (hover: hover) {
+    .fb.tonal:not(:disabled):hover { background: var(--n-tint2); }
+    .fb.tonal.y:not(:disabled):hover { background: var(--y-soft2); }
+    .fb.tonal.dg:not(:disabled):hover { background: var(--dg-soft2); }
+    .fb.outline:not(:disabled):hover, .fb.dashed:not(:disabled):hover { background: var(--n-tint); color: var(--n-ink); }
+    .fb.ghost:not(:disabled):hover { background: var(--n-tint); color: var(--n-ink); }
+}
+.fb.tonal:not(:disabled):active { background: var(--n-tint2); box-shadow: inset 0 2px 0 rgba(0,0,0,.08); }
+.fb.tonal.y:not(:disabled):active { background: var(--y-soft2); }
+.fb.tonal.dg:not(:disabled):active { background: var(--dg-soft2); }
+.fb.outline:not(:disabled):active { background: var(--n-tint2); box-shadow: inset 0 0 0 2px var(--n-line), inset 0 3px 0 rgba(0,0,0,.06); }
+.fb.dashed:not(:disabled):active, .fb.ghost:not(:disabled):active { background: var(--n-tint2); box-shadow: inset 0 2px 0 rgba(0,0,0,.08); color: var(--n-ink); }
+.dark-stage .fb:not(:disabled):active { box-shadow: inset 0 2px 0 rgba(0,0,0,.35); }
+.dark-stage .fb.outline:not(:disabled):active { box-shadow: inset 0 0 0 2px var(--n-line), inset 0 3px 0 rgba(0,0,0,.35); }
+.fb:disabled { background: var(--n-off); color: var(--n-off-ink); box-shadow: none; outline: 0; cursor: not-allowed; }
+.fb.ghost:disabled { background: none; }
+
+/* Marca-texto: o link do site. Um traço de marca-texto amarelo embaixo, que sobe e cobre a palavra no mouse. */
+.mark { font: inherit; font-weight: 600; color: var(--n-ink); text-decoration: none; cursor: pointer; border: 0; padding: 0 2px; margin: 0 -2px; border-radius: 3px; background: linear-gradient(var(--y-mark), var(--y-mark)) no-repeat 0 100% / 100% .32em; transition: background-size .18s ease; }
+.mark:hover { background-size: 100% 100%; }
+.mark:active { background-size: 100% 100%; background-image: linear-gradient(var(--y-soft2), var(--y-soft2)); }
+
+/* Chips de filtro: escolher é azul, como o cartão; o escolhido ganha o check */
+.fchip { --c: var(--n-line); display: inline-flex; align-items: center; gap: 6px; min-height: 36px; border: 0; border-radius: 999px; padding: 0 14px; background: var(--n-face); color: var(--n-ink2); font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; box-shadow: inset 0 0 0 2px var(--c); transition: background-color .12s, box-shadow .12s; }
+.fchip .ico { width: 14px; height: 14px; display: none; }
+.fchip[aria-pressed="true"] { --c: var(--ch); background: var(--ch-soft); color: var(--ch-key); }
+.fchip[aria-pressed="true"] .ico { display: block; }
+@media (hover: hover) { .fchip[aria-pressed="false"]:hover { background: var(--n-tint); } }
+.fchip:active { box-shadow: inset 0 0 0 2px var(--c), inset 0 3px 0 rgba(0,0,0,.06); }
+
+/* Alternador: trilho rebaixado, a opção ativa é uma peça clara com base de 2 px, como uma tecla levantada */
+.fseg { display: inline-flex; gap: 4px; padding: 4px; border-radius: 14px; background: var(--n-tint); box-shadow: inset 0 2px 0 rgba(0,0,0,.05); }
+.fseg button { border: 0; background: none; border-radius: 10px; min-height: 34px; padding: 0 14px; font: inherit; font-size: 14px; font-weight: 700; color: var(--n-muted); cursor: pointer; transition: background-color .12s, box-shadow .12s, color .12s; }
+.fseg button[aria-pressed="true"] { background: var(--n-face); color: var(--n-ink); box-shadow: inset 0 0 0 2px var(--n-line), 0 2px 0 var(--n-edge); }
+.dark-stage .fseg { box-shadow: inset 0 2px 0 rgba(0,0,0,.3); }
+
+/* Paginação: quadrados de 40, a página atual é azul (você está aqui) */
+.fpage { display: inline-flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+.fpage .fb { min-width: 40px; }
+.fpage .fb[aria-current="page"] { background: var(--ch-soft); color: var(--ch-key); box-shadow: inset 0 0 0 2px var(--ch); }
+
+/* Flutuante: o botão neutro com base, que fica sobre o mapa */
+.pb.float { border-radius: 999px; }
+
+/* Linha de tabela do admin */
+.adm-row { width: 100%; display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; box-shadow: inset 0 0 0 2px var(--n-line); background: var(--n-face); font-size: 14px; }
+.adm-row > span { flex: 1; min-width: 0; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.adm-row small { display: block; color: var(--n-muted); font-size: 12px; }
+
+#proposta .fb:focus-visible, #proposta .pb:focus-visible, #proposta .fchip:focus-visible, #proposta .mark:focus-visible, #proposta .fseg button:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
+.demo-p { font-size: 15px; line-height: 1.6; color: var(--n-ink2); max-width: 46ch; text-align: left; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: center; }
+.row-label { font-size: 12px; color: var(--n-muted); width: 100%; text-align: center; margin-top: 2px; }
+.kind { display: inline-flex; gap: 6px; flex-wrap: wrap; }
+.kind span { font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+.kind span.sink { color: var(--ok); border-color: var(--ok-line); background: var(--ok-soft); }
+.kind span.calm { color: var(--accent); border-color: var(--accent-edge); background: var(--accent-soft); }
+.wide { grid-column: 1 / -1; }
+.sub-h { font-size: 22px; font-weight: 600; letter-spacing: -.01em; }
+.dna { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+.dna div { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+.dna b { display: block; font-size: 15px; }
+.dna span { font-size: 13px; color: var(--muted); }
+.tone-note { font-size: 13px; color: var(--muted); }
+.legend { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; font-size: 13px; }
+.legend b { font-weight: 600; }
+.open-q { display: flex; flex-direction: column; gap: 10px; margin: 0; padding: 0; list-style: none; counter-reset: q; }
+.open-q li { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px 12px 46px; position: relative; }
+.open-q li::before { counter-increment: q; content: counter(q); position: absolute; left: 14px; top: 12px; width: 22px; height: 22px; border-radius: 50%; background: var(--warn-soft); color: var(--warn); font-size: 12px; font-weight: 700; display: grid; place-items: center; border: 1px solid var(--warn-line); }
+.open-q b { display: block; }
+.open-q span { color: var(--muted); font-size: 14px; }
+.press-table td:nth-child(2) { white-space: nowrap; }
+
+/* Sumário de componentes */
+.toc { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+.toc-item { display: flex; flex-direction: column; gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; color: var(--ink); text-decoration: none; min-width: 0; }
+a.toc-item:hover { border-color: var(--accent-edge); }
+.toc-item b { font-size: 17px; font-weight: 600; }
+.toc-item > span:last-child { font-size: 13px; color: var(--muted); }
+.toc-item.later { opacity: .62; }
+.toc-state { align-self: flex-start; font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+.toc-state.ok { color: var(--accent); }
+
+/* Abertura de cada componente */
+.chapter { display: flex; flex-direction: column; gap: 14px; padding-top: 8px; scroll-margin-top: 16px; }
+.chapter h2 { font-size: clamp(36px, 7vw, 60px); line-height: 1; font-weight: 600; letter-spacing: -.03em; }
+.chapter-kicker { font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+.tnum { font-variant-numeric: tabular-nums; }
+
+/* ===== Aviso proposto: chapado, cor por tipo ===== */
+.al { --bg: #dbeafe; --ln: #bfdbfe; --dt: #3b82f6; --tt: #1d4ed8; --tx: #1e40af;
+    display: flex; align-items: flex-start; gap: 12px; width: 100%; border-radius: 16px; border: 2px solid var(--ln); background: var(--bg); padding: 14px 16px; text-align: left; }
+.al.ok { --bg: #dcfce7; --ln: #bbf7d0; --dt: #22c55e; --tt: #15803d; --tx: #166534; }
+.al.err { --bg: #fee2e2; --ln: #fecaca; --dt: #ef4444; --tt: #b91c1c; --tx: #991b1b; }
+.al.warn { --bg: #fef3c7; --ln: #fde68a; --dt: #f59e0b; --tt: #b45309; --tx: #92400e; }
+.al.offer { --bg: #fce7f3; --ln: #fbcfe8; --dt: #ec4899; --tt: #be185d; --tx: #9d174d; }
+.dark-stage .al.info { --bg: #172554; --ln: #1e3a8a; --tt: #93c5fd; --tx: #bfdbfe; }
+.dark-stage .al.ok { --bg: #052e16; --ln: #14532d; --tt: #86efac; --tx: #bbf7d0; }
+.dark-stage .al.err { --bg: #450a0a; --ln: #7f1d1d; --tt: #fca5a5; --tx: #fecaca; }
+.dark-stage .al.warn { --bg: #451a03; --ln: #78350f; --tt: #fcd34d; --tx: #fde68a; }
+.dark-stage .al.offer { --bg: #500724; --ln: #831843; --tt: #f9a8d4; --tx: #fbcfe8; }
+.al > div { flex: 1; min-width: 0; }
+.al b { display: block; font-size: 16px; line-height: 1.3; font-weight: 700; color: var(--tt); }
+.al p { margin-top: 2px; font-size: 14px; line-height: 1.4; color: var(--tx); }
+.al-dot { width: 28px; height: 28px; flex: none; border-radius: 50%; background: var(--dt); color: #fff; display: grid; place-items: center; }
+.al-dot .ico { width: 16px; height: 16px; }
+.al-action { align-self: center; flex: none; }
+.al-pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); border-bottom: 1px solid var(--line); }
+.al-pair .stage { border-bottom: 0; }
+.al-stack { gap: 12px; align-items: stretch; }
+.al-caption { font-size: 12px; color: #737373; text-align: center; }
+.al-toast { align-items: center; }
+.al-close { width: 32px; height: 32px; color: var(--tx); }
+.al-close .ico { width: 18px; height: 18px; }
+.al-short { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; color: #b91c1c; }
+.al-short .ico { width: 18px; height: 18px; flex: none; }
+/* Barra de resultado (formato barra): fundo 100 com filete de 2 px em cima */
+.al-bar { --bg: #dcfce7; --ln: #bbf7d0; --dt: #22c55e; --tt: #15803d; --tx: #166534; width: 100%; background: var(--bg); border-top: 2px solid var(--ln); padding: 16px 16px 20px; text-align: left; }
+.al-bar-head { display: flex; align-items: center; gap: 10px; }
+.al-bar-head b { font-size: 18px; font-weight: 700; color: var(--tt); }
+.al-bar > p { margin-top: 8px; font-size: 14px; color: var(--tx); }
+
+/* ===== Avisos de hoje (réplicas) ===== */
+.strip-now { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; background: #9333ea; color: #fff; padding: 12px 18px; font-weight: 700; font-size: 15px; line-height: 1.3; }
+.strip-now .tnum { font-family: var(--mono); font-size: 16px; flex: none; }
+.now-pink { width: 100%; display: flex; align-items: center; gap: 12px; border-radius: 12px; border: 2px solid #fbcfe8; background: #fdf2f8; padding: 14px; font-size: 14px; text-align: left; }
+.now-pink .gift { width: 40px; height: 40px; flex: none; border-radius: 12px; background: #fce7f3; color: #ec4899; display: grid; place-items: center; }
+.now-pink b { display: block; color: #171717; }
+.now-pink p { color: #525252; }
+.now-red1 { width: 100%; display: flex; align-items: center; gap: 8px; border-radius: 8px; border: 1px solid #fecaca; background: #fef2f2; padding: 12px; font-size: 14px; color: #b91c1c; text-align: left; }
+.now-red1 .ico { width: 16px; height: 16px; color: #ef4444; flex: none; }
+.now-red2 { width: 100%; border-radius: 8px; background: #fef2f2; padding: 12px; font-size: 14px; color: #dc2626; text-align: left; }
+.now-amber { width: 100%; display: flex; align-items: flex-start; gap: 12px; border-radius: 6px; border: 1px solid #fde68a; background: #fffbeb; padding: 16px; text-align: left; font-size: 14px; color: #92400e; }
+.now-amber .ico { width: 20px; height: 20px; color: #b45309; flex: none; }
+.now-amber b { display: block; color: #78350f; }
+.now-blue { width: 100%; border-radius: 8px; background: #dbeafe; padding: 16px; font-size: 17px; font-weight: 500; color: #1e40af; text-align: left; }
+.now-yellow { width: 100%; border-radius: 8px; border: 1px solid #fef08a; background: #fefce8; padding: 16px; font-size: 14px; color: #854d0e; text-align: center; }
+.now-legal { width: 100%; border-radius: 8px; border: 1px solid #fde68a; background: #fffbeb; padding: 16px; font-size: 14px; color: #78350f; text-align: left; }
+.now-err-text { font-size: 14px; color: #dc2626; text-align: left; }
+.now-note { font-size: 14px; font-weight: 500; color: #a3a3a3; text-align: left; }
+.toast-app { width: 100%; max-width: 320px; display: flex; align-items: center; gap: 12px; border-radius: 14px; padding: 12px 16px; color: #fff; text-align: left; box-shadow: 0 4px 8px rgba(0,0,0,.25); font-family: var(--font-app); }
+.toast-app.ok { background: #22c55e; }
+.toast-app.err { background: #ef4444; }
+.toast-app .t-ico { width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,.2); display: grid; place-items: center; flex: none; }
+.toast-app b { display: block; font-size: 15px; }
+.toast-app p { font-size: 13px; opacity: .92; }
+
+:focus-visible { outline: 2px solid var(--accent-edge); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .obcta.pulse:not(:disabled) { animation: none; } * { transition: none !important; } }
+@media (max-width: 480px) { .wrap { padding-block: 24px 56px; gap: 48px; } .stage { padding: 22px 12px 26px; } }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+        <symbol id="i-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></symbol>
+        <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+        <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></symbol>
+        <symbol id="i-share" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4"/><path d="m15.4 6.5-6.8 4"/></symbol>
+        <symbol id="i-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M8 16H3v5"/></symbol>
+        <symbol id="i-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></symbol>
+        <symbol id="i-chevr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></symbol>
+        <symbol id="i-play" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l12-7.5z"/></symbol>
+        <symbol id="i-pause" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></symbol>
+        <symbol id="i-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+        <symbol id="i-scale" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 16 3-8 3 8c-.9.7-1.9 1-3 1s-2.1-.3-3-1Z"/><path d="m2 16 3-8 3 8c-.9.7-1.9 1-3 1s-2.1-.3-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></symbol>
+        <symbol id="i-bank" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 22h18"/><path d="M6 18v-7"/><path d="M10 18v-7"/><path d="M14 18v-7"/><path d="M18 18v-7"/><path d="m12 2 8 5H4z"/></symbol>
+        <symbol id="i-cap" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10 12 5 2 10l10 5 10-5Z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></symbol>
+        <symbol id="i-star" viewBox="0 0 24 24" fill="currentColor"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8-6.2-3.2L5.8 21 7 14.2 2 9.3l6.9-1z"/></symbol>
+        <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+        <symbol id="i-doc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="m9 15 2 2 4-4"/></symbol>
+        <symbol id="i-bang" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 6v8"/><path d="M12 18.5v.01"/></symbol>
+        <symbol id="i-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 11v7"/><path d="M12 6.5v.01"/></symbol>
+        <symbol id="i-gift" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C10 3 12 8 12 8s2-5 4.5-5a2.5 2.5 0 0 1 0 5"/></symbol>
+    </defs>
+</svg>
+
+<div class="wrap">
+
+<header class="intro">
+    <span class="eyebrow">Interface · documento vivo · <code>docs/design/componentes.html</code></span>
+    <h1>Componentes do Memorize</h1>
+    <p>O guia de como cada peça da interface deve ser no site e no app. Cada componente tem duas partes: a proposta de padrão, que ainda não está no código, e o inventário do que existe hoje, desenhado com o CSS real. Quando uma proposta fica boa, trocamos o componente de uma vez nos dois, seguindo este guia.</p>
+</header>
+
+<nav class="toc" aria-label="Componentes">
+    <a class="toc-item" href="#botoes"><span class="toc-state ok">Proposta e inventário</span><b>Botões</b><span>Principal, secundário, perigo, texto, ícone, cartão de escolha</span></a>
+    <a class="toc-item" href="#avisos"><span class="toc-state ok">Proposta e inventário</span><b>Avisos</b><span>Barra de resultado, aviso na página, notificação, erro curto</span></a>
+    <div class="toc-item later"><span class="toc-state">A mapear</span><b>Cartões e painéis</b><span>Cartão do mapa, comentário do gabarito, estatísticas</span></div>
+    <div class="toc-item later"><span class="toc-state">A mapear</span><b>Campos</b><span>Texto, senha, busca, seleção</span></div>
+    <div class="toc-item later"><span class="toc-state">A mapear</span><b>Progresso</b><span>Barras de fase, de XP e de tempo</span></div>
+    <div class="toc-item later"><span class="toc-state">A mapear</span><b>Janelas</b><span>Modais, folhas que sobem, confirmações</span></div>
+    <div class="toc-item later"><span class="toc-state">A mapear</span><b>Selos e etiquetas</b><span>Pílulas de XP, vidas, ofensiva, status</span></div>
+    <div class="toc-item later"><span class="toc-state">A mapear</span><b>Navegação</b><span>Cabeçalho, barra de baixo, abas</span></div>
+</nav>
+
+<div class="chapter" id="botoes">
+    <span class="chapter-kicker">Componente 1</span>
+    <h2>Botões</h2>
+    <div class="counts">
+        <div class="count"><b>8 de 25</b><span>tipos de botão de hoje afundam ao clicar como deveriam</span></div>
+        <div class="count"><b>11</b><span>tipos não afundam de jeito nenhum, entre eles a alternativa da questão</span></div>
+        <div class="count"><b>6</b><span>tipos afundam do jeito errado (só com o mouse, ou só às vezes)</span></div>
+        <div class="count"><b>3</b><span>sistemas de botão no site, mais 8 cópias escritas à mão</span></div>
+    </div>
+</div>
+
+<div class="part">
+    <span class="status-chip">Rascunho 3 · família completa e tom em teste</span>
+    <h2>Botões · Proposta de padrão</h2>
+    <p>Nada daqui foi aplicado. Passe o mouse e aperte os botões para sentir cada um.</p>
+</div>
+
+<section class="sec" id="proposta" data-primary="amarelo" data-tone="vivo">
+    <h2 class="sec-h">P <span class="dot"></span> Um botão, as mesmas regras</h2>
+
+    <div class="pickers">
+    <div class="picker">
+        <span>Cor principal</span>
+        <div class="opts" data-picker="primary">
+            <button type="button" data-value="amarelo" aria-pressed="true"><i style="background:#f6c402"></i>Amarelo do logo</button>
+            <button type="button" data-value="verde" aria-pressed="false"><i style="background:#22c55e"></i>Verde</button>
+            <button type="button" data-value="azul" aria-pressed="false"><i style="background:#3b82f6"></i>Azul</button>
+        </div>
+        <small>Decidido em 20/11: a cor principal é o amarelo do logo (<code>#F6C402</code>, base <code>#C49A00</code>, texto <code>#3A2E00</code>), e o roxo deixa de ser principal. Verde e azul ficam aqui só para comparar; a página sempre abre no amarelo.</small>
+    </div>
+    <div class="picker">
+        <span>Tom</span>
+        <div class="opts" data-picker="tone">
+            <button type="button" data-value="vivo" aria-pressed="true"><i class="duo" style="--a:#ffffff;--b:#f6c402"></i>Vivo (hoje)</button>
+            <button type="button" data-value="papel" aria-pressed="false"><i class="duo" style="--a:#f8f6f1;--b:#efc12f"></i>Papel</button>
+            <button type="button" data-value="pastel" aria-pressed="false"><i class="duo" style="--a:#f5f3ee;--b:#f2d571"></i>Pastel</button>
+        </div>
+        <small><b>Vivo</b> é o branco e as cores do Tailwind de hoje. <b>Papel</b> troca o branco por off-white quente e fecha um pouco as cores (amarelo de marca-texto, vermelho de caneta de correção, azul de tinta). <b>Pastel</b> vai além e clareia as cores de ação; o texto do botão vermelho vira escuro para continuar legível. Vale para todos os botões desta proposta, nos palcos claro e escuro.</small>
+    </div>
+    </div>
+
+    <div class="rules">
+        <article class="spec rule">
+            <div class="stage col" style="gap:18px">
+                <button class="pb main l full">Continuar</button>
+                <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center">
+                    <button class="pb second m">Agora não</button>
+                    <button class="pb danger m">Excluir desafio</button>
+                </div>
+                <button class="pb text">Pular</button>
+            </div>
+            <div class="spec-body">
+                <span class="num">REGRA 1</span>
+                <h3>A cor diz o papel, não a tela</h3>
+                <dl class="legend">
+                    <b>Principal</b><span>avançar, salvar, começar. Um por tela.</span>
+                    <b>Secundário</b><span>branco: voltar, cancelar, limpar.</span>
+                    <b>Perigo</b><span>vermelho: excluir, sair da conta.</span>
+                    <b>Texto</b><span>sem caixa: pular, agora não.</span>
+                </dl>
+                <p class="where">Substitui o <code>GameButton</code>, as 8 cópias à mão e o <code>Button</code> do shadcn nas telas de aluno. Errado e acerto continuam vermelho e verde na barra de resultado.</p>
+            </div>
+        </article>
+
+        <article class="spec rule">
+            <div class="stage col" style="gap:18px;align-items:center">
+                <button class="pb main m">Botão · 4 px</button>
+                <button class="pchoice" aria-pressed="false" style="max-width:300px"><b>A</b><span>Cartão de escolha · 4 px</span></button>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center"><button class="pchip">liberdade</button><button class="pchip">Peça · 3 px</button></div>
+                <div style="display:flex;gap:6px;align-items:center"><button class="picon" aria-label="Fechar"><svg class="ico"><use href="#i-x"/></svg></button><button class="picon" aria-label="Voltar"><svg class="ico"><use href="#i-left"/></svg></button><span style="font-size:12px;color:#737373">Ícone · desce 2 px</span></div>
+            </div>
+            <div class="spec-body">
+                <span class="num">REGRA 2</span>
+                <h3>Tudo que se aperta afunda</h3>
+                <p class="where">Todo botão tem uma base sólida embaixo, e ao apertar a face desce exatamente a altura da base, que some. Vale no clique e no toque, nunca só com o mouse por cima, e vale igual para um item que já está escolhido. Com o mouse por cima, o botão só muda de tom e não se mexe. Ícones sem caixa descem 2 px e ganham fundo cinza. Nenhuma animação do botão (pulsar, balançar) pode usar <code>transform</code>, que apaga o afundar, e o clarão azul do toque no Android fica desligado.</p>
+            </div>
+        </article>
+
+        <article class="spec rule">
+            <div class="stage col" style="gap:16px;align-items:center">
+                <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;align-items:flex-end">
+                    <button class="pb main s">Pequeno</button><button class="pb main m">Médio</button><button class="pb main l">Grande</button>
+                </div>
+                <button class="pb main l" disabled>Desabilitado</button>
+            </div>
+            <div class="spec-body">
+                <span class="num">REGRA 3</span>
+                <h3>Mesmas medidas no site e no app</h3>
+                <div class="table-wrap" style="border:0">
+                    <table style="font-size:13px">
+                        <tr><th></th><th>Altura</th><th>Letra</th><th>Base</th></tr>
+                        <tr><td class="k">Pequeno</td><td>40</td><td>14</td><td>3 px</td></tr>
+                        <tr><td class="k">Médio</td><td>48</td><td>16</td><td>4 px</td></tr>
+                        <tr><td class="k">Grande</td><td>56</td><td>18</td><td>4 px</td></tr>
+                    </table>
+                </div>
+                <p class="where">Canto de 12 px. Cores sem borda, só face e base, no estilo chapado dos badges novos. O branco tem contorno de 2 px. Nos botões coloridos a base é um tom mais escuro que a face; nos cartões e nos brancos, a base tem a cor do contorno. Nunca mais clara. Desabilitado é sempre o mesmo cinza, não afunda e não fica transparente.</p>
+            </div>
+        </article>
+
+        <article class="spec rule">
+            <div class="stage col" data-group="pchoice">
+                <button class="pchoice" aria-pressed="false"><b>A</b><span>O habeas data protege a locomoção.</span></button>
+                <button class="pchoice" aria-pressed="true"><b>B</b><span>O mandado de injunção supre a falta de norma.</span></button>
+                <div style="display:flex;gap:10px"><span class="pchoice right" style="flex:1"><b>C</b><span>Correta</span></span><span class="pchoice wrong" style="flex:1"><b>D</b><span>Errada</span></span></div>
+            </div>
+            <div class="spec-body">
+                <span class="num">REGRA 4</span>
+                <h3>Escolher é sempre azul</h3>
+                <p class="where">A opção do onboarding, a alternativa da questão, o plano da assinatura e o item do avatar viram o mesmo cartão: canto de 16 px, base de 4 px, azul quando escolhido. Corrigida, fica verde ou vermelha. A base tem sempre a mesma cor do contorno, nunca um tom mais claro. Hoje a alternativa da questão, a peça mais tocada do jogo, é chapada e não afunda.</p>
+            </div>
+        </article>
+
+        <article class="spec rule">
+            <div class="stage" style="gap:28px">
+                <span class="ib-cap"><button class="picon" aria-label="Sair"><svg class="ico"><use href="#i-x"/></svg></button>Sair da fase, da prova ou do onboarding</span>
+                <span class="ib-cap"><button class="picon" aria-label="Voltar"><svg class="ico"><use href="#i-left"/></svg></button>Voltar uma etapa dentro do fluxo</span>
+            </div>
+            <div class="spec-body">
+                <span class="num">REGRA 5</span>
+                <h3>Um botão de sair, um de voltar</h3>
+                <p class="where">40 × 40, canto de 12, ícone de 24, cinza. O X fecha o fluxo e a seta volta um passo. Substitui os 7 tamanhos de hoje.</p>
+            </div>
+        </article>
+
+        <article class="spec rule">
+            <div class="stage col" style="gap:10px;align-items:center">
+                <span style="font-family:var(--font);font-size:30px;font-weight:700">Continuar</span>
+                <span style="font-size:12px;color:#737373">Instrument Sans 700, baixada de verdade</span>
+            </div>
+            <div class="spec-body">
+                <span class="num">REGRA 6</span>
+                <h3>A mesma letra nos dois</h3>
+                <p class="where">O site passa a baixar o peso 700 da Instrument Sans, e o app passa a carregá-la com o <code>expo-font</code>, que já está instalado. Assim o negrito para de ser engrossado pelo navegador e o app deixa de usar a Roboto.</p>
+            </div>
+        </article>
+    </div>
+
+
+    <h3 class="sub-h" id="familia">A família inteira, com e sem 3D</h3>
+    <p class="sec-lead">O shadcn tem seis variantes chapadas e o site tem mais uma dúzia escritas à mão. A proposta reduz tudo a uma família só, em dois grupos. Os <b>de ação</b> afundam: são o que leva a pessoa adiante. Os <b>calmos</b> não afundam, mas têm os mesmos traços, então parecem do mesmo jogo. Troque o tom no seletor de cima para ver a família em off-white ou em pastel.</p>
+
+    <div class="dna">
+        <div><b>Canto de 12 px</b><span>10 no compacto, redondo só em chip e flutuante. Nunca 6 nem 8.</span></div>
+        <div><b>Letra 700</b><span>Instrument Sans, frase normal. Sem caixa alta, sem ponto de exclamação.</span></div>
+        <div><b>Contorno de 2 px</b><span>o mesmo traço do cartão de escolha. Nunca 1 px, nunca 4.</span></div>
+        <div><b>Cor pelo papel</b><span>amarelo avança, vermelho apaga, azul escolhe, neutro para o resto.</span></div>
+        <div><b>Toque que responde</b><span>o de ação desce a altura da base; o calmo escurece e "aperta para dentro".</span></div>
+    </div>
+
+    <div class="rules">
+        <article class="spec rule wide">
+            <div class="al-pair">
+                <div class="stage col" style="gap:16px">
+                    <div class="row"><button class="pb main m">Salvar</button><button class="pb second m">Cancelar</button><button class="pb danger m">Excluir conta</button></div>
+                    <span class="row-label">De ação · afundam</span>
+                    <div class="row"><button class="fb tonal m">Reenviar</button><button class="fb outline m">Filtrar</button><button class="fb ghost m"><svg class="ico"><use href="#i-left"/></svg>Voltar</button></div>
+                    <span class="row-label">Calmos · apertam para dentro</span>
+                    <p class="demo-p" style="text-align:center">Ao continuar, você aceita os <a class="mark" href="#familia">termos de uso</a>.</p>
+                </div>
+                <div class="stage col dark-stage" style="gap:16px">
+                    <div class="row"><button class="pb main m">Salvar</button><button class="pb second m">Cancelar</button><button class="pb danger m">Excluir conta</button></div>
+                    <span class="row-label">De ação · afundam</span>
+                    <div class="row"><button class="fb tonal m">Reenviar</button><button class="fb outline m">Filtrar</button><button class="fb ghost m"><svg class="ico"><use href="#i-left"/></svg>Voltar</button></div>
+                    <span class="row-label">Calmos · apertam para dentro</span>
+                    <p class="demo-p" style="text-align:center">Ao continuar, você aceita os <a class="mark" href="#familia">termos de uso</a>.</p>
+                </div>
+            </div>
+            <div class="spec-body">
+                <span class="num">FAMÍLIA</span>
+                <h3>Sete variantes no lugar das seis do shadcn e das cópias à mão</h3>
+                <dl class="legend">
+                    <b>Principal</b><span>amarelo, afunda. Um por tela: avançar, salvar, começar.</span>
+                    <b>Neutro</b><span>branco com contorno, afunda. Cancelar, voltar, a segunda opção de um par.</span>
+                    <b>Perigo</b><span>vermelho, afunda. Só no botão que confirma a perda.</span>
+                    <b>Suave</b><span>fundo cinza (ou amarelo e vermelho claros), sem base. Ações de apoio que se repetem: reenviar, copiar, despublicar.</span>
+                    <b>Contorno</b><span>só o traço de 2 px. Filtros, ordenar, "ver mais".</span>
+                    <b>Fantasma</b><span>sem caixa até o mouse passar. Voltar no topo, pular, ícones de barra.</span>
+                    <b>Marca-texto</b><span>o link. Um traço de marca-texto embaixo da palavra, que a cobre no mouse.</span>
+                </dl>
+            </div>
+        </article>
+
+        <article class="spec rule">
+            <div class="stage col" style="gap:14px">
+                <div class="row"><button class="fb tonal s">Reenviar e-mail</button><button class="fb tonal s"><svg class="ico"><use href="#i-share"/></svg>Copiar link</button></div>
+                <div class="row"><button class="fb tonal y s"><svg class="ico"><use href="#i-star"/></svg>Ver Premium</button><button class="fb tonal dg s">Despublicar</button></div>
+                <div class="row"><button class="fb tonal s" disabled>Reenviado</button></div>
+            </div>
+            <div class="spec-body">
+                <span class="kind"><span class="calm">Calmo</span></span>
+                <h3>Suave</h3>
+                <p class="where">Substitui o <code>secondary</code> do shadcn, o cinza do <code>AdModal</code> e a pílula laranja da Ofensiva. O suave amarelo serve para chamar sem competir com o principal; o suave vermelho abre a confirmação, e quem confirma é o Perigo com 3D.</p>
+            </div>
+        </article>
+
+        <article class="spec rule">
+            <div class="stage col" style="gap:14px">
+                <div class="row"><button class="fb outline s">Filtrar</button><button class="fb outline s"><svg class="ico"><use href="#i-refresh"/></svg>Ordenar</button></div>
+                <button class="fb outline s full">Ver mais trechos</button>
+                <button class="fb dashed m full">+ Incluir outras leis (12)</button>
+            </div>
+            <div class="spec-body">
+                <span class="kind"><span class="calm">Calmo</span></span>
+                <h3>Contorno e tracejado</h3>
+                <p class="where">Substitui o <code>outline</code> do shadcn, o "ver mais" do mapa beta e o tracejado do onboarding. Contorno liso mostra mais do mesmo; tracejado adiciona algo novo. Os dois com canto de 12 px.</p>
+            </div>
+        </article>
+
+        <article class="spec rule">
+            <div class="stage col" style="gap:14px;align-items:center">
+                <div class="row"><button class="fb ghost s"><svg class="ico"><use href="#i-left"/></svg>Voltar</button><button class="fb ghost s">Pular</button><button class="fb ghost s">Agora não</button></div>
+                <p class="demo-p">Leia o <a class="mark" href="#familia">art. 5º, inciso LXXI</a> antes de responder. Dúvidas? <a class="mark" href="#familia">Fale com a gente</a>.</p>
+            </div>
+            <div class="spec-body">
+                <span class="kind"><span class="calm">Calmo</span></span>
+                <h3>Fantasma e marca-texto</h3>
+                <p class="where">O fantasma substitui o <code>ghost</code> e os cinco jeitos de "não, obrigado" (cinza, caixa alta, com e sem fundo). O marca-texto substitui o <code>link</code> sublinhado: é o gesto de quem estuda lei, dá o toque de jogo sem desenho infantil, e no mouse a marca sobe e cobre a palavra.</p>
+            </div>
+        </article>
+
+        <article class="spec rule">
+            <div class="stage col" style="gap:16px;align-items:center">
+                <div class="row" style="gap:6px">
+                    <button class="fb ghost s sq" aria-label="Fechar"><svg class="ico"><use href="#i-x"/></svg></button>
+                    <button class="fb tonal s sq" aria-label="Menu"><svg class="ico"><use href="#i-menu"/></svg></button>
+                    <button class="fb outline s sq" aria-label="Atualizar"><svg class="ico"><use href="#i-refresh"/></svg></button>
+                    <button class="pb second s" style="width:40px;padding:0" aria-label="Mais lento"><svg class="ico"><use href="#i-chev"/></svg></button>
+                    <button class="pb main s" style="width:40px;padding:0" aria-label="Tocar"><svg class="ico"><use href="#i-play"/></svg></button>
+                </div>
+                <button class="pb second m float"><svg class="ico"><use href="#i-chevr"/></svg>Ir para a fase atual</button>
+            </div>
+            <div class="spec-body">
+                <span class="kind"><span class="calm">Calmo</span><span class="sink">De ação</span></span>
+                <h3>Ícone e flutuante</h3>
+                <p class="where">Ícone sempre quadrado de 40 (32 no compacto), canto de 12, ícone de 20. Fantasma na barra de cima, suave no menu, com 3D só quando é controle de jogo (tocar, mais lento na leitura guiada). O flutuante do mapa vira o neutro com base e canto redondo, sem sombra difusa e sem crescer no mouse.</p>
+            </div>
+        </article>
+
+        <article class="spec rule">
+            <div class="stage col" style="gap:16px;align-items:center">
+                <div class="row" data-multi>
+                    <button class="fchip" aria-pressed="true"><svg class="ico"><use href="#i-check"/></svg>Constitucional</button>
+                    <button class="fchip" aria-pressed="false"><svg class="ico"><use href="#i-check"/></svg>Penal</button>
+                    <button class="fchip" aria-pressed="false"><svg class="ico"><use href="#i-check"/></svg>Administrativo</button>
+                </div>
+                <div class="fseg" data-group><button aria-pressed="true">Semana</button><button aria-pressed="false">Mês</button><button aria-pressed="false">Sempre</button></div>
+                <nav class="fpage" aria-label="Páginas"><button class="fb outline s" aria-label="Anterior"><svg class="ico"><use href="#i-chev"/></svg></button><button class="fb ghost s">1</button><button class="fb s" aria-current="page">2</button><button class="fb ghost s">3</button><button class="fb outline s" aria-label="Próxima"><svg class="ico"><use href="#i-chevr"/></svg></button></nav>
+            </div>
+            <div class="spec-body">
+                <span class="kind"><span class="calm">Calmo</span></span>
+                <h3>Filtro, alternador e paginação</h3>
+                <p class="where">Escolher é azul aqui também: o chip escolhido e a página atual usam o azul do cartão de escolha, com o check. No alternador (ranking, ofensiva) a opção ativa é uma peça clara com base de 2 px sobre um trilho rebaixado, como uma tecla levantada. Substitui a pílula de contorno, o <code>.seg</code> e as três paginações.</p>
+            </div>
+        </article>
+
+        <article class="spec rule">
+            <div class="stage col" style="gap:12px">
+                <div class="adm-row"><span>Constituição Federal<small>250 artigos · publicada</small></span><button class="fb ghost xs sq" aria-label="Menu"><svg class="ico"><use href="#i-menu"/></svg></button><button class="fb tonal xs">Editar</button><button class="pb main xs">Publicar</button></div>
+                <div class="adm-row"><span>Código Penal<small>361 artigos · rascunho</small></span><button class="fb ghost xs sq" aria-label="Menu"><svg class="ico"><use href="#i-menu"/></svg></button><button class="fb tonal dg xs">Despublicar</button></div>
+                <div class="row"><button class="pb main s busy" aria-busy="true"><span class="spin"></span>Salvando</button><button class="pb main s" disabled>Salvar</button></div>
+            </div>
+            <div class="spec-body">
+                <span class="kind"><span class="sink">De ação</span><span class="calm">Calmo</span></span>
+                <h3>Compacto: admin e tabelas</h3>
+                <p class="where">32 px, letra 13, canto 10, base de 2 px. É o tamanho do <code>sm</code> do shadcn, então o admin troca de botão sem mudar a altura das linhas. Carregando mostra a roda e mantém a largura; desabilitado é o mesmo cinza nos dois grupos.</p>
+            </div>
+        </article>
+
+        <article class="spec rule wide">
+            <div class="spec-body" style="gap:14px">
+                <span class="num">SEM INFANTILIZAR</span>
+                <h3>O que deixa gamificado e o que deixa infantil</h3>
+                <div class="table-wrap" style="border:0">
+                    <table style="font-size:14px">
+                        <tr><th>Fica</th><th>Sai</th></tr>
+                        <tr><td>Base sólida e afundar no que leva adiante</td><td>Base em tudo, inclusive em aviso e cartão de informação</td></tr>
+                        <tr><td>Uma cor de ação por tela (o amarelo)</td><td>Verde, roxo, laranja e azul disputando a mesma tela</td></tr>
+                        <tr><td>Frase normal: "Salvar alterações"</td><td>Caixa alta, exclamação e emoji no botão: "BORA!! 🚀"</td></tr>
+                        <tr><td>Resposta curta: 80 ms para afundar, 120 ms no tom</td><td>Pular, balançar, crescer no mouse, sombra difusa grande</td></tr>
+                        <tr><td>Marca-texto, check, cadeado: gestos de quem estuda</td><td>Mascote, confete e brilho fora do fim de fase</td></tr>
+                        <tr><td>Contorno de 2 px e canto de 12 px</td><td>Borda de 4 px e canto de bala (a não ser em chip)</td></tr>
+                    </table>
+                </div>
+                <p class="where">O tom papel e o pastel puxam a mesma família para o lado de material de estudo: fundo de papel, amarelo de marca-texto e vermelho de caneta de correção, em vez das cores de brinquedo do Tailwind.</p>
+            </div>
+        </article>
+    </div>
+
+    <h3 class="sub-h">Do que existe para a família</h3>
+    <div class="table-wrap">
+        <table>
+            <tr><th>Hoje</th><th>Usos</th><th>Vira</th></tr>
+            <tr><td class="k">shadcn <code>default</code> (preto)</td><td>32</td><td>Principal nas telas de aluno; Principal compacto no admin</td></tr>
+            <tr><td class="k">shadcn <code>outline</code></td><td>28</td><td>Contorno</td></tr>
+            <tr><td class="k">shadcn <code>ghost</code></td><td>20</td><td>Fantasma (quase todos são ícone: Ícone fantasma)</td></tr>
+            <tr><td class="k">shadcn <code>secondary</code></td><td>4</td><td>Suave</td></tr>
+            <tr><td class="k">shadcn <code>destructive</code></td><td>4</td><td>Suave vermelho para abrir a confirmação; Perigo para confirmar</td></tr>
+            <tr><td class="k">shadcn <code>link</code></td><td>1</td><td>Marca-texto</td></tr>
+            <tr><td class="k">Pílula laranja da Ofensiva</td><td>2</td><td>Suave amarelo com ícone</td></tr>
+            <tr><td class="k">Flutuantes redondos</td><td>4</td><td>Neutro flutuante (com base, redondo)</td></tr>
+            <tr><td class="k">Azul e cinza chapados</td><td>3</td><td>Principal e Suave</td></tr>
+            <tr><td class="k">"Ver mais" e tracejado</td><td>2</td><td>Contorno largo e Tracejado</td></tr>
+            <tr><td class="k">Pílula de contorno e paginações</td><td>4</td><td>Chip de filtro e Paginação</td></tr>
+            <tr><td class="k">Botões só de texto</td><td>5</td><td>Fantasma</td></tr>
+            <tr><td class="k">7 botões de ícone</td><td>11+</td><td>Ícone de 40 (32 no compacto)</td></tr>
+        </table>
+    </div>
+
+    <h3 style="font-size:20px;font-weight:600">Para decidir</h3>
+    <ol class="open-q">
+        <li><b>Qual cor fica como principal? Decidido: amarelo do logo.</b><span>Quando aplicarmos, o roxo do jogo novo e o verde da landing, do onboarding e do jogo legado viram amarelo nos botões de avançar. O verde continua só no acerto.</span></li>
+        <li><b>O roxo continua em algum lugar?</b><span>Pode virar a cor do Premium e do Dia da prova, ou sair de vez.</span></li>
+        <li><b>Vivo, papel ou pastel?</b><span>O tom muda o fundo das telas e a saturação de todas as cores, não só dos botões. Se o papel ganhar, os avisos, o mapa e os badges passam pelo mesmo ajuste.</span></li>
+        <li><b>O link vira marca-texto em todo o site?</b><span>Nas telas de aluno sim. No admin e no texto das leis, onde há muitos links juntos, pode ficar só o traço fino, sem cobrir a palavra no mouse.</span></li>
+        <li><b>O admin usa o amarelo?</b><span>A proposta usa a mesma família no admin, no tamanho compacto. A outra saída é deixar o principal do admin no neutro escuro e guardar o amarelo para o aluno.</span></li>
+        <li><b>Base sem borda ou com borda?</b><span>A proposta tira a borda de 4 px das cores para ficar mais chapada. Se o botão de hoje, com borda, parecer mais "Memorize", mantemos a borda.</span></li>
+    </ol>
+</section>
+
+<div class="part">
+    <h2>Botões · Como está hoje</h2>
+    <p>Inventário de 20/11/2026, tirado do código. Cada cartão diz se o botão afunda ao clicar.</p>
+</div>
+
+<!-- 01 -->
+<section class="sec" id="cores">
+    <h2 class="sec-h">01 <span class="dot"></span> Cores e letras dos botões</h2>
+    <p class="sec-lead">As cores do botão 3D saem do Tailwind padrão: a face no tom 500 e a borda no 700. O cinza é o neutro (sem azul), sobrescrito no <code>tailwind.config.js</code>. Fora dessas cinco, aparecem laranja, âmbar e o preto do shadcn.</p>
+    <div class="swatches">
+        <div class="sw"><span class="name" style="color:#16a34a">Verde</span><span class="chip" style="--e:#15803d;background:#22c55e;border-color:#15803d;color:#fff">#22C55E</span><span class="note">borda #15803D · avançar, landing</span></div>
+        <div class="sw"><span class="name" style="color:#9333ea">Roxo</span><span class="chip" style="--e:#7e22ce;background:#a855f7;border-color:#7e22ce;color:#fff">#A855F7</span><span class="note">borda #7E22CE no site, #7C3AED no app</span></div>
+        <div class="sw"><span class="name" style="color:#2563eb">Azul</span><span class="chip" style="--e:#1d4ed8;background:#3b82f6;border-color:#1d4ed8;color:#fff">#3B82F6</span><span class="note">borda #1D4ED8 · login do app, mapa</span></div>
+        <div class="sw"><span class="name" style="color:#dc2626">Vermelho</span><span class="chip" style="--e:#b91c1c;background:#ef4444;border-color:#b91c1c;color:#fff">#EF4444</span><span class="note">borda #B91C1C · erro, sair</span></div>
+        <div class="sw"><span class="name" style="color:#737373">Branco</span><span class="chip" style="--e:#d4d4d4;background:#fff;border-color:#d4d4d4;color:#171717">#FFFFFF</span><span class="note">borda #D4D4D4 · ação secundária</span></div>
+        <div class="sw"><span class="name" style="color:#ea580c">Laranja</span><span class="chip" style="--e:#c2410c;background:#f97316;border-color:#c2410c;color:#fff">#F97316</span><span class="note">Ofensiva e cookies, sem padrão</span></div>
+        <div class="sw"><span class="name" style="color:#b45309">Âmbar</span><span class="chip" style="--e:#b45309;background:#f59e0b;border-color:#b45309;color:#fff">#F59E0B</span><span class="note">só o título da jornada no legado</span></div>
+        <div class="sw"><span class="name">Preto</span><span class="chip" style="--e:#000;background:#171717;border-color:#171717;color:#fafafa">#171717</span><span class="note">botão principal do shadcn</span></div>
+    </div>
+
+    <div class="type-row">
+        <div class="type-card">
+            <span class="tag">Site · peso 600</span>
+            <span class="sample" style="font-weight:600">Continuar</span>
+            <small>Instrument Sans, o peso mais forte que o site baixa (400, 500 e 600).</small>
+        </div>
+        <div class="type-card">
+            <span class="tag">Site · peso 700 pedido</span>
+            <span class="sample" style="font-weight:600;-webkit-text-stroke:0.7px currentColor">Continuar</span>
+            <small>Os botões pedem <code>font-bold</code> (700) e às vezes 800. Como esses pesos não são baixados, o navegador engrossa o 600 artificialmente (simulado aqui).</small>
+        </div>
+        <div class="type-card">
+            <span class="tag">App · peso 700</span>
+            <span class="sample" style="font-family:var(--font-app);font-weight:700">Continuar</span>
+            <small>O app não carrega a Instrument Sans (o <code>typography.ts</code> cita a fonte, mas nenhum componente usa). Os botões saem na letra do sistema: Roboto no Android.</small>
+        </div>
+    </div>
+</section>
+
+<!-- 02 -->
+<section class="sec" id="gamebutton-site">
+    <h2 class="sec-h">02 <span class="dot"></span> GameButton do site</h2>
+    <p class="sec-lead"><code>resources/js/components/ui/GameButton.vue</code>. É o botão 3D oficial: a face desce enquanto a borda de baixo encolhe. 5 cores e 3 tamanhos. É usado nas fases, no mapa beta, nos desafios, na landing e na assinatura.</p>
+    <div class="grid">
+        <article class="spec">
+            <div class="stage col" style="gap:16px">
+                <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center">
+                    <button class="gb green lg">Verde</button><button class="gb purple lg">Roxo</button><button class="gb blue lg">Azul</button><button class="gb red lg">Vermelho</button><button class="gb white lg">Branco</button>
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;align-items:center">
+                    <button class="gb purple sm">sm</button><button class="gb purple md">md</button><button class="gb purple lg">lg</button>
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center">
+                    <button class="gb purple lg" disabled>Roxo desabilitado</button><button class="gb green lg" disabled>Verde desabilitado</button>
+                </div>
+            </div>
+            <div class="spec-body">
+                <span class="pt yes">Afunda ao clicar</span>
+                <h3>Cores, tamanhos e desabilitado</h3>
+                <dl class="facts">
+                    <dt>Borda</dt><dd>4 px, na cor 700</dd>
+                    <dt>Sombra</dt><dd>4 px sólida para baixo, mesma cor da borda</dd>
+                    <dt>Canto</dt><dd>8 px</dd>
+                    <dt>Mouse</dt><dd>desce 2 px e escurece a face</dd>
+                    <dt>Apertado</dt><dd>desce 4 px e a sombra some</dd>
+                    <dt>sm</dt><dd>14 px de letra, 6 × 12 de respiro</dd>
+                    <dt>md</dt><dd>16 px de letra, 8 × 16</dd>
+                    <dt>lg</dt><dd>16 px de letra, 10 × 20</dd>
+                </dl>
+                <p class="flag"><b>Diverge:</b> md e lg têm a mesma letra, só o respiro muda. Desabilitado, o roxo vira cinza e as outras cores só ficam meio transparentes.</p>
+            </div>
+        </article>
+        <article class="spec">
+            <div class="stage col">
+                <div class="table-wrap" style="border:0;background:transparent">
+                    <table style="font-size:13px;color:#171717">
+                        <tr><th style="background:#fafafa;color:#737373">Cor</th><th style="background:#fafafa;color:#737373">Usos</th><th style="background:#fafafa;color:#737373">Para quê</th></tr>
+                        <tr><td class="k">Verde</td><td>27</td><td>landing, navbar, voltar ao mapa, criar desafio</td></tr>
+                        <tr><td class="k">Branco</td><td>30</td><td>Limpar, cancelar, sair, ver mais</td></tr>
+                        <tr><td class="k">Roxo</td><td>15</td><td>Verificar, Responder, Continuar, Premium</td></tr>
+                        <tr><td class="k">Vermelho</td><td>5</td><td>excluir desafio, cancelar assinatura, fase do legado</td></tr>
+                        <tr><td class="k">Azul</td><td>3</td><td>landing, desafios</td></tr>
+                        <tr><td class="k">Variável</td><td>2</td><td>verde ou vermelho no resultado; verde ou roxo na prova</td></tr>
+                    </table>
+                </div>
+            </div>
+            <div class="spec-body">
+                <h3>Onde cada cor aparece</h3>
+                <p class="where">Contagem das tags <code>&lt;GameButton&gt;</code> no código.</p>
+                <p class="flag"><b>Diverge:</b> o roxo é o "avançar" do jogo novo (beta) e o verde é o "avançar" da landing, do onboarding e do jogo legado. Na landing (<code>Welcome.vue</code>) e na <code>PublicNavbar.vue</code>, o botão fica dentro de um <code>Link</code>, ou seja, um botão dentro de um link, e o CTA principal sobrescreve o tamanho com <code>px-9 text-lg</code>.</p>
+            </div>
+        </article>
+    </div>
+</section>
+
+<!-- 03 -->
+<section class="sec" id="gamebutton-app">
+    <h2 class="sec-h">03 <span class="dot"></span> GameButton do app</h2>
+    <p class="sec-lead"><code>memorize-mobile/src/components/ui/GameButton.tsx</code>. A mesma ideia do site, mas com outras medidas. Aperte para ver: a face desce 5 px sobre uma sombra parada de 6 px.</p>
+    <div class="grid">
+        <article class="spec">
+            <div class="stage col" style="gap:16px">
+                <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center">
+                    <button class="ab green lg">Verde</button><button class="ab purple lg">Roxo</button><button class="ab blue lg">Azul</button><button class="ab red lg">Vermelho</button><button class="ab white lg">Branco</button>
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;align-items:center">
+                    <button class="ab purple sm">sm</button><button class="ab purple md">md</button><button class="ab purple lg">lg</button><button class="ab purple lg" disabled>Desabilitado</button>
+                </div>
+            </div>
+            <div class="spec-body">
+                <span class="pt yes">Afunda ao tocar</span>
+                <h3>Cores e tamanhos no app</h3>
+                <dl class="facts">
+                    <dt>Borda</dt><dd>3 px (site: 4)</dd>
+                    <dt>Sombra</dt><dd>6 px (site: 4)</dd>
+                    <dt>Apertado</dt><dd>desce 5 px, sobra 1 px de sombra</dd>
+                    <dt>Letra</dt><dd>13, 15 e 17 px (site: 14, 16 e 16), na fonte do sistema</dd>
+                    <dt>Desabilitado</dt><dd>qualquer cor vira cinza com texto branco</dd>
+                </dl>
+                <p class="flag"><b>Diverge:</b> a borda do roxo é <code>#7C3AED</code> (violeta), não o <code>#7E22CE</code> do site. O <code>colors.ts</code> do app também troca o azul 300 pelo do céu (sky) e o vermelho claro pelo rosa (rose).</p>
+            </div>
+        </article>
+        <article class="spec">
+            <div class="stage col" style="gap:14px">
+                <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;align-items:center">
+                    <span style="font-size:12px;color:#737373;width:64px;text-align:right">Site</span>
+                    <button class="sh default" style="width:180px">Entrar</button>
+                </div>
+                <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;align-items:center">
+                    <span style="font-size:12px;color:#737373;width:64px;text-align:right">App</span>
+                    <button class="ab blue lg" style="width:180px">Entrar</button>
+                </div>
+                <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;align-items:center">
+                    <span style="font-size:12px;color:#737373;width:64px;text-align:right">App</span>
+                    <button class="ab green lg" style="width:180px">Criar conta</button>
+                </div>
+            </div>
+            <div class="spec-body">
+                <span class="pt bad">No site não afunda, no app afunda</span>
+                <h3>Login e cadastro, site e app</h3>
+                <p class="where">Site: <code>pages/auth/Login.vue</code>, <code>Register.vue</code>. App: <code>screens/auth/LoginScreen.tsx</code>, <code>RegisterScreen.tsx</code>.</p>
+                <p class="flag"><b>Diverge:</b> a mesma tela de entrar usa o botão preto do shadcn no site e o botão 3D azul no app. No app, entrar é azul e criar conta é verde.</p>
+            </div>
+        </article>
+        <article class="spec">
+            <div class="stage col">
+                <table style="font-size:13px;color:#171717;border-collapse:collapse">
+                    <tr><td class="k" style="padding:4px 8px">Roxo</td><td style="padding:4px 8px">trilha (fase, desafio, prova), editor de avatar, Verificar</td></tr>
+                    <tr><td class="k" style="padding:4px 8px">Branco</td><td style="padding:4px 8px">Limpar, voltar ao mapa, perfil público</td></tr>
+                    <tr><td class="k" style="padding:4px 8px">Azul</td><td style="padding:4px 8px">login, esqueci a senha, referências, sem vidas</td></tr>
+                    <tr><td class="k" style="padding:4px 8px">Verde</td><td style="padding:4px 8px">cadastro, resultado da prova</td></tr>
+                    <tr><td class="k" style="padding:4px 8px">Vermelho</td><td style="padding:4px 8px">sem vidas, sair da conta</td></tr>
+                </table>
+            </div>
+            <div class="spec-body">
+                <h3>Onde cada cor aparece no app</h3>
+                <p class="where"><code>screens/trail/*</code>, <code>components/trail/TrailUi.tsx</code>, <code>components/game/PhaseControls.tsx</code>, <code>screens/auth/*</code>, <code>screens/profile/*</code>, <code>screens/play/NoLivesScreen.tsx</code>.</p>
+            </div>
+        </article>
+    </div>
+</section>
+
+<!-- 04 -->
+<section class="sec" id="copias">
+    <h2 class="sec-h">04 <span class="dot"></span> Botões 3D escritos à mão</h2>
+    <p class="sec-lead">Lugares que refazem o efeito do <code>GameButton</code> com CSS próprio em vez de usar o componente. Cada um ficou com medidas um pouco diferentes.</p>
+    <div class="grid">
+        <article class="spec">
+            <div class="stage col"><button class="obcta">Continuar</button><button class="obcta pulse">Garantir 15% off</button><button class="obcta" disabled>Salvar minha trilha</button></div>
+            <div class="spec-body">
+                <span class="pt yes">Afunda ao clicar</span>
+                <h3>Botão principal do onboarding</h3>
+                <p class="where"><code>.ob-cta</code> em <code>pages/Onboarding/Index.vue</code>. No app: <code>OnboardingCta.tsx</code> + <code>ChunkyPressable.tsx</code>.</p>
+                <dl class="facts"><dt>Letra</dt><dd>18 px (GameButton lg: 16)</dd><dt>Respiro</dt><dd>12 × 24</dd><dt>Extra</dt><dd>o da oferta pulsa sem parar</dd></dl>
+                <p class="flag"><b>Diverge:</b> desabilitado fica cinza claro com texto cinza, diferente dos dois desabilitados do GameButton.</p>
+                <p class="flag"><b>Corrigido em 20/11:</b> o da oferta, que pulsa, não afundava. A pulsação usava <code>transform</code>, e a animação apagava o afundar do toque. Agora pulsa com <code>scale</code>.</p>
+            </div>
+        </article>
+        <article class="spec">
+            <div class="stage col"><button class="obcta giftcta">Abrir presente</button><button class="obcta giftcta" disabled>Abrindo...</button></div>
+            <div class="spec-body">
+                <span class="pt yes">Afunda ao clicar</span>
+                <h3>Presente</h3>
+                <p class="where"><code>.gift-cta</code> em <code>pages/Gift/Show.vue</code></p>
+                <p class="flag"><b>Diverge:</b> cópia linha a linha do <code>.ob-cta</code>, mas desabilitado continua verde, só mais transparente.</p>
+            </div>
+        </article>
+        <article class="spec">
+            <div class="stage col"><button class="unsub">Não quero mais receber</button><button class="unsub back">Voltar a receber</button></div>
+            <div class="spec-body">
+                <span class="pt yes">Afunda ao clicar</span>
+                <h3>Descadastro de e-mail</h3>
+                <p class="where"><code>.unsub-cta</code> em <code>pages/Emails/Unsubscribe.vue</code></p>
+                <p class="flag"><b>Diverge:</b> letra de 16,8 px e texto <code>#374151</code>, o cinza azulado antigo do Tailwind, que não existe mais no resto do site.</p>
+            </div>
+        </article>
+        <article class="spec">
+            <div class="stage"><button class="press gray">Voltar</button><button class="press green">Próximo trecho</button></div>
+            <div class="spec-body">
+                <span class="pt bad">Afunda com o mouse por cima, não no clique</span>
+                <h3>Jogo de legislação antigo</h3>
+                <p class="where"><code>.btn-press</code> em <code>pages/LegislationPlay/Play.vue</code></p>
+                <dl class="facts"><dt>Borda</dt><dd>2 px</dd><dt>Sombra</dt><dd>3 px</dd><dt>Mouse</dt><dd>afunda tudo de uma vez</dd></dl>
+                <p class="flag"><b>Diverge:</b> o cinza tem borda <code>#A3A3A3</code> e sombra <code>#9CA3AF</code>, dois cinzas diferentes no mesmo botão.</p>
+            </div>
+        </article>
+        <article class="spec">
+            <div class="stage col" style="align-items:center;gap:18px">
+                <button class="journey green"><svg class="ico"><use href="#i-left"/></svg>Jornada Anterior</button>
+                <div class="journey-title">Jornada 2<small>24 fases</small></div>
+                <button class="journey blue">Próxima Jornada</button>
+            </div>
+            <div class="spec-body">
+                <span class="pt yes">Afunda ao clicar</span>
+                <h3>Jornadas do mapa legado</h3>
+                <p class="where"><code>pages/Legado/Play/Map.vue:844</code>, <code>Legado/Learn/Map.vue:609</code></p>
+                <dl class="facts"><dt>Sombra</dt><dd>6 px (GameButton: 4)</dd><dt>Letra</dt><dd>14 px</dd></dl>
+                <p class="flag"><b>Diverge:</b> o título da jornada no meio tem a mesma cara de botão, mas não é clicável.</p>
+            </div>
+        </article>
+        <article class="spec">
+            <div class="stage col" style="align-items:center">
+                <button class="pub green">Buscar</button>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center"><button class="pub white">Ver artigo</button><button class="pub pill">Código Penal</button></div>
+            </div>
+            <div class="spec-body">
+                <span class="pt bad">Afunda com o mouse por cima, não no clique</span>
+                <h3>Busca e exercício público</h3>
+                <p class="where"><code>pages/Public/Search.vue</code>, <code>Public/ArticleExercise.vue:185</code></p>
+                <p class="flag"><b>Diverge:</b> usam a classe <code>game-button</code>, que não faz nada fora do componente (o CSS dele é <code>scoped</code>). No mouse descem 4 px mas a sombra só encolhe para 2 px, então o botão afunda além da sombra. O branco não tem sombra.</p>
+            </div>
+        </article>
+        <article class="spec">
+            <div class="stage col" style="align-items:center">
+                <button class="legal orange">Voltar ao início</button>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center"><button class="legal blue">Começar</button><button class="legal white">Política</button></div>
+            </div>
+            <div class="spec-body">
+                <span class="pt bad">Desce com o mouse, sem sombra, não no clique</span>
+                <h3>Termos, cookies e privacidade</h3>
+                <p class="where"><code>pages/Cookies.vue:370</code>, <code>Terms.vue:363</code>, <code>PrivacyPolicy.vue:273</code></p>
+                <dl class="facts"><dt>Letra</dt><dd>20 px, o maior botão do site</dd><dt>Sombra</dt><dd>nenhuma</dd></dl>
+                <p class="flag"><b>Diverge:</b> cada página tem uma cor (laranja, azul 600, verde) e o azul usa borda 800, o único lugar com esse tom.</p>
+            </div>
+        </article>
+        <article class="spec">
+            <div class="stage col" style="align-items:center">
+                <div class="offer-card"><span class="gift"><svg class="ico"><use href="#i-star"/></svg></span><span class="txt-col"><b>15% off no plano anual</b><span>Termina em <em>23:41:07</em></span></span><button class="chip-offer">Garantir</button><button class="ib ib-banner" aria-label="Fechar lembrete"><svg class="ico" style="width:16px;height:16px"><use href="#i-x"/></svg></button></div>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center"><button class="chip-yellow">Baixar o app</button><button class="chip-law">+ Código Civil</button></div>
+            </div>
+            <div class="spec-body">
+                <span class="pt bad">Dois afundam, o amarelo sobe</span>
+                <h3>Chips 3D pequenos</h3>
+                <p class="where"><code>WelcomeOfferBanner.vue:84</code>, <code>Welcome.vue:436</code>, <code>Onboarding/Index.vue:455</code></p>
+                <p class="flag"><b>Diverge:</b> três pílulas com borda de 2 px e sombras de 3 e 4 px. A da oferta é a única em caixa alta. O amarelo da landing sobe no mouse e no celular fica levantado depois do toque.</p>
+                <p class="flag"><b>Corrigido em 20/11:</b> no "Garantir" da oferta, a borda era verde 600, mais clara que a base verde 700, e o afundar levava 150 ms, então um toque rápido quase não descia. O mouse clareava o verde, e no celular o tom claro ficava preso. Agora a borda tem a cor da base, o afundar leva 100 ms e o verde só escurece com mouse. No app, a borda também passou a verde 700.</p>
+            </div>
+        </article>
+    </div>
+</section>
+
+<!-- 05 -->
+<section class="sec" id="shadcn">
+    <h2 class="sec-h">05 <span class="dot"></span> Button do shadcn</h2>
+    <p class="sec-lead"><code>resources/js/components/ui/button</code>. É chapado, de 36 px de altura, com letra de 14 px em peso 500. Domina o admin, o login, as configurações e algumas telas de aluno.</p>
+    <div class="grid">
+        <article class="spec">
+            <div class="stage">
+                <button class="sh default">Salvar</button><button class="sh outline">Cancelar</button><button class="sh secondary">Reenviar</button><button class="sh ghost">Voltar</button><button class="sh destructive">Excluir conta</button><button class="sh link">Ver termos</button>
+            </div>
+            <div class="spec-body">
+                <span class="pt no">Não afunda</span>
+                <h3>Variantes</h3>
+                <dl class="facts">
+                    <dt>Padrão</dt><dd>preto, 32 usos (login, cadastro, senha, admin, Sem vidas)</dd>
+                    <dt>Contorno</dt><dd>28 usos (admin, assinatura, paginação)</dd>
+                    <dt>Fantasma</dt><dd>20 usos, quase todos só com ícone</dd>
+                    <dt>Secundário</dt><dd>4 usos (perfil, verificar e-mail)</dd>
+                    <dt>Destrutivo</dt><dd>4 usos (excluir conta, despublicar)</dd>
+                    <dt>Link</dt><dd>1 uso (fase do legado)</dd>
+                </dl>
+            </div>
+        </article>
+        <article class="spec">
+            <div class="stage"><button class="sh default small">sm</button><button class="sh default">padrão</button><button class="sh ghost icon" aria-label="Menu"><svg class="ico" style="width:16px;height:16px"><use href="#i-menu"/></svg></button><button class="sh outline small">Filtrar</button></div>
+            <div class="spec-body">
+                <span class="pt no">Não afunda</span>
+                <h3>Tamanhos</h3>
+                <dl class="facts"><dt>sm</dt><dd>32 px, letra 12</dd><dt>padrão</dt><dd>36 px, letra 14</dd><dt>ícone</dt><dd>36 × 36</dd><dt>Canto</dt><dd>6 px</dd></dl>
+                <p class="flag"><b>Diverge:</b> o principal do shadcn é preto, e o principal do jogo é verde ou roxo. As telas <code>Play/NoLives.vue</code>, <code>Profile/Show.vue</code> e <code>Subscription/Index.vue</code> são de aluno e misturam os dois estilos.</p>
+            </div>
+        </article>
+    </div>
+</section>
+
+<!-- 06 -->
+<section class="sec" id="chapados">
+    <h2 class="sec-h">06 <span class="dot"></span> Botões chapados e de texto</h2>
+    <p class="sec-lead">Botões sem efeito 3D, escritos direto com classes do Tailwind em cada tela.</p>
+    <div class="grid">
+        <article class="spec">
+            <div class="stage"><button class="flat-orange"><svg class="ico"><use href="#i-share"/></svg>Compartilhar</button></div>
+            <div class="spec-body">
+                <span class="pt no">Não afunda</span>
+                <h3>Pílula laranja da Ofensiva</h3>
+                <p class="where"><code>pages/Ofensiva/Index.vue:173</code>. No app: <code>shareBtn</code> em <code>OfensivaScreen.tsx</code>.</p>
+                <p class="flag"><b>Diverge:</b> no site tem sombra difusa, no app não. É o único botão principal redondo e laranja.</p>
+            </div>
+        </article>
+        <article class="spec">
+            <div class="stage"><button class="fab"><svg class="ico"><use href="#i-chevr"/></svg>Ir para a fase atual</button><button class="fab round-purple" aria-label="Lista"><svg class="ico"><use href="#i-menu"/></svg></button></div>
+            <div class="spec-body">
+                <span class="pt no">Cresce em vez de afundar</span>
+                <h3>Flutuantes redondos</h3>
+                <p class="where"><code>Legado/Play/Map.vue:512</code>, <code>Legado/Learn/Map.vue:362</code>, <code>LegislationPlay/Map.vue:267</code>, <code>Legado/Play/Phase.vue:17</code></p>
+                <p class="flag"><b>Diverge:</b> sombra difusa grande e crescem no mouse, o oposto do botão que afunda.</p>
+            </div>
+        </article>
+        <article class="spec">
+            <div class="stage"><button class="flat-blue">Baixar para Android</button><button class="flat-gray">Fechar anúncio</button></div>
+            <div class="spec-body">
+                <span class="pt no">Não afunda</span>
+                <h3>Azul e cinza chapados</h3>
+                <p class="where"><code>Welcome.vue:761</code> e <code>:892</code> (perguntas frequentes), <code>AdModal.vue:163</code></p>
+                <p class="flag"><b>Diverge:</b> o azul é o 600, e o GameButton azul usa o 500.</p>
+            </div>
+        </article>
+        <article class="spec">
+            <div class="stage col"><button class="more">Ver mais trechos</button><button class="dashed">Incluir outras leis (12)</button></div>
+            <div class="spec-body">
+                <span class="pt no">Não afunda</span>
+                <h3>Contorno de "ver mais"</h3>
+                <p class="where"><code>.more-button</code> em <code>BetaPlay/Map.vue</code>, botão tracejado em <code>Onboarding/Index.vue:446</code></p>
+                <p class="flag"><b>Diverge:</b> mesma função (mostrar mais), com canto de 12 px e borda lisa no beta, e canto de 16 px e borda tracejada no onboarding.</p>
+            </div>
+        </article>
+        <article class="spec">
+            <div class="stage"><button class="pill-outline">Sortear visual</button><button class="page-btn">Anterior</button><button class="page-btn on">2</button><button class="page-btn">Próxima</button></div>
+            <div class="spec-body">
+                <span class="pt no">Não afunda</span>
+                <h3>Pílula de contorno e paginação</h3>
+                <p class="where"><code>settings/Avatar.vue:83</code>, <code>Public/LawDetail.vue:154</code>, <code>Challenges/Index.vue:146</code></p>
+                <p class="flag"><b>Diverge:</b> o admin pagina com o Button do shadcn, os desafios e as leis públicas com paginações próprias.</p>
+            </div>
+        </article>
+        <article class="spec">
+            <div class="stage"><button class="txt">Pular</button><button class="txt dark">Agora não</button><button class="txt dark danger">Pular mesmo assim</button><button class="txt upper">Talvez depois</button><button class="txt link">Selecionar todos</button></div>
+            <div class="spec-body">
+                <span class="pt no">Não afunda</span>
+                <h3>Botões só de texto</h3>
+                <p class="where"><code>Onboarding/Index.vue:285</code>, <code>:608</code>, <code>:645</code>, <code>PremiumUpsellModal.vue:88</code>, <code>Challenges/Create.vue:111</code></p>
+                <p class="flag"><b>Diverge:</b> o "não, obrigado" aparece como cinza em negrito, como cinza em caixa alta, e com fundo no mouse em um lugar e sem fundo em outro.</p>
+            </div>
+        </article>
+    </div>
+</section>
+
+<!-- 07 -->
+<section class="sec" id="icones">
+    <h2 class="sec-h">07 <span class="dot"></span> Botões de ícone</h2>
+    <p class="sec-lead">Voltar, fechar e controles com ícone. A mesma função tem tamanhos, cantos e ícones diferentes conforme a tela.</p>
+    <article class="spec">
+        <div class="stage" style="gap:22px;align-items:flex-start">
+            <span class="ib-cap"><button class="ib ib-ob" aria-label="Voltar"><svg class="ico"><use href="#i-left"/></svg></button>Onboarding<br>40 px, canto 12</span>
+            <span class="ib-cap"><button class="ib ib-beta" aria-label="Fechar"><svg class="ico"><use href="#i-x"/></svg></button>Fase, desafio e prova beta<br>32 px, canto 8</span>
+            <span class="ib-cap"><button class="ib ib-round" aria-label="Mês anterior"><svg class="ico"><use href="#i-chev"/></svg></button>Ofensiva<br>32 px, redondo</span>
+            <span class="ib-cap"><button class="ib ib-round2" aria-label="Fechar"><svg class="ico"><use href="#i-x"/></svg></button>Premium<br>36 px, redondo</span>
+            <span class="ib-cap"><button class="ib ib-sq" aria-label="Fechar"><svg class="ico"><use href="#i-x"/></svg></button>Fase do legado, modais<br>36 px, canto 8</span>
+            <span class="ib-cap"><button class="ib ib-banner" aria-label="Fechar"><svg class="ico" style="width:16px;height:16px"><use href="#i-x"/></svg></button>Faixa de oferta<br>32 px, canto 8</span>
+            <span class="ib-cap"><button class="sh ghost icon" aria-label="Menu"><svg class="ico" style="width:16px;height:16px"><use href="#i-menu"/></svg></button>Admin (shadcn)<br>36 px, canto 6</span>
+            <span class="ib-cap"><span style="display:flex;gap:4px"><button class="panel" aria-label="Mais lento"><svg class="ico" style="width:16px;height:16px"><use href="#i-chev"/></svg></button><button class="panel main" aria-label="Tocar"><svg class="ico" style="width:16px;height:16px"><use href="#i-play"/></svg></button></span>Leitura guiada<br>32 px, cinza e roxo</span>
+        </div>
+        <div class="spec-body">
+            <span class="pt no">Nenhum afunda</span>
+            <p class="where"><code>Onboarding/Index.vue:265</code> · <code>BetaPlay/Phase.vue:295</code>, <code>Checkpoint.vue:294</code>, <code>Exam.vue:306</code> · <code>Ofensiva/Index.vue:186</code> · <code>PremiumUpsellModal.vue:53</code> · <code>Legado/Play/Phase.vue:227</code>, <code>PhaseUsersModal.vue:62</code> · <code>WelcomeOfferBanner.vue:90</code> · <code>admin/*</code> · <code>.panel-button</code> em <code>GuidedReading.vue</code></p>
+            <p class="flag"><b>Diverge:</b> sair de uma etapa é seta no onboarding e X no beta. Nenhum dos sete tem o mesmo par de tamanho e canto do outro. No app, a leitura guiada usa um botão de tocar redondo de 46 px, e na web ele é quadrado de 32.</p>
+        </div>
+    </article>
+</section>
+
+<!-- 08 -->
+<section class="sec" id="opcoes">
+    <h2 class="sec-h">08 <span class="dot"></span> Opções que a pessoa escolhe</h2>
+    <p class="sec-lead">Cartões e pílulas que funcionam como botão de escolha. A cor de "escolhido" muda de tela para tela: azul, roxo ou cinza escuro.</p>
+    <div class="grid">
+        <article class="spec">
+            <div class="stage col" data-group="quiz">
+                <button class="opt" role="radio" aria-checked="true"><span class="tint t-blue"><svg class="ico"><use href="#i-scale"/></svg></span><span class="t"><b>Passar na OAB</b><span>Exame de Ordem</span></span><span class="check"><svg class="ico" style="width:16px;height:16px"><use href="#i-check"/></svg></span></button>
+                <button class="opt" role="radio" aria-checked="false"><span class="tint t-purple"><svg class="ico"><use href="#i-bank"/></svg></span><span class="t"><b>Passar em concurso</b><span>Carreiras públicas</span></span><span class="check"><svg class="ico" style="width:16px;height:16px"><use href="#i-check"/></svg></span></button>
+                <button class="opt done" type="button"><span class="tint t-green"><svg class="ico"><use href="#i-doc"/></svg></span><span class="t"><b>Constituição Federal</b><span>Na sua trilha</span></span></button>
+            </div>
+            <div class="spec-body">
+                <span class="pt yes">Afunda ao clicar</span>
+                <h3>Opção do onboarding</h3>
+                <p class="where"><code>.ob-option</code> em <code>Onboarding/Index.vue:363</code> e <code>:421</code>. No app: <code>QuizOption.tsx</code>.</p>
+                <dl class="facts"><dt>Canto</dt><dd>16 px</dd><dt>Sombra</dt><dd>4 px sólida, da cor do contorno</dd><dt>Escolhida</dt><dd>azul, com selo de check</dd></dl>
+                <p class="flag"><b>Corrigido em 20/11:</b> escolhida, a base era azul 300, mais clara que o contorno, e a opção não afundava ao ser apertada de novo. O mouse também levantava o cartão 2 px, e no celular ele ficava levantado depois do toque. Agora a base é azul 400, igual ao contorno, todas as opções afundam e o mouse só muda o fundo. No app, <code>QuizOption.tsx</code> ganhou a mesma base.</p>
+            </div>
+        </article>
+        <article class="spec">
+            <div class="stage col" data-group="choice">
+                <button class="choice" aria-pressed="false"><b>A</b><span>O habeas data protege o direito de locomoção.</span></button>
+                <button class="choice" aria-pressed="true"><b>B</b><span>O mandado de injunção supre a falta de norma regulamentadora.</span></button>
+                <div style="display:flex;gap:8px"><span class="choice right" style="flex:1"><b>C</b><span>Correta</span></span><span class="choice wrong" style="flex:1"><b>D</b><span>Errada</span></span></div>
+            </div>
+            <div class="spec-body">
+                <span class="pt no">Não afunda</span>
+                <h3>Alternativa do desafio e da prova</h3>
+                <p class="where"><code>choiceClass</code> em <code>BetaPlay/Checkpoint.vue:255</code> e <code>Exam.vue:358</code>. No app: <code>choice</code> em <code>TrailUi.tsx</code>.</p>
+                <dl class="facts"><dt>Canto</dt><dd>12 px</dd><dt>Sombra</dt><dd>nenhuma</dd><dt>Escolhida</dt><dd>roxo</dd><dt>Corrigida</dt><dd>verde ou vermelho</dd></dl>
+            </div>
+        </article>
+        <article class="spec">
+            <div class="stage col" style="gap:16px">
+                <div style="display:flex;gap:8px;flex-wrap:wrap" data-group="plan">
+                    <button class="plan" aria-pressed="false"><b>Mensal</b>R$ 29,90</button><button class="plan" aria-pressed="true"><b>Trimestral</b>R$ 74,70</button><button class="plan" aria-pressed="false"><b>Anual</b>R$ 239,00</button>
+                </div>
+                <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap" data-group="tile">
+                    <button class="tile" aria-pressed="true"><span class="face"></span>Cabelo 1</button><button class="tile" aria-pressed="false"><span class="face" style="background:#fca5a5"></span>Cabelo 2</button>
+                    <button class="sw-btn" aria-pressed="false" aria-label="Cor"><i style="background:#7c4a2d"></i></button><button class="sw-btn" aria-pressed="true" aria-label="Cor"><i style="background:#f2c48d"></i></button>
+                </div>
+            </div>
+            <div class="spec-body">
+                <span class="pt no">Não afunda</span>
+                <h3>Planos e editor de avatar</h3>
+                <p class="where"><code>Subscription/Index.vue:100</code>, <code>avatar-editor/OptionTile.vue</code>, <code>ColorSwatches.vue</code></p>
+                <p class="flag"><b>Diverge:</b> roxo como no beta, mas com cantos de 12 px nos planos e 16 px no avatar. O editor de badge do admin usa azul.</p>
+            </div>
+        </article>
+        <article class="spec">
+            <div class="stage col" style="align-items:center;gap:18px">
+                <div class="seg" data-group="seg"><button aria-pressed="true">Semana</button><button aria-pressed="false">Mês</button><button aria-pressed="false">Geral</button></div>
+                <div class="seg sq" data-group="seg2"><button aria-pressed="false">Claro</button><button aria-pressed="true">Escuro</button><button aria-pressed="false">Sistema</button></div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center"><button class="word">liberdade</button><button class="word">igualdade</button><button class="word">vida</button></div>
+            </div>
+            <div class="spec-body">
+                <span class="pt bad">Palavras afundam, abas não</span>
+                <h3>Abas e palavras do banco</h3>
+                <p class="where"><code>Ranking/Index.vue:117</code>, <code>AppearanceTabs.vue</code>, <code>.word-chip</code> em <code>legislation-play/ActiveChallenge.vue</code> (no app, <code>WordChip.tsx</code>)</p>
+                <p class="flag"><b>Diverge:</b> duas abas segmentadas, uma redonda e outra de canto 6 px. A palavra do banco é a única peça 3D do jogo com sombra de 3 px.</p>
+            </div>
+        </article>
+    </div>
+</section>
+
+<!-- 09 -->
+<section class="sec" id="mapa">
+    <h2 class="sec-h">09 <span class="dot"></span> Botões do mapa beta</h2>
+    <p class="sec-lead">Os quadrados do mapa novo são botões 3D próprios, maiores e com sombra de 6 px. A cor diz o estado.</p>
+    <article class="spec">
+        <div class="stage" style="gap:28px;align-items:flex-end">
+            <span class="node-wrap"><span class="frame"><button class="node cur" aria-label="Atual"><span class="face"><svg class="ico"><use href="#i-star"/></svg></span></button></span>Atual (moldura pisca)</span>
+            <span class="node-wrap"><button class="node ok" aria-label="Concluído"><span class="face"><svg class="ico"><use href="#i-check"/></svg></span></button>Concluído</span>
+            <span class="node-wrap"><button class="node lock" aria-label="Bloqueado"><span class="face"><svg class="ico"><use href="#i-lock"/></svg></span></button>Bloqueado</span>
+            <span class="node-wrap"><button class="node exam" aria-label="Dia da prova"><span class="face"><svg class="ico"><use href="#i-doc"/></svg></span></button>Dia da prova</span>
+        </div>
+        <div class="spec-body">
+            <span class="pt yes">Afunda ao clicar</span>
+            <p class="where"><code>.node</code> e <code>.exam</code> em <code>pages/BetaPlay/Map.vue</code>. No app: <code>TrailMapScreen.tsx</code>.</p>
+            <dl class="facts"><dt>Canto</dt><dd>24% do lado</dd><dt>Sombra</dt><dd>6 px, afunda 6 px ao tocar</dd><dt>Atual</dt><dd>azul, a única tela beta onde azul é a cor principal</dd></dl>
+        </div>
+    </article>
+</section>
+
+<!-- 10 -->
+<section class="sec" id="onboarding-beta">
+    <h2 class="sec-h">10 <span class="dot"></span> Onboarding e beta lado a lado</h2>
+    <p class="sec-lead">O onboarding é a primeira tela de quem chega e leva direto ao mapa beta. As duas telas abaixo seguem o código de cada uma: uma pergunta do onboarding e uma questão do desafio do quadrado. Toque nas opções para ver a seleção.</p>
+    <div class="phones">
+        <div class="phone">
+            <div class="phone-label"><b>Onboarding</b><code>Onboarding/Index.vue</code></div>
+            <div class="screen">
+                <div class="scr-top">
+                    <button class="ib ib-ob" aria-label="Voltar"><svg class="ico"><use href="#i-left"/></svg></button>
+                    <div class="bar ob"><i style="width:38%"></i></div>
+                    <button class="txt">Pular</button>
+                </div>
+                <div class="scr-body" data-group="quiz2">
+                    <div class="bubble-row"><span class="avatar"></span><div class="bubble">Qual é o seu objetivo com a lei seca?</div></div>
+                    <button class="opt" role="radio" aria-checked="false"><span class="tint t-blue"><svg class="ico"><use href="#i-scale"/></svg></span><span class="t"><b>Passar na OAB</b><span>Exame de Ordem</span></span><span class="check"><svg class="ico" style="width:16px;height:16px"><use href="#i-check"/></svg></span></button>
+                    <button class="opt" role="radio" aria-checked="true"><span class="tint t-purple"><svg class="ico"><use href="#i-bank"/></svg></span><span class="t"><b>Passar em concurso</b><span>Carreiras públicas</span></span><span class="check"><svg class="ico" style="width:16px;height:16px"><use href="#i-check"/></svg></span></button>
+                    <button class="opt" role="radio" aria-checked="false"><span class="tint t-green"><svg class="ico"><use href="#i-cap"/></svg></span><span class="t"><b>Ir bem na faculdade</b><span>Provas e seminários</span></span><span class="check"><svg class="ico" style="width:16px;height:16px"><use href="#i-check"/></svg></span></button>
+                </div>
+                <div class="scr-foot">
+                    <span class="foot-note">Rodapé das outras etapas</span>
+                    <button class="obcta">Continuar</button>
+                </div>
+            </div>
+        </div>
+        <div class="phone">
+            <div class="phone-label"><b>Desafio do quadrado (beta)</b><code>BetaPlay/Checkpoint.vue</code></div>
+            <div class="screen">
+                <div class="scr-top">
+                    <button class="ib ib-beta" aria-label="Voltar ao mapa"><svg class="ico"><use href="#i-x"/></svg></button>
+                    <div class="bar beta"><i style="width:38%"></i></div>
+                </div>
+                <div class="scr-body" data-group="choice2">
+                    <span class="q-tag">Questão 2 de 6</span>
+                    <p class="q">Sobre os remédios constitucionais, assinale a correta.</p>
+                    <button class="choice" aria-pressed="false"><b>A</b><span>O habeas data protege o direito de locomoção.</span></button>
+                    <button class="choice" aria-pressed="true"><b>B</b><span>O mandado de injunção supre a falta de norma regulamentadora.</span></button>
+                    <button class="choice" aria-pressed="false"><b>C</b><span>A ação popular só pode ser proposta pelo Ministério Público.</span></button>
+                </div>
+                <div class="scr-foot">
+                    <button class="gb purple lg" style="width:100%">Responder</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Peça</th><th>Onboarding</th><th>Beta (fase, desafio, prova)</th></tr></thead>
+            <tbody>
+                <tr><td class="k">Botão principal</td><td>verde, <code>.ob-cta</code> escrito à mão, letra 18 px</td><td>roxo, <code>GameButton</code> lg, letra 16 px</td></tr>
+                <tr><td class="k">Desabilitado</td><td>cinza claro, texto cinza</td><td>roxo vira cinza médio e fica meio transparente</td></tr>
+                <tr><td class="k">Opção escolhida</td><td>azul, com check redondo</td><td>roxo, sem check</td></tr>
+                <tr><td class="k">Cartão de opção</td><td>canto 16 px, sombra 3D de 4 px, sobe no mouse</td><td>canto 12 px, chapado, só troca o fundo</td></tr>
+                <tr><td class="k">Sair</td><td>seta para a esquerda, 40 px, canto 12</td><td>X, 32 px, canto 8</td></tr>
+                <tr><td class="k">Barra de progresso</td><td>14 px, trilho cinza 100, faixa de brilho por cima</td><td>12 px, trilho cinza 200, lisa</td></tr>
+                <tr><td class="k">Fala com a pessoa</td><td>avatar e balão com a pergunta</td><td>texto direto, sem avatar</td></tr>
+                <tr><td class="k">Movimento</td><td>entrada em cascata, balão que salta, opção que pula ao ser escolhida, presente que balança, botão que pulsa</td><td>sem animação de entrada</td></tr>
+                <tr><td class="k">Desafio de lacunas</td><td>"Verificar" roxo do jogo, e depois "Continuar" verde no mesmo rodapé</td><td>"Verificar" roxo, depois a barra de resultado verde ou vermelha</td></tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<!-- 11 -->
+<section class="sec" id="inventario">
+    <h2 class="sec-h">11 <span class="dot"></span> Inventário por arquivo</h2>
+    <p class="sec-lead">Telas de aluno e componentes compartilhados. O admin e o editor de legislação usam só o shadcn e ficaram fora desta lista.</p>
+    <div>
+        <details open>
+            <summary>GameButton do site <span>82 usos</span></summary>
+            <ul>
+                <li>Fases e jogo: <code>BetaPlay/Phase.vue</code>, <code>BetaPlay/Checkpoint.vue</code>, <code>BetaPlay/Exam.vue</code>, <code>BetaPlay/Map.vue</code>, <code>Legado/Play/Phase.vue</code>, <code>legislation-play/ActiveChallenge.vue</code>, <code>ResultBar.vue</code>, <code>PhaseComplete.vue</code></li>
+                <li>Desafios entre amigos: <code>Challenges/Index.vue</code>, <code>MyIndex.vue</code>, <code>Show.vue</code>, <code>Create.vue</code>, <code>Edit.vue</code></li>
+                <li>Público e venda: <code>Welcome.vue</code>, <code>PublicNavbar.vue</code>, <code>Public/Laws.vue</code>, <code>Public/LawDetail.vue</code>, <code>Public/ArticleExercise.vue</code>, <code>Subscription/Index.vue</code>, <code>PremiumUpsellModal.vue</code></li>
+            </ul>
+        </details>
+        <details>
+            <summary>Botões 3D escritos à mão <span>8 famílias</span></summary>
+            <ul>
+                <li><code>.ob-cta</code>: <code>Onboarding/Index.vue:592</code>, <code>:596</code>, <code>:644</code></li>
+                <li><code>.gift-cta</code>: <code>Gift/Show.vue:98</code></li>
+                <li><code>.unsub-cta</code>: <code>Emails/Unsubscribe.vue:53</code>, <code>:73</code></li>
+                <li><code>.btn-press</code>: <code>LegislationPlay/Play.vue:347</code>, <code>:353</code>, <code>:378</code></li>
+                <li>Jornadas: <code>Legado/Play/Map.vue:844</code>, <code>:862</code>, <code>Legado/Learn/Map.vue:609</code>, <code>:627</code></li>
+                <li>Classe <code>game-button</code> solta: <code>Public/Search.vue:46</code>, <code>:58</code>, <code>:145</code>, <code>:185</code>, <code>:191</code>, <code>Public/ArticleExercise.vue:185</code></li>
+                <li>Páginas legais: <code>Cookies.vue:370</code>, <code>:380</code>, <code>Terms.vue:363</code>, <code>:372</code>, <code>PrivacyPolicy.vue:273</code></li>
+                <li>Chips: <code>WelcomeOfferBanner.vue:84</code>, <code>Welcome.vue:436</code>, <code>Onboarding/Index.vue:455</code></li>
+            </ul>
+        </details>
+        <details>
+            <summary>Button do shadcn em telas de aluno <span>fora do admin</span></summary>
+            <ul>
+                <li>Entrada: <code>auth/Login.vue</code>, <code>Register.vue</code>, <code>ForgotPassword.vue</code>, <code>ResetPassword.vue</code>, <code>ConfirmPassword.vue</code>, <code>VerifyEmail.vue</code></li>
+                <li>Conta: <code>settings/Profile.vue</code>, <code>Password.vue</code>, <code>Avatar.vue</code>, <code>DeleteUser.vue</code>, <code>layouts/settings/Layout.vue</code></li>
+                <li>Jogo e perfil: <code>Play/NoLives.vue</code>, <code>Profile/Show.vue</code>, <code>Subscription/Index.vue</code>, <code>Legado/Play/Phase.vue</code>, <code>Legado/User/LegalReferences.vue</code>, <code>LegislationPlay/Preferences.vue</code>, <code>AppHeader.vue</code></li>
+            </ul>
+        </details>
+        <details>
+            <summary>Chapados, de texto e de ícone <span>escritos na tela</span></summary>
+            <ul>
+                <li>Onboarding: <code>Onboarding/Index.vue:265</code>, <code>:285</code>, <code>:446</code>, <code>:608</code>, <code>:645</code></li>
+                <li>Beta: <code>BetaPlay/Map.vue:334</code>, <code>:597</code> (ver mais), <code>Phase.vue:295</code>, <code>Checkpoint.vue:294</code>, <code>Exam.vue:306</code> (sair), <code>GuidedReading.vue:573</code> a <code>:602</code> (leitura guiada)</li>
+                <li>Ofensiva e ranking: <code>Ofensiva/Index.vue:173</code>, <code>:186</code>, <code>:194</code>, <code>Ranking/Index.vue:117</code></li>
+                <li>Legado: <code>Legado/Play/Map.vue:512</code>, <code>Legado/Learn/Map.vue:362</code>, <code>LegislationPlay/Map.vue:267</code>, <code>Legado/Play/Phase.vue:17</code>, <code>:184</code>, <code>:227</code></li>
+                <li>Venda e avisos: <code>Welcome.vue:242</code>, <code>:748</code>, <code>:761</code>, <code>:892</code>, <code>WelcomeOfferBanner.vue:90</code>, <code>PremiumUpsellModal.vue:53</code>, <code>:88</code>, <code>AdModal.vue:163</code>, <code>AdComponent.vue:58</code></li>
+                <li>Escolhas: <code>Subscription/Index.vue:100</code>, <code>:120</code>, <code>:145</code>, <code>avatar-editor/OptionTile.vue</code>, <code>ColorSwatches.vue</code>, <code>settings/Avatar.vue:83</code>, <code>AppearanceTabs.vue</code></li>
+                <li>Listas e paginação: <code>Public/LawDetail.vue:154</code>, <code>:166</code>, <code>Public/Laws.vue:37</code>, <code>Challenges/Index.vue:51</code>, <code>:146</code>, <code>MyIndex.vue:132</code>, <code>Challenges/Create.vue:111</code>, <code>:118</code>, <code>:188</code></li>
+            </ul>
+        </details>
+        <details>
+            <summary>App (memorize-mobile) <span>2 componentes e botões soltos</span></summary>
+            <ul>
+                <li><code>components/ui/GameButton.tsx</code>: trilha, login, cadastro, perfil, sem vidas, editor de avatar, <code>PhaseControls.tsx</code></li>
+                <li><code>components/onboarding/ChunkyPressable.tsx</code>: <code>OnboardingCta.tsx</code>, <code>QuizOption.tsx</code>, <code>TrailStep.tsx</code></li>
+                <li>Roxo chapado, canto 10, sem borda nem sombra: <code>screens/profile/ChangePasswordScreen.tsx</code> (o único assim no app)</li>
+                <li>Pílulas: <code>OfensivaScreen.tsx</code> (compartilhar), <code>ProfileScreen.tsx</code> (editar avatar, borda 2), <code>layout/AppHeader.tsx</code> (ofensiva)</li>
+                <li>Modal do perfil: principal chapado de canto 8 e secundário só texto, em <code>ProfileScreen.tsx</code></li>
+                <li>Tocar da leitura guiada redondo de 46 px: <code>components/trail/GuidedSummary.tsx</code></li>
+                <li>Alternativas e sair da trilha: <code>components/trail/TrailUi.tsx</code></li>
+            </ul>
+        </details>
+    </div>
+</section>
+
+<!-- ===================== AVISOS ===================== -->
+<div class="chapter" id="avisos">
+    <span class="chapter-kicker">Componente 2</span>
+    <h2>Avisos</h2>
+    <div class="counts">
+        <div class="count"><b>16</b><span>jeitos de mostrar um aviso hoje, somando site e app</span></div>
+        <div class="count"><b>2</b><span>avisos com base 3D, que parecem botão e não são</span></div>
+        <div class="count"><b>1</b><span>modelo aprovado: a barra de resultado da fase</span></div>
+    </div>
+</div>
+
+<div class="part">
+    <span class="status-chip">Rascunho 1 · em discussão</span>
+    <h2>Avisos · Proposta de padrão</h2>
+    <p>O ponto de partida é a barra "Você acertou!" do pé da fase. Todo aviso segue o desenho dela: fundo tingido, um círculo cheio com o ícone, um título curto e uma linha de apoio. O que muda é a cor, que diz o tipo do aviso.</p>
+</div>
+
+<section class="sec" id="avisos-proposta">
+    <h2 class="sec-h">A <span class="dot"></span> Avisos chapados, cor por tipo</h2>
+
+    <div class="rules">
+        <article class="spec rule" style="grid-column: 1 / -1">
+            <div class="al-pair">
+                <div class="stage col al-stack">
+                    <div class="al ok" role="status"><span class="al-dot"><svg class="ico"><use href="#i-check"/></svg></span><div><b>Material publicado</b><p>As 6 questões já aparecem no desafio do quadrado.</p></div></div>
+                    <div class="al err" role="alert"><span class="al-dot"><svg class="ico"><use href="#i-x"/></svg></span><div><b>Não foi possível corrigir agora</b><p>Confira a internet e tente de novo.</p></div></div>
+                    <div class="al warn"><span class="al-dot"><svg class="ico"><use href="#i-bang"/></svg></span><div><b>Restam 2 vidas</b><p>Errar mais duas vezes trava as fases até amanhã.</p></div></div>
+                    <div class="al info"><span class="al-dot"><svg class="ico"><use href="#i-info"/></svg></span><div><b>Dispositivo vetado</b><p>O texto foi retirado da lei e fica aqui só como registro. Não vale XP.</p></div></div>
+                    <div class="al offer"><span class="al-dot"><svg class="ico"><use href="#i-gift"/></svg></span><div><b>15% off no plano anual</b><p>Termina em <span class="tnum">23:41:07</span>.</p></div><button class="pb main s al-action">Garantir</button></div>
+                </div>
+                <div class="stage col al-stack dark-stage">
+                    <div class="al ok"><span class="al-dot"><svg class="ico"><use href="#i-check"/></svg></span><div><b>Material publicado</b><p>As 6 questões já aparecem no desafio do quadrado.</p></div></div>
+                    <div class="al err"><span class="al-dot"><svg class="ico"><use href="#i-x"/></svg></span><div><b>Não foi possível corrigir agora</b><p>Confira a internet e tente de novo.</p></div></div>
+                    <div class="al warn"><span class="al-dot"><svg class="ico"><use href="#i-bang"/></svg></span><div><b>Restam 2 vidas</b><p>Errar mais duas vezes trava as fases até amanhã.</p></div></div>
+                    <div class="al info"><span class="al-dot"><svg class="ico"><use href="#i-info"/></svg></span><div><b>Dispositivo vetado</b><p>O texto foi retirado da lei e fica aqui só como registro. Não vale XP.</p></div></div>
+                    <div class="al offer"><span class="al-dot"><svg class="ico"><use href="#i-gift"/></svg></span><div><b>15% off no plano anual</b><p>Termina em <span class="tnum">23:41:07</span>.</p></div><button class="pb main s al-action">Garantir</button></div>
+                </div>
+            </div>
+            <div class="spec-body">
+                <span class="num">REGRA 1</span>
+                <h3>Cinco tipos, uma cor para cada</h3>
+                <dl class="legend">
+                    <b style="color:var(--ok)">Sucesso</b><span>verde: acertou, salvou, concluiu.</span>
+                    <b style="color:var(--bad)">Erro</b><span>vermelho: errou, falhou, não salvou.</span>
+                    <b style="color:var(--warn)">Atenção</b><span>âmbar: falta pouco, cuidado, perde algo se seguir.</span>
+                    <b>Informação</b><span>azul: explica algo, sem pedir nada.</span>
+                    <b>Oferta</b><span>rosa: desconto, presente, Premium.</span>
+                </dl>
+                <p class="where">Fundo no tom 100 (950 no escuro), contorno de 2 px no tom 200 (900 no escuro), círculo de 28 px no tom 500 com ícone branco, título de 16 px no tom 700 (300 no escuro) e texto de 14 px no tom 800 (200 no escuro). O âmbar é diferente do amarelo dos botões para o aviso não parecer clicável.</p>
+            </div>
+        </article>
+
+        <article class="spec rule">
+            <div class="stage col al-stack" style="gap:18px">
+                <div class="al offer"><span class="al-dot"><svg class="ico"><use href="#i-gift"/></svg></span><div><b>15% off no plano anual</b><p>Termina em <span class="tnum">23:41:07</span>.</p></div><button class="pb main s al-action">Garantir</button></div>
+                <span class="al-caption">Hoje: o mesmo aviso com base 3D</span>
+                <div class="offer-card"><span class="gift"><svg class="ico"><use href="#i-gift"/></svg></span><span class="txt-col"><b>15% off no plano anual</b><span>Termina em <em>23:41:07</em></span></span><button class="chip-offer">Garantir</button></div>
+            </div>
+            <div class="spec-body">
+                <span class="num">REGRA 2</span>
+                <h3>Aviso não é botão, então não tem 3D</h3>
+                <p class="where">Só o que se aperta tem base e afunda. O aviso fica chapado: sem base embaixo, sem sombra difusa e sem afundar ao toque. Quando ele pede uma ação, a ação é um botão de verdade dentro dele (aí sim 3D) ou um link de texto.</p>
+            </div>
+        </article>
+
+        <article class="spec rule">
+            <div class="stage col" style="padding:0;gap:0;justify-content:flex-end;min-height:220px">
+                <div class="al-bar ok">
+                    <div class="al-bar-head"><span class="al-dot"><svg class="ico"><use href="#i-check"/></svg></span><b>Você acertou!</b></div>
+                    <p>3 de 3 corretas</p>
+                    <button class="gb green lg" style="width:100%;margin-top:14px">Continuar</button>
+                </div>
+            </div>
+            <div class="spec-body">
+                <span class="num">REGRA 3</span>
+                <h3>Quatro formatos</h3>
+                <dl class="legend">
+                    <b>Barra</b><span>pé da tela, depois de responder. Ocupa a largura toda, com o botão de seguir. Só sucesso e erro.</span>
+                    <b>Na página</b><span>dentro do conteúdo, onde o assunto está. Cantos de 16 px.</span>
+                    <b>Notificação</b><span>no topo, some sozinha em 3 s. O mesmo desenho do aviso na página, com X para fechar.</span>
+                    <b>Erro curto</b><span>uma linha embaixo do botão que falhou: ícone e texto vermelhos, sem caixa.</span>
+                </dl>
+            </div>
+        </article>
+
+        <article class="spec rule">
+            <div class="stage col al-stack" style="gap:18px">
+                <div class="al ok al-toast"><span class="al-dot"><svg class="ico"><use href="#i-check"/></svg></span><div><b>Senha alterada</b></div><button class="picon al-close" aria-label="Fechar"><svg class="ico"><use href="#i-x"/></svg></button></div>
+                <div style="display:flex;flex-direction:column;gap:10px;align-items:stretch">
+                    <button class="pb main l full">Responder</button>
+                    <p class="al-short"><svg class="ico"><use href="#i-bang"/></svg>Não foi possível corrigir agora. Tente de novo.</p>
+                </div>
+            </div>
+            <div class="spec-body">
+                <span class="num">REGRA 4</span>
+                <h3>Notificação e erro curto</h3>
+                <p class="where">A notificação do app hoje é sólida (verde ou vermelha cheia) e tem sombra difusa. Na proposta ela fica igual ao aviso na página, só que flutuando. O erro curto ganha ícone, para não ficar como um texto vermelho solto.</p>
+            </div>
+        </article>
+    </div>
+
+    <h3 style="font-size:20px;font-weight:600">Para decidir</h3>
+    <ol class="open-q">
+        <li><b>Oferta em rosa ou no amarelo da marca?</b><span>Rosa é o que o lembrete e a assinatura já usam. Amarelo amarraria a oferta à marca, mas ficaria perto do botão principal.</span></li>
+        <li><b>A barra de resultado ganha os outros tipos?</b><span>Hoje ela só mostra acerto e erro. Poderia mostrar "dispositivo vetado" em azul, por exemplo.</span></li>
+        <li><b>A faixa roxa do mapa beta continua?</b><span>É a contagem da oferta, sólida e roxa, no topo do mapa. Pela proposta ela vira um aviso de oferta rosa, ou sai.</span></li>
+    </ol>
+</section>
+
+<div class="part">
+    <h2>Avisos · Como está hoje</h2>
+    <p>Inventário de 20/11/2026, tirado do código. Os desenhos usam as classes de cada arquivo.</p>
+</div>
+
+<section class="sec" id="avisos-hoje">
+    <h2 class="sec-h">12 <span class="dot"></span> Avisos de hoje</h2>
+    <div class="grid">
+        <article class="spec">
+            <div class="stage col" style="padding:0;gap:0;justify-content:flex-end">
+                <div class="al-bar ok now">
+                    <div class="al-bar-head"><span class="al-dot"><svg class="ico"><use href="#i-check"/></svg></span><b>Você acertou!</b></div>
+                    <p>3 de 3 corretas</p>
+                    <button class="gb green lg" style="width:100%;margin-top:14px">Continuar</button>
+                </div>
+            </div>
+            <div class="spec-body">
+                <span class="pt yes">Modelo da proposta</span>
+                <h3>Barra de resultado</h3>
+                <p class="where"><code>ResultBar.vue</code> (fases e desafio do beta). No app: <code>resultBar</code> em <code>TrailUi.tsx</code>. A demonstração da landing (<code>HeroGameDemo.vue:351</code>) repete o desenho com fundo 50 em vez de 100.</p>
+            </div>
+        </article>
+        <article class="spec">
+            <div class="stage col">
+                <div class="offer-card"><span class="gift"><svg class="ico"><use href="#i-gift"/></svg></span><span class="txt-col"><b>15% off no plano anual</b><span>Termina em <em>23:41:07</em></span></span><button class="chip-offer">Garantir</button></div>
+            </div>
+            <div class="spec-body">
+                <span class="pt bad">Tem base 3D e não é botão</span>
+                <h3>Lembrete de oferta</h3>
+                <p class="where"><code>WelcomeOfferBanner.vue:69</code> (mapa antigo de legislação). No app: <code>WelcomeOfferBanner.tsx</code> com <code>ChunkyView</code>.</p>
+                <p class="flag"><b>Diverge:</b> contorno rosa com base de 4 px, o mesmo desenho dos cartões de escolha. Parece que dá para apertar o cartão inteiro.</p>
+            </div>
+        </article>
+        <article class="spec">
+            <div class="stage col">
+                <div class="strip-now"><span>Contagem regressiva final para 15% de desconto!</span><span class="tnum">23:41:07</span></div>
+            </div>
+            <div class="spec-body">
+                <span class="pt bad">Roxo sólido, link na faixa toda</span>
+                <h3>Faixa de oferta</h3>
+                <p class="where"><code>WelcomeOfferBanner.vue:59</code>, presa no topo do mapa beta.</p>
+                <p class="flag"><b>Diverge:</b> a mesma oferta aparece em roxo sólido aqui, em branco com rosa no mapa antigo e em rosa claro na assinatura.</p>
+            </div>
+        </article>
+        <article class="spec">
+            <div class="stage col">
+                <div class="now-pink"><span class="gift"><svg class="ico"><use href="#i-gift"/></svg></span><div><b>Sua oferta de boas-vindas</b><p>15% off no plano anual, até 23:41.</p></div></div>
+            </div>
+            <div class="spec-body">
+                <span class="pt yes">Já é quase a proposta</span>
+                <h3>Oferta na assinatura</h3>
+                <p class="where"><code>Subscription/Index.vue:75</code></p>
+                <p class="flag"><b>Diverge:</b> o ícone fica num quadrado e não num círculo cheio. O resto já é chapado.</p>
+            </div>
+        </article>
+        <article class="spec">
+            <div class="stage col">
+                <div class="now-red1"><svg class="ico"><use href="#i-bang"/></svg>O pagamento não foi aprovado.</div>
+                <div class="now-red2">Não foi possível abrir o pagamento.</div>
+            </div>
+            <div class="spec-body">
+                <span class="pt bad">Dois erros, dois desenhos</span>
+                <h3>Erros da assinatura</h3>
+                <p class="where"><code>Subscription/Index.vue:177</code> e <code>:184</code></p>
+                <p class="flag"><b>Diverge:</b> na mesma tela, um tem contorno de 1 px e ícone, o outro não tem contorno nem ícone. Canto de 8 px, contra 16 px da barra.</p>
+            </div>
+        </article>
+        <article class="spec">
+            <div class="stage col">
+                <div class="now-amber"><svg class="ico"><use href="#i-bang"/></svg><div><b>Revise antes de seguir</b><p>3 artigos desta revisão ainda não chegaram a 100%.</p></div></div>
+                <div class="now-blue">Você tem vidas infinitas! Você não deveria estar vendo esta página.</div>
+            </div>
+            <div class="spec-body">
+                <span class="pt bad">Contorno fino, canto pequeno</span>
+                <h3>Avisos do jogo legado e de Sem vidas</h3>
+                <p class="where"><code>Legado/Play/Phase.vue:98</code>, <code>:157</code>, <code>:237</code>, <code>Play/NoLives.vue:14</code>, <code>Subscription/Index.vue:381</code> e <code>:402</code></p>
+                <p class="flag"><b>Diverge:</b> contorno de 1 px ou nenhum, cantos de 6 e 8 px, ícone solto sem círculo. O azul de Sem vidas não tem ícone nem título.</p>
+            </div>
+        </article>
+        <article class="spec">
+            <div class="stage col">
+                <div class="now-yellow">Nenhuma lei encontrada para "codigo penl".</div>
+                <div class="now-legal">Este site usa cookies essenciais para funcionar.</div>
+            </div>
+            <div class="spec-body">
+                <span class="pt bad">Amarelo, âmbar e verde soltos</span>
+                <h3>Busca pública e páginas legais</h3>
+                <p class="where"><code>Public/Search.vue:97</code>, <code>Terms.vue:280</code> e <code>:343</code>, <code>Cookies.vue:298</code>, <code>DeleteUser.vue:48</code></p>
+                <p class="flag"><b>Diverge:</b> amarelo 50 na busca e âmbar 50 nos cookies para o mesmo tipo de aviso.</p>
+            </div>
+        </article>
+        <article class="spec">
+            <div class="stage col" style="align-items:stretch;gap:16px">
+                <p class="now-err-text">Não foi possível corrigir agora. Tente de novo.</p>
+                <p class="now-note">Dispositivo vetado ou revogado: o texto foi retirado da lei e fica aqui só como registro.</p>
+            </div>
+            <div class="spec-body">
+                <span class="pt bad">Texto solto, sem caixa nem ícone</span>
+                <h3>Erros e notas do beta</h3>
+                <p class="where"><code>BetaPlay/Checkpoint.vue:433</code>, <code>Exam.vue:295</code> e <code>:377</code>, <code>legislation-play/ActiveChallenge.vue:284</code></p>
+                <p class="flag"><b>Diverge:</b> o erro é só texto vermelho em cima do botão, e a nota de vetado é texto cinza claro, fácil de não ver.</p>
+            </div>
+        </article>
+        <article class="spec">
+            <div class="stage col dark-stage" style="align-items:center;gap:12px">
+                <div class="toast-app ok"><span class="t-ico"><svg class="ico"><use href="#i-check"/></svg></span><div><b>Avatar salvo</b><p>Seu novo visual já aparece no ranking.</p></div></div>
+                <div class="toast-app err"><span class="t-ico"><svg class="ico"><use href="#i-bang"/></svg></span><div><b>Sem conexão</b></div></div>
+            </div>
+            <div class="spec-body">
+                <span class="pt bad">Sólida, com sombra difusa</span>
+                <h3>Notificação do app</h3>
+                <p class="where"><code>components/ui/Toast.tsx</code> (perfil, editor de avatar, sem vidas, referências, fase). No site, só o <code>toast</code> do shadcn no jogo legado e no admin.</p>
+                <p class="flag"><b>Diverge:</b> fundo cheio verde, vermelho ou cinza 800, com sombra difusa. É o único aviso sólido do app.</p>
+            </div>
+        </article>
+    </div>
+</section>
+
+<p class="foot">Levantado do código em 20/11/2026. As medidas vêm das classes do Tailwind e dos estilos de cada arquivo. O desenho dos componentes do app reproduz o <code>StyleSheet</code> do React Native no navegador, então a letra (Roboto) e as sombras são uma aproximação do aparelho.</p>
+
+</div>
+
+<script>
+// Seletores da proposta: cor principal (abre no amarelo; verde e azul só para comparar) e tom
+// (vivo, papel, pastel). Cada um grava um atributo na seção; o tom fica lembrado neste navegador.
+(function () {
+    var section = document.getElementById('proposta');
+    var attrs = { primary: 'data-primary', tone: 'data-tone' };
+    document.querySelectorAll('[data-picker]').forEach(function (picker) {
+        var kind = picker.dataset.picker;
+        function apply(value) {
+            section.setAttribute(attrs[kind], value);
+            picker.querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.value === value ? 'true' : 'false'); });
+        }
+        picker.addEventListener('click', function (event) {
+            var btn = event.target.closest('button[data-value]');
+            if (!btn) return;
+            apply(btn.dataset.value);
+            if (kind === 'tone') { try { localStorage.setItem('componentes-tom', btn.dataset.value); } catch (e) {} }
+        });
+        if (kind === 'tone') {
+            var saved = null;
+            try { saved = localStorage.getItem('componentes-tom'); } catch (e) {}
+            apply(saved && picker.querySelector('[data-value="' + saved + '"]') ? saved : 'vivo');
+        }
+    });
+})();
+
+// Chips de filtro: cada um liga e desliga sozinho.
+document.querySelectorAll('[data-multi]').forEach(function (group) {
+    group.addEventListener('click', function (event) {
+        var btn = event.target.closest('button[aria-pressed]');
+        if (btn) btn.setAttribute('aria-pressed', btn.getAttribute('aria-pressed') === 'true' ? 'false' : 'true');
+    });
+});
+
+// Seleção nas demonstrações: cada grupo marca um item por vez.
+document.querySelectorAll('[data-group]').forEach(function (group) {
+    group.addEventListener('click', function (event) {
+        var btn = event.target.closest('button');
+        if (!btn || !group.contains(btn)) return;
+        var attr = btn.hasAttribute('aria-checked') ? 'aria-checked' : (btn.hasAttribute('aria-pressed') ? 'aria-pressed' : null);
+        if (!attr) return;
+        group.querySelectorAll('button[' + attr + ']').forEach(function (other) {
+            if (other.parentElement.closest('[data-group]') === group) other.setAttribute(attr, other === btn ? 'true' : 'false');
+        });
+    });
+});
+</script>
+</body>
+</html>

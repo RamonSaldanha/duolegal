@@ -99,6 +99,14 @@ const PHASES_PER_JOURNEY = 24;        // UI pagination — phases per journey
 - **Estilo chapado:** desde 20/11/2026 a arte é chapada (sem sombra, brilho nem degradê) e usa a paleta do editor (`SHIELD_SWATCHES`). Badge gerado no admin antes disso (`Discipline::BADGE_STYLE_SINCE`) aparece na lista de disciplinas com o botão "Redesenhar no estilo novo", que desenha de novo no navegador e envia para `PUT /admin/disciplines/{uuid}/badge`.
 - **Criar ou editar badge:** o formulário do admin (`StarBadgeEditor`) desenha os 6 PNGs no navegador com `resources/js/lib/badges/art.ts` e os envia. Eles ficam em `storage/app/private/discipline-badges/{uuid}`, são servidos por `/discipline-badges/{uuid}/{estrelas}` e têm prioridade sobre as originais. Ilustração nova exige mudar `art.ts` e `BADGE_ILLUSTRATIONS` em `Admin\DisciplineController`.
 
+### Guia de componentes
+
+`docs/design/componentes.html` é onde se decide como cada componente do site e do app deve ser (por enquanto botões e avisos). Cada componente tem a proposta em discussão e o inventário do que existe hoje, com o CSS real. Abra com a configuração `docs-design` do `.claude/launch.json` (`php -S 127.0.0.1:8090 -t docs/design`, depois `/componentes.html`). O arquivo também é publicado como o artefato "Componentes do Memorize" no claude.ai (https://claude.ai/artifact/EetaJVoZ2ySAeUGaoCz7uP): ao editá-lo, publique de novo nesse link (passe a URL como `url`) a versão sem `<!doctype>`, `<html>`, `<head>` e `<body>`.
+
+- Enquanto a proposta não for aplicada, não crie botões novos fora do `GameButton` nem avisos com desenho próprio: siga a barra de resultado (`ResultBar.vue`).
+- Só o que se aperta tem 3D (base embaixo e afundar ao toque). Aviso, cartão de informação e painel ficam chapados.
+- Animação em botão não usa `transform`, porque apaga o afundar. Use `scale` ou `translate`.
+
 ### Perfil público
 
 Cada linha do ranking abre o perfil: na web, `/perfil/{uuid}` (`PublicProfileController`); no app, `GET /api/v1/profiles/{uuid}`, que usa o mesmo `payload()`. O ranking da API traz o `uuid` de cada linha. As Configurações do app usam `GET /api/v1/settings`, `PUT /api/v1/settings/achievements` e `PUT /api/v1/settings/emails`; a descrição é salva por `PATCH /api/v1/profile` (`bio`).
