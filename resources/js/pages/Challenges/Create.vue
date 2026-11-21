@@ -111,14 +111,14 @@
                                             <button
                                                 type="button"
                                                 @click="toggleAllArticlesInLaw(legalRef)"
-                                                class="text-xs text-primary hover:underline"
+                                                class="mz-mark text-xs"
                                             >
                                                 {{ areAllArticlesSelected(legalRef) ? 'Desmarcar Todos' : 'Selecionar Todos' }}
                                             </button>
                                             <button
                                                 type="button"
                                                 @click="toggleLawExpanded(legalRef.id)"
-                                                class="p-1 hover:bg-background rounded"
+                                                class="mz-btn mz-xs mz-sq mz-ghost"
                                             >
                                                 <ChevronDown 
                                                     class="w-4 h-4 transition-transform"
@@ -188,7 +188,7 @@
                                 <button
                                     type="button"
                                     @click="removeArticle(articleId)"
-                                    class="p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                                    class="mz-btn mz-xs mz-sq mz-ghost text-red-600 dark:text-red-400"
                                 >
                                     <X class="w-4 h-4" />
                                 </button>

@@ -132,12 +132,8 @@
                                 <Link
                                     v-if="link.url"
                                     :href="link.url"
-                                    class="px-3 py-2 text-sm rounded-lg transition-colors"
-                                    :class="[
-                                        link.active 
-                                            ? 'bg-primary text-primary-foreground' 
-                                            : 'bg-card border border-border hover:bg-accent'
-                                    ]"
+                                    class="mz-btn mz-sm min-w-10"
+                                    :class="link.active ? 'bg-choice-soft text-choice-ink shadow-[inset_0_0_0_2px_var(--mz-choice)]' : 'mz-ghost'"
                                 >
                                     {{ link.label }}
                                 </Link>

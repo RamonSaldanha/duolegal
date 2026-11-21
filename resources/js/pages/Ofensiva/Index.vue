@@ -174,19 +174,19 @@ async function shareCard() {
                 type="button"
                 :disabled="sharing"
                 @click="shareCard"
-                class="mx-auto flex items-center gap-2 rounded-full bg-orange-500 px-6 py-3 font-bold text-white shadow-md transition-colors hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
+                class="mz-btn mz-md mz-tonal-brand mx-auto"
             >
                 <Share2 class="h-5 w-5" />
                 {{ sharing ? 'Gerando imagem...' : 'Compartilhar' }}
             </button>
 
             <!-- Calendário mensal (heatmap de intensidade) -->
-            <div class="rounded-3xl border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+            <div class="rounded-3xl border-2 border-gray-200 bg-card p-4 dark:border-gray-700">
                 <div class="mb-3 flex items-center justify-between">
                     <button
                         type="button"
                         @click="goToMonth(month.prev)"
-                        class="rounded-full p-1.5 text-gray-500 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
+                        class="mz-btn mz-xs mz-sq mz-ghost"
                     >
                         <ChevronLeft class="h-5 w-5" />
                     </button>
@@ -195,7 +195,7 @@ async function shareCard() {
                         type="button"
                         :disabled="!month.next"
                         @click="goToMonth(month.next)"
-                        class="rounded-full p-1.5 text-gray-500 transition-colors hover:bg-gray-100 disabled:opacity-30 dark:hover:bg-gray-800"
+                        class="mz-btn mz-xs mz-sq mz-ghost disabled:opacity-30"
                     >
                         <ChevronRight class="h-5 w-5" />
                     </button>

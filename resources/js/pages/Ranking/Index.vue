@@ -113,16 +113,18 @@ const getPositionIcon = (position: number) => {
 
             <!-- Period tabs -->
             <div class="flex justify-center">
-                <div class="inline-flex bg-gray-100 dark:bg-gray-800/80 rounded-full p-1 gap-0.5">
+                <div class="inline-flex gap-1 rounded-[14px] bg-secondary p-1 shadow-[inset_0_2px_0_var(--mz-press)]" role="group" aria-label="Período do ranking">
                     <button
                         v-for="tab in tabs"
                         :key="tab.value"
+                        type="button"
+                        :aria-pressed="activePeriod === tab.value"
                         @click="changePeriod(tab.value)"
-                        class="flex items-center gap-1.5 px-3 py-2 sm:px-4 text-sm font-semibold rounded-full transition-all duration-200"
+                        class="flex items-center gap-1.5 rounded-[10px] px-3 py-2 text-sm font-bold transition-colors sm:px-4"
                         :class="[
                             activePeriod === tab.value
-                                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
-                                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                                ? 'bg-card text-foreground shadow-[inset_0_0_0_2px_hsl(var(--border)),0_2px_0_var(--mz-edge)]'
+                                : 'text-muted-foreground hover:text-foreground'
                         ]"
                     >
                         <component :is="tab.icon" class="h-3.5 w-3.5" />

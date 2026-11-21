@@ -32,11 +32,11 @@
                             v-model="searchQuery"
                             @keyup.enter="performSearch"
                             placeholder="Buscar artigos..."
-                            class="w-full pl-4 pr-12 py-3 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-900 dark:text-white shadow-sm"
+                            class="w-full rounded-xl border-2 border-input bg-card py-3 pl-4 pr-12 focus:border-transparent focus:ring-2 focus:ring-ring dark:text-white"
                         />
                         <button 
                             @click="performSearch"
-                            class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-green-600 dark:hover:text-green-400 p-2"
+                            class="mz-btn mz-xs mz-sq mz-ghost absolute right-2 top-1/2 -translate-y-1/2"
                         >
                             <Search class="w-5 h-5" />
                         </button>

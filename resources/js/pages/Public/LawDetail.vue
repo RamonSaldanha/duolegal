@@ -154,7 +154,7 @@
                             <button
                                 @click="currentPage = Math.max(1, currentPage - 1)"
                                 :disabled="currentPage === 1"
-                                class="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-800 dark:text-white"
+                                class="mz-btn mz-sm mz-sq mz-outline"
                             >
                                 <ChevronLeft class="w-4 h-4" />
                             </button>
@@ -166,7 +166,7 @@
                             <button
                                 @click="currentPage = Math.min(totalPages, currentPage + 1)"
                                 :disabled="currentPage === totalPages"
-                                class="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-800 dark:text-white"
+                                class="mz-btn mz-sm mz-sq mz-outline"
                             >
                                 <ChevronRight class="w-4 h-4" />
                             </button>
