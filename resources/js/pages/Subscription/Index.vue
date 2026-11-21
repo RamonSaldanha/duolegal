@@ -162,16 +162,9 @@
                                 <h3 class="font-semibold text-gray-900 dark:text-white mb-4">Informações de pagamento</h3>
 
                                 <!-- Flash/Error Messages -->
-                                <div v-if="flash.error" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg p-3 mb-4">
-                                    <div class="flex items-center">
-                                        <AlertCircle class="text-red-500 w-4 h-4 mr-2 flex-shrink-0" />
-                                        <p class="text-red-700 dark:text-red-300 text-sm">{{ flash.error }}</p>
-                                    </div>
-                                </div>
+                                <Notice v-if="flash.error" tone="error" class="mb-4">{{ flash.error }}</Notice>
 
-                                <div v-if="cardError" class="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 p-3 rounded-lg mb-4 text-sm">
-                                    {{ cardError }}
-                                </div>
+                                <Notice v-if="cardError" tone="error" class="mb-4">{{ cardError }}</Notice>
 
                                 <!-- Campos do Cartão -->
                                 <div class="space-y-4">
@@ -387,17 +380,9 @@
                             <div class="p-5 lg:p-6">
                                 <!-- Assinatura cancelada mas ainda ativa -->
                                 <div v-if="props.subscriptionCancelled">
-                                    <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 mb-4">
-                                        <div class="flex items-start gap-3">
-                                            <AlertCircle class="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
-                                            <div>
-                                                <p class="font-medium text-amber-800 dark:text-amber-200">Cancelamento agendado</p>
-                                                <p class="text-sm text-amber-700 dark:text-amber-300 mt-1">
-                                                    Você ainda tem acesso até <strong>{{ props.subscriptionEndsAt }}</strong>
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <Notice tone="warning" title="Cancelamento agendado" class="mb-4">
+                                        Você ainda tem acesso até <strong>{{ props.subscriptionEndsAt }}</strong>
+                                    </Notice>
                                     <GameButton
                                         @click="resumeSubscription"
                                         class="w-full"
@@ -438,11 +423,12 @@
 </template>
 
 <script setup lang="ts">
+import Notice from '@/components/ui/Notice.vue';
 import { Head, useForm, usePage } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import GameButton from '@/components/ui/GameButton.vue';
-import { CheckCircle, Loader2, AlertCircle, X, Heart, Zap, BookOpen, Shield, Gift, Shirt } from 'lucide-vue-next';
+import { CheckCircle, Loader2, X, Heart, Zap, BookOpen, Shield, Gift, Shirt } from 'lucide-vue-next';
 import { onMounted, onBeforeUnmount, ref, computed } from 'vue';
 import axios from 'axios';
 

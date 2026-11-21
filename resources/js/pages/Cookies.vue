@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Notice from '@/components/ui/Notice.vue';
 import { Head, Link } from '@inertiajs/vue3';
 import { ArrowLeft, Cookie, Settings, BarChart3, Shield, Globe } from 'lucide-vue-next';
 import AppLogo from '@/components/AppLogo.vue';
@@ -295,13 +296,12 @@ import AppLogo from '@/components/AppLogo.vue';
                         <li>Acessar através de: Configurações da Conta > Privacidade > Cookies</li>
                     </ul>
 
-                    <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 mt-4">
-                        <h4 class="font-semibold text-amber-800 mb-2">⚠️ Importante:</h4>
-                        <p class="text-amber-700">
+                    <Notice tone="warning" title="Importante" class="mt-4">
+                        <p>
                             Desabilitar cookies essenciais pode afetar o funcionamento da plataforma. 
                             Alguns recursos podem não funcionar corretamente sem estes cookies.
                         </p>
-                    </div>
+                    </Notice>
 
                     <h2 class="text-2xl font-bold heading-font text-gray-800 flex items-center gap-3">
                         <Shield class="h-6 w-6 text-orange-600" />

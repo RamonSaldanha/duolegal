@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Notice from '@/components/ui/Notice.vue';
 import GuidedReading from '@/components/GuidedReading.vue';
 import LevelUpOverlay from '@/components/LevelUpOverlay.vue';
 import PhaseComplete from '@/components/PhaseComplete.vue';
@@ -424,7 +425,7 @@ function choiceClass(key: string) {
                     class="shrink-0 border-t-2 border-gray-100 px-3 pb-5 pt-4 dark:border-gray-800 md:px-4"
                 >
                     <div class="mx-auto w-full sm:w-[95%] lg:w-[50rem]">
-                        <p v-if="checkError" class="mb-3 text-sm text-red-600">Não foi possível corrigir agora. Tente de novo.</p>
+                        <Notice v-if="checkError" short class="mb-3">Não foi possível corrigir agora. Tente de novo.</Notice>
                         <GameButton variant="purple" size="lg" class="w-full" :disabled="!selected || checking" @click="check">Responder</GameButton>
                     </div>
                 </div>

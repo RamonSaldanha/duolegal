@@ -11,11 +11,7 @@
                     </div>
                 </div>
                 <h1 class="text-4xl font-bold mb-4">Você é um assinante Premium!</h1>
-                <div class="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 p-4 rounded-lg mb-8">
-                    <p class="text-lg font-medium">
-                        Você tem vidas infinitas! Você não deveria estar vendo esta página.
-                    </p>
-                </div>
+                <Notice tone="info" title="Você tem vidas infinitas" class="mb-8">Esta página é só para quem ficou sem vidas.</Notice>
                 <div class="flex flex-col sm:flex-row gap-4 justify-center">
                     <Link :href="route('play.map')" class="inline-flex items-center">
                         <Button>
@@ -63,6 +59,7 @@
 </template>
 
 <script setup lang="ts">
+import Notice from '@/components/ui/Notice.vue';
 import { Head, Link } from '@inertiajs/vue3'
 import AppLayout from '@/layouts/AppLayout.vue'
 import { Button } from '@/components/ui/button'

@@ -94,15 +94,14 @@
                             </p>
                         </div>
                         
-                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 max-w-md mx-auto">
-                            <h4 class="font-medium text-yellow-800 mb-2">Dicas de busca:</h4>
-                            <ul class="text-sm text-yellow-700 text-left space-y-1">
+                        <Notice tone="info" title="Dicas de busca" class="mx-auto max-w-md">
+                            <ul class="space-y-1 text-left">
                                 <li>• Tente termos mais genéricos</li>
                                 <li>• Use apenas números para artigos (ex: "121")</li>
                                 <li>• Verifique a ortografia</li>
                                 <li>• Experimente sinônimos</li>
                             </ul>
-                        </div>
+                        </Notice>
                     </div>
 
                     <!-- Results List -->
@@ -204,6 +203,7 @@
 </template>
 
 <script setup lang="ts">
+import Notice from '@/components/ui/Notice.vue';
 import { Head, Link } from '@inertiajs/vue3'
 import { ref } from 'vue'
 import { router } from '@inertiajs/vue3'

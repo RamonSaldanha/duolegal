@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Notice from '@/components/ui/Notice.vue';
 import { Head, Link } from '@inertiajs/vue3';
 import { ArrowLeft, FileText, Scale, AlertTriangle, CreditCard, Users } from 'lucide-vue-next';
 import AppLogo from '@/components/AppLogo.vue';
@@ -277,12 +278,11 @@ import AppLogo from '@/components/AppLogo.vue';
                         <li>Decisões tomadas com base no conteúdo da plataforma</li>
                     </ul>
                     
-                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mt-4">
-                        <h4 class="font-semibold text-yellow-800 mb-2">⚠️ Importante:</h4>
-                        <p class="text-yellow-700">
+                    <Notice tone="warning" title="Importante" class="mt-4">
+                        <p>
                             Nossa plataforma é uma ferramenta de apoio aos estudos. O sucesso em exames e concursos depende de múltiplos fatores, incluindo dedicação pessoal, métodos de estudo e preparação adequada.
                         </p>
-                    </div>
+                    </Notice>
 
                     <h2 class="text-2xl font-bold heading-font text-gray-800">10. Suspensão e Encerramento</h2>
                     <p>

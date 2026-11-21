@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Notice from '@/components/ui/Notice.vue';
 import LevelUpOverlay from '@/components/LevelUpOverlay.vue';
 import ResultBar from '@/components/ResultBar.vue';
 import GameButton from '@/components/ui/GameButton.vue';
@@ -291,7 +292,7 @@ const answerLabel = (item: { type: string; options: Record<string, string> | nul
                     </p>
                 </div>
 
-                <p v-if="startError" class="mb-3 text-center text-sm text-red-600">Não foi possível começar agora. Tente de novo.</p>
+                <Notice v-if="startError" short class="mb-3 justify-center">Não foi possível começar agora. Tente de novo.</Notice>
                 <GameButton variant="premium" size="lg" class="w-full" :disabled="starting" @click="start">Começar a prova</GameButton>
                 <GameButton variant="white" size="lg" class="mt-3 w-full" @click="backToMap">Voltar ao mapa</GameButton>
             </div>
@@ -368,7 +369,7 @@ const answerLabel = (item: { type: string; options: Record<string, string> | nul
 
                 <div v-if="!feedback" class="shrink-0 border-t-2 border-gray-100 px-3 pb-5 pt-4 dark:border-gray-800 md:px-4">
                     <div class="mx-auto w-full sm:w-[95%] lg:w-[50rem]">
-                        <p v-if="checkError" class="mb-3 text-sm text-red-600">Não foi possível corrigir agora. Tente de novo.</p>
+                        <Notice v-if="checkError" short class="mb-3">Não foi possível corrigir agora. Tente de novo.</Notice>
                         <GameButton variant="premium" size="lg" class="w-full" :disabled="!selected || checking" @click="check">Responder</GameButton>
                     </div>
                 </div>
