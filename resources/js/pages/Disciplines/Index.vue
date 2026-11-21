@@ -81,12 +81,13 @@ const nextStarPercent = (discipline: DisciplineProgress) =>
                 <section class="rounded-3xl border-2 border-gray-200 bg-card p-5 dark:border-gray-800" aria-label="Nível global">
                     <div class="flex items-center gap-4">
                         <!-- Medalha do nível: hexágono no amarelo do logo, só com o número -->
-                        <div class="relative grid h-14 w-[3.125rem] shrink-0 place-items-center" aria-hidden="true">
+                        <div class="relative grid h-[4.5rem] w-16 shrink-0 place-items-center" aria-hidden="true">
                             <svg viewBox="0 0 64 72" class="absolute inset-0 h-full w-full">
                                 <path d="M32 3 59 18.5v35L32 69 5 53.5v-35Z" fill="var(--mz-brand-edge)" />
                                 <path d="M32 3 59 18.5v31L32 65 5 49.5v-31Z" class="fill-brand" />
+                                <path d="M32 11 52 22.5v23L32 57 12 45.5v-23Z" fill="none" stroke="hsl(var(--primary-foreground))" stroke-opacity=".18" stroke-width="2" />
                             </svg>
-                            <span class="relative -mt-1 text-xl font-bold tabular-nums text-brand-ink">{{ globalLevel.level }}</span>
+                            <span class="relative -mt-1 text-2xl font-bold tabular-nums text-brand-ink">{{ globalLevel.level }}</span>
                         </div>
 
                         <div class="min-w-0 flex-1">
