@@ -3,6 +3,9 @@ import defaultTheme from 'tailwindcss/defaultTheme';
 /** @type {import('tailwindcss').Config} */
 export default {
     darkMode: ['class'],
+    // A família de botões monta o nome da classe ('mz-' + variante) no GameButton e no cva do
+    // Button; sem isto o Tailwind descarta as variantes que nenhum arquivo escreve por extenso.
+    safelist: [{ pattern: /^mz-/ }],
     content: [
         './vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php',
         './storage/framework/views/*.php',
@@ -101,12 +104,14 @@ export default {
                     soft: 'var(--mz-choice-soft)',
                     ink: 'var(--mz-choice-ink)',
                 },
-                right: {
+                // 'ok' e 'bad', não 'right' e 'wrong': uma cor 'right' gera text-right e tinge todo
+                // texto alinhado à direita.
+                ok: {
                     DEFAULT: 'var(--mz-ok)',
                     soft: 'var(--mz-ok-soft)',
                     ink: 'var(--mz-ok-ink)',
                 },
-                wrong: {
+                bad: {
                     DEFAULT: 'var(--mz-bad)',
                     soft: 'var(--mz-bad-soft)',
                     ink: 'var(--mz-bad-ink)',
