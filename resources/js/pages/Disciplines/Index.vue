@@ -136,9 +136,10 @@ const nextStarPercent = (discipline: DisciplineProgress) =>
                             :stars="discipline.stars"
                             :icon="discipline.icon"
                             :color="discipline.color"
+                            :class="{ '-mb-5': discipline.badge_url }"
                         />
 
-                        <p class="mt-3 text-center text-base font-bold leading-tight text-gray-900 dark:text-white">
+                        <p class="mt-2 text-center text-base font-bold leading-tight text-gray-900 dark:text-white">
                             {{ discipline.name }}
                         </p>
 
@@ -187,9 +188,10 @@ const nextStarPercent = (discipline: DisciplineProgress) =>
                             :stars="0"
                             :icon="discipline.icon"
                             :color="discipline.color"
+                            :class="{ '-mb-5': discipline.badge_url }"
                         />
 
-                        <p class="mt-3 text-center text-base font-medium leading-tight text-gray-400 dark:text-gray-500">
+                        <p class="mt-2 text-center text-base font-medium leading-tight text-gray-400 dark:text-gray-500">
                             {{ discipline.name }}
                         </p>
 
