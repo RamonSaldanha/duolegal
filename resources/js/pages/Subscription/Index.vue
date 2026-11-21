@@ -99,12 +99,8 @@
                                     <!-- Plano Mensal -->
                                     <button
                                         @click="selectPlan('monthly')"
-                                        :class="[
-                                            'relative p-3 lg:p-4 rounded-xl border-2 text-left transition-all',
-                                            selectedPlan === 'monthly'
-                                                ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
-                                                : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
-                                        ]"
+                                        class="mz-choice relative flex-col items-start gap-0 p-3 lg:p-4"
+                                        :class="{ 'is-premium': selectedPlan === 'monthly' }"
                                     >
                                         <div class="font-semibold text-gray-900 dark:text-white text-sm">Mensal</div>
                                         <div class="mt-1">
@@ -119,12 +115,8 @@
                                     <!-- Plano Trimestral -->
                                     <button
                                         @click="selectPlan('quarterly')"
-                                        :class="[
-                                            'relative p-3 lg:p-4 rounded-xl border-2 text-left transition-all',
-                                            selectedPlan === 'quarterly'
-                                                ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
-                                                : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
-                                        ]"
+                                        class="mz-choice relative flex-col items-start gap-0 p-3 lg:p-4"
+                                        :class="{ 'is-premium': selectedPlan === 'quarterly' }"
                                     >
                                         <div v-if="getDiscount('quarterly')" class="absolute -top-2 left-1/2 -translate-x-1/2">
                                             <span class="bg-green-500 text-white text-[10px] font-medium px-1.5 py-0.5 rounded-full">
@@ -144,12 +136,8 @@
                                     <!-- Plano Anual -->
                                     <button
                                         @click="selectPlan('yearly')"
-                                        :class="[
-                                            'relative p-3 lg:p-4 rounded-xl border-2 text-left transition-all',
-                                            selectedPlan === 'yearly'
-                                                ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
-                                                : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
-                                        ]"
+                                        class="mz-choice relative flex-col items-start gap-0 p-3 lg:p-4"
+                                        :class="{ 'is-premium': selectedPlan === 'yearly' }"
                                     >
                                         <div v-if="getDiscount('yearly')" class="absolute -top-2 left-1/2 -translate-x-1/2">
                                             <span class="bg-green-500 text-white text-[10px] font-medium px-1.5 py-0.5 rounded-full">
@@ -428,7 +416,7 @@
                                     <GameButton
                                         @click="cancelSubscription"
                                         class="w-full"
-                                        variant="red"
+                                        variant="tonal-danger"
                                     >
                                         Cancelar assinatura
                                     </GameButton>

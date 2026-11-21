@@ -18,7 +18,7 @@
                 </div>
                 <div class="flex flex-col sm:flex-row gap-4 justify-center">
                     <Link :href="route('play.map')" class="inline-flex items-center">
-                        <Button class="bg-blue-500 hover:bg-blue-600">
+                        <Button>
                             <Play class="mr-2 h-4 w-4" />
                             Voltar para o mapa
                         </Button>
@@ -42,7 +42,7 @@
                     </Button>
 
                     <Link :href="route('subscription.index')" class="inline-flex items-center w-full">
-                        <Button variant="outline" class="border-blue-500 text-blue-600 hover:bg-blue-600 w-full">
+                        <Button variant="outline" class="w-full">
                             <Gem class="mr-2 h-4 w-4" />
                             Assinar Premium
                         </Button>

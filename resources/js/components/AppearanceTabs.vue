@@ -18,16 +18,16 @@ const tabs = [
 </script>
 
 <template>
-    <div :class="['inline-flex gap-1 rounded-lg bg-gray-100 p-1 dark:bg-gray-800', containerClass]">
+    <div :class="['inline-flex gap-1 rounded-[14px] bg-secondary p-1 shadow-[inset_0_2px_0_var(--mz-press)]', containerClass]">
         <button
             v-for="{ value, Icon, label } in tabs"
             :key="value"
             @click="updateAppearance(value)"
             :class="[
-                'flex items-center rounded-md px-3.5 py-1.5 transition-colors',
+                'flex items-center rounded-[10px] px-3.5 py-1.5 font-bold transition-colors',
                 appearance === value
-                    ? 'bg-white shadow-sm dark:bg-gray-700 dark:text-gray-100'
-                    : 'text-gray-500 hover:bg-gray-200/60 hover:text-black dark:text-gray-400 dark:hover:bg-gray-700/60',
+                    ? 'bg-card text-foreground shadow-[inset_0_0_0_2px_hsl(var(--border)),0_2px_0_var(--mz-edge)]'
+                    : 'text-muted-foreground hover:text-foreground',
             ]"
         >
             <component :is="Icon" class="-ml-1 h-4 w-4" />

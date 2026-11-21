@@ -28,12 +28,8 @@ const ratio = computed(() => `${props.crop[2]} / ${props.crop[3]}`);
     <button
         type="button"
         :aria-pressed="selected"
-        :class="[
-            'flex flex-col items-center gap-1.5 rounded-2xl border-2 p-2 transition-colors',
-            selected
-                ? 'border-purple-500 bg-purple-50 dark:border-purple-400 dark:bg-purple-500/15'
-                : 'border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600',
-        ]"
+        class="mz-choice flex-col gap-1.5 p-2"
+        :class="{ 'is-selected': selected }"
     >
         <span class="relative block w-full">
             <!-- eslint-disable-next-line vue/no-v-html -- SVG gerado pelo app a partir de um config já normalizado -->
@@ -47,7 +43,7 @@ const ratio = computed(() => `${props.crop[2]} / ${props.crop[3]}`);
             </span>
         </span>
         <span
-            :class="['text-[11px] font-bold leading-tight', selected ? 'text-purple-600 dark:text-purple-300' : 'text-gray-500 dark:text-gray-400']"
+            :class="['text-[11px] font-bold leading-tight', selected ? 'text-choice-ink' : 'text-gray-500 dark:text-gray-400']"
         >
             {{ label }}
         </span>
