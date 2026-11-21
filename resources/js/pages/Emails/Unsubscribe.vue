@@ -36,7 +36,7 @@ const submit = (url: string) => {
 
         <main class="mx-auto flex w-full max-w-md flex-1 flex-col items-center justify-center px-4 py-8">
             <div
-                class="w-full rounded-3xl border-2 border-b-[6px] border-gray-200 bg-white px-6 py-8 text-center dark:border-gray-700 dark:bg-gray-800"
+                class="w-full rounded-3xl border-2 border-gray-200 bg-card px-6 py-8 text-center dark:border-gray-700 dark:bg-gray-800"
             >
                 <template v-if="!props.optedOut">
                     <div
@@ -50,7 +50,7 @@ const submit = (url: string) => {
                         <strong class="break-all text-gray-900 dark:text-gray-100">{{ email }}</strong
                         >, é só confirmar.
                     </p>
-                    <button type="button" class="unsub-cta mt-6" :disabled="saving" @click="submit(unsubscribeUrl)">
+                    <button type="button" class="mz-btn mz-lg mz-second mt-6 w-full" :disabled="saving" @click="submit(unsubscribeUrl)">
                         <Loader2 v-if="saving" class="h-5 w-5 animate-spin" />
                         Não quero mais receber
                     </button>
@@ -70,7 +70,7 @@ const submit = (url: string) => {
                         <strong class="break-all text-gray-900 dark:text-gray-100">{{ email }}</strong> não vai mais receber nossos lembretes. Sem
                         ressentimentos (tá, só um pouquinho). A porta fica aberta.
                     </p>
-                    <button type="button" class="unsub-cta unsub-cta--back mt-6" :disabled="saving" @click="submit(resubscribeUrl)">
+                    <button type="button" class="mz-btn mz-lg mz-main mt-6 w-full" :disabled="saving" @click="submit(resubscribeUrl)">
                         <Loader2 v-if="saving" class="h-5 w-5 animate-spin" />
                         Quero voltar a receber
                     </button>
@@ -79,52 +79,3 @@ const submit = (url: string) => {
         </main>
     </div>
 </template>
-
-<style scoped>
-.unsub-cta {
-    display: inline-flex;
-    width: 100%;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    border-radius: 0.5rem;
-    border: 4px solid #d4d4d4;
-    background: #fff;
-    padding: 0.75rem 1.5rem;
-    font-size: 1.05rem;
-    font-weight: 700;
-    color: #374151;
-    box-shadow: 0 4px 0 #d4d4d4;
-    transition:
-        transform 0.1s,
-        box-shadow 0.1s;
-}
-:root.dark .unsub-cta {
-    border-color: #525252;
-    background: #374151;
-    color: #f3f4f6;
-    box-shadow: 0 4px 0 #525252;
-}
-.unsub-cta--back,
-:root.dark .unsub-cta--back {
-    border-color: #15803d;
-    background: #22c55e;
-    color: #fff;
-    box-shadow: 0 4px 0 #15803d;
-}
-.unsub-cta:hover:not(:disabled) {
-    transform: translateY(2px);
-    box-shadow: 0 2px 0 #d4d4d4;
-}
-.unsub-cta--back:hover:not(:disabled) {
-    box-shadow: 0 2px 0 #15803d;
-}
-.unsub-cta:active:not(:disabled) {
-    transform: translateY(4px);
-    box-shadow: none;
-}
-.unsub-cta:disabled {
-    cursor: wait;
-    opacity: 0.8;
-}
-</style>

@@ -83,7 +83,7 @@ onBeforeUnmount(() => clearInterval(clock));
                 </div>
                 <Link
                     :href="route('subscription.index')"
-                    class="shrink-0 rounded-xl border-2 border-green-600 bg-green-500 px-3 py-2 text-xs font-extrabold uppercase tracking-wide text-white shadow-[0_3px_0_#15803d] transition hover:bg-green-400 active:translate-y-[3px] active:shadow-none"
+                    class="shrink-0 rounded-xl border-2 border-green-700 bg-green-500 px-3 py-2 text-xs font-extrabold uppercase tracking-wide text-white shadow-[0_3px_0_#15803d] transition-[transform,box-shadow,background-color] duration-100 active:translate-y-[3px] active:shadow-none [@media(hover:hover)]:hover:bg-green-600"
                 >
                     Garantir
                 </Link>

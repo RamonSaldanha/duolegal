@@ -74,7 +74,7 @@ const confetti = Array.from({ length: 18 }, (_, i) => ({
 
         <main class="mx-auto flex w-full max-w-md flex-1 flex-col items-center justify-center px-4 py-8">
             <div
-                class="w-full rounded-3xl border-2 border-b-[6px] border-gray-200 bg-white px-6 pb-7 pt-4 text-center dark:border-gray-700 dark:bg-gray-800"
+                class="w-full rounded-3xl border-2 border-gray-200 bg-card px-6 pb-7 pt-4 text-center dark:border-gray-700 dark:bg-gray-800"
             >
                 <GiftBox
                     :variant="isBoost ? 'xp' : 'lives'"
@@ -95,7 +95,7 @@ const confetti = Array.from({ length: 18 }, (_, i) => ({
                             medo de errar.
                         </template>
                     </p>
-                    <button type="button" class="gift-cta mt-6" :disabled="opening" @click="open">
+                    <button type="button" class="mz-btn mz-lg mz-main mt-6 w-full" :disabled="opening" @click="open">
                         <Loader2 v-if="opening" class="h-5 w-5 animate-spin" />
                         Abrir presente
                     </button>
@@ -126,7 +126,7 @@ const confetti = Array.from({ length: 18 }, (_, i) => ({
                         </template>
                         <template v-else>As vidas já estão na sua conta, no site e no app. Agora é só jogar.</template>
                     </p>
-                    <Link :href="route('play.map')" class="gift-cta mt-6">Bora jogar</Link>
+                    <Link :href="route('play.map')" class="mz-btn mz-lg mz-main mt-6 w-full">Bora jogar</Link>
                 </template>
 
                 <!-- Expirado -->
@@ -135,7 +135,7 @@ const confetti = Array.from({ length: 18 }, (_, i) => ({
                     <p class="mt-3 text-base text-gray-600 dark:text-gray-300">
                         Mas relaxa: o lembrete mais novo que mandamos tem outro presente te esperando. Dá uma olhada no seu e-mail.
                     </p>
-                    <Link :href="route('play.map')" class="gift-cta mt-6">Bora jogar</Link>
+                    <Link :href="route('play.map')" class="mz-btn mz-lg mz-main mt-6 w-full">Bora jogar</Link>
                 </template>
             </div>
         </main>
@@ -144,39 +144,6 @@ const confetti = Array.from({ length: 18 }, (_, i) => ({
 
 <style scoped>
 /* O mesmo botão verde do onboarding e do jogo. */
-.gift-cta {
-    display: inline-flex;
-    width: 100%;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    border-radius: 0.5rem;
-    border: 4px solid #15803d;
-    background: #22c55e;
-    padding: 0.75rem 1.5rem;
-    font-size: 1.125rem;
-    font-weight: 700;
-    color: #fff;
-    box-shadow: 0 4px 0 #15803d;
-    transition:
-        transform 0.1s,
-        box-shadow 0.1s,
-        background 0.1s;
-}
-.gift-cta:hover:not(:disabled) {
-    background: #16a34a;
-    transform: translateY(2px);
-    box-shadow: 0 2px 0 #15803d;
-}
-.gift-cta:active:not(:disabled) {
-    transform: translateY(4px);
-    box-shadow: none;
-}
-.gift-cta:disabled {
-    cursor: wait;
-    opacity: 0.8;
-}
-
 .gift-reward {
     animation: reward-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.25s both;
 }

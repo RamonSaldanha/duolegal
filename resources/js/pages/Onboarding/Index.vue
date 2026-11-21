@@ -258,13 +258,13 @@ const BENEFITS = [
 <template>
     <Head title="Boas-vindas" />
 
-    <div class="flex min-h-[100dvh] flex-col bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100">
+    <div class="flex min-h-[100dvh] flex-col bg-background text-gray-900 dark:text-gray-100">
         <!-- Topo: voltar, progresso, pular -->
-        <header class="sticky top-0 z-30 bg-white/95 backdrop-blur dark:bg-gray-900/95">
+        <header class="sticky top-0 z-30 bg-background/95 backdrop-blur">
             <div class="mx-auto flex h-16 max-w-xl items-center gap-3 px-4">
                 <button
                     type="button"
-                    class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 disabled:invisible dark:hover:bg-gray-800 dark:hover:text-gray-200"
+                    class="mz-btn mz-sm mz-sq mz-ghost shrink-0 disabled:invisible"
                     :disabled="stepIndex === 0"
                     aria-label="Voltar"
                     @click="back"
@@ -285,7 +285,7 @@ const BENEFITS = [
                 <button
                     v-if="step !== 'offer'"
                     type="button"
-                    class="shrink-0 rounded-xl px-3 py-2 text-sm font-bold text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+                    class="mz-btn mz-sm mz-ghost shrink-0"
                     @click="showSkip = true"
                 >
                     Pular
@@ -366,12 +366,8 @@ const BENEFITS = [
                             type="button"
                             role="radio"
                             :aria-checked="quizAnswer === opt.value"
-                            class="ob-option ob-rise flex w-full items-center gap-4 rounded-2xl border-2 px-4 py-3.5 text-left transition-[transform,background-color,border-color,box-shadow] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900"
-                            :class="
-                                quizAnswer === opt.value
-                                    ? 'border-blue-400 bg-blue-50 shadow-[0_4px_0_#93c5fd] dark:border-blue-500 dark:bg-blue-950/40 dark:shadow-[0_4px_0_#1e3a8a]'
-                                    : 'border-gray-200 bg-white shadow-[0_4px_0_#e5e5e5] hover:-translate-y-0.5 hover:border-gray-300 hover:bg-gray-50 active:translate-y-1 active:shadow-none dark:border-gray-700 dark:bg-gray-800 dark:shadow-[0_4px_0_#0f0f0f] dark:hover:border-gray-600 dark:hover:bg-gray-800/70'
-                            "
+                            class="ob-option ob-rise mz-choice gap-4"
+                            :class="{ 'is-selected': quizAnswer === opt.value }"
                             :style="{ '--i': i }"
                             @click="choose(opt.value)"
                         >
@@ -394,7 +390,7 @@ const BENEFITS = [
                             </span>
                             <span
                                 v-if="quizAnswer === opt.value"
-                                class="ob-check flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-500 text-white"
+                                class="ob-check flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-choice-ink text-white dark:text-gray-900"
                             >
                                 <Check class="h-4 w-4" stroke-width="3" />
                             </span>
@@ -420,17 +416,17 @@ const BENEFITS = [
                         <li v-for="(law, i) in trailLaws" :key="law.id" class="ob-drop relative" :style="{ '--i': i }">
                             <button
                                 type="button"
-                                class="flex w-full items-center gap-4 rounded-2xl border-2 border-green-300 bg-green-50 px-4 py-3.5 text-left shadow-[0_4px_0_#86efac] transition-transform duration-150 hover:-translate-y-0.5 active:translate-y-1 active:shadow-none dark:border-green-800 dark:bg-green-950/40 dark:shadow-[0_4px_0_#14532d]"
+                                class="mz-choice is-selected gap-4"
                                 :aria-label="`Tirar ${law.title} da trilha`"
                                 @click="toggleLaw(law.id)"
                             >
                                 <span
-                                    class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-500 text-base font-extrabold text-white shadow-[0_3px_0_#15803d]"
+                                    class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-choice-ink text-base font-extrabold text-white dark:text-gray-900"
                                 >
                                     {{ i + 1 }}
                                 </span>
                                 <span class="flex-1 font-bold">{{ law.title }}</span>
-                                <Check class="h-5 w-5 text-green-600 dark:text-green-400" stroke-width="3" />
+                                <Check class="h-5 w-5 text-choice-ink" stroke-width="3" />
                             </button>
                         </li>
                     </TransitionGroup>
@@ -446,7 +442,7 @@ const BENEFITS = [
                         <button
                             v-if="!showAllLaws && trailLaws.length"
                             type="button"
-                            class="w-full rounded-2xl border-2 border-dashed border-gray-300 px-4 py-3 text-sm font-bold text-gray-500 transition hover:border-gray-400 hover:text-gray-700 dark:border-gray-700 dark:text-gray-400 dark:hover:border-gray-600 dark:hover:text-gray-200"
+                            class="mz-btn mz-md mz-dashed w-full"
                             @click="showAllLaws = true"
                         >
                             Incluir outras leis ({{ otherLaws.length }})
@@ -456,7 +452,7 @@ const BENEFITS = [
                                 v-for="law in otherLaws"
                                 :key="law.id"
                                 type="button"
-                                class="rounded-xl border-2 border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-600 shadow-[0_3px_0_#e5e5e5] transition-transform hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:shadow-[0_3px_0_#0f0f0f]"
+                                class="mz-btn mz-sm mz-second"
                                 @click="toggleLaw(law.id)"
                             >
                                 + {{ law.title }}
@@ -527,7 +523,7 @@ const BENEFITS = [
                 <!-- 8. Oferta -->
                 <section v-else key="offer" class="py-4">
                     <div
-                        class="ob-rise relative overflow-hidden rounded-3xl border-2 border-gray-200 bg-white px-5 pb-6 pt-7 text-center shadow-[0_8px_0_#e5e5e5] dark:border-gray-700 dark:bg-gray-800 dark:shadow-[0_8px_0_#0f0f0f] sm:px-8"
+                        class="ob-rise relative overflow-hidden rounded-3xl border-2 border-gray-200 bg-white px-5 pb-6 pt-7 text-center dark:border-gray-700 dark:bg-gray-800 sm:px-8"
                         style="--i: 0"
                     >
                         <span
@@ -583,20 +579,20 @@ const BENEFITS = [
         <!-- Rodapé com a ação da tela -->
         <footer
             v-if="step !== 'goal' && step !== 'area' && step !== 'minutes'"
-            class="sticky bottom-0 z-20 bg-white/95 backdrop-blur dark:bg-gray-900/95"
+            class="sticky bottom-0 z-20 bg-background/95 backdrop-blur"
             :class="step !== 'challenge' && 'border-t-2 border-gray-100 dark:border-gray-800'"
         >
             <div class="mx-auto flex max-w-xl flex-col gap-2 px-4 py-4">
                 <!-- Palavras + Limpar/Verificar do desafio, no mesmo lugar da tela de fase -->
                 <div v-if="step === 'challenge'" id="onboarding-play-controls" />
-                <button v-if="step === 'offer'" type="button" class="ob-cta ob-cta-pulse" :disabled="!!finishing" @click="finish('subscription')">
+                <button v-if="step === 'offer'" type="button" class="mz-btn mz-lg mz-main ob-cta-pulse w-full" :disabled="!!finishing" @click="finish('subscription')">
                     <Loader2 v-if="finishing === 'subscription'" class="h-5 w-5 animate-spin" />
                     Garantir {{ OFFER_PERCENT }}% off
                 </button>
                 <button
                     v-else-if="step !== 'challenge' || challengeSolved"
                     type="button"
-                    class="ob-cta"
+                    class="mz-btn mz-lg mz-main w-full"
                     :disabled="step === 'trail' && (!trail.length || savingTrail)"
                     @click="step === 'trail' ? saveTrail() : next()"
                 >
@@ -608,7 +604,7 @@ const BENEFITS = [
                 <button
                     v-if="step === 'offer'"
                     type="button"
-                    class="rounded-xl py-2 text-sm font-bold text-gray-500 transition hover:text-gray-700 disabled:opacity-60 dark:text-gray-400 dark:hover:text-gray-200"
+                    class="mz-btn mz-sm mz-ghost"
                     :disabled="!!finishing"
                     @click="finish('map')"
                 >
@@ -626,7 +622,7 @@ const BENEFITS = [
                 @click.self="showSkip = false"
             >
                 <div
-                    class="ob-sheet w-full max-w-sm rounded-3xl border-2 border-gray-200 bg-white p-6 text-center shadow-[0_8px_0_#e5e5e5] dark:border-gray-700 dark:bg-gray-800 dark:shadow-[0_8px_0_#0f0f0f]"
+                    class="ob-sheet w-full max-w-sm rounded-3xl border-2 border-gray-200 bg-card p-6 text-center dark:border-gray-700"
                     role="dialog"
                     aria-modal="true"
                     aria-labelledby="skip-title"
@@ -641,10 +637,10 @@ const BENEFITS = [
                         Se pular agora, você pode perder a oferta especial de boas-vindas e o estudo personalizado para o seu objetivo.
                     </p>
                     <div class="mt-6 flex flex-col gap-2">
-                        <button type="button" class="ob-cta" @click="showSkip = false">Continuar personalizando</button>
+                        <button type="button" class="mz-btn mz-lg mz-main w-full" @click="showSkip = false">Continuar personalizando</button>
                         <button
                             type="button"
-                            class="rounded-xl py-2 text-sm font-bold text-gray-500 transition hover:text-red-500 disabled:opacity-60 dark:text-gray-400"
+                            class="mz-btn mz-sm mz-ghost"
                             :disabled="!!finishing"
                             @click="finish('map')"
                         >
@@ -662,59 +658,18 @@ const BENEFITS = [
     transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* Botão principal no estilo "chunky" do jogo */
-.ob-cta {
-    display: inline-flex;
-    width: 100%;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    border-radius: 0.5rem;
-    border: 4px solid #15803d;
-    background: #22c55e;
-    padding: 0.75rem 1.5rem;
-    font-size: 1.125rem;
-    font-weight: 700;
-    color: #fff;
-    box-shadow: 0 4px 0 #15803d;
-    transition:
-        transform 0.12s,
-        box-shadow 0.12s,
-        background-color 0.15s;
-}
-.ob-cta:hover:not(:disabled) {
-    background: #16a34a;
-    transform: translateY(2px);
-    box-shadow: 0 2px 0 #15803d;
-}
-.ob-cta:active:not(:disabled) {
-    transform: translateY(4px);
-    box-shadow: none;
-}
-.ob-cta:disabled {
-    cursor: not-allowed;
-    border-color: #d4d4d4;
-    background: #e5e5e5;
-    color: #a3a3a3;
-    box-shadow: 0 4px 0 #d4d4d4;
-}
-:root.dark .ob-cta:disabled {
-    border-color: #525252;
-    background: #404040;
-    color: #737373;
-    box-shadow: 0 4px 0 #0f0f0f;
-}
-
+/* A pulsação anima `scale`, não `transform`: animação vence o `transform` do :hover e do
+   :active, e com `transform` aqui o botão parava de afundar ao ser apertado. */
 .ob-cta-pulse:not(:disabled) {
     animation: cta-pulse 2.4s ease-in-out 1.2s infinite;
 }
 @keyframes cta-pulse {
     0%,
     100% {
-        transform: scale(1);
+        scale: 1;
     }
     50% {
-        transform: scale(1.02);
+        scale: 1.02;
     }
 }
 
@@ -770,12 +725,13 @@ const BENEFITS = [
     }
 }
 
+/* `scale`, não `transform`: a animação apagaria o afundar de quem aperta a opção logo depois de escolher */
 .ob-option[aria-checked='true'] {
     animation: ob-picked 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 @keyframes ob-picked {
     40% {
-        transform: scale(1.03);
+        scale: 1.03;
     }
 }
 
