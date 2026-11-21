@@ -272,7 +272,7 @@ import AppLogo from '@/components/AppLogo.vue';
                 </p>
                 <Link
                     :href="route('play.map')"
-                    class="inline-flex items-center justify-center gap-2 px-8 py-4 bg-green-500 text-white font-bold text-xl rounded-lg border-4 border-green-700 transition-all hover:transform hover:translate-y-1"
+                    class="mz-btn mz-lg mz-main gap-2"
                     style="box-shadow: 0 6px 0 rgb(21, 128, 61);"
                     onmouseover="this.style.boxShadow = '0 4px 0 rgb(21, 128, 61)'"
                     onmouseout="this.style.boxShadow = '0 6px 0 rgb(21, 128, 61)'"

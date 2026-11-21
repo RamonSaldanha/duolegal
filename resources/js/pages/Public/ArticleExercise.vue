@@ -184,7 +184,7 @@
                                     <div class="mt-6 flex flex-col gap-3">
                                         <Link 
                                             :href="route('register')"
-                                            class="game-button w-full bg-green-500 hover:bg-green-600 text-white text-center py-3 px-4 rounded-lg border-4 border-green-700 shadow-[0_4px_0_theme(colors.green.700)] font-bold hover:transform hover:translate-y-1 hover:shadow-[0_2px_0_theme(colors.green.700)] transition-all"
+                                            class="mz-btn mz-lg mz-main w-full"
                                         >
                                             <UserPlus class="w-4 h-4 inline mr-2" />
                                             Cadastrar-se Gratuitamente
@@ -1094,16 +1094,6 @@ onUnmounted(() => {
     color: rgb(252, 165, 165);
 }
 
-.game-button {
-    transition: all 0.2s ease;
-}
 
-.game-button:hover {
-    transform: translateY(2px);
-}
 
-.game-button:active {
-    transform: translateY(4px);
-    box-shadow: none !important;
-}
 </style>

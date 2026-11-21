@@ -219,16 +219,6 @@ const performSearch = () => {
     overflow: hidden;
 }
 
-.game-button {
-    transition: all 0.2s ease;
-}
 
-.game-button:hover {
-    transform: translateY(2px);
-}
 
-.game-button:active {
-    transform: translateY(4px);
-    box-shadow: none !important;
-}
 </style>

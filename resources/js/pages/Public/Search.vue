@@ -45,7 +45,7 @@
                             />
                             <button 
                                 @click="performSearch"
-                                class="game-button bg-green-500 hover:bg-green-600 text-white px-8 py-4 rounded-r-xl border-4 border-green-700 shadow-[0_4px_0_theme(colors.green.700)] font-bold hover:transform hover:translate-y-1 hover:shadow-[0_2px_0_theme(colors.green.700)] transition-all"
+                                class="mz-btn mz-lg mz-main rounded-l-none rounded-r-xl"
                             >
                                 <Search class="w-5 h-5" />
                             </button>
@@ -59,7 +59,7 @@
                             v-for="suggestion in quickSuggestions" 
                             :key="suggestion"
                             @click="searchQuery = suggestion; performSearch()"
-                            class="game-button text-sm bg-white text-gray-600 hover:bg-green-50 hover:text-green-600 px-3 py-1 rounded-full border-2 border-gray-200 hover:border-green-300 font-medium transition-all hover:transform hover:translate-y-1"
+                            class="mz-btn mz-xs mz-outline rounded-full"
                         >
                             {{ suggestion }}
                         </button>
@@ -144,7 +144,7 @@
                                     <div class="ml-4">
                                         <Link 
                                             :href="article.url"
-                                            class="game-button bg-white text-gray-900 text-sm px-4 py-2 rounded-lg border-4 border-gray-300 font-bold hover:transform hover:translate-y-1 transition-all inline-flex items-center gap-1"
+                                            class="mz-btn mz-sm mz-second gap-1"
                                             style="box-shadow: 0 3px 0 rgb(209, 213, 219);"
                                             @mouseover="$event.target.style.boxShadow = '0 1px 0 rgb(209, 213, 219)'"
                                             @mouseout="$event.target.style.boxShadow = '0 3px 0 rgb(209, 213, 219)'"
@@ -184,13 +184,13 @@
                 <div class="flex flex-col sm:flex-row gap-4 justify-center">
                     <Link 
                         :href="route('register')"
-                        class="game-button bg-green-500 hover:bg-green-600 text-white px-8 py-4 rounded-lg border-4 border-green-700 shadow-[0_6px_0_theme(colors.green.700)] font-bold hover:transform hover:translate-y-1 hover:shadow-[0_4px_0_theme(colors.green.700)] transition-all inline-flex items-center justify-center"
+                        class="mz-btn mz-lg mz-main"
                     >
                         Cadastrar-se Gratuitamente
                     </Link>
                     <Link 
                         :href="route('public.laws')"
-                        class="game-button bg-white text-gray-900 px-8 py-4 rounded-lg border-4 border-gray-300 font-bold hover:transform hover:translate-y-1 transition-all inline-flex items-center justify-center"
+                        class="mz-btn mz-lg mz-second"
                         style="box-shadow: 0 6px 0 rgb(209, 213, 219);"
                         @mouseover="$event.target.style.boxShadow = '0 4px 0 rgb(209, 213, 219)'"
                         @mouseout="$event.target.style.boxShadow = '0 6px 0 rgb(209, 213, 219)'"
@@ -281,18 +281,3 @@ const highlightSearchTerm = (text: string, searchTerm: string): string => {
     return text.replace(regex, '<mark class="bg-yellow-200 px-1 rounded">$1</mark>')
 }
 </script>
-
-<style scoped>
-.game-button {
-    transition: all 0.2s ease;
-}
-
-.game-button:hover {
-    transform: translateY(2px);
-}
-
-.game-button:active {
-    transform: translateY(4px);
-    box-shadow: none !important;
-}
-</style>

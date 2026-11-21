@@ -60,7 +60,7 @@ onBeforeUnmount(() => clearInterval(clock));
             v-if="visible && variant === 'strip'"
             :href="route('subscription.index')"
             data-welcome-offer
-            class="sticky z-40 flex items-center justify-between gap-4 bg-purple-600 px-5 py-3 text-white transition-colors hover:bg-purple-500"
+            class="sticky z-40 flex items-center justify-between gap-4 border-b-2 border-pink-200 bg-pink-100 px-5 py-3 text-pink-800 transition-colors hover:bg-pink-200/70 dark:border-pink-900 dark:bg-pink-950 dark:text-pink-200"
             style="top: var(--app-header-h, 64px)"
         >
             <span class="text-base font-bold leading-snug">Contagem regressiva final para {{ offer?.percent_off }}% de desconto!</span>
@@ -68,28 +68,28 @@ onBeforeUnmount(() => clearInterval(clock));
         </Link>
         <div v-else-if="visible" data-welcome-offer class="sticky z-40 mb-4" style="top: calc(var(--app-header-h, 64px) + 8px)">
             <div
-                class="flex items-center gap-3 rounded-2xl border-2 border-pink-200 bg-white py-2.5 pl-3 pr-2 shadow-[0_4px_0_#fbcfe8] dark:border-pink-900 dark:bg-gray-800 dark:shadow-[0_4px_0_#0f0f0f]"
+                class="flex items-center gap-3 rounded-2xl border-2 border-pink-200 bg-pink-100 py-2.5 pl-3 pr-2 dark:border-pink-900 dark:bg-pink-950"
             >
                 <span
-                    class="offer-gift flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-pink-100 text-pink-500 dark:bg-pink-950/60 dark:text-pink-300"
+                    class="offer-gift flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-pink-500 text-white"
                 >
                     <Gift class="h-5 w-5" />
                 </span>
                 <div class="min-w-0 flex-1 text-sm leading-tight">
-                    <p class="font-bold text-gray-900 dark:text-white">{{ offer?.percent_off }}% off no plano anual</p>
-                    <p class="text-gray-500 dark:text-gray-400">
-                        Termina em <span class="font-semibold tabular-nums text-pink-600 dark:text-pink-300">{{ countdown }}</span>
+                    <p class="font-bold text-pink-700 dark:text-pink-300">{{ offer?.percent_off }}% off no plano anual</p>
+                    <p class="text-pink-800 dark:text-pink-200">
+                        Termina em <span class="font-semibold tabular-nums">{{ countdown }}</span>
                     </p>
                 </div>
                 <Link
                     :href="route('subscription.index')"
-                    class="shrink-0 rounded-xl border-2 border-green-700 bg-green-500 px-3 py-2 text-xs font-extrabold uppercase tracking-wide text-white shadow-[0_3px_0_#15803d] transition-[transform,box-shadow,background-color] duration-100 active:translate-y-[3px] active:shadow-none [@media(hover:hover)]:hover:bg-green-600"
+                    class="mz-btn mz-sm mz-main shrink-0"
                 >
                     Garantir
                 </Link>
                 <button
                     type="button"
-                    class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+                    class="mz-btn mz-xs mz-sq mz-ghost shrink-0 !text-pink-700 dark:!text-pink-300"
                     aria-label="Fechar lembrete da oferta"
                     @click="dismiss"
                 >

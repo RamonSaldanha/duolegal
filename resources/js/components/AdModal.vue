@@ -163,12 +163,7 @@ watch(
                     <button
                         type="button"
                         :disabled="!canClose"
-                        class="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all"
-                        :class="
-                            canClose
-                                ? 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
-                                : 'cursor-not-allowed bg-gray-50 text-gray-400 dark:bg-gray-800/50 dark:text-gray-600'
-                        "
+                        class="mz-btn mz-sm mz-tonal"
                         @click="handleClose"
                     >
                         <X :size="16" />

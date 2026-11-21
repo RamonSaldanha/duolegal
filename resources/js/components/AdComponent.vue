@@ -48,7 +48,7 @@
                     <Button
                         v-if="countdown <= 0"
                         @click="handleAdComplete"
-                        class="bg-primary hover:bg-primary/90 text-primary-foreground text-lg px-8 py-3"
+                        size="lg"
                     >
                         Ganhar vida agora
                     </Button>

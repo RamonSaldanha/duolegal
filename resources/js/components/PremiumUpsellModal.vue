@@ -52,7 +52,7 @@ onUnmounted(() => {
             <div class="mx-auto flex min-h-full max-w-md flex-col px-6 pb-8 pt-4">
                 <button
                     type="button"
-                    class="-ml-2 self-start rounded-full p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300"
+                    class="mz-btn mz-sm mz-sq mz-ghost -ml-2 self-start"
                     aria-label="Fechar"
                     @click="emit('close')"
                 >
@@ -87,7 +87,7 @@ onUnmounted(() => {
                     <GameButton variant="purple" size="lg" class="w-full" :href="route('subscription.index')">Conhecer o Premium</GameButton>
                     <button
                         type="button"
-                        class="mt-3 w-full py-2 text-sm font-bold uppercase tracking-wide text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                        class="mz-btn mz-sm mz-ghost mt-3 w-full"
                         @click="emit('close')"
                     >
                         Agora não

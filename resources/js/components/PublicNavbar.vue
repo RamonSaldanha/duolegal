@@ -40,7 +40,7 @@ const { logoTheme } = useAppearance();
 </style>
 
 <template>
-    <header class="w-full bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
+    <header class="w-full bg-background border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
         <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
             <div class="flex items-center">
                 <Link :href="route('home')" class="flex items-center gap-x-2">
@@ -98,7 +98,7 @@ const { logoTheme } = useAppearance();
             <!-- Mobile Menu Button -->
             <button 
                 @click="toggleMobileMenu" 
-                class="md:hidden flex items-center justify-center h-10 w-10 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                class="mz-btn mz-sm mz-sq mz-ghost md:hidden"
                 aria-label="Menu"
             >
                 <Menu v-if="!mobileMenuOpen" class="h-6 w-6" />
@@ -109,7 +109,7 @@ const { logoTheme } = useAppearance();
         <!-- Mobile Navigation -->
         <div 
             v-if="mobileMenuOpen" 
-            class="md:hidden absolute top-16 inset-x-0 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 py-4 px-4 z-50"
+            class="md:hidden absolute top-16 inset-x-0 bg-background border-b border-gray-200 dark:border-gray-700 py-4 px-4 z-50"
         >
             <nav class="flex flex-col gap-3">
                 <Link 

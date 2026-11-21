@@ -362,7 +362,7 @@ import AppLogo from '@/components/AppLogo.vue';
                 <div class="flex flex-col sm:flex-row gap-4 justify-center">
                     <Link
                         :href="route('play.map')"
-                        class="inline-flex items-center justify-center gap-2 px-8 py-4 bg-blue-600 text-white font-bold text-xl rounded-lg border-4 border-blue-800 transition-all hover:transform hover:translate-y-1"
+                        class="mz-btn mz-lg mz-main gap-2"
                         style="box-shadow: 0 6px 0 rgb(30, 58, 138);"
                         onmouseover="this.style.boxShadow = '0 4px 0 rgb(30, 58, 138)'"
                         onmouseout="this.style.boxShadow = '0 6px 0 rgb(30, 58, 138)'"
@@ -371,7 +371,7 @@ import AppLogo from '@/components/AppLogo.vue';
                     </Link>
                     <Link
                         :href="route('home')"
-                        class="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white text-gray-900 font-bold text-xl rounded-lg border-4 border-gray-300 transition-all hover:transform hover:translate-y-1"
+                        class="mz-btn mz-lg mz-second gap-2"
                         style="box-shadow: 0 6px 0 rgb(209, 213, 219);"
                         onmouseover="this.style.boxShadow = '0 4px 0 rgb(209, 213, 219)'"
                         onmouseout="this.style.boxShadow = '0 6px 0 rgb(209, 213, 219)'"

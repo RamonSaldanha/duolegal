@@ -241,7 +241,7 @@ const toggleFaq = (i: number) => {
                 <!-- Mobile Menu Button -->
                 <button
                     @click="toggleMobileMenu"
-                    class="flex h-10 w-10 items-center justify-center rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-900 md:hidden"
+                    class="mz-btn mz-sm mz-sq mz-ghost md:hidden"
                     aria-label="Menu"
                 >
                     <Menu v-if="!mobileMenuOpen" class="h-6 w-6" />
@@ -427,7 +427,7 @@ const toggleFaq = (i: number) => {
                         :href="getLawUrl(law)"
                         :tabindex="i >= lawList.length ? -1 : undefined"
                         :aria-hidden="i >= lawList.length ? 'true' : undefined"
-                        class="whitespace-nowrap rounded-xl border-2 border-gray-200 bg-white px-4 py-2 text-sm font-bold text-gray-700 shadow-[0_4px_0_#e5e5e5] transition-all hover:-translate-y-0.5 hover:border-green-300 hover:text-green-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:shadow-[0_4px_0_#0f0f0f] dark:hover:border-green-800 dark:hover:text-green-400"
+                        class="mz-btn mz-sm mz-second"
                     >
                         {{ law.name }}
                     </Link>
@@ -438,7 +438,7 @@ const toggleFaq = (i: number) => {
                         :key="`b-${i}`"
                         :href="getLawUrl(law)"
                         tabindex="-1"
-                        class="whitespace-nowrap rounded-xl border-2 border-yellow-200 bg-yellow-50 px-4 py-2 text-sm font-bold text-yellow-800 shadow-[0_4px_0_#fef08a] transition-all hover:-translate-y-0.5 dark:border-yellow-900/60 dark:bg-yellow-950/40 dark:text-yellow-200 dark:shadow-[0_4px_0_#422006]"
+                        class="mz-btn mz-sm mz-tonal-brand"
                     >
                         {{ law.name }}
                     </Link>
@@ -761,7 +761,7 @@ const toggleFaq = (i: number) => {
                                     <a
                                         v-if="faq.android && showAndroid"
                                         href="#app-android"
-                                        class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 font-medium text-white transition-colors hover:bg-blue-700"
+                                        class="mz-btn mz-sm mz-tonal"
                                     >
                                         <Smartphone class="h-4 w-4" />
                                         Android (novo)
@@ -892,7 +892,7 @@ const toggleFaq = (i: number) => {
                         <a
                             v-if="showAndroid"
                             href="#app-android"
-                            class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+                            class="mz-btn mz-sm mz-tonal"
                         >
                             <Smartphone class="h-4 w-4" />
                             Android (novo)
