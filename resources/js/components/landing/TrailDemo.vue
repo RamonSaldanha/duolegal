@@ -146,7 +146,7 @@ onBeforeUnmount(() => {
                         stateOf(i) === 'done' && node.kind === 'review' && 'border-purple-700 bg-purple-500 shadow-[0_6px_0_#6b21a8]',
                         stateOf(i) === 'current' && 'border-blue-700 bg-blue-500 shadow-[0_6px_0_#1d4ed8]',
                         stateOf(i) === 'locked' &&
-                            'border-gray-300 bg-gray-200 text-gray-400 shadow-[0_6px_0_#d4d4d4] dark:border-gray-600 dark:bg-gray-700 dark:text-gray-500 dark:shadow-[0_6px_0_#0f0f0f]',
+                            'border-gray-300 bg-gray-200 text-gray-400 shadow-[0_6px_0_#d4d4d4] dark:border-gray-600 dark:bg-gray-700 dark:text-gray-500 dark:shadow-[0_6px_0_theme(colors.gray.600)]',
                     ]"
                     :key="stateOf(i)"
                 >

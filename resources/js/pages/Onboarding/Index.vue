@@ -307,13 +307,13 @@ const BENEFITS = [
                             />
                         </div>
                         <span
-                            class="ob-float absolute -right-14 top-3 rounded-full border-2 border-purple-200 bg-white px-3 py-1 text-sm font-extrabold text-purple-600 shadow-[0_4px_0_#e9d5ff] dark:border-purple-900 dark:bg-gray-800 dark:text-purple-300 dark:shadow-[0_4px_0_#0f0f0f]"
+                            class="ob-float absolute -right-14 top-3 rounded-full border-2 border-purple-200 bg-white px-3 py-1 text-sm font-extrabold text-purple-600 shadow-[0_4px_0_#e9d5ff] dark:border-purple-900 dark:bg-gray-800 dark:text-purple-300 dark:shadow-[0_4px_0_theme(colors.purple.900)]"
                             style="--d: 0.5s"
                         >
                             +25 XP
                         </span>
                         <span
-                            class="ob-float absolute -left-14 bottom-4 flex items-center gap-1 rounded-full border-2 border-orange-200 bg-white px-3 py-1 text-sm font-extrabold text-orange-500 shadow-[0_4px_0_#fed7aa] dark:border-orange-900 dark:bg-gray-800 dark:shadow-[0_4px_0_#0f0f0f]"
+                            class="ob-float absolute -left-14 bottom-4 flex items-center gap-1 rounded-full border-2 border-orange-200 bg-white px-3 py-1 text-sm font-extrabold text-orange-500 shadow-[0_4px_0_#fed7aa] dark:border-orange-900 dark:bg-gray-800 dark:shadow-[0_4px_0_theme(colors.purple.900)]"
                             style="--d: 0.75s"
                         >
                             <Flame class="h-4 w-4 fill-current" /> 1 dia
@@ -506,7 +506,7 @@ const BENEFITS = [
                                 { icon: Sparkles, cls: '-right-3 bottom-0', tint: TINTS.pink },
                             ]"
                             :key="i"
-                            class="ob-float absolute flex h-11 w-11 items-center justify-center rounded-2xl border-2 border-white shadow-[0_4px_0_#e5e5e5] dark:border-gray-900 dark:shadow-[0_4px_0_#0f0f0f]"
+                            class="ob-float absolute flex h-11 w-11 items-center justify-center rounded-2xl border-2 border-white shadow-[0_4px_0_#e5e5e5] dark:border-gray-900 dark:shadow-[0_4px_0_theme(colors.gray.900)]"
                             :class="[piece.cls, piece.tint]"
                             :style="{ '--d': `${0.2 + i * 0.15}s` }"
                         >
@@ -579,8 +579,7 @@ const BENEFITS = [
         <!-- Rodapé com a ação da tela -->
         <footer
             v-if="step !== 'goal' && step !== 'area' && step !== 'minutes'"
-            class="sticky bottom-0 z-20 bg-background/95 backdrop-blur"
-            :class="step !== 'challenge' && 'border-t-2 border-gray-100 dark:border-gray-800'"
+            class="sticky bottom-0 z-20 border-t-2 border-gray-200 bg-background/95 backdrop-blur dark:border-gray-800"
         >
             <div class="mx-auto flex max-w-xl flex-col gap-2 px-4 py-4">
                 <!-- Palavras + Limpar/Verificar do desafio, no mesmo lugar da tela de fase -->

@@ -49,7 +49,7 @@ html {
         --sidebar-ring: 219 45% 43%;
 
         --mz-ink2: #47433c;
-        --mz-edge: #e4ded2;
+        --mz-edge: hsl(var(--border));
         --mz-tint2: #e6e1d6;
         --mz-off: #ebe7df;
         --mz-off-ink: #a8a297;
@@ -119,7 +119,7 @@ html {
         --sidebar-ring: 218 57% 81%;
 
         --mz-ink2: #d3cfc6;
-        --mz-edge: #100f0d;
+        --mz-edge: hsl(var(--border));
         --mz-tint2: #37342f;
         --mz-off: #312f2a;
         --mz-off-ink: #77726a;

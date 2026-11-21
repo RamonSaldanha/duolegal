@@ -246,7 +246,7 @@ const setGap = (i: number) => (el: unknown) => {
 <template>
     <div ref="root" class="relative select-none" aria-hidden="true">
         <div
-            class="relative overflow-hidden rounded-3xl border-2 border-gray-200 bg-white shadow-[0_8px_0_#e5e5e5] dark:border-gray-700 dark:bg-gray-800 dark:shadow-[0_8px_0_#0f0f0f]"
+            class="relative overflow-hidden rounded-3xl border-2 border-gray-200 bg-white shadow-[0_8px_0_#e5e5e5] dark:border-gray-700 dark:bg-gray-800 dark:shadow-[0_8px_0_theme(colors.gray.700)]"
         >
             <!-- Barra do topo: progresso + status do jogador -->
             <div class="flex items-center gap-3 border-b-2 border-gray-100 px-4 py-3 dark:border-gray-700">
@@ -329,7 +329,7 @@ const setGap = (i: number) => (el: unknown) => {
                         :class="[
                             allFilled
                                 ? 'border-green-600 bg-green-500 text-white shadow-[0_5px_0_#15803d]'
-                                : 'border-gray-300 bg-gray-200 text-gray-400 shadow-[0_5px_0_#d4d4d4] dark:border-gray-600 dark:bg-gray-700 dark:shadow-[0_5px_0_#0f0f0f]',
+                                : 'border-gray-300 bg-gray-200 text-gray-400 shadow-[0_5px_0_#d4d4d4] dark:border-gray-600 dark:bg-gray-700 dark:shadow-[0_5px_0_theme(colors.gray.600)]',
                             verifyPressed && 'translate-y-[4px] !shadow-[0_1px_0_#15803d]',
                         ]"
                     >

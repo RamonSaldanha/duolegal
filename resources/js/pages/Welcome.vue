@@ -404,7 +404,7 @@ const toggleFaq = (i: number) => {
                         <Zap class="h-4 w-4 fill-current" /> Nível 12
                     </div>
                     <div
-                        class="lp-float absolute -bottom-6 -left-6 z-30 hidden items-center gap-2 rounded-2xl border-2 border-gray-200 bg-white px-3 py-2 text-sm font-bold shadow-[0_4px_0_#e5e5e5] dark:border-gray-700 dark:bg-gray-800 dark:shadow-[0_4px_0_#0f0f0f] sm:flex"
+                        class="lp-float absolute -bottom-6 -left-6 z-30 hidden items-center gap-2 rounded-2xl border-2 border-gray-200 bg-white px-3 py-2 text-sm font-bold shadow-[0_4px_0_#e5e5e5] dark:border-gray-700 dark:bg-gray-800 dark:shadow-[0_4px_0_theme(colors.purple.900)] sm:flex"
                         style="animation-delay: -2.4s"
                         aria-hidden="true"
                     >
@@ -497,7 +497,7 @@ const toggleFaq = (i: number) => {
                         v-for="(step, i) in steps"
                         :key="step.title"
                         v-reveal="i * 120"
-                        class="group rounded-3xl border-2 border-gray-200 bg-white p-6 shadow-[0_6px_0_#e5e5e5] transition-transform duration-300 hover:-translate-y-1 dark:border-gray-700 dark:bg-gray-800 dark:shadow-[0_6px_0_#0f0f0f]"
+                        class="group rounded-3xl border-2 border-gray-200 bg-white p-6 shadow-[0_6px_0_#e5e5e5] transition-transform duration-300 hover:-translate-y-1 dark:border-gray-700 dark:bg-gray-800 dark:shadow-[0_6px_0_theme(colors.gray.700)]"
                     >
                         <!-- Mini animação de cada passo -->
                         <div
@@ -665,7 +665,7 @@ const toggleFaq = (i: number) => {
                 <div
                     ref="researchEl"
                     v-reveal
-                    class="rounded-3xl border-2 border-gray-200 bg-white p-8 shadow-[0_8px_0_#e5e5e5] dark:border-gray-700 dark:bg-gray-800 dark:shadow-[0_8px_0_#0f0f0f]"
+                    class="rounded-3xl border-2 border-gray-200 bg-white p-8 shadow-[0_8px_0_#e5e5e5] dark:border-gray-700 dark:bg-gray-800 dark:shadow-[0_8px_0_theme(colors.gray.700)]"
                 >
                     <div class="grid grid-cols-1 items-center gap-8 lg:grid-cols-2">
                         <div class="text-center lg:text-left">

@@ -119,7 +119,7 @@ onBeforeUnmount(() => {
 <template>
     <div
         ref="root"
-        class="rounded-3xl border-2 border-gray-200 bg-white p-3 shadow-[0_8px_0_#e5e5e5] dark:border-gray-700 dark:bg-gray-800 dark:shadow-[0_8px_0_#0f0f0f] sm:p-4"
+        class="rounded-3xl border-2 border-gray-200 bg-white p-3 shadow-[0_8px_0_#e5e5e5] dark:border-gray-700 dark:bg-gray-800 dark:shadow-[0_8px_0_theme(colors.gray.700)] sm:p-4"
         aria-hidden="true"
     >
         <div class="mb-2 flex items-center justify-between px-2 pt-1">
