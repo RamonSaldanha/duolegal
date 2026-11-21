@@ -762,12 +762,12 @@ a.toc-item:hover { border-color: var(--accent-edge); }
 </div>
 
 <div class="part">
-    <span class="status-chip">Rascunho 3 · família completa e tom em teste</span>
+    <span class="status-chip">Aplicado no site em 20/11/2026 · tom papel</span>
     <h2>Botões · Proposta de padrão</h2>
-    <p>Nada daqui foi aplicado. Passe o mouse e aperte os botões para sentir cada um.</p>
+    <p>Aplicado no site em 20/11/2026, com o tom papel: a escala <code>gray</code> do Tailwind virou a do papel, as classes <code>.mz-*</code> de <code>resources/css/app.css</code> desenham o <code>GameButton</code> e o <code>Button</code> do shadcn, e o <code>ChoiceCard</code>, o <code>IconButton</code>, o <code>FilterChip</code>, o <code>SegmentedControl</code> e o <code>Notice</code> ficam em <code>components/ui</code>. Falta o app. Passe o mouse e aperte os botões para sentir cada um.</p>
 </div>
 
-<section class="sec" id="proposta" data-primary="amarelo" data-tone="vivo">
+<section class="sec" id="proposta" data-primary="amarelo" data-tone="papel">
     <h2 class="sec-h">P <span class="dot"></span> Um botão, as mesmas regras</h2>
 
     <div class="pickers">
@@ -783,11 +783,11 @@ a.toc-item:hover { border-color: var(--accent-edge); }
     <div class="picker">
         <span>Tom</span>
         <div class="opts" data-picker="tone">
-            <button type="button" data-value="vivo" aria-pressed="true"><i class="duo" style="--a:#ffffff;--b:#f6c402"></i>Vivo (hoje)</button>
-            <button type="button" data-value="papel" aria-pressed="false"><i class="duo" style="--a:#f8f6f1;--b:#efc12f"></i>Papel</button>
+            <button type="button" data-value="vivo" aria-pressed="false"><i class="duo" style="--a:#ffffff;--b:#f6c402"></i>Vivo (hoje)</button>
+            <button type="button" data-value="papel" aria-pressed="true"><i class="duo" style="--a:#f8f6f1;--b:#efc12f"></i>Papel</button>
             <button type="button" data-value="pastel" aria-pressed="false"><i class="duo" style="--a:#f5f3ee;--b:#f2d571"></i>Pastel</button>
         </div>
-        <small><b>Vivo</b> é o branco e as cores do Tailwind de hoje. <b>Papel</b> troca o branco por off-white quente e fecha um pouco as cores (amarelo de marca-texto, vermelho de caneta de correção, azul de tinta). <b>Pastel</b> vai além e clareia as cores de ação; o texto do botão vermelho vira escuro para continuar legível. Vale para todos os botões desta proposta, nos palcos claro e escuro.</small>
+        <small><b>Papel</b> é o tom aplicado no site em 20/11/2026. <b>Vivo</b> é o branco e as cores do Tailwind de antes. <b>Papel</b> troca o branco por off-white quente e fecha um pouco as cores (amarelo de marca-texto, vermelho de caneta de correção, azul de tinta). <b>Pastel</b> vai além e clareia as cores de ação; o texto do botão vermelho vira escuro para continuar legível. Vale para todos os botões desta proposta, nos palcos claro e escuro.</small>
     </div>
     </div>
 
@@ -1072,7 +1072,7 @@ a.toc-item:hover { border-color: var(--accent-edge); }
 
 <div class="part">
     <h2>Botões · Como está hoje</h2>
-    <p>Inventário de 20/11/2026, tirado do código. Cada cartão diz se o botão afunda ao clicar.</p>
+    <p>Inventário de 20/11/2026, tirado do código antes da troca. Fica como registro do que a família substituiu; no site, só o legado ainda tem cópias à mão.</p>
 </div>
 
 <!-- 01 -->
@@ -1671,7 +1671,7 @@ a.toc-item:hover { border-color: var(--accent-edge); }
 </div>
 
 <div class="part">
-    <span class="status-chip">Rascunho 1 · em discussão</span>
+    <span class="status-chip">Aplicado no site em 20/11/2026</span>
     <h2>Avisos · Proposta de padrão</h2>
     <p>O ponto de partida é a barra "Você acertou!" do pé da fase. Todo aviso segue o desenho dela: fundo tingido, um círculo cheio com o ícone, um título curto e uma linha de apoio. O que muda é a cor, que diz o tipo do aviso.</p>
 </div>
@@ -1770,7 +1770,7 @@ a.toc-item:hover { border-color: var(--accent-edge); }
 
 <div class="part">
     <h2>Avisos · Como está hoje</h2>
-    <p>Inventário de 20/11/2026, tirado do código. Os desenhos usam as classes de cada arquivo.</p>
+    <p>Inventário de 20/11/2026, tirado do código antes da troca pelo <code>Notice</code>. Fica como registro.</p>
 </div>
 
 <section class="sec" id="avisos-hoje">
@@ -1911,7 +1911,7 @@ a.toc-item:hover { border-color: var(--accent-edge); }
         if (kind === 'tone') {
             var saved = null;
             try { saved = localStorage.getItem('componentes-tom'); } catch (e) {}
-            apply(saved && picker.querySelector('[data-value="' + saved + '"]') ? saved : 'vivo');
+            apply(saved && picker.querySelector('[data-value="' + saved + '"]') ? saved : 'papel');
         }
     });
 })();

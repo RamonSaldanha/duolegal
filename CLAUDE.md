@@ -103,9 +103,14 @@ const PHASES_PER_JOURNEY = 24;        // UI pagination — phases per journey
 
 `docs/design/componentes.html` é onde se decide como cada componente do site e do app deve ser (por enquanto botões e avisos). Cada componente tem a proposta em discussão e o inventário do que existe hoje, com o CSS real. Abra com a configuração `docs-design` do `.claude/launch.json` (`php -S 127.0.0.1:8090 -t docs/design`, depois `/componentes.html`). O arquivo também é publicado como o artefato "Componentes do Memorize" no claude.ai (https://claude.ai/artifact/EetaJVoZ2ySAeUGaoCz7uP): ao editá-lo, publique de novo nesse link (passe a URL como `url`) a versão sem `<!doctype>`, `<html>`, `<head>` e `<body>`.
 
-- Enquanto a proposta não for aplicada, não crie botões novos fora do `GameButton` nem avisos com desenho próprio: siga a barra de resultado (`ResultBar.vue`).
-- Só o que se aperta tem 3D (base embaixo e afundar ao toque). Aviso, cartão de informação e painel ficam chapados.
-- Animação em botão não usa `transform`, porque apaga o afundar. Use `scale` ou `translate`.
+A proposta de botões e avisos foi aplicada no site em 20/11/2026, no tom papel. O app ainda não.
+
+- **Tom papel:** a escala `gray` do `tailwind.config.js` é a do papel (o 50 é o fundo, o 200 o contorno, o 900 o fundo escuro), e as variáveis do shadcn em `resources/css/app.css` têm o amarelo do logo como principal. Fundo de página é `bg-background`, não `bg-white`. Cores da família no Tailwind: `brand`, `danger`, `choice`, `right`, `wrong`, `paper`.
+- **Botão:** sempre `GameButton` (ou o `Button` do shadcn no admin), que usam as classes `.mz-*` de `app.css`. Onde um componente não cabe, use as classes direto: `mz-btn` + tamanho (`mz-xs` 32, `mz-sm` 40, `mz-md` 48, `mz-lg` 56) + variante. De ação, afundam: `main` (amarelo, um por tela), `second`, `danger`, `success` (só acerto) e `premium` (roxo, só Premium e Dia da prova). Calmos: `tonal`, `tonal-brand`, `tonal-danger`, `outline`, `dashed`, `ghost`. Link é `mz-mark` (marca-texto). Não escreva botão com borda, sombra ou cor próprias.
+- **Escolha:** alternativa, opção, plano e item do avatar usam `ChoiceCard` ou a classe `mz-choice` com `is-selected` (azul), `is-right`, `is-wrong`, `is-dim` ou `is-premium`. Ícone sozinho é `IconButton`; filtro é `FilterChip`; alternador é `SegmentedControl`.
+- **Aviso:** `Notice` (`tone` success, error, warning, info, offer; `short` para o erro de uma linha). A barra depois da resposta continua sendo o `ResultBar`.
+- Só o que se aperta tem 3D (base embaixo e afundar ao toque). Aviso, cartão de informação, selo e painel ficam chapados.
+- Animação em botão não usa `transform`, porque apaga o afundar. Use `scale` ou `translate`. Classes `.mz-*` não funcionam com `@apply` dentro do `<style>` de um `.vue`: ponha no template.
 
 ### Perfil público
 
