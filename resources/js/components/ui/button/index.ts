@@ -2,30 +2,30 @@ import { cva, type VariantProps } from 'class-variance-authority';
 
 export { default as Button } from './Button.vue';
 
-export const buttonVariants = cva(
-    'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
-    {
-        variants: {
-            variant: {
-                default: 'bg-primary text-primary-foreground shadow hover:bg-primary/90',
-                destructive: 'bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90',
-                outline: 'border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground',
-                secondary: 'bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80',
-                ghost: 'hover:bg-accent hover:text-accent-foreground',
-                link: 'text-primary underline-offset-4 hover:underline',
-            },
-            size: {
-                default: 'h-9 px-4 py-2',
-                sm: 'h-8 rounded-md px-3 text-xs',
-                lg: 'h-10 rounded-md px-8',
-                icon: 'h-9 w-9',
-            },
+// O Button do shadcn usa a mesma família do GameButton (classes .mz-* em resources/css/app.css),
+// no tamanho compacto. default é o principal amarelo, destructive o perigo (os dois afundam);
+// outline, secondary (suave) e ghost são calmos; link é o marca-texto.
+export const buttonVariants = cva('mz-btn [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0', {
+    variants: {
+        variant: {
+            default: 'mz-main',
+            destructive: 'mz-danger',
+            outline: 'mz-outline',
+            secondary: 'mz-tonal',
+            ghost: 'mz-ghost',
+            link: 'mz-mark',
         },
-        defaultVariants: {
-            variant: 'default',
-            size: 'default',
+        size: {
+            default: 'mz-sm',
+            sm: 'mz-xs',
+            lg: 'mz-md',
+            icon: 'mz-sm mz-sq',
         },
     },
-);
+    defaultVariants: {
+        variant: 'default',
+        size: 'default',
+    },
+});
 
 export type ButtonVariants = VariantProps<typeof buttonVariants>;

@@ -575,7 +575,7 @@ onUnmounted(() => {
                                         </GameButton>
                                         <GameButton
                                             v-else
-                                            :variant="ex.exam.state === 'complete' && !ex.exam.in_progress ? 'green' : 'purple'"
+                                            :variant="ex.exam.state === 'complete' && !ex.exam.in_progress ? 'second' : 'premium'"
                                             size="lg"
                                             class="mt-4 w-full"
                                             :href="route('beta.play.exam', { exam: ex.exam.key })"

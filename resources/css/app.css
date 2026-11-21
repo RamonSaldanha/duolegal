@@ -75,6 +75,13 @@ html {
         --mz-bad-soft: #f9edeb;
         --mz-bad-ink: #a8423a;
         --mz-press: rgba(0, 0, 0, 0.08);
+        /* Verde só para acerto (barra de resultado) e roxo só para Premium e Dia da prova */
+        --mz-success: #2b8a52;
+        --mz-success-edge: #1d5f38;
+        --mz-success-hover: #27804b;
+        --mz-premium: #8b5cc7;
+        --mz-premium-edge: #643f96;
+        --mz-premium-hover: #7f51ba;
     }
 
     .dark {
@@ -144,5 +151,277 @@ html {
 
     body {
         @apply bg-background text-foreground;
+    }
+}
+
+/* ===== Família de botões (docs/design/componentes.html) =====
+   Uma classe base (.mz-btn), um tamanho (.mz-xs/sm/md/lg) e uma variante. Usada pelo GameButton e
+   pelo Button do shadcn. Fica em @layer components para as classes utilitárias de cada tela
+   (w-full, px-8...) ainda poderem ajustar o botão.
+   - De ação (afundam): main, second, danger, success (acerto), premium (Premium e Dia da prova).
+     A face desce a altura da base (--d) ao apertar, só no :active, e o mouse só muda o tom.
+   - Calmos (não afundam): tonal, tonal-brand, tonal-danger, outline, dashed, ghost. Ao apertar
+     escurecem e ganham uma sombra de 2 px por dentro (apertam para dentro).
+   - mz-mark: o link, com traço de marca-texto. Nenhuma animação de botão usa transform. */
+@layer components {
+    .mz-btn {
+        --d: 4px;
+        --h: 3rem;
+        --e: transparent;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        min-height: var(--h);
+        padding: 0 1.25rem;
+        border: 0;
+        border-radius: 12px;
+        font-weight: 700;
+        letter-spacing: -0.005em;
+        line-height: 1.2;
+        white-space: nowrap;
+        text-decoration: none;
+        cursor: pointer;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+        transition:
+            transform 0.08s ease,
+            box-shadow 0.08s ease,
+            background-color 0.15s ease,
+            color 0.15s ease;
+    }
+    .mz-btn:focus-visible {
+        outline: 3px solid hsl(var(--ring));
+        outline-offset: 2px;
+    }
+    .mz-xs {
+        --h: 2rem;
+        --d: 2px;
+        padding: 0 0.75rem;
+        font-size: 0.8125rem;
+        border-radius: 10px;
+    }
+    .mz-sm {
+        --h: 2.5rem;
+        --d: 3px;
+        padding: 0 1rem;
+        font-size: 0.875rem;
+    }
+    .mz-md {
+        --h: 3rem;
+        --d: 4px;
+        padding: 0 1.25rem;
+        font-size: 1rem;
+    }
+    .mz-lg {
+        --h: 3.5rem;
+        --d: 4px;
+        padding: 0 1.5rem;
+        font-size: 1.125rem;
+    }
+    .mz-sq {
+        width: var(--h);
+        padding: 0;
+    }
+
+    /* De ação */
+    .mz-main {
+        --e: var(--mz-brand-edge);
+        background: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+    }
+    .mz-danger {
+        --e: var(--mz-danger-edge);
+        background: hsl(var(--destructive));
+        color: hsl(var(--destructive-foreground));
+    }
+    .mz-success {
+        --e: var(--mz-success-edge);
+        background: var(--mz-success);
+        color: #fff;
+    }
+    .mz-premium {
+        --e: var(--mz-premium-edge);
+        background: var(--mz-premium);
+        color: #fff;
+    }
+    .mz-main,
+    .mz-danger,
+    .mz-success,
+    .mz-premium {
+        box-shadow: 0 var(--d) 0 var(--e);
+    }
+    .mz-second {
+        --e: var(--mz-edge);
+        background: hsl(var(--card));
+        color: var(--mz-ink2);
+        box-shadow:
+            inset 0 0 0 2px hsl(var(--border)),
+            0 var(--d) 0 var(--e);
+    }
+    @media (hover: hover) {
+        .mz-main:not(:disabled):hover {
+            background: var(--mz-brand-hover);
+        }
+        .mz-danger:not(:disabled):hover {
+            background: var(--mz-danger-hover);
+        }
+        .mz-success:not(:disabled):hover {
+            background: var(--mz-success-hover);
+        }
+        .mz-premium:not(:disabled):hover {
+            background: var(--mz-premium-hover);
+        }
+        .mz-second:not(:disabled):hover {
+            background: hsl(var(--secondary));
+        }
+    }
+    .mz-main:not(:disabled):active,
+    .mz-danger:not(:disabled):active,
+    .mz-success:not(:disabled):active,
+    .mz-premium:not(:disabled):active {
+        transform: translateY(var(--d));
+        box-shadow: 0 0 0 var(--e);
+    }
+    .mz-second:not(:disabled):active {
+        transform: translateY(var(--d));
+        box-shadow:
+            inset 0 0 0 2px hsl(var(--border)),
+            0 0 0 var(--e);
+    }
+    .mz-main:disabled,
+    .mz-danger:disabled,
+    .mz-success:disabled,
+    .mz-premium:disabled,
+    .mz-second:disabled {
+        background: var(--mz-off);
+        color: var(--mz-off-ink);
+        box-shadow: 0 var(--d) 0 var(--mz-off-edge);
+        cursor: not-allowed;
+    }
+
+    /* Calmos */
+    .mz-tonal {
+        background: hsl(var(--secondary));
+        color: hsl(var(--foreground));
+    }
+    .mz-tonal-brand {
+        background: var(--mz-brand-soft);
+        color: var(--mz-brand-soft-ink);
+    }
+    .mz-tonal-danger {
+        background: var(--mz-danger-soft);
+        color: var(--mz-danger-soft-ink);
+    }
+    .mz-outline {
+        background: transparent;
+        color: hsl(var(--foreground));
+        box-shadow: inset 0 0 0 2px hsl(var(--border));
+    }
+    .mz-dashed {
+        background: transparent;
+        color: hsl(var(--muted-foreground));
+        border: 2px dashed hsl(var(--border));
+    }
+    .mz-ghost {
+        background: transparent;
+        color: hsl(var(--muted-foreground));
+    }
+    @media (hover: hover) {
+        .mz-tonal:not(:disabled):hover {
+            background: var(--mz-tint2);
+        }
+        .mz-tonal-brand:not(:disabled):hover {
+            background: var(--mz-brand-soft2);
+        }
+        .mz-tonal-danger:not(:disabled):hover {
+            background: var(--mz-danger-soft2);
+        }
+        .mz-outline:not(:disabled):hover,
+        .mz-dashed:not(:disabled):hover,
+        .mz-ghost:not(:disabled):hover {
+            background: hsl(var(--secondary));
+            color: hsl(var(--foreground));
+        }
+    }
+    .mz-tonal:not(:disabled):active,
+    .mz-dashed:not(:disabled):active,
+    .mz-ghost:not(:disabled):active {
+        background: var(--mz-tint2);
+        color: hsl(var(--foreground));
+        box-shadow: inset 0 2px 0 var(--mz-press);
+    }
+    .mz-tonal-brand:not(:disabled):active {
+        background: var(--mz-brand-soft2);
+        box-shadow: inset 0 2px 0 var(--mz-press);
+    }
+    .mz-tonal-danger:not(:disabled):active {
+        background: var(--mz-danger-soft2);
+        box-shadow: inset 0 2px 0 var(--mz-press);
+    }
+    .mz-outline:not(:disabled):active {
+        background: var(--mz-tint2);
+        box-shadow:
+            inset 0 0 0 2px hsl(var(--border)),
+            inset 0 3px 0 var(--mz-press);
+    }
+    .mz-tonal:disabled,
+    .mz-tonal-brand:disabled,
+    .mz-tonal-danger:disabled,
+    .mz-outline:disabled,
+    .mz-dashed:disabled {
+        background: var(--mz-off);
+        color: var(--mz-off-ink);
+        box-shadow: none;
+        border-color: transparent;
+        cursor: not-allowed;
+    }
+    .mz-ghost:disabled {
+        color: var(--mz-off-ink);
+        cursor: not-allowed;
+    }
+
+    /* Marca-texto: o link. Traço amarelo embaixo, que sobe e cobre a palavra no mouse. */
+    .mz-mark,
+    .mz-btn.mz-mark {
+        display: inline;
+        min-height: 0;
+        padding: 0 2px;
+        margin: 0 -2px;
+        border-radius: 3px;
+        font-weight: 600;
+        color: hsl(var(--foreground));
+        text-decoration: none;
+        cursor: pointer;
+        background: linear-gradient(var(--mz-brand-mark), var(--mz-brand-mark)) no-repeat 0 100% / 100% 0.32em;
+        box-shadow: none;
+        transition: background-size 0.18s ease;
+    }
+    .mz-mark:hover,
+    .mz-mark:active {
+        background-size: 100% 100%;
+    }
+
+    /* Roda de carregando, dentro do botão */
+    .mz-spin {
+        width: 1.1em;
+        height: 1.1em;
+        flex: none;
+        border-radius: 9999px;
+        border: 2.5px solid currentColor;
+        border-right-color: transparent;
+        animation: mz-spin 0.8s linear infinite;
+    }
+    @keyframes mz-spin {
+        to {
+            rotate: 360deg;
+        }
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .mz-btn,
+    .mz-mark {
+        transition: none;
     }
 }

@@ -2,7 +2,8 @@
     <Link v-if="href" :href="href" :class="classes" v-bind="otherAttrs">
         <slot />
     </Link>
-    <button v-else :class="classes" :disabled="disabled" v-bind="otherAttrs">
+    <button v-else :class="classes" :disabled="disabled || loading" :aria-busy="loading || undefined" v-bind="otherAttrs">
+        <span v-if="loading" class="mz-spin" aria-hidden="true" />
         <slot />
     </button>
 </template>
@@ -11,20 +12,32 @@
 import { Link } from '@inertiajs/vue3';
 import { computed, useAttrs } from 'vue';
 
-// Botão "3D" do jogo: a borda de baixo (sombra) encolhe enquanto a face desce, então o
-// botão afunda no lugar em vez de só se mover. Tudo em CSS (:hover e :active), para o
-// efeito nunca ficar dessincronizado quando o Vue reaproveita o botão ou ele é desabilitado.
+// Botão da família do site (docs/design/componentes.html). As classes .mz-* ficam em
+// resources/css/app.css e são as mesmas do Button do shadcn.
+// - De ação, afundam ao apertar: main (amarelo, um por tela), second (neutro), danger,
+//   success (só acerto) e premium (só Premium e Dia da prova).
+// - Calmos, não afundam: tonal, tonal-brand, tonal-danger, outline, dashed, ghost.
+// Os nomes antigos continuam valendo: green, purple e blue viram main, white vira second e
+// red vira danger.
+type FamilyVariant = 'main' | 'second' | 'danger' | 'success' | 'premium' | 'tonal' | 'tonal-brand' | 'tonal-danger' | 'outline' | 'dashed' | 'ghost';
+type LegacyVariant = 'white' | 'green' | 'purple' | 'red' | 'blue';
+
 interface Props {
-    variant?: 'white' | 'green' | 'purple' | 'red' | 'blue';
-    size?: 'sm' | 'md' | 'lg';
+    variant?: FamilyVariant | LegacyVariant;
+    size?: 'xs' | 'sm' | 'md' | 'lg';
     disabled?: boolean;
+    loading?: boolean;
+    /** Só ícone: quadrado com a altura do tamanho */
+    square?: boolean;
     href?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-    variant: 'white',
+    variant: 'second',
     size: 'md',
     disabled: false,
+    loading: false,
+    square: false,
     href: undefined,
 });
 
@@ -37,72 +50,15 @@ const otherAttrs = computed(() => {
     return rest;
 });
 
-const variants = {
-    white: 'game-button-white bg-white text-gray-900 border-gray-300 dark:bg-gray-700 dark:text-white dark:border-gray-600',
-    green: 'game-button-green bg-green-500 hover:bg-green-600 text-white border-green-700',
-    purple: 'game-button-purple bg-purple-500 hover:bg-purple-600 disabled:bg-gray-400 text-white border-purple-700 disabled:border-gray-600',
-    red: 'game-button-red bg-red-500 hover:bg-red-600 text-white border-red-700',
-    blue: 'game-button-blue bg-blue-500 hover:bg-blue-600 text-white border-blue-700',
+const LEGACY: Record<LegacyVariant, FamilyVariant> = {
+    white: 'second',
+    green: 'main',
+    purple: 'main',
+    blue: 'main',
+    red: 'danger',
 };
 
-const sizes = {
-    sm: 'px-3 py-1.5 text-sm',
-    md: 'px-4 py-2',
-    lg: 'px-5 py-2.5 text-base',
-};
+const variant = computed<FamilyVariant>(() => LEGACY[props.variant as LegacyVariant] ?? (props.variant as FamilyVariant));
 
-const classes = computed(() => [
-    'game-button inline-flex items-center justify-center rounded-lg border-4 font-bold disabled:cursor-not-allowed disabled:opacity-50',
-    variants[props.variant],
-    sizes[props.size],
-]);
+const classes = computed(() => ['mz-btn', `mz-${props.size}`, `mz-${variant.value}`, props.square && 'mz-sq']);
 </script>
-
-<style scoped>
-.game-button {
-    --edge: theme('colors.gray.300');
-    box-shadow: 0 4px 0 var(--edge);
-    transition:
-        transform 0.1s ease,
-        box-shadow 0.1s ease,
-        background-color 0.15s ease;
-}
-
-/* A borda de baixo usa a mesma cor da borda de cada variante (as classes border-* acima) */
-.game-button-white {
-    --edge: theme('colors.gray.300');
-}
-.dark .game-button-white {
-    --edge: theme('colors.gray.600');
-}
-.game-button-green {
-    --edge: theme('colors.green.700');
-}
-.game-button-purple {
-    --edge: theme('colors.purple.700');
-}
-.game-button-purple:disabled {
-    --edge: theme('colors.gray.600');
-}
-.game-button-red {
-    --edge: theme('colors.red.700');
-}
-.game-button-blue {
-    --edge: theme('colors.blue.700');
-}
-
-/* Mouse por cima: desce 2px e a borda encolhe 2px. Só em quem tem mouse, para o toque
-   no celular não deixar o botão meio afundado depois de soltar. */
-@media (hover: hover) {
-    .game-button:not(:disabled):hover {
-        transform: translateY(2px);
-        box-shadow: 0 2px 0 var(--edge);
-    }
-}
-
-/* Apertado: desce os 4px inteiros e a borda some */
-.game-button:not(:disabled):active {
-    transform: translateY(4px);
-    box-shadow: 0 0 0 var(--edge);
-}
-</style>

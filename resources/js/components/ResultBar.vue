@@ -49,7 +49,7 @@ onMounted(() => {
                 <slot />
             </div>
 
-            <GameButton :variant="correct ? 'green' : 'red'" size="lg" class="mt-4 w-full" @click="$emit('continue')">
+            <GameButton :variant="correct ? 'success' : 'danger'" size="lg" class="mt-4 w-full" @click="$emit('continue')">
                 {{ buttonLabel }}
             </GameButton>
         </div>
