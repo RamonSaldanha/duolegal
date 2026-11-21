@@ -84,7 +84,7 @@ const breadcrumbs = computed(() => [
                     <div
                         v-for="achievement in achievements"
                         :key="achievement.uuid"
-                        class="flex flex-col items-center rounded-2xl border border-gray-200 bg-white p-4 dark:border-transparent dark:bg-gray-900"
+                        class="flex flex-col items-center rounded-3xl border-2 border-gray-200 bg-card p-4 dark:border-gray-800"
                     >
                         <StarBadge
                             :badge-url="achievement.badge_url"
@@ -92,13 +92,15 @@ const breadcrumbs = computed(() => [
                             :stars="achievement.stars"
                             :icon="achievement.icon"
                             :color="achievement.color"
+                            :class="{ '-mb-5': achievement.badge_url }"
                         />
 
-                        <p class="mt-3 text-center text-base font-bold leading-tight text-gray-900 dark:text-white">
+                        <p class="mt-2 text-center text-base font-bold leading-tight text-gray-900 dark:text-white">
                             {{ achievement.name }}
                         </p>
 
-                        <StarRow class="mt-1.5" :stars="achievement.stars" />
+                        <!-- A arte nova já mostra as estrelas; a fileira só aparece no badge antigo -->
+                        <StarRow v-if="!achievement.badge_url" class="mt-1.5" :stars="achievement.stars" />
                     </div>
                 </div>
 
