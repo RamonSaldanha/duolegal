@@ -72,7 +72,7 @@ test('o tempo recarrega +1 por hora até a barra cheia, e não passa dela', func
     $this->getJson('/api/v1/me')->assertJsonPath('energy.value', 40);
 });
 
-test('na fase nova o certo custa 1, o errado 2, e 5 certos seguidos devolvem 2', function () {
+test('na fase nova o certo custa 1, o errado 2, e 5 certos seguidos devolvem 1', function () {
     studyLegislation(30);
     $user = energyPlayer();
 
@@ -80,17 +80,17 @@ test('na fase nova o certo custa 1, o errado 2, e 5 certos seguidos devolvem 2',
 
     energyAttempts($this, 1, true, 4);
     $this->postJson('/api/v1/trail/attempt', ['phase_id' => 1, 'correct' => true])
-        ->assertJsonPath('combo', ['streak' => 5, 'gained' => 2])
-        ->assertJsonPath('energy.value', 22);
+        ->assertJsonPath('combo', ['streak' => 5, 'gained' => 1])
+        ->assertJsonPath('energy.value', 21);
 
     $this->postJson('/api/v1/trail/attempt', ['phase_id' => 1, 'correct' => false])
-        ->assertJsonPath('energy.value', 20)
+        ->assertJsonPath('energy.value', 19)
         ->assertJsonPath('combo', null);
 
     // A sequência recomeça depois do erro: o 5º certo depois dele é o próximo combo
     energyAttempts($this, 1, true, 4)->assertJsonPath('combo', null);
 
-    expect($user->fresh()->energy)->toBe(16)
+    expect($user->fresh()->energy)->toBe(15)
         ->and(EnergyTransaction::where('user_id', $user->id)->pluck('reason')->countBy()->all())
         ->toEqualCanonicalizing([EnergyTransaction::PHASE => 9, EnergyTransaction::COMBO => 1, EnergyTransaction::FAIL => 1]);
 });
@@ -313,7 +313,8 @@ test('acertando tudo, a energia acaba: na fase nova, na revisão, no desafio e n
         energyAttempts($this, 1, true, 10);
         expect(++$played)->toBeLessThan(10);
     }
-    expect($played)->toBe(3)->and($user->fresh()->energy)->toBe(7);
+    // Com a barra cheia, no máximo 2 fases: 25, 17, 9 e a 3ª não abre
+    expect($played)->toBe(2)->and($user->fresh()->energy)->toBe(9);
 
     // Revisão sem errar: gasta 1 por bloco até a pessoa sair
     energyComplete($user, $legislation, 0, 159);
@@ -325,7 +326,7 @@ test('acertando tudo, a energia acaba: na fase nova, na revisão, no desafio e n
         ]);
     }
     $this->getJson('/api/v1/trail/phases/1')->assertOk()->assertJsonPath('isReview', true);
-    energyAttempts($this, 1, true, 7)->assertJsonPath('out_of_energy', true)->assertJsonPath('energy.value', 0);
+    energyAttempts($this, 1, true, 9)->assertJsonPath('out_of_energy', true)->assertJsonPath('energy.value', 0);
     $this->getJson('/api/v1/trail/phases/1')->assertForbidden();
 
     // Desafio já feito, sempre certo: 1 por questão, sem combo
@@ -364,4 +365,15 @@ test('acertando tudo, a energia acaba: na fase nova, na revisão, no desafio e n
     expect($retakes)->toBe(5)
         ->and($user->fresh()->energy)->toBe(0)
         ->and($this->postJson("/api/v1/trail/exams/{$exam}/start")->json('code'))->toBe('no_energy');
+});
+
+test('com a barra cheia, quem erra 7 vezes ainda termina a primeira fase', function () {
+    studyLegislation(30);
+    energyPlayer();
+
+    $this->getJson('/api/v1/trail/phases/1')->assertOk();
+    energyAttempts($this, 1, false, 7)->assertJsonPath('out_of_energy', false);
+    energyAttempts($this, 1, true, 10)
+        ->assertJsonPath('out_of_energy', false)
+        ->assertJsonPath('energy.value', 3);
 });

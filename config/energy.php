@@ -19,13 +19,14 @@ return [
     'regen_minutes' => 60,
 
     // Fase nova: o mínimo para abrir (ou o custo da fase sem erro, se ela tem menos blocos),
-    // o custo de cada tentativa e o combo de blocos certos seguidos
+    // o custo de cada tentativa e o combo de blocos certos seguidos. Com a barra cheia, quem
+    // acerta tudo joga no máximo 2 fases (cada uma gasta 10 - 2 = 8: 25, 17, 9 e a 3ª não abre)
     'phase' => [
         'open' => 10,
         'correct' => 1,
         'wrong' => 2,
         'combo_every' => 5,
-        'combo_gain' => 2,
+        'combo_gain' => 1,
     ],
 
     // Revisão (fase já concluída): custa como a fase nova, mas abre com menos e não tem combo
