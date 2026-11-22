@@ -152,6 +152,14 @@ No app novo (`memorize-mobile`), o mapa beta é o único mapa, jogado pelas rota
 - **Resumo:** o desafio da API manda também `summary_blocks` (`StudyMaterialService::summaryBlocks`), o resumo em blocos tirado da mesma árvore do CommonMark, para o app desenhar e fazer a leitura guiada.
 - **App antigo:** as rotas `/api/v1/play/*` continuam; quem tem build antiga segue no mapa atual.
 
+### Telas de Premium e de fim de fase (o padrão do convite)
+
+As telas que vendem ou comemoram seguem o convite Premium do fim de fase (`components/beta-preview/PremiumInviteScene.vue`): fundo sólido, uma ilustração em GIF numa moldura do mesmo tamanho, a frase com marca-texto e uma ação principal.
+- **Peças:** `components/premium/HighlightMark.vue` (o traço de marca-texto), `PerkList.vue` (as vantagens em etiquetas, sem ícone nem descrição, entrando uma a uma) e `PremiumButton.vue` (o botão azul de assinar). Preço do anual e a lista de vantagens em `resources/js/lib/premium.ts`.
+- **GIFs:** `premium-nomeado.gif` (pessoa sendo nomeada) em tudo que é do Premium (convite, `/subscription`); `presente.gif` (boneca recebendo o presente) na oferta de boas-vindas do onboarding; `vencedora.gif` no resultado; `sem-energia.gif` na tela sem energia.
+- **`/subscription`:** uma coluna só. GIF, "Seja Premium", as vantagens, os planos (`mz-choice`, o escolhido em azul, abre no anual ou no `?plan=`), o cartão do Stripe, o cupom fechado em "Tenho um cupom", o total e o botão azul. Quem já assina vê o mesmo desenho com o plano, a próxima cobrança e o cancelamento.
+- **Fim de fase (`PhaseEnd.vue`):** resultado → (se a fase deu estrela) conquista → (quem não assina) convite → mapa, sempre com a passagem de marca-texto. A estrela não é mais sobreposição: `AchievementScene.vue` é uma tela própria. A fase e o desafio passam `level-up` para o `PhaseEnd`; o Dia da prova ainda usa o `LevelUpOverlay`.
+
 ### Energia (mapa novo)
 
 O mapa novo (app para todos, `/beta/play` só para administradores) usa energia no lugar das vidas, no estilo do Duolingo. As vidas continuam no site antigo (`/play`, legado) e nos builds velhos do app; as duas coisas são separadas (`users.lives` e `users.energy`).

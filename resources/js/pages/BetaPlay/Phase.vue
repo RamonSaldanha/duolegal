@@ -8,7 +8,6 @@ import PhaseEnd from '@/components/beta-preview/PhaseEnd.vue';
 import EnergyMeter from '@/components/EnergyMeter.vue';
 import ActiveChallenge from '@/components/legislation-play/ActiveChallenge.vue';
 import CompletedSegment from '@/components/legislation-play/CompletedSegment.vue';
-import LevelUpOverlay from '@/components/LevelUpOverlay.vue';
 import ResultBar from '@/components/ResultBar.vue';
 import GameButton from '@/components/ui/GameButton.vue';
 import IconButton from '@/components/ui/IconButton.vue';
@@ -287,7 +286,6 @@ onUnmounted(() => {
 
     <div class="flex h-dvh w-full flex-col overflow-hidden bg-white dark:bg-gray-900">
         <span id="beta-confetti" class="pointer-events-none fixed left-1/2 top-1/2 z-[100]"></span>
-        <LevelUpOverlay :level-up="levelUp" @done="levelUp = null" />
 
         <!-- ===== Fim da fase ===== -->
         <PhaseEnd
@@ -299,6 +297,7 @@ onUnmounted(() => {
             count-label="Desafios"
             :xp="xpGained"
             :accuracy="accuracy"
+            :level-up="levelUp"
             @done="backToMap"
         />
 

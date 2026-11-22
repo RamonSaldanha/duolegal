@@ -2,7 +2,6 @@
 import PhaseEnd from '@/components/beta-preview/PhaseEnd.vue';
 import EnergyMeter from '@/components/EnergyMeter.vue';
 import GuidedReading from '@/components/GuidedReading.vue';
-import LevelUpOverlay from '@/components/LevelUpOverlay.vue';
 import ResultBar from '@/components/ResultBar.vue';
 import GameButton from '@/components/ui/GameButton.vue';
 import IconButton from '@/components/ui/IconButton.vue';
@@ -80,9 +79,8 @@ const correctCount = ref(0);
 const answeredCount = ref(0);
 
 const xpGained = ref(0);
+// A estrela ganha no desafio aparece na tela da conquista, no fim (PhaseEnd)
 const levelUp = ref<DisciplineLevelUp | null>(null);
-// A subida de estrela espera o "Continuar", para não cobrir o comentário da questão
-let pendingLevelUp: DisciplineLevelUp | null = null;
 
 // A barra é do material em que a pessoa está: o resumo e as questões dele.
 const progressPercent = computed(() => {
@@ -175,7 +173,7 @@ const summaryConfirmed = ref(false);
 function applyStep(data: CheckpointStepResponse) {
     xpGained.value += data.xp_gained;
     authUser.value.xp = data.user.xp;
-    pendingLevelUp = data.discipline_level_up ?? pendingLevelUp;
+    levelUp.value = data.discipline_level_up ?? levelUp.value;
 }
 
 function confirmSummary() {
@@ -241,10 +239,6 @@ function advance() {
         router.visit(route('beta.play.energy'));
         return;
     }
-    if (pendingLevelUp) {
-        levelUp.value = pendingLevelUp;
-        pendingLevelUp = null;
-    }
     if (stepIndex.value < steps.length - 1) {
         goTo(stepIndex.value + 1);
         return;
@@ -290,7 +284,6 @@ function choiceClass(key: string) {
 
     <div class="flex h-dvh w-full flex-col overflow-hidden bg-white dark:bg-gray-900">
         <span id="checkpoint-confetti" class="pointer-events-none fixed left-1/2 top-1/2 z-[100]"></span>
-        <LevelUpOverlay :level-up="levelUp" @done="levelUp = null" />
 
         <!-- ===== Fim da fase ===== -->
         <PhaseEnd
@@ -302,6 +295,7 @@ function choiceClass(key: string) {
             :count-label="answeredCount === 1 ? 'Questão' : 'Questões'"
             :xp="xpGained"
             :accuracy="accuracy"
+            :level-up="levelUp"
             @done="backToMap"
         />
 

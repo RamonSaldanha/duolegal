@@ -1,436 +1,200 @@
 <template>
     <Head title="Assinatura" />
 
-    <!-- Layout Checkout -->
+    <!-- Quem ainda não assina: o mesmo desenho do convite Premium do fim de fase. A pessoa
+         sendo nomeada, a frase com marca-texto, as vantagens em etiquetas, os planos, o cartão e
+         o botão azul. Uma coluna só, direta, do celular ao computador. -->
     <template v-if="!hasActiveSubscription">
-        <div class="min-h-screen bg-background">
-            <!-- Header -->
-            <div class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
-                <div class="max-w-6xl mx-auto px-4 h-18 flex items-center justify-between">
-                    <a href="/" class="flex items-center">
-                        <img src="/img/logomemorizeblack.svg" class="mt-[-16px] block dark:hidden" alt="Logo" style="height: 90px; width: 110px;">
-                    </a>
-                    <a href="/" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
-                        <X class="w-5 h-5 text-gray-500 dark:text-gray-400" />
-                    </a>
+        <div class="min-h-dvh bg-background">
+            <div class="mx-auto w-full max-w-md px-4 pb-10 pt-3">
+                <a href="/" class="close -ml-2" aria-label="Fechar"><X class="h-6 w-6" /></a>
+
+                <div class="flex flex-col items-center text-center">
+                    <div class="hero-gif">
+                        <img src="/img/premium-nomeado.gif" alt="" class="w-full" />
+                    </div>
+                    <h1 class="text-[1.625rem] font-bold leading-tight text-foreground">Seja <HighlightMark :delay="250">Premium</HighlightMark></h1>
+                    <PerkList class="mt-4" :delay="300" />
                 </div>
-            </div>
 
-            <!-- Conteúdo -->
-            <div class="max-w-6xl mx-auto px-4 py-6 lg:py-8">
-                <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 lg:gap-8">
-                    <!-- Coluna Esquerda: Benefícios -->
-                    <div class="lg:col-span-2">
-                        <div class="p-5 lg:p-6">
-                            <h2 class="text-lg lg:text-xl font-bold text-gray-900 dark:text-white mb-1">
-                                Seja Premium e estude sem limites
-                            </h2>
-                            <p class="text-gray-600 dark:text-gray-400 text-sm mb-5">
-                                Desbloqueie todos os recursos e acelere seus estudos
-                            </p>
+                <!-- Oferta de boas-vindas do onboarding -->
+                <Notice v-if="offerAvailable" tone="offer" :title="`${welcomeOffer?.percent_off}% off no plano anual`" class="mt-6">
+                    <template v-if="welcomeActive"
+                        >Já aplicado. Termina em <span class="font-bold tabular-nums">{{ offerCountdown }}</span
+                        >.</template
+                    >
+                    <template v-else
+                        >Escolha o anual para usar. Termina em <span class="font-bold tabular-nums">{{ offerCountdown }}</span
+                        >.</template
+                    >
+                </Notice>
 
-                            <ul class="space-y-4">
-                                <li class="flex items-start gap-3">
-                                    <Heart class="w-5 h-5 text-gray-700 dark:text-gray-300 flex-shrink-0 mt-0.5" />
-                                    <div>
-                                        <h4 class="font-medium text-gray-900 dark:text-white text-sm">Vidas infinitas</h4>
-                                        <p class="text-xs text-gray-500 dark:text-gray-400">Estude sem interrupções</p>
-                                    </div>
-                                </li>
-                                <li class="flex items-start gap-3">
-                                    <Shirt class="w-5 h-5 text-gray-700 dark:text-gray-300 flex-shrink-0 mt-0.5" />
-                                    <div>
-                                        <h4 class="font-medium text-gray-900 dark:text-white text-sm">Fantasias exclusivas</h4>
-                                        <p class="text-xs text-gray-500 dark:text-gray-400">Toga e astronauta para o seu avatar</p>
-                                    </div>
-                                </li>
-                                <li class="flex items-start gap-3">
-                                    <Zap class="w-5 h-5 text-gray-700 dark:text-gray-300 flex-shrink-0 mt-0.5" />
-                                    <div>
-                                        <h4 class="font-medium text-gray-900 dark:text-white text-sm">Sem anúncios</h4>
-                                        <p class="text-xs text-gray-500 dark:text-gray-400">Experiência limpa e focada</p>
-                                    </div>
-                                </li>
-                                <li class="flex items-start gap-3">
-                                    <BookOpen class="w-5 h-5 text-gray-700 dark:text-gray-300 flex-shrink-0 mt-0.5" />
-                                    <div>
-                                        <h4 class="font-medium text-gray-900 dark:text-white text-sm">Todas as legislações</h4>
-                                        <p class="text-xs text-gray-500 dark:text-gray-400">Acesso completo ao conteúdo</p>
-                                    </div>
-                                </li>
-                                <li class="flex items-start gap-3">
-                                    <Shield class="w-5 h-5 text-gray-700 dark:text-gray-300 flex-shrink-0 mt-0.5" />
-                                    <div>
-                                        <h4 class="font-medium text-gray-900 dark:text-white text-sm">Garantia de 7 dias</h4>
-                                        <p class="text-xs text-gray-500 dark:text-gray-400">Reembolso total se não gostar</p>
-                                    </div>
-                                </li>
-                            </ul>
+                <!-- Planos: o escolhido fica azul; o desconto de cada um, suspenso na borda -->
+                <div class="mt-6 grid grid-cols-3 gap-2" role="radiogroup" aria-label="Plano">
+                    <button
+                        v-for="plan in PLANS"
+                        :key="plan"
+                        type="button"
+                        role="radio"
+                        :aria-checked="selectedPlan === plan"
+                        class="mz-choice plan"
+                        :class="{ 'is-selected': selectedPlan === plan }"
+                        @click="selectPlan(plan)"
+                    >
+                        <span v-if="getDiscount(plan)" class="tag">{{ getDiscount(plan) }}</span>
+                        <span class="text-sm font-bold">{{ planNames[plan] }}</span>
+                        <span v-if="plan === 'yearly' && offerAvailable" class="text-xs text-muted-foreground line-through">{{
+                            formatCurrency(getPlanPrice('yearly'))
+                        }}</span>
+                        <span class="text-lg font-bold tabular-nums leading-tight">{{ formatCurrency(shownPrice(plan)) }}</span>
+                        <span class="text-xs text-muted-foreground">{{
+                            plan === 'monthly' ? 'por mês' : `${formatCurrency(shownMonthly(plan))}/mês`
+                        }}</span>
+                    </button>
+                </div>
+
+                <!-- Cartão (campos do Stripe) -->
+                <div class="mt-6 flex flex-col gap-3">
+                    <Notice v-if="flash.error" tone="error">{{ flash.error }}</Notice>
+                    <Notice v-if="cardError" tone="error">{{ cardError }}</Notice>
+
+                    <div>
+                        <p class="mb-1.5 text-sm font-bold text-foreground">Número do cartão</p>
+                        <div class="relative">
+                            <div id="card-number-element" class="field pr-12"></div>
+                            <img
+                                v-if="cardBrand"
+                                :src="getCardBrandIcon(cardBrand)"
+                                :alt="cardBrand"
+                                class="absolute right-3 top-1/2 h-6 w-auto -translate-y-1/2"
+                            />
                         </div>
                     </div>
-
-                    <!-- Coluna Direita: Checkout -->
-                    <div class="lg:col-span-3">
-                        <!-- Oferta de boas-vindas do onboarding -->
-                        <div
-                            v-if="offerAvailable"
-                            class="mb-4 flex items-center gap-3 rounded-xl border-2 border-pink-200 bg-pink-50 p-4 dark:border-pink-900 dark:bg-pink-950/40"
-                        >
-                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-pink-100 text-pink-500 dark:bg-pink-900/60 dark:text-pink-300">
-                                <Gift class="h-5 w-5" />
-                            </span>
-                            <div class="min-w-0 flex-1 text-sm">
-                                <p class="font-bold text-gray-900 dark:text-white">Presente de boas-vindas: {{ welcomeOffer?.percent_off }}% off no plano anual</p>
-                                <p class="text-gray-600 dark:text-gray-400">
-                                    <template v-if="welcomeActive">Já aplicado. Termina em <span class="tabular-nums font-semibold">{{ offerCountdown }}</span>.</template>
-                                    <template v-else>
-                                        Escolha o plano anual para usar. Termina em <span class="tabular-nums font-semibold">{{ offerCountdown }}</span>.
-                                    </template>
-                                </p>
-                            </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <p class="mb-1.5 text-sm font-bold text-foreground">Validade</p>
+                            <div id="card-expiry-element" class="field"></div>
                         </div>
-
-                        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-                            <!-- Escolher Plano -->
-                            <div class="p-5 lg:p-6 border-b border-gray-200 dark:border-gray-700">
-                                <h3 class="font-semibold text-gray-900 dark:text-white mb-4">Escolher plano</h3>
-
-                                <div class="grid grid-cols-3 gap-2 lg:gap-3">
-                                    <!-- Plano Mensal -->
-                                    <button
-                                        @click="selectPlan('monthly')"
-                                        class="mz-choice relative flex-col items-start gap-0 p-3 lg:p-4"
-                                        :class="{ 'is-premium': selectedPlan === 'monthly' }"
-                                    >
-                                        <div class="font-semibold text-gray-900 dark:text-white text-sm">Mensal</div>
-                                        <div class="mt-1">
-                                            <span class="text-lg lg:text-xl font-bold text-gray-900 dark:text-white">{{ formatCurrency(getPlanPrice('monthly')) }}</span>
-                                        </div>
-                                        <div class="text-xs text-gray-500 dark:text-gray-400">/mês</div>
-                                        <div v-if="selectedPlan === 'monthly'" class="absolute top-2 right-2">
-                                            <CheckCircle class="w-4 h-4 text-purple-500" />
-                                        </div>
-                                    </button>
-
-                                    <!-- Plano Trimestral -->
-                                    <button
-                                        @click="selectPlan('quarterly')"
-                                        class="mz-choice relative flex-col items-start gap-0 p-3 lg:p-4"
-                                        :class="{ 'is-premium': selectedPlan === 'quarterly' }"
-                                    >
-                                        <div v-if="getDiscount('quarterly')" class="absolute -top-2 left-1/2 -translate-x-1/2">
-                                            <span class="bg-green-500 text-white text-[10px] font-medium px-1.5 py-0.5 rounded-full">
-                                                {{ getDiscount('quarterly') }}
-                                            </span>
-                                        </div>
-                                        <div class="font-semibold text-gray-900 dark:text-white text-sm">Trimestral</div>
-                                        <div class="mt-1">
-                                            <span class="text-lg lg:text-xl font-bold text-gray-900 dark:text-white">{{ formatCurrency(getPlanPrice('quarterly')) }}</span>
-                                        </div>
-                                        <div class="text-xs text-gray-500 dark:text-gray-400">{{ formatCurrency(getPlanMonthlyPrice('quarterly')) }}/mês</div>
-                                        <div v-if="selectedPlan === 'quarterly'" class="absolute top-2 right-2">
-                                            <CheckCircle class="w-4 h-4 text-purple-500" />
-                                        </div>
-                                    </button>
-
-                                    <!-- Plano Anual -->
-                                    <button
-                                        @click="selectPlan('yearly')"
-                                        class="mz-choice relative flex-col items-start gap-0 p-3 lg:p-4"
-                                        :class="{ 'is-premium': selectedPlan === 'yearly' }"
-                                    >
-                                        <div v-if="getDiscount('yearly')" class="absolute -top-2 left-1/2 -translate-x-1/2">
-                                            <span class="bg-green-500 text-white text-[10px] font-medium px-1.5 py-0.5 rounded-full">
-                                                {{ getDiscount('yearly') }}
-                                            </span>
-                                        </div>
-                                        <div class="font-semibold text-gray-900 dark:text-white text-sm">Anual</div>
-                                        <div v-if="offerAvailable" class="mt-1 text-xs text-gray-400 line-through">{{ formatCurrency(getPlanPrice('yearly')) }}</div>
-                                        <div :class="offerAvailable ? '' : 'mt-1'">
-                                            <span class="text-lg lg:text-xl font-bold text-gray-900 dark:text-white">{{ formatCurrency(getPlanPrice('yearly') - (offerAvailable ? welcomeDiscount('yearly') : 0)) }}</span>
-                                        </div>
-                                        <div class="text-xs text-gray-500 dark:text-gray-400">{{ formatCurrency(offerAvailable ? Math.round((getPlanPrice('yearly') - welcomeDiscount('yearly')) / 12) : getPlanMonthlyPrice('yearly')) }}/mês</div>
-                                        <div v-if="selectedPlan === 'yearly'" class="absolute top-2 right-2">
-                                            <CheckCircle class="w-4 h-4 text-purple-500" />
-                                        </div>
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Informações de Pagamento -->
-                            <div class="p-5 lg:p-6 border-b border-gray-200 dark:border-gray-700">
-                                <h3 class="font-semibold text-gray-900 dark:text-white mb-4">Informações de pagamento</h3>
-
-                                <!-- Flash/Error Messages -->
-                                <Notice v-if="flash.error" tone="error" class="mb-4">{{ flash.error }}</Notice>
-
-                                <Notice v-if="cardError" tone="error" class="mb-4">{{ cardError }}</Notice>
-
-                                <!-- Campos do Cartão -->
-                                <div class="space-y-4">
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                                            Número do Cartão <span class="text-red-500">*</span>
-                                        </label>
-                                        <div class="relative">
-                                            <div id="card-number-element" class="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-3 bg-white dark:bg-gray-900 h-[46px] pr-12"></div>
-                                            <div v-if="cardBrand" class="absolute right-3 top-1/2 -translate-y-1/2">
-                                                <img :src="getCardBrandIcon(cardBrand)" :alt="cardBrand" class="h-6 w-auto" />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div class="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                                                Data de Expiração <span class="text-red-500">*</span>
-                                            </label>
-                                            <div id="card-expiry-element" class="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-3 bg-white dark:bg-gray-900 h-[46px]"></div>
-                                        </div>
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                                                CVV <span class="text-red-500">*</span>
-                                            </label>
-                                            <div id="card-cvc-element" class="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-3 bg-white dark:bg-gray-900 h-[46px]"></div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Resumo do Faturamento -->
-                            <div class="p-5 lg:p-6 bg-gray-50 dark:bg-gray-900/50">
-                                <h3 class="font-semibold text-gray-900 dark:text-white mb-4">Resumo do faturamento</h3>
-
-                                <!-- Cupom (a oferta de boas-vindas não soma com cupom) -->
-                                <div v-if="!welcomeActive" class="mb-4">
-                                    <div class="flex gap-2">
-                                        <Input
-                                            v-model="couponCode"
-                                            type="text"
-                                            placeholder="Código de desconto"
-                                            class="flex-1 bg-white dark:bg-gray-800 h-10"
-                                            :disabled="couponLoading || !!appliedCoupon"
-                                        />
-                                        <Button
-                                            v-if="!appliedCoupon"
-                                            variant="outline"
-                                            @click="applyCoupon"
-                                            :disabled="couponLoading || !couponCode.trim()"
-                                            class="h-10"
-                                        >
-                                            <Loader2 v-if="couponLoading" class="h-4 w-4 animate-spin" />
-                                            <span v-else>Aplicar</span>
-                                        </Button>
-                                        <Button
-                                            v-else
-                                            variant="outline"
-                                            @click="removeCoupon"
-                                            class="h-10 text-red-500 hover:text-red-600"
-                                        >
-                                            Remover
-                                        </Button>
-                                    </div>
-                                    <p v-if="couponError" class="text-red-500 text-xs mt-1">{{ couponError }}</p>
-                                    <div v-if="appliedCoupon" class="mt-2 flex items-center gap-2 text-green-600 dark:text-green-400 text-sm">
-                                        <CheckCircle class="w-4 h-4" />
-                                        <span>Cupom "{{ appliedCoupon.code }}" aplicado!</span>
-                                    </div>
-                                </div>
-
-                                <!-- Valores -->
-                                <div class="space-y-2 text-sm">
-                                    <div class="flex justify-between">
-                                        <span class="text-gray-600 dark:text-gray-400">{{ planLabels[selectedPlan] }}</span>
-                                        <span class="text-gray-900 dark:text-white">{{ formatCurrency(getPlanPrice(selectedPlan)) }}</span>
-                                    </div>
-                                    <div v-if="welcomeActive" class="flex justify-between text-green-600 dark:text-green-400">
-                                        <span>Oferta de boas-vindas ({{ welcomeOffer?.percent_off }}%)</span>
-                                        <span>-{{ formatCurrency(discountAmount) }}</span>
-                                    </div>
-                                    <div v-else-if="appliedCoupon" class="flex justify-between text-green-600 dark:text-green-400">
-                                        <span>Desconto</span>
-                                        <span>-{{ formatCurrency(discountAmount) }}</span>
-                                    </div>
-                                    <div class="flex justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
-                                        <span class="font-semibold text-gray-900 dark:text-white">Total</span>
-                                        <span class="font-bold text-xl text-gray-900 dark:text-white">{{ formatCurrency(finalTotal) }}</span>
-                                    </div>
-                                </div>
-
-                                <!-- Botão de Assinar -->
-                                <GameButton
-                                    variant="purple"
-                                    size="lg"
-                                    @click="subscribe"
-                                    :disabled="isProcessing"
-                                    class="w-full mt-6"
-                                >
-                                    <span v-if="isProcessing" class="flex items-center justify-center">
-                                        <Loader2 class="h-5 w-5 animate-spin mr-2" />
-                                        Processando...
-                                    </span>
-                                    <span v-else>Assinar agora</span>
-                                </GameButton>
-
-                                <p class="text-xs text-gray-500 dark:text-gray-400 text-center mt-4">
-                                    Ao assinar, você concorda com nossos Termos de Uso.
-                                    Pagamento seguro pelo Stripe.
-                                </p>
-                            </div>
+                        <div>
+                            <p class="mb-1.5 text-sm font-bold text-foreground">CVV</p>
+                            <div id="card-cvc-element" class="field"></div>
                         </div>
                     </div>
                 </div>
+
+                <!-- Cupom (a oferta de boas-vindas não soma com cupom): fechado até a pessoa pedir -->
+                <div v-if="!welcomeActive" class="mt-3">
+                    <button v-if="!couponOpen && !appliedCoupon" type="button" class="mz-btn mz-xs mz-ghost -ml-2" @click="couponOpen = true">
+                        Tenho um cupom
+                    </button>
+                    <template v-else>
+                        <div class="flex gap-2">
+                            <Input
+                                v-model="couponCode"
+                                type="text"
+                                placeholder="Código do cupom"
+                                class="h-10 flex-1"
+                                :disabled="couponLoading || !!appliedCoupon"
+                            />
+                            <button
+                                v-if="!appliedCoupon"
+                                type="button"
+                                class="mz-btn mz-sm mz-outline"
+                                :disabled="couponLoading || !couponCode.trim()"
+                                @click="applyCoupon"
+                            >
+                                <Loader2 v-if="couponLoading" class="h-4 w-4 animate-spin" />
+                                <span v-else>Aplicar</span>
+                            </button>
+                            <button v-else type="button" class="mz-btn mz-sm mz-tonal-danger" @click="removeCoupon">Remover</button>
+                        </div>
+                        <p v-if="couponError" class="mt-1 text-xs text-red-500">{{ couponError }}</p>
+                        <p v-if="appliedCoupon" class="mt-1 text-sm font-bold text-ok-ink">Cupom "{{ appliedCoupon.code }}" aplicado.</p>
+                    </template>
+                </div>
+
+                <!-- Total -->
+                <div class="mt-5 flex items-end justify-between gap-3 border-t-2 border-border pt-4">
+                    <div class="min-w-0 text-sm text-muted-foreground">
+                        {{ planLabels[selectedPlan] }}
+                        <span v-if="discountAmount" class="block font-bold text-ok-ink">
+                            {{ welcomeActive ? 'Presente de boas-vindas' : 'Desconto' }}: -{{ formatCurrency(discountAmount) }}
+                        </span>
+                    </div>
+                    <span class="text-2xl font-bold tabular-nums text-foreground">{{ formatCurrency(finalTotal) }}</span>
+                </div>
+
+                <PremiumButton class="mt-4" :disabled="isProcessing" @click="subscribe">
+                    <template v-if="isProcessing"><Loader2 class="h-5 w-5 animate-spin" /> Processando...</template>
+                    <template v-else>Assinar por {{ formatCurrency(finalTotal) }}</template>
+                </PremiumButton>
+
+                <p class="mt-4 text-center text-xs text-muted-foreground">
+                    Pagamento seguro pelo Stripe. Ao assinar, você concorda com os Termos de Uso.
+                </p>
             </div>
         </div>
     </template>
 
-    <!-- Layout para usuários com assinatura ativa -->
+    <!-- Quem já assina: o mesmo desenho, com o plano, a próxima cobrança e o cancelamento -->
     <template v-else>
-        <div class="min-h-screen bg-background">
-            <!-- Header -->
-            <div class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
-                <div class="max-w-6xl mx-auto px-4 h-18 flex items-center justify-between">
-                    <a href="/" class="flex items-center">
-                        <img src="/img/logomemorizeblack.svg" class="mt-[-16px] block dark:hidden" alt="Logo" style="height: 90px; width: 110px;">
-                    </a>
-                    <a href="/" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
-                        <X class="w-5 h-5 text-gray-500 dark:text-gray-400" />
-                    </a>
-                </div>
-            </div>
+        <div class="min-h-dvh bg-background">
+            <div class="mx-auto w-full max-w-md px-4 pb-10 pt-3">
+                <a href="/" class="close -ml-2" aria-label="Fechar"><X class="h-6 w-6" /></a>
 
-            <!-- Conteúdo -->
-            <div class="max-w-6xl mx-auto px-4 py-6 lg:py-8">
-                <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 lg:gap-8">
-                    <!-- Coluna Esquerda: Benefícios -->
-                    <div class="lg:col-span-2">
-                        <div class="p-5 lg:p-6">
-                            <h2 class="text-lg lg:text-xl font-bold text-gray-900 dark:text-white mb-1">
-                                Você é Premium!
-                            </h2>
-                            <p class="text-gray-600 dark:text-gray-400 text-sm mb-5">
-                                Aproveite todos os recursos desbloqueados
-                            </p>
-
-                            <ul class="space-y-4">
-                                <li class="flex items-start gap-3">
-                                    <Heart class="w-5 h-5 text-gray-700 dark:text-gray-300 flex-shrink-0 mt-0.5" />
-                                    <div>
-                                        <h4 class="font-medium text-gray-900 dark:text-white text-sm">Vidas infinitas</h4>
-                                        <p class="text-xs text-gray-500 dark:text-gray-400">Estude sem interrupções</p>
-                                    </div>
-                                </li>
-                                <li class="flex items-start gap-3">
-                                    <Shirt class="w-5 h-5 text-gray-700 dark:text-gray-300 flex-shrink-0 mt-0.5" />
-                                    <div>
-                                        <h4 class="font-medium text-gray-900 dark:text-white text-sm">Fantasias exclusivas</h4>
-                                        <p class="text-xs text-gray-500 dark:text-gray-400">Toga e astronauta para o seu avatar</p>
-                                    </div>
-                                </li>
-                                <li class="flex items-start gap-3">
-                                    <Zap class="w-5 h-5 text-gray-700 dark:text-gray-300 flex-shrink-0 mt-0.5" />
-                                    <div>
-                                        <h4 class="font-medium text-gray-900 dark:text-white text-sm">Sem anúncios</h4>
-                                        <p class="text-xs text-gray-500 dark:text-gray-400">Experiência limpa e focada</p>
-                                    </div>
-                                </li>
-                                <li class="flex items-start gap-3">
-                                    <BookOpen class="w-5 h-5 text-gray-700 dark:text-gray-300 flex-shrink-0 mt-0.5" />
-                                    <div>
-                                        <h4 class="font-medium text-gray-900 dark:text-white text-sm">Todas as legislações</h4>
-                                        <p class="text-xs text-gray-500 dark:text-gray-400">Acesso completo ao conteúdo</p>
-                                    </div>
-                                </li>
-                                <li class="flex items-start gap-3">
-                                    <Shield class="w-5 h-5 text-gray-700 dark:text-gray-300 flex-shrink-0 mt-0.5" />
-                                    <div>
-                                        <h4 class="font-medium text-gray-900 dark:text-white text-sm">Garantia de 7 dias</h4>
-                                        <p class="text-xs text-gray-500 dark:text-gray-400">Reembolso total se não gostar</p>
-                                    </div>
-                                </li>
-                            </ul>
-                        </div>
+                <div class="flex flex-col items-center text-center">
+                    <div class="hero-gif">
+                        <img src="/img/premium-nomeado.gif" alt="" class="w-full" />
                     </div>
-
-                    <!-- Coluna Direita: Gerenciar Assinatura -->
-                    <div class="lg:col-span-3">
-                        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-                            <!-- Seu Plano -->
-                            <div class="p-5 lg:p-6 border-b border-gray-200 dark:border-gray-700">
-                                <h3 class="font-semibold text-gray-900 dark:text-white mb-4">Seu plano</h3>
-
-                                <div class="flex items-center justify-between p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl">
-                                    <div class="flex items-center gap-3">
-                                        <div class="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
-                                            <CheckCircle class="w-5 h-5 text-green-600 dark:text-green-400" />
-                                        </div>
-                                        <div>
-                                            <div class="font-semibold text-gray-900 dark:text-white">Memorize Premium</div>
-                                            <div class="text-sm text-green-600 dark:text-green-400">Ativo</div>
-                                        </div>
-                                    </div>
-                                    <div class="text-right">
-                                        <div class="text-xl font-bold text-gray-900 dark:text-white">{{ formatCurrency(props.price || 1199) }}</div>
-                                        <div class="text-xs text-gray-500 dark:text-gray-400">/{{ props.planInterval || 'mês' }}</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Status da Assinatura -->
-                            <div class="p-5 lg:p-6">
-                                <!-- Assinatura cancelada mas ainda ativa -->
-                                <div v-if="props.subscriptionCancelled">
-                                    <Notice tone="warning" title="Cancelamento agendado" class="mb-4">
-                                        Você ainda tem acesso até <strong>{{ props.subscriptionEndsAt }}</strong>
-                                    </Notice>
-                                    <GameButton
-                                        @click="resumeSubscription"
-                                        class="w-full"
-                                        variant="green"
-                                    >
-                                        Reativar assinatura
-                                    </GameButton>
-                                </div>
-
-                                <!-- Assinatura ativa normal -->
-                                <div v-else>
-                                    <div class="flex items-center justify-between text-sm p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl mb-4">
-                                        <span class="text-gray-600 dark:text-gray-400">Próxima cobrança</span>
-                                        <span class="text-gray-900 dark:text-white font-medium">{{ props.nextBillingDate || '—' }}</span>
-                                    </div>
-                                    <GameButton
-                                        @click="cancelSubscription"
-                                        class="w-full"
-                                        variant="tonal-danger"
-                                    >
-                                        Cancelar assinatura
-                                    </GameButton>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Link para voltar -->
-                        <div class="text-center mt-6">
-                            <a href="/" class="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 text-sm font-medium">
-                                ← Voltar para o app
-                            </a>
-                        </div>
-                    </div>
+                    <h1 class="text-[1.625rem] font-bold leading-tight text-foreground">
+                        Você é <HighlightMark :delay="250">Premium!</HighlightMark>
+                    </h1>
+                    <PerkList class="mt-4" :delay="300" />
                 </div>
+
+                <div class="mz-choice is-selected plan-active mt-6">
+                    <span class="min-w-0 flex-1 leading-tight">
+                        <span class="block text-base font-bold">Memorize Premium</span>
+                        <span class="block text-sm text-muted-foreground">{{ props.subscriptionCancelled ? 'Cancelamento agendado' : 'Ativo' }}</span>
+                    </span>
+                    <span class="text-right leading-tight">
+                        <span class="block text-xl font-bold tabular-nums">{{ formatCurrency(props.price || 1199) }}</span>
+                        <span class="block text-xs text-muted-foreground">por {{ props.planInterval || 'mês' }}</span>
+                    </span>
+                </div>
+
+                <template v-if="props.subscriptionCancelled">
+                    <Notice tone="warning" title="Cancelamento agendado" class="mt-4">
+                        Você ainda tem acesso até <strong>{{ props.subscriptionEndsAt }}</strong
+                        >.
+                    </Notice>
+                    <GameButton variant="main" size="lg" class="mt-4 w-full" @click="resumeSubscription">Reativar assinatura</GameButton>
+                </template>
+                <template v-else>
+                    <div class="mt-4 flex items-center justify-between rounded-2xl border-2 border-border px-4 py-3 text-sm">
+                        <span class="text-muted-foreground">Próxima cobrança</span>
+                        <span class="font-bold text-foreground">{{ props.nextBillingDate || '—' }}</span>
+                    </div>
+                    <GameButton variant="tonal-danger" class="mt-4 w-full" @click="cancelSubscription">Cancelar assinatura</GameButton>
+                </template>
+
+                <GameButton variant="ghost" size="sm" class="mt-2 w-full" href="/">Voltar para o app</GameButton>
             </div>
         </div>
     </template>
 </template>
 
 <script setup lang="ts">
+import HighlightMark from '@/components/premium/HighlightMark.vue';
+import PerkList from '@/components/premium/PerkList.vue';
+import PremiumButton from '@/components/premium/PremiumButton.vue';
+import GameButton from '@/components/ui/GameButton.vue';
+import { Input } from '@/components/ui/input';
 import Notice from '@/components/ui/Notice.vue';
 import { Head, useForm, usePage } from '@inertiajs/vue3';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import GameButton from '@/components/ui/GameButton.vue';
-import { CheckCircle, Loader2, X, Heart, Zap, BookOpen, Shield, Gift, Shirt } from 'lucide-vue-next';
-import { onMounted, onBeforeUnmount, ref, computed } from 'vue';
 import axios from 'axios';
+import { Loader2, X } from 'lucide-vue-next';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 
 declare global {
     interface Window {
@@ -474,9 +238,14 @@ interface Props {
 const props = defineProps<Props>();
 const page = usePage();
 
-// Planos disponíveis
-// Quem chega com a oferta de boas-vindas já cai no anual, que é onde ela vale.
-const selectedPlan = ref<'monthly' | 'quarterly' | 'yearly'>(props.welcomeOffer ? 'yearly' : 'monthly');
+// Planos disponíveis. Abre no anual (o que as telas do jogo oferecem e onde vale a oferta de
+// boas-vindas), a não ser que o link peça outro (?plan=monthly|quarterly|yearly).
+type Plan = 'monthly' | 'quarterly' | 'yearly';
+const PLANS: Plan[] = ['monthly', 'quarterly', 'yearly'];
+const planNames: Record<Plan, string> = { monthly: 'Mensal', quarterly: 'Trimestral', yearly: 'Anual' };
+const askedPlan = new URLSearchParams(window.location.search).get('plan') as Plan | null;
+const selectedPlan = ref<Plan>(askedPlan && PLANS.includes(askedPlan) && !props.welcomeOffer ? askedPlan : 'yearly');
+const couponOpen = ref(false);
 
 // Oferta de boas-vindas: relógio das 24h e desconto no anual
 const now = ref(Date.now());
@@ -544,6 +313,10 @@ const getPlanPriceId = (plan: string): string => {
     return defaultIds[plan] || '';
 };
 
+// O preço que o cartão do plano mostra: o anual já com a oferta de boas-vindas, se houver
+const shownPrice = (plan: Plan) => getPlanPrice(plan) - (plan === 'yearly' && offerAvailable.value ? welcomeDiscount('yearly') : 0);
+const shownMonthly = (plan: Plan) => (plan === 'yearly' && offerAvailable.value ? Math.round(shownPrice('yearly') / 12) : getPlanMonthlyPrice(plan));
+
 const getDiscount = (plan: string): string | null => {
     const monthlyPrice = getPlanMonthlyPrice('monthly');
     const planMonthlyPrice = getPlanMonthlyPrice(plan);
@@ -555,7 +328,7 @@ const getDiscount = (plan: string): string | null => {
     return null;
 };
 
-const selectPlan = (plan: 'monthly' | 'quarterly' | 'yearly') => {
+const selectPlan = (plan: Plan) => {
     selectedPlan.value = plan;
     if (appliedCoupon.value) {
         recalculateDiscount();
@@ -622,7 +395,7 @@ const finalTotal = computed(() => {
 const formatCurrency = (valueInCents: number) => {
     return new Intl.NumberFormat('pt-BR', {
         style: 'currency',
-        currency: 'BRL'
+        currency: 'BRL',
     }).format(valueInCents / 100);
 };
 
@@ -721,7 +494,7 @@ const loadStripe = async () => {
         elements.value = stripe.value.elements({
             appearance: {
                 theme: isDarkMode ? 'night' : 'stripe',
-            }
+            },
         });
 
         cardNumberElement.value = elements.value.create('cardNumber', {
@@ -757,7 +530,6 @@ const loadStripe = async () => {
         });
         cardExpiryElement.value.on('change', handleChange);
         cardCvcElement.value.on('change', handleChange);
-
     } catch {
         cardError.value = 'Erro ao carregar formulário. Recarregue a página.';
     }
@@ -818,7 +590,7 @@ const subscribe = async () => {
             },
             onFinish: () => {
                 isProcessing.value = false;
-            }
+            },
         });
     } catch (error: any) {
         isProcessing.value = false;
@@ -842,7 +614,7 @@ const cancelSubscription = () => {
             preserveScroll: true,
             onError: () => {
                 alert('Erro ao cancelar. Tente novamente.');
-            }
+            },
         });
     }
 };
@@ -853,7 +625,66 @@ const resumeSubscription = () => {
         preserveScroll: true,
         onError: () => {
             alert('Erro ao reativar. Tente novamente.');
-        }
+        },
     });
 };
 </script>
+
+<style scoped>
+.close {
+    display: inline-grid;
+    place-items: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 12px;
+    color: hsl(var(--muted-foreground));
+
+    @media (hover: hover) {
+        &:hover {
+            background: hsl(var(--muted));
+        }
+    }
+}
+/* A pessoa sendo nomeada, na mesma moldura do convite do fim de fase */
+.hero-gif {
+    width: min(13rem, 30vh);
+    aspect-ratio: 1;
+    overflow: hidden;
+}
+/* Planos: cartões de escolha em coluna; o escolhido em azul, como o anual do convite */
+.plan {
+    position: relative;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+    padding: 14px 12px 12px;
+
+    &.is-selected {
+        --c: #3b82f6;
+        background: color-mix(in srgb, #3b82f6 10%, hsl(var(--card)));
+    }
+}
+.plan-active {
+    --c: #3b82f6;
+    background: color-mix(in srgb, #3b82f6 10%, hsl(var(--card)));
+}
+.tag {
+    position: absolute;
+    top: -10px;
+    right: 10px;
+    border-radius: 999px;
+    padding: 1px 8px;
+    background: #3b82f6;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+}
+/* Campos do Stripe, no contorno da família */
+.field {
+    height: 48px;
+    border-radius: 12px;
+    border: 2px solid hsl(var(--border));
+    background: hsl(var(--card));
+    padding: 13px 14px;
+}
+</style>

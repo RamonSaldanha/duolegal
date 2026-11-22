@@ -14,6 +14,8 @@ import {
 } from '@/components/onboarding/quiz';
 import UserAvatar from '@/components/UserAvatar.vue';
 import { prefersReducedMotion } from '@/composables/useLandingMotion';
+import HighlightMark from '@/components/premium/HighlightMark.vue';
+import PerkList from '@/components/premium/PerkList.vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import {
     ArrowLeft,
@@ -246,13 +248,6 @@ onBeforeUnmount(() => {
     window.removeEventListener('keydown', onKeydown);
 });
 
-const BENEFITS = [
-    { title: 'Vidas infinitas', text: 'Erre à vontade e siga jogando' },
-    { title: 'Fantasias exclusivas', text: 'Toga e astronauta para o seu avatar' },
-    { title: 'Sem anúncios', text: 'Só você e a lei seca' },
-    { title: 'Todas as legislações', text: 'A trilha que quiser, sem limite' },
-    { title: 'Garantia de 7 dias', text: 'Não gostou, devolvemos tudo' },
-];
 </script>
 
 <template>
@@ -520,58 +515,31 @@ const BENEFITS = [
                     </p>
                 </section>
 
-                <!-- 8. Oferta -->
-                <section v-else key="offer" class="py-4">
-                    <div
-                        class="ob-rise relative overflow-hidden rounded-3xl border-2 border-gray-200 bg-white px-5 pb-6 pt-7 text-center dark:border-gray-700 dark:bg-gray-800 sm:px-8"
-                        style="--i: 0"
-                    >
-                        <span
-                            class="ob-stamp absolute right-4 top-4 flex h-20 w-20 flex-col items-center justify-center rounded-full border-4 border-dashed border-green-500 font-extrabold leading-none text-green-600 dark:text-green-400"
-                        >
-                            <span class="text-2xl">-{{ OFFER_PERCENT }}%</span>
-                            <span class="text-[10px] uppercase tracking-wide">anual</span>
-                        </span>
+                <!-- 8. Oferta: o mesmo desenho do convite Premium. A boneca recebendo o presente, o desconto
+                     com marca-texto, o preço, o relógio e as vantagens em etiquetas -->
+                <section v-else key="offer" class="flex flex-col items-center py-2 text-center">
+                    <div class="gift-gif">
+                        <img src="/img/presente.gif" alt="" class="w-full" />
+                    </div>
+                    <p class="text-sm font-bold text-pink-500 dark:text-pink-300">Presente de boas-vindas</p>
+                    <h2 class="mt-1 text-[1.75rem] font-bold leading-tight">
+                        {{ OFFER_PERCENT }}% off no <HighlightMark :delay="350">plano anual</HighlightMark>
+                    </h2>
 
-                        <span
-                            class="ob-gift mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-pink-100 text-pink-500 dark:bg-pink-950/60 dark:text-pink-300"
-                        >
-                            <Gift class="h-9 w-9" />
-                        </span>
-                        <p class="mt-4 text-sm font-bold text-pink-500 dark:text-pink-300">Presente de boas-vindas</p>
-                        <h2 class="mt-1 text-3xl font-extrabold leading-tight tracking-tight">{{ OFFER_PERCENT }}% off no plano anual</h2>
-
-                        <div v-if="yearlyPlan && discounted !== null" class="mt-5">
-                            <p class="text-base font-semibold text-gray-400 line-through">{{ formatCurrency(yearlyPlan.price) }} por ano</p>
-                            <p class="text-4xl font-extrabold tracking-tight text-gray-900 dark:text-white">
-                                {{ formatCurrency(discounted) }}<span class="text-lg font-bold text-gray-500 dark:text-gray-400"> por ano</span>
-                            </p>
-                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                                Sai por {{ formatCurrency(Math.round(discounted / 12)) }} por mês
-                            </p>
-                        </div>
-
-                        <p
-                            class="mx-auto mt-5 inline-flex items-center gap-2 rounded-full bg-orange-50 px-4 py-2 text-sm font-bold text-orange-600 dark:bg-orange-950/50 dark:text-orange-300"
-                        >
-                            <Timer class="h-4 w-4" />
-                            <template v-if="remaining"
-                                >Termina em <span class="tabular-nums">{{ remaining }}</span></template
-                            >
-                            <template v-else>Válida por 24 horas</template>
+                    <div v-if="yearlyPlan && discounted !== null" class="mt-3">
+                        <p class="text-sm font-bold text-muted-foreground line-through">{{ formatCurrency(yearlyPlan.price) }} por ano</p>
+                        <p class="text-4xl font-bold tabular-nums tracking-tight">
+                            {{ formatCurrency(discounted) }}<span class="text-lg font-bold text-muted-foreground"> por ano</span>
                         </p>
-
-                        <ul class="mt-6 divide-y-2 divide-gray-100 border-t-2 border-gray-100 dark:divide-gray-700 dark:border-gray-700">
-                            <li v-for="(b, i) in BENEFITS" :key="b.title" class="ob-rise py-2.5" :style="{ '--i': i + 2 }">
-                                <span class="block text-sm font-bold">{{ b.title }}</span>
-                                <span class="block text-xs text-gray-500 dark:text-gray-400">{{ b.text }}</span>
-                            </li>
-                        </ul>
+                        <p class="text-sm text-muted-foreground">Sai por {{ formatCurrency(Math.round(discounted / 12)) }} por mês</p>
                     </div>
 
-                    <p class="mt-5 text-center text-sm text-gray-500 dark:text-gray-400">
-                        Esse desconto só aparece agora, no seu cadastro. Ele fica guardado por 24 horas e depois some.
+                    <p class="mt-4 rounded-full bg-brand-soft px-4 py-1.5 text-sm font-bold text-brand-soft-ink">
+                        <template v-if="remaining">Termina em <span class="tabular-nums">{{ remaining }}</span></template>
+                        <template v-else>Vale por 24 horas</template>
                     </p>
+
+                    <PerkList class="mt-5" :delay="500" />
                 </section>
             </Transition>
         </main>
@@ -653,6 +621,17 @@ const BENEFITS = [
 </template>
 
 <style scoped>
+/* A boneca recebendo o presente: a arte (427x627) tem vazio em cima; a moldura corta 18,74% da
+   largura e fica com a proporção 427:520, da mesma altura das ilustrações do convite */
+.gift-gif {
+    width: min(10.7rem, 24.6vh);
+    aspect-ratio: 427 / 520;
+    overflow: hidden;
+}
+.gift-gif img {
+    margin-top: -18.74%;
+}
+
 .ob-progress {
     transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
@@ -798,17 +777,6 @@ const BENEFITS = [
     transform: none;
 }
 
-/* Oferta */
-.ob-stamp {
-    animation: ob-stamp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) backwards 0.6s;
-    transform: rotate(-12deg);
-}
-@keyframes ob-stamp {
-    from {
-        opacity: 0;
-        transform: scale(2.4) rotate(-30deg);
-    }
-}
 .ob-gift {
     animation:
         ob-pop 0.5s cubic-bezier(0.34, 1.8, 0.64, 1) backwards 0.2s,
@@ -857,7 +825,6 @@ const BENEFITS = [
     .ob-bob,
     .ob-float,
     .ob-drop,
-    .ob-stamp,
     .ob-gift,
     .ob-cta-pulse:not(:disabled) {
         animation: none;

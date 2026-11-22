@@ -1,14 +1,16 @@
 <script setup lang="ts">
+import AchievementScene from '@/components/beta-preview/AchievementScene.vue';
 import PhaseCompleteScene from '@/components/beta-preview/PhaseCompleteScene.vue';
 import PremiumInviteScene from '@/components/beta-preview/PremiumInviteScene.vue';
+import type { DisciplineLevelUp } from '@/types/legislation-play';
 import { onMounted, onUnmounted, ref } from 'vue';
 
 // Fim de fase do mapa beta. As duas passagens são o marca-texto: quatro riscos amarelos atravessam
 // a tela na diagonal, um depois do outro, até cobri-la; por baixo a tela troca, e os riscos saem
 // pelo outro lado. É o mesmo amarelo do traço do título.
 // - Ao montar: de uma folha lisa (o lugar da tela do jogo) para o resultado.
-// - Em "Continuar": quem não assina vai do resultado para o convite Premium. Quem assina, ou pula
-//   o convite, volta ao mapa.
+// - Em "Continuar": se a fase deu uma estrela, vai para a tela da conquista; depois, quem não
+//   assina vai para o convite Premium. Quem assina, ou pula o convite, volta ao mapa.
 const props = defineProps<{
     title: string;
     mark: string;
@@ -17,10 +19,12 @@ const props = defineProps<{
     xp: number;
     accuracy: number;
     premium: boolean;
+    // A estrela que a fase deu (chega com o fim da fase), se deu
+    levelUp?: DisciplineLevelUp | null;
 }>();
 const emit = defineEmits<{ done: [] }>();
 
-type Stage = 'blank' | 'complete' | 'invite';
+type Stage = 'blank' | 'complete' | 'achievement' | 'invite';
 const stage = ref<Stage>('complete');
 const highlight = ref<'in' | 'out' | null>(null);
 const BANDS = 4;
@@ -54,6 +58,11 @@ onMounted(() => {
 onUnmounted(() => timers.forEach(clearTimeout));
 
 function next() {
+    if (props.levelUp) return highlightTo('achievement');
+    afterAchievement();
+}
+
+function afterAchievement() {
     if (props.premium) return emit('done');
     highlightTo('invite');
 }
@@ -64,6 +73,9 @@ function next() {
         <div v-if="stage === 'blank'" class="sheet" />
         <div v-else-if="stage === 'complete'" class="sheet">
             <PhaseCompleteScene :title="title" :mark="mark" :count="count" :count-label="countLabel" :xp="xp" :accuracy="accuracy" @continue="next" />
+        </div>
+        <div v-else-if="stage === 'achievement' && levelUp" class="sheet">
+            <AchievementScene :level-up="levelUp" @continue="afterAchievement" />
         </div>
         <div v-else class="sheet">
             <PremiumInviteScene @skip="emit('done')" />

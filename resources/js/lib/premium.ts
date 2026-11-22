@@ -5,3 +5,6 @@ export const YEARLY = 'R$ 107,91';
 export const YEARLY_PER_MONTH = 'R$ 8,99';
 export const YEARLY_OFF = '-25%';
 export const YEARLY_URL = '/subscription?plan=yearly';
+
+// As vantagens, curtas e sem descrição (PerkList.vue). O app tem as mesmas em PremiumPieces.tsx.
+export const PERKS = ['Energia e vidas infinitas', 'Fantasias exclusivas', 'Sem anúncios', 'Todas as legislações', 'Garantia de 7 dias'] as const;

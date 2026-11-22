@@ -12,6 +12,21 @@ import { useReward } from 'vue-rewards';
 type Stage = 'game' | 'end' | 'map';
 const kind = ref<'phase' | 'challenge'>('phase');
 const premium = ref(false);
+const withStar = ref(true);
+const levelUp = computed(() =>
+    withStar.value
+        ? {
+              discipline_id: 1,
+              discipline_name: 'Civil',
+              icon: 'scale',
+              color: '#14b8a6',
+              old_level: 1,
+              new_level: 2,
+              stars: 2,
+              badge_url: '/img/badges/civil-2.png',
+          }
+        : null,
+);
 const stage = ref<Stage>('game');
 const run = ref(0);
 const dark = ref(document.documentElement.classList.contains('dark'));
@@ -54,6 +69,9 @@ function toggleDark() {
             <button class="mz-btn mz-xs" :class="premium ? 'mz-tonal-brand' : 'mz-ghost'" @click="premium = !premium">
                 {{ premium ? 'Assinante' : 'Não assinante' }}
             </button>
+            <button class="mz-btn mz-xs" :class="withStar ? 'mz-tonal-brand' : 'mz-ghost'" @click="withStar = !withStar">
+                {{ withStar ? 'Com estrela' : 'Sem estrela' }}
+            </button>
             <button class="mz-btn mz-xs mz-ghost" @click="toggleDark">{{ dark ? 'Claro' : 'Escuro' }}</button>
             <button class="mz-btn mz-xs mz-outline ml-auto" @click="replay">Repetir</button>
         </div>
@@ -64,7 +82,7 @@ function toggleDark() {
             <p class="text-muted-foreground">Última pergunta respondida.</p>
             <button class="mz-btn mz-lg mz-main w-full max-w-xs" @click="finishPhase">Terminar a fase</button>
         </div>
-        <PhaseEnd v-else-if="stage === 'end'" :key="run" v-bind="data" :premium="premium" @done="stage = 'map'" />
+        <PhaseEnd v-else-if="stage === 'end'" :key="run" v-bind="data" :premium="premium" :level-up="levelUp" @done="stage = 'map'" />
         <div v-else class="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center text-muted-foreground">
             <p>Aqui o jogo voltaria para o mapa.</p>
             <button class="mz-btn mz-md mz-second" @click="replay">Ver de novo</button>
