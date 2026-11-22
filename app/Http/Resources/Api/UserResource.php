@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Api;
 
+use App\Services\EnergyService;
 use App\Services\OnboardingService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -16,6 +17,8 @@ class UserResource extends JsonResource
             'email' => $this->email,
             'lives' => $this->lives,
             'has_infinite_lives' => $this->hasInfiniteLives(),
+            // Energia do mapa novo (as vidas ficam para os builds antigos)
+            'energy' => app(EnergyService::class)->payload($this->resource),
             'xp' => $this->xp,
             'current_streak' => $this->effectiveStreak(),
             'longest_streak' => $this->longestStreak(),

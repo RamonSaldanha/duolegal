@@ -70,8 +70,12 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'throttle:120,1'])->group(funct
     Route::prefix('trail')->group(function () {
         Route::get('/', [TrailController::class, 'index']);
         Route::get('/phases/{phaseId}', [TrailController::class, 'phase'])->where('phaseId', '[0-9]+');
+        Route::post('/attempt', [TrailController::class, 'betaAttempt']);
+        // Só dos builds anteriores à energia
         Route::post('/fail', [TrailController::class, 'betaFail']);
         Route::post('/finish', [TrailController::class, 'betaFinish']);
+        Route::get('/energy', [TrailController::class, 'energy']);
+        Route::post('/energy/reward', [TrailController::class, 'betaEnergyReward'])->middleware('throttle:12,60');
 
         Route::get('/challenges/{checkpoint}', [TrailChallengeController::class, 'challenge'])->whereUuid('checkpoint');
         Route::post('/challenges/{checkpoint}/summary', [TrailChallengeController::class, 'summary'])->whereUuid('checkpoint');

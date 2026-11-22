@@ -43,7 +43,7 @@ function trailLegislation(int $blocks): Legislation
     return $legislation;
 }
 
-/** Quem joga pelo app nos testes: um aluno comum, com vidas. */
+/** Quem joga pelo app nos testes: um aluno comum, com a energia cheia. */
 function trailPlayer(array $attributes = []): User
 {
     $user = User::factory()->createOne($attributes + ['lives' => 5]);
@@ -127,29 +127,39 @@ test('a fase atual abre com os desafios; a bloqueada responde unavailable', func
         ->assertJsonPath('code', 'unavailable');
 });
 
-test('sem vidas a fase responde no_lives', function () {
+test('sem a energia mínima a fase nova responde no_energy', function () {
     trailLegislation(10);
     $user = trailPlayer();
     $current = $this->getJson('/api/v1/trail')->json('sections.0.groups.0.current_phase_id');
 
-    $user->forceFill(['lives' => 0])->save();
+    $user->forceFill(['energy' => 9, 'energy_updated_at' => now()])->save();
 
     $this->getJson("/api/v1/trail/phases/{$current}")
         ->assertForbidden()
-        ->assertJsonPath('code', 'no_lives');
+        ->assertJsonPath('code', 'no_energy');
 });
 
-test('erro tira a vida na hora e avisa quando acabou', function () {
+test('cada bloco verificado gasta energia na hora; as vidas não mudam mais', function () {
     trailLegislation(10);
     $user = trailPlayer(['lives' => 1]);
+    $current = $this->getJson('/api/v1/trail')->json('sections.0.groups.0.current_phase_id');
+    $this->getJson("/api/v1/trail/phases/{$current}")->assertOk()->assertJsonPath('energy.value', 25);
 
+    $this->postJson('/api/v1/trail/attempt', ['phase_id' => $current, 'correct' => true])
+        ->assertOk()
+        ->assertJsonPath('energy.value', 24)
+        ->assertJsonPath('combo', null)
+        ->assertJsonPath('out_of_energy', false);
+
+    // O build antigo (sem energia) ainda chama /fail: conta como erro na fase em jogo
     $this->postJson('/api/v1/trail/fail')
         ->assertOk()
-        ->assertJsonPath('lost_life', true)
-        ->assertJsonPath('lives', 0)
-        ->assertJsonPath('out_of_lives', true);
+        ->assertJsonPath('lost_life', false)
+        ->assertJsonPath('lives', 1)
+        ->assertJsonPath('out_of_lives', false);
 
-    expect($user->fresh()->lives)->toBe(0);
+    expect($user->fresh()->energy)->toBe(22)
+        ->and($user->fresh()->lives)->toBe(1);
 });
 
 test('o fim da fase grava os blocos e dá XP', function () {

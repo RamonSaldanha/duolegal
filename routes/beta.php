@@ -32,8 +32,12 @@ Route::middleware(['auth', 'admin'])->prefix('beta/play')->group(function () {
     // Prévia das telas novas de fim de fase e convite Premium (ainda fora do jogo)
     Route::get('previa/fim', fn () => Inertia::render('BetaPlay/PreviewEnd'))->name('beta.play.preview.end');
     Route::get('phase/{phaseId}', [BetaPlayController::class, 'betaPhase'])->where('phaseId', '[0-9]+')->name('beta.play.phase');
-    Route::post('fail', [BetaPlayController::class, 'betaFail'])->name('beta.play.fail');
+    Route::post('attempt', [BetaPlayController::class, 'betaAttempt'])->name('beta.play.attempt');
     Route::post('finish', [BetaPlayController::class, 'betaFinish'])->name('beta.play.finish');
+
+    // Energia: a tela de quando ela acaba e o anúncio que recarrega
+    Route::get('energia', [BetaPlayController::class, 'betaEnergy'])->name('beta.play.energy');
+    Route::post('energia/anuncio', [BetaPlayController::class, 'betaEnergyReward'])->middleware('throttle:12,60')->name('beta.play.energy.reward');
 
     // Desafio do quadrado: o último passo do quadrado, com o resumo e as questões dele
     Route::get('desafio/{checkpoint}', [BetaCheckpointController::class, 'show'])->whereUuid('checkpoint')->name('beta.play.checkpoint');

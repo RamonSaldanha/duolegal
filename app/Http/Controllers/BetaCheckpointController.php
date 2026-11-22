@@ -7,6 +7,7 @@ use App\Models\StudyQuestion;
 use App\Models\User;
 use App\Models\UserBetaCheckpoint;
 use App\Models\UserStudyMaterial;
+use App\Services\EnergyService;
 use App\Services\StudyMaterialService;
 use App\Services\XpService;
 use Illuminate\Http\JsonResponse;
@@ -22,8 +23,9 @@ use Inertia\Response;
 /**
  * Desafio do quadrado no mapa beta: o último passo do quadrado que tem material de estudo
  * (resumo e questões escritos por um agente de IA e publicados pelo admin) sobre os
- * dispositivos dele. Abre quando as fases do quadrado estão feitas, não consome vida e o
- * quadrado seguinte só abre depois dele. Cada passo (resumo lido, questão respondida) é
+ * dispositivos dele. Abre quando as fases do quadrado estão feitas e há energia; cada questão
+ * nova gasta energia e acertos seguidos dão combo (EnergyService). O quadrado seguinte só abre
+ * depois dele. Cada passo (resumo lido, questão respondida) é
  * gravado na hora e a pessoa volta de onde parou. O gabarito nunca vai para o navegador antes
  * da resposta.
  */
@@ -38,17 +40,20 @@ class BetaCheckpointController extends BetaPlayController
     {
         $payload = $this->checkpointPayload(Auth::user(), $checkpoint);
 
-        return $payload === 'unavailable'
-            ? redirect()->route('beta.play.map')
-            : Inertia::render('BetaPlay/Checkpoint', $payload);
+        return match ($payload) {
+            'unavailable' => redirect()->route('beta.play.map'),
+            'no_energy' => redirect()->route('beta.play.energy'),
+            default => Inertia::render('BetaPlay/Checkpoint', $payload),
+        };
     }
 
     /**
-     * Os dados do desafio, ou 'unavailable' se ele ainda não abre (404 se não existe na trilha
-     * do usuário). Com `$withBlocks`, cada material leva também `summary_blocks`, o resumo em
-     * blocos para o app desenhar.
+     * Os dados do desafio, ou por que ele não abre: 'unavailable' (ainda fechado) ou
+     * 'no_energy' (por fazer e sem energia; o já concluído abre como revisão). 404 se não
+     * existe na trilha do usuário. Com `$withBlocks`, cada material leva também
+     * `summary_blocks`, o resumo em blocos para o app desenhar.
      *
-     * @return array<string, mixed>|'unavailable'
+     * @return array<string, mixed>|'unavailable'|'no_energy'
      */
     protected function checkpointPayload(User $user, string $checkpoint, bool $withBlocks = false): array|string
     {
@@ -60,11 +65,18 @@ class BetaCheckpointController extends BetaPlayController
             return 'unavailable';
         }
 
+        $energy = app(EnergyService::class);
+        if ($found['state'] === 'available' && ! $energy->has($user, (int) config('energy.challenge.open'))) {
+            return 'no_energy';
+        }
+        $energy->startRun($user, ['kind' => 'challenge', 'id' => $found['key'], 'streak' => 0]);
+
         $progress = $this->progress($user, $found) ?? new UserBetaCheckpoint;
         $done = array_flip($progress->doneIds());
         $service = app(StudyMaterialService::class);
 
         return [
+            'energy' => $energy->payload($user),
             'checkpoint' => [
                 'key' => $found['key'],
                 'section_number' => $found['section_number'],
@@ -133,20 +145,31 @@ class BetaCheckpointController extends BetaPlayController
         $question = $material->questions->firstWhere('position', (int) $validated['position']);
         abort_if(! $question, 422, 'Questão inexistente.');
 
+        $wasDone = in_array($material->id, $this->progress($user, $found)?->doneIds() ?? [], true);
         $answer = $validated['answer'];
-        $saved = $this->record($user, $found, $material, function (array $partial) use ($question, &$answer) {
+        $isNew = false;
+        $saved = $this->record($user, $found, $material, function (array $partial) use ($question, &$answer, &$isNew) {
+            $isNew = ! isset($partial['answers'][$question->position]);
             $answer = $partial['answers'][$question->position] ?? $answer;
             $partial['answers'][$question->position] = $answer;
 
             return $partial;
         });
 
+        $isCorrect = $this->isCorrect($question, $answer);
+
+        // Só a questão nova de material por fazer gasta energia (a revisão é de graça)
+        $energy = app(EnergyService::class);
+        $spent = ! $wasDone && $isNew
+            ? $energy->challengeAnswer($user, $found['key'], $isCorrect, $saved['checkpoint']['completed'] < $saved['checkpoint']['total'])
+            : ['energy' => $energy->payload($user), 'combo' => null, 'out_of_energy' => false];
+
         return response()->json([
-            'is_correct' => $this->isCorrect($question, $answer),
+            'is_correct' => $isCorrect,
             'correct_answer' => $question->correct_answer,
             'explanation' => $question->explanation,
             'legal_basis' => $question->legal_basis,
-        ] + $saved);
+        ] + $saved + $spent);
     }
 
     // ==================== PRIVATE METHODS ====================

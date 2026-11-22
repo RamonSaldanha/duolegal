@@ -7,6 +7,7 @@ use App\Mail\ReengagementMail;
 use App\Models\ReengagementEmail;
 use App\Models\User;
 use App\Models\UserLegislationSelection;
+use App\Services\EnergyService;
 use App\Services\ReengagementService;
 use App\Services\StreakService;
 use Carbon\Carbon;
@@ -101,6 +102,7 @@ class UserController extends Controller
                 'is_admin' => $user->is_admin,
                 'is_premium' => $user->hasActiveSubscription(),
                 'lives' => $user->lives,
+                'energy' => app(EnergyService::class)->current($user),
                 'xp' => $user->xp,
                 'current_streak' => $streaks->currentStreak($user->id),
                 'longest_streak' => $streaks->longestStreak($user->id),

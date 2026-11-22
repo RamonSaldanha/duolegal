@@ -38,6 +38,7 @@ test('GET /api/v1/me devolve exatamente estes campos', function () {
         'email',
         'lives',
         'has_infinite_lives',
+        'energy',
         'xp',
         'current_streak',
         'longest_streak',

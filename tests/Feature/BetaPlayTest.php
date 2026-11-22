@@ -64,9 +64,9 @@ test('o mapa beta só abre para administradores', function () {
 
     $this->actingAs($user)->get('/beta/play')->assertRedirect(route('play.map'));
     $this->actingAs($user)->get('/beta/play/phase/1')->assertRedirect(route('play.map'));
-    $this->actingAs($user)->postJson('/beta/play/fail')->assertRedirect(route('play.map'));
+    $this->actingAs($user)->postJson('/beta/play/attempt', ['phase_id' => 1, 'correct' => false])->assertRedirect(route('play.map'));
 
-    expect($user->fresh()->lives)->toBe(5);
+    expect($user->fresh()->energy)->toBe(25);
 });
 
 test('o mapa beta junta 4 fases de 10 blocos em cada quadrado', function () {
@@ -171,17 +171,18 @@ test('fase pela metade não grava nada', function () {
         ->and($user->fresh()->xp)->toBe(0);
 });
 
-test('errar um desafio tira a vida na hora, sem gravar progresso', function () {
+test('errar um desafio gasta a energia na hora, sem gravar progresso nem tirar vida', function () {
     betaLegislation(10);
-    $user = betaAdmin(['lives' => 1]);
+    $user = betaAdmin(['lives' => 5]);
 
-    $this->actingAs($user)->postJson('/beta/play/fail')
+    $this->actingAs($user)->get('/beta/play/phase/1')->assertOk();
+    $this->actingAs($user)->postJson('/beta/play/attempt', ['phase_id' => 1, 'correct' => false])
         ->assertSuccessful()
-        ->assertJsonPath('lost_life', true)
-        ->assertJsonPath('lives', 0)
-        ->assertJsonPath('redirect_url', route('play.nolives'));
+        ->assertJsonPath('energy.value', 23)
+        ->assertJsonPath('out_of_energy', false);
 
-    expect(UserSegmentProgress::where('user_id', $user->id)->count())->toBe(0);
+    expect(UserSegmentProgress::where('user_id', $user->id)->count())->toBe(0)
+        ->and($user->fresh()->lives)->toBe(5);
 });
 
 test('dispositivo vetado ou revogado continua sendo desafio, mas não dá XP', function () {

@@ -26,14 +26,20 @@ class TrailController extends BetaPlayController
         return is_array($payload) ? response()->json($payload) : self::refusal($payload);
     }
 
+    /** GET /v1/trail/energy: a tela sem energia (a energia, a revisão sugerida e o anúncio). */
+    public function energy(Request $request): JsonResponse
+    {
+        return response()->json($this->energyStatus($request->user()));
+    }
+
     /**
-     * Por que algo do mapa não abre, no formato que o app lê: `no_lives` (403) ou
+     * Por que algo do mapa não abre, no formato que o app lê: `no_energy` (403) ou
      * `unavailable` (409, bloqueado ou já sem nada a jogar).
      */
     public static function refusal(string $code): JsonResponse
     {
-        return $code === 'no_lives'
-            ? response()->json(['message' => 'Você está sem vidas.', 'code' => 'no_lives'], 403)
+        return $code === 'no_energy'
+            ? response()->json(['message' => 'Você está sem energia.', 'code' => 'no_energy'], 403)
             : response()->json(['message' => 'Este passo do mapa não está disponível.', 'code' => 'unavailable'], 409);
     }
 }

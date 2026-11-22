@@ -66,6 +66,9 @@
                             <p class="flex items-center gap-1.5 text-2xl font-extrabold text-red-500">
                                 <Heart class="h-5 w-5 fill-current" /> {{ user.lives }}
                             </p>
+                            <p class="flex items-center gap-1 text-lg font-extrabold text-amber-500" title="Energia do mapa novo (app)">
+                                <BatteryCharging class="h-5 w-5" /> {{ user.energy }}
+                            </p>
                             <button
                                 type="button"
                                 class="rounded-md border px-2 py-0.5 text-xs font-bold text-muted-foreground hover:border-red-300 hover:text-red-600"
@@ -207,7 +210,7 @@
 
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
-import { ArrowLeft, Crown, Flame, Gift, Heart, MailX, Target, Zap } from 'lucide-vue-next';
+import { ArrowLeft, BatteryCharging, Crown, Flame, Gift, Heart, MailX, Target, Zap } from 'lucide-vue-next';
 
 import { areaLabel, formatDate, formatNumber, goalLabel, minutesLabel, timeAgo } from '@/components/admin/users/format';
 import Toaster from '@/components/ui/toast/Toaster.vue';
@@ -225,6 +228,7 @@ interface UserDetail {
     is_admin: boolean;
     is_premium: boolean;
     lives: number;
+    energy: number;
     xp: number;
     current_streak: number;
     longest_streak: number;

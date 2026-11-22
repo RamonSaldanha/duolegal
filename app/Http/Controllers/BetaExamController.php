@@ -6,6 +6,7 @@ use App\Models\LegislationSegment;
 use App\Models\StudyQuestion;
 use App\Models\User;
 use App\Models\UserBetaExam;
+use App\Services\EnergyService;
 use App\Services\XpService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -24,8 +25,9 @@ use Inertia\Response;
  * a hora em que acaba e resposta fora do prazo não entra. Errar não custa nada. O XP é a soma
  * dos acertos, creditado quando a prova é entregue (ou o tempo acaba); cada questão dá XP uma
  * vez só, no primeiro acerto, então refazer a prova rende só o que ainda não foi acertado.
- * Livre para qualquer usuário, não gasta vida e fica fora do avanço da trilha. O gabarito só
- * vai para o navegador depois de cada resposta, e o comentário só no fim.
+ * Livre para qualquer usuário, não gasta energia e rende energia na entrega (por acerto novo,
+ * combo e barra completada com nota alta; ver EnergyService). Fica fora do avanço da trilha.
+ * O gabarito só vai para o navegador depois de cada resposta, e o comentário só no fim.
  */
 class BetaExamController extends BetaPlayController
 {
@@ -167,8 +169,9 @@ class BetaExamController extends BetaPlayController
             return response()->json([
                 'is_correct' => $answers[$question->id]['correct'],
                 'correct_answer' => $question->correct_answer,
-                // XP somado na prova até aqui; só é creditado na entrega
+                // XP e energia somados na prova até aqui; só são creditados na entrega
                 'xp' => $finished ? (int) $row->last_xp : $this->pendingXp($user, $row),
+                'energy' => $finished ? (int) $row->last_energy : $this->pendingEnergy($user, $row),
                 'finished' => $finished,
                 'result' => $finished ? $this->result($user, $row, $questions, $levelUp) : null,
             ]);
@@ -271,9 +274,20 @@ class BetaExamController extends BetaPlayController
         return $new > 0 ? $user->boostedXp($new * self::EXAM_XP_PER_CORRECT) : 0;
     }
 
+    /** Energia que a tentativa já somou e ainda não foi creditada (quem assina não ganha). */
+    private function pendingEnergy(User $user, UserBetaExam $row): int
+    {
+        $energy = app(EnergyService::class);
+
+        return $energy->infinite($user)
+            ? 0
+            : $energy->examGain($row->givenAnswers(), count($this->newlyCorrect($row)), (int) $row->attempts === 0);
+    }
+
     /**
-     * Entrega a tentativa aberta: credita o XP dos acertos que ainda não tinham dado XP e
-     * guarda o melhor resultado. Chamar dentro de uma transação, com a linha travada.
+     * Entrega a tentativa aberta: credita o XP dos acertos que ainda não tinham dado XP, a
+     * energia (com a barra completada se a primeira entrega teve nota alta) e guarda o melhor
+     * resultado. Chamar dentro de uma transação, com a linha travada.
      *
      * @return array<string, mixed>|null a estrela ganha na disciplina com esse XP, se houve
      */
@@ -288,6 +302,13 @@ class BetaExamController extends BetaPlayController
         }
 
         $correct = count(array_filter($row->givenAnswers(), fn (array $given) => $given['correct']));
+        $total = count($row->questionIds());
+        $first = (int) $row->attempts === 0;
+        $energy = app(EnergyService::class)->creditExam(
+            $user,
+            $this->pendingEnergy($user, $row),
+            $first && $total > 0 && $correct / $total >= (float) config('energy.exam.fill_at'),
+        );
 
         $row->update([
             'finished_at' => now(),
@@ -295,6 +316,7 @@ class BetaExamController extends BetaPlayController
             'best_correct' => max((int) $row->best_correct, $correct),
             'attempts' => $row->attempts + 1,
             'last_xp' => $xp,
+            'last_energy' => max(0, $energy),
         ]);
 
         return $xp > 0 ? app(XpService::class)->detectDisciplineLevelUp($user, $legislationId, $xp) : null;
@@ -316,6 +338,7 @@ class BetaExamController extends BetaPlayController
             'seconds_left' => max(0, (int) now()->diffInSeconds($row->deadline_at, false)),
             'seconds_total' => (int) $row->started_at->diffInSeconds($row->deadline_at),
             'xp' => $this->pendingXp($user, $row),
+            'energy' => $this->pendingEnergy($user, $row),
             'questions' => $ordered->map(fn (StudyQuestion $question) => [
                 'uuid' => $question->uuid,
                 'board' => $question->board,
@@ -346,9 +369,10 @@ class BetaExamController extends BetaPlayController
             'answered' => $answered->count(),
             'total' => count($row->questionIds()),
             'xp_gained' => (int) $row->last_xp,
+            'energy_gained' => (int) $row->last_energy,
             'best_correct' => (int) $row->best_correct,
             'discipline_level_up' => $levelUp,
-            'user' => ['xp' => $user->xp],
+            'user' => ['xp' => $user->xp, 'energy' => app(EnergyService::class)->payload($user)],
             'review' => $answered->map(fn (StudyQuestion $question) => [
                 'uuid' => $question->uuid,
                 'board' => $question->board,

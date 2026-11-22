@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Mail\ReengagementMail;
+use App\Models\EnergyTransaction;
 use App\Models\ReengagementEmail;
 use App\Models\User;
 use Carbon\Carbon;
@@ -146,7 +147,10 @@ class ReengagementService
                 $user->xp_boost_until = $start->copy()->addDays(self::BOOST_DAYS);
                 $user->save();
             } else {
+                // As vidas valem no site antigo; no mapa novo (app), o presente enche a energia
                 $user->incrementLife(self::GIFT_LIVES);
+                $energy = app(EnergyService::class);
+                $energy->fillTo($user, $energy->max(), EnergyTransaction::GIFT);
             }
 
             $email->claimed_at = now();

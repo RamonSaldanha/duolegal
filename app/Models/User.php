@@ -61,6 +61,10 @@ class User extends Authenticatable
         'uuid',
         'bio',
         'hidden_achievements',
+        // Energia do mapa novo: sai pelo EnergyService (payload), nunca crua.
+        'energy',
+        'energy_updated_at',
+        'energy_run',
     ];
 
     /**
@@ -82,6 +86,9 @@ class User extends Authenticatable
         'welcome_offer_expires_at' => 'datetime',
         'email_opt_out_at' => 'datetime',
         'xp_boost_until' => 'datetime',
+        'energy' => 'integer',
+        'energy_updated_at' => 'datetime',
+        'energy_run' => 'array',
     ];
 
     protected static function booted(): void

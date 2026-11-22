@@ -24,6 +24,7 @@ class UserBetaExam extends Model
         'best_correct',
         'attempts',
         'last_xp',
+        'last_energy',
     ];
 
     protected $casts = [

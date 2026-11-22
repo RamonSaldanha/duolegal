@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\EnergyService;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -60,6 +61,8 @@ class HandleInertiaRequests extends Middleware
                         'avatar_config' => $request->user()->publicAvatarConfig(),
                         'is_admin' => $request->user()->isAdmin(),
                         'has_infinite_lives' => $request->user()->hasActiveSubscription(),
+                        // Energia do mapa beta, que na web é só de administradores
+                        'energy' => $request->user()->isAdmin() ? app(EnergyService::class)->payload($request->user()) : null,
                         // Informações de depuração apenas para administradores
                         'debug_info' => $request->user()->isAdmin() ? [
                             'has_active_subscription' => $request->user()->hasActiveSubscription(),

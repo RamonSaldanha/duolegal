@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\EnergyTransaction;
 use App\Models\Legislation;
 use App\Models\LegislationSegment;
 use App\Models\User;
 use App\Models\UserBetaExam;
 use App\Models\UserLegislationSelection;
 use App\Models\UserSegmentProgress;
+use App\Services\EnergyService;
 use App\Services\StudyMaterialService;
 use App\Services\XpService;
 use Illuminate\Http\Request;
@@ -58,10 +60,41 @@ class BetaPlayController extends LegislationPlayController
         $payload = $this->phasePayload(Auth::user(), $phaseId);
 
         return match ($payload) {
-            'no_lives' => redirect()->route('play.nolives'),
+            'no_energy' => redirect()->route('beta.play.energy'),
             'unavailable' => redirect()->route('beta.play.map'),
             default => Inertia::render('BetaPlay/Phase', $payload),
         };
+    }
+
+    /** Sem energia: a barra, a revisão sugerida e o anúncio. */
+    public function betaEnergy()
+    {
+        return Inertia::render('BetaPlay/NoEnergy', $this->energyStatus(Auth::user()));
+    }
+
+    /** Anúncio assistido até o fim: um tanto de energia, até a barra cheia. */
+    public function betaEnergyReward()
+    {
+        $user = Auth::user();
+        $energy = app(EnergyService::class);
+        $energy->apply($user, (int) config('energy.ad_reward'), EnergyTransaction::AD);
+
+        return response()->json(['success' => true, 'energy' => $energy->payload($user)]);
+    }
+
+    /**
+     * A tela sem energia: a energia, a fase concluída mais esquecida (a revisão abre mesmo
+     * sem energia e o combo dela recarrega) e quanto o anúncio dá.
+     *
+     * @return array<string, mixed>
+     */
+    protected function energyStatus(User $user): array
+    {
+        return [
+            'energy' => app(EnergyService::class)->payload($user),
+            'review' => $this->suggestedReview($user),
+            'ad_reward' => (int) config('energy.ad_reward'),
+        ];
     }
 
     /**
@@ -100,17 +133,14 @@ class BetaPlayController extends LegislationPlayController
     }
 
     /**
-     * Os dados da fase, ou por que ela não abre: 'no_lives' (sem vidas) ou 'unavailable'
-     * (bloqueada, inexistente ou sem desafio a jogar). A web e a API recebem os mesmos dados.
+     * Os dados da fase, ou por que ela não abre: 'no_energy' (fase nova sem a energia mínima)
+     * ou 'unavailable' (bloqueada, inexistente ou sem desafio a jogar). A revisão abre mesmo
+     * sem energia. A web e a API recebem os mesmos dados.
      *
-     * @return array<string, mixed>|'no_lives'|'unavailable'
+     * @return array<string, mixed>|'no_energy'|'unavailable'
      */
     protected function phasePayload(User $user, int $phaseId): array|string
     {
-        if (! $user->hasLives()) {
-            return 'no_lives';
-        }
-
         $trail = $this->trail($user);
         $phase = $this->findPlayablePhase($trail['phases'], $phaseId);
 
@@ -126,6 +156,15 @@ class BetaPlayController extends LegislationPlayController
         if ($pending->isEmpty()) {
             return 'unavailable';
         }
+
+        // Fase nova: o mínimo para abrir, ou o custo dela sem erro se tem poucos blocos
+        $energy = app(EnergyService::class);
+        $need = min((int) config('energy.phase.open'), $pending->count() * (int) config('energy.phase.correct'));
+        if (! $phase['is_complete'] && ! $energy->has($user, $need)) {
+            return 'no_energy';
+        }
+
+        $energy->startRun($user, $this->newRun($phase, $pending->count()));
 
         // Blocos anteriores da mesma lei, para rolar o texto para cima (como no /play)
         $legislation = Legislation::where('uuid', $phase['legislation_uuid'])->firstOrFail();
@@ -160,30 +199,48 @@ class BetaPlayController extends LegislationPlayController
             'phaseBlocks' => $blocks->map(fn ($block) => $this->formatSegmentWithProgress($block, $progress))->values(),
             'earlierBlocks' => $earlier->map(fn ($block) => $this->formatSegmentWithProgress($block, $progress))->values(),
             'hasMoreAbove' => $hasMoreAbove,
+            'energy' => $energy->payload($user),
         ];
     }
 
     /**
-     * Erro num desafio: a vida sai na hora, mas o progresso só é gravado em betaFinish().
+     * Cada bloco verificado na fase, certo ou errado: cobra a energia na hora, conta a
+     * sequência para o combo e diz se a energia acabou no meio (aí a pessoa sai e perde a
+     * fase). O progresso continua sendo gravado só em betaFinish().
+     */
+    public function betaAttempt(Request $request)
+    {
+        $validated = $request->validate([
+            'phase_id' => 'required|integer',
+            'correct' => 'required|boolean',
+        ]);
+
+        $user = Auth::user();
+        $run = $this->runFor($user, (int) $validated['phase_id']);
+
+        abort_if(! $run, 422, 'Fase indisponível.');
+
+        return response()->json(app(EnergyService::class)->phaseAttempt($user, $run, (bool) $validated['correct']));
+    }
+
+    /**
+     * Erro num bloco, dos builds do app anteriores à energia (que não mandam a fase): conta
+     * como tentativa errada da fase em jogo. As vidas não mudam mais aqui.
      */
     public function betaFail()
     {
         $user = Auth::user();
+        $run = $user->energy_run;
 
-        $lostLife = false;
-        if ($user->lives > 0 && ! $user->hasInfiniteLives()) {
-            $user->decrementLife();
-            $lostLife = true;
+        if (($run['kind'] ?? null) === 'phase') {
+            app(EnergyService::class)->phaseAttempt($user, $run, false);
         }
 
-        $outOfLives = ! $user->hasInfiniteLives() && $user->lives <= 0;
-
         return response()->json([
-            'lost_life' => $lostLife,
+            'lost_life' => false,
             'lives' => $user->lives,
-            'redirect_url' => $outOfLives ? route('play.nolives') : null,
-            // Para o app, que não segue redirect_url
-            'out_of_lives' => $outOfLives,
+            'redirect_url' => null,
+            'out_of_lives' => false,
         ]);
     }
 
@@ -210,6 +267,14 @@ class BetaPlayController extends LegislationPlayController
         $phase = $this->findPlayablePhase($this->trail($user)['phases'], (int) $validated['phase_id']);
 
         abort_if(! $phase, 422, 'Fase indisponível.');
+
+        // A energia acabou no meio da fase: ela foi perdida
+        $run = $user->energy_run;
+        abort_if(
+            ($run['kind'] ?? null) === 'phase' && ($run['id'] ?? null) === $phase['id'] && ! empty($run['out']),
+            409,
+            'A energia acabou no meio da fase.'
+        );
 
         $blocks = $this->phaseBlocks($phase);
         $required = $this->blocksToPlay($user, $phase, $blocks);
@@ -261,6 +326,9 @@ class BetaPlayController extends LegislationPlayController
             ? app(XpService::class)->detectDisciplineLevelUp($user, $legislationId, $xpGained)
             : null;
 
+        $energy = app(EnergyService::class);
+        $energy->clearRun($user);
+
         return response()->json([
             'xp_gained' => $xpGained,
             'discipline_level_up' => $levelUp,
@@ -268,8 +336,71 @@ class BetaPlayController extends LegislationPlayController
                 'lives' => $user->lives,
                 'xp' => $user->xp,
                 'has_infinite_lives' => $user->hasInfiniteLives(),
+                'energy' => $energy->payload($user),
             ],
         ]);
+    }
+
+    /**
+     * A fase em jogo para a energia. Se a fase pedida não é a que foi aberta por último (outra
+     * aba, por exemplo), começa uma do zero a partir da trilha.
+     */
+    private function runFor(User $user, int $phaseId): ?array
+    {
+        $run = $user->energy_run;
+        if (($run['kind'] ?? null) === 'phase' && ($run['id'] ?? null) === $phaseId) {
+            return $run;
+        }
+
+        $phase = $this->findPlayablePhase($this->trail($user)['phases'], $phaseId);
+        if (! $phase) {
+            return null;
+        }
+
+        $pending = $this->blocksToPlay($user, $phase, $this->phaseBlocks($phase))->count();
+        $run = $this->newRun($phase, $pending);
+        app(EnergyService::class)->startRun($user, $run);
+
+        return $run;
+    }
+
+    /** @return array{kind: string, id: int, review: bool, pending: int, corrects: int, streak: int, out: bool} */
+    private function newRun(array $phase, int $pending): array
+    {
+        return [
+            'kind' => 'phase',
+            'id' => $phase['id'],
+            'review' => (bool) $phase['is_complete'],
+            'pending' => $pending,
+            'corrects' => 0,
+            'streak' => 0,
+            'out' => false,
+        ];
+    }
+
+    /**
+     * A revisão sugerida quando a energia acaba: a fase concluída mais esquecida, a de
+     * progresso mais antigo.
+     *
+     * @return array{id: int, legislation_title: string}|null
+     */
+    protected function suggestedReview(User $user): ?array
+    {
+        $done = array_values(array_filter($this->trail($user)['phases'], fn ($phase) => $phase['is_complete']));
+
+        if ($done === []) {
+            return null;
+        }
+
+        $touched = UserSegmentProgress::where('user_id', $user->id)
+            ->whereIn('legislation_segment_id', array_merge(...array_column($done, 'block_ids')))
+            ->pluck('updated_at', 'legislation_segment_id');
+
+        $oldest = collect($done)->sortBy(fn ($phase) => collect($phase['block_ids'])
+            ->map(fn ($id) => $touched->get($id)?->getTimestamp() ?? 0)
+            ->max())->first();
+
+        return ['id' => $oldest['id'], 'legislation_title' => $oldest['legislation_title']];
     }
 
     // ==================== PRIVATE METHODS ====================
@@ -427,7 +558,7 @@ class BetaPlayController extends LegislationPlayController
     /**
      * Dia da prova da etapa: só as questões dos desafios dos quadrados dela, com tempo. Libera
      * quando todas as fases e todos os desafios da etapa estão feitos. Fica fora do avanço da
-     * trilha e não gasta vida.
+     * trilha, não gasta energia e rende energia (BetaExamController).
      */
     private function examOf(array $groups, ?int $anchor, ?UserBetaExam $exam): array
     {
