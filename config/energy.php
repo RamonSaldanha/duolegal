@@ -28,6 +28,9 @@ return [
         'wrong' => 2,
         'combo_every' => 3,
         'combo_gain' => 1,
+        // Quem assina não ganha energia (é infinita): cada combo vale XP, creditado no fim da
+        // fase e só na primeira conclusão dela (junto com o XP dos blocos)
+        'subscriber_combo_xp' => 5,
     ],
 
     // Revisão (fase já concluída): custa como a fase nova, mas abre com menos e não tem combo
@@ -45,6 +48,8 @@ return [
         'question' => 1,
         'combo_every' => 3,
         'combo_gain' => 2,
+        // Quem assina: XP por combo, na hora (cada questão só é respondida uma vez)
+        'subscriber_combo_xp' => 5,
     ],
 
     // Dia da prova: de graça. Rende por acerto (só no primeiro acerto de cada questão), combo

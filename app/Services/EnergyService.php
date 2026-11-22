@@ -22,13 +22,19 @@ use Illuminate\Support\Facades\DB;
  * - Mesmo acertando tudo, a energia acaba: o combo nunca paga o que os acertos custaram.
  * - O tempo devolve +1 a cada `regen_minutes`, até a barra cheia. A conta é feita na leitura,
  *   a partir de `energy_updated_at` (não há cron).
- * - Quem assina tem energia infinita: nada é gasto nem ganho.
+ * - Quem assina tem energia infinita: nada é gasto nem ganho. O combo dele vale XP
+ *   (`subscriber_combo_xp`): na fase, fica guardado em `combos` e sai no fim, só na primeira
+ *   conclusão (BetaPlayController::betaFinish); no desafio, sai na hora, porque cada questão
+ *   só é respondida uma vez.
  *
  * A fase ou o desafio em jogo fica em `users.energy_run` (a sequência do combo e se a energia
  * acabou no meio).
  */
 class EnergyService
 {
+    /** Origem do XP do combo de quem assina, em `xp_transactions`. */
+    const COMBO_XP_SOURCE = 'combo';
+
     public function max(): int
     {
         return (int) config('energy.max');
@@ -140,8 +146,8 @@ class EnergyService
      * nova; a revisão não recarrega). Se a energia chega a 0 e ainda falta bloco, a pessoa está
      * fora (`out`) e a fase (ou a revisão) é perdida.
      *
-     * @param  array{kind: string, id: int, review: bool, pending: int, corrects: int, streak: int, out: bool}  $run
-     * @return array{energy: array<string, mixed>, combo: array{streak: int, gained: int}|null, out_of_energy: bool}
+     * @param  array{kind: string, id: int, review: bool, pending: int, corrects: int, streak: int, out: bool, combos?: int}  $run
+     * @return array{energy: array<string, mixed>, combo: array{streak: int, gained: int, xp: int}|null, out_of_energy: bool}
      */
     public function phaseAttempt(User $user, array $run, bool $correct): array
     {
@@ -160,6 +166,10 @@ class EnergyService
         if ($correct) {
             $run['corrects']++;
             $combo = $review ? null : $this->streak($user, $run, $rules, EnergyTransaction::COMBO);
+            // O XP do combo de quem assina sai no fim da fase (phaseComboXp)
+            if ($combo && $combo['xp'] > 0) {
+                $run['combos'] = ($run['combos'] ?? 0) + 1;
+            }
         } else {
             $run['streak'] = 0;
         }
@@ -173,11 +183,12 @@ class EnergyService
     /**
      * Uma questão respondida no desafio do quadrado. `$remaining`: ainda falta questão no
      * desafio depois desta (se a energia acabou, a pessoa sai e volta depois de onde parou).
-     * `$review`: material já feito; custa o mesmo e não tem combo.
+     * `$review`: material já feito; custa o mesmo e não tem combo. O combo de quem assina vale
+     * XP na hora, com origem `combo` no material respondido (`$material`, `$legislationId`).
      *
-     * @return array{energy: array<string, mixed>, combo: array{streak: int, gained: int}|null, out_of_energy: bool}
+     * @return array{energy: array<string, mixed>, combo: array{streak: int, gained: int, xp: int}|null, out_of_energy: bool}
      */
-    public function challengeAnswer(User $user, string $key, bool $correct, bool $remaining, bool $review = false): array
+    public function challengeAnswer(User $user, string $key, bool $correct, bool $remaining, bool $review = false, ?int $material = null, ?int $legislationId = null): array
     {
         $rules = config('energy.challenge');
         $run = $user->energy_run;
@@ -191,6 +202,9 @@ class EnergyService
         $combo = null;
         if ($correct) {
             $combo = $review ? null : $this->streak($user, $run, $rules, EnergyTransaction::COMBO);
+            if ($combo && $combo['xp'] > 0) {
+                $user->addXp($combo['xp'], self::COMBO_XP_SOURCE, $material, $legislationId);
+            }
         } else {
             $run['streak'] = 0;
         }
@@ -229,6 +243,18 @@ class EnergyService
         return $gain;
     }
 
+    /**
+     * O XP dos combos de quem assina na fase em jogo, a pagar no fim dela. Nunca mais combos
+     * do que os blocos da fase permitem (cada bloco só fecha uma vez com acerto).
+     */
+    public function phaseComboXp(User $user, array $run): int
+    {
+        $rules = config('energy.phase');
+        $combos = min((int) ($run['combos'] ?? 0), intdiv((int) ($run['pending'] ?? 0), $rules['combo_every']));
+
+        return $combos > 0 ? $user->boostedXp($combos * (int) $rules['subscriber_combo_xp']) : 0;
+    }
+
     /** Cobra o começo de uma prova refeita. Falso se não há energia para isso. */
     public function examRetake(User $user): bool
     {
@@ -255,19 +281,24 @@ class EnergyService
 
     /**
      * Conta mais um acerto na sequência e dá o combo quando ela fecha um múltiplo de
-     * `combo_every`.
+     * `combo_every`: energia para quem não assina, XP (`xp`, ainda não creditado) para quem
+     * assina.
      *
-     * @return array{streak: int, gained: int}|null
+     * @return array{streak: int, gained: int, xp: int}|null
      */
     private function streak(User $user, array &$run, array $rules, string $reason): ?array
     {
         $run['streak'] = ($run['streak'] ?? 0) + 1;
 
-        if ($run['streak'] % $rules['combo_every'] !== 0 || $this->infinite($user)) {
+        if ($run['streak'] % $rules['combo_every'] !== 0) {
             return null;
         }
 
-        return ['streak' => $run['streak'], 'gained' => $this->apply($user, $rules['combo_gain'], $reason)];
+        if ($this->infinite($user)) {
+            return ['streak' => $run['streak'], 'gained' => 0, 'xp' => $user->boostedXp((int) $rules['subscriber_combo_xp'])];
+        }
+
+        return ['streak' => $run['streak'], 'gained' => $this->apply($user, $rules['combo_gain'], $reason), 'xp' => 0];
     }
 
     /**

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, router, usePage } from '@inertiajs/vue3';
 import axios from 'axios';
-import { BatteryCharging, X } from 'lucide-vue-next';
+import { BatteryCharging, X, Zap } from 'lucide-vue-next';
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
 // @ts-expect-error: vue-rewards package does not provide proper type definitions
 import ComboBurst from '@/components/beta-play/ComboBurst.vue';
@@ -391,7 +391,8 @@ onUnmounted(() => {
                 >
                     <p v-if="combo" class="mb-1 flex items-center gap-1 font-bold">
                         Sequência de {{ combo.streak }}!
-                        <template v-if="combo.gained > 0"> <BatteryCharging class="h-4 w-4" /> +{{ combo.gained }} </template>
+                        <template v-if="combo.xp > 0"> <Zap class="h-4 w-4 fill-current" /> +{{ combo.xp }} XP </template>
+                        <template v-else-if="combo.gained > 0"> <BatteryCharging class="h-4 w-4" /> +{{ combo.gained }} </template>
                     </p>
                     <p v-if="outOfEnergy" class="mb-1 font-bold">Sua energia acabou. Esta fase vai recomeçar.</p>
                     <p v-if="lastResult.answers.length > 0">

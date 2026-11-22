@@ -19,7 +19,7 @@ import {
 } from '@/types/study-material';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import axios from 'axios';
-import { BatteryCharging, X } from 'lucide-vue-next';
+import { BatteryCharging, X, Zap } from 'lucide-vue-next';
 import { computed, nextTick, ref } from 'vue';
 import { useReward } from 'vue-rewards';
 
@@ -232,6 +232,8 @@ async function check() {
         answeredCount.value++;
         if (data.is_correct) correctCount.value++;
         applyStep(data);
+        // O combo de quem assina rende XP na hora
+        xpGained.value += data.combo?.xp ?? 0;
         feedback.value = data;
         if (data.combo && data.combo.gained > 0) {
             comboEnergy = data.energy;
@@ -473,7 +475,8 @@ function choiceClass(key: string) {
                 >
                     <p v-if="feedback.combo" class="mb-1 flex items-center gap-1 font-bold">
                         Sequência de {{ feedback.combo.streak }}!
-                        <template v-if="feedback.combo.gained > 0"> <BatteryCharging class="h-4 w-4" /> +{{ feedback.combo.gained }} </template>
+                        <template v-if="feedback.combo.xp > 0"> <Zap class="h-4 w-4 fill-current" /> +{{ feedback.combo.xp }} XP </template>
+                        <template v-else-if="feedback.combo.gained > 0"> <BatteryCharging class="h-4 w-4" /> +{{ feedback.combo.gained }} </template>
                     </p>
                     <p v-if="outOfEnergy" class="mb-1 font-bold">Sua energia acabou. O que você fez fica guardado.</p>
                     <p v-if="!feedback.is_correct">

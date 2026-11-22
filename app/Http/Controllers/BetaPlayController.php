@@ -332,7 +332,9 @@ class BetaPlayController extends LegislationPlayController
         $legislationId = $required->first()->legislation_id;
         $xpGained = 0;
 
-        DB::transaction(function () use ($required, $results, $done, $user, &$xpGained) {
+        $phaseId = $phase['id'];
+
+        DB::transaction(function () use ($required, $results, $done, $user, $run, $phaseId, &$xpGained) {
             foreach ($required as $block) {
                 $result = $results->get($block->uuid);
 
@@ -351,6 +353,15 @@ class BetaPlayController extends LegislationPlayController
                     $xp = $user->boostedXp(max(10, $gaps * 5));
                     $user->addXp($xp, 'legislation', $block->id, $block->legislation_id);
                     $xpGained += $xp;
+                }
+            }
+
+            // Os combos de quem assina viram XP aqui, só quando a fase deu XP (primeira conclusão)
+            if ($xpGained > 0 && ($run['kind'] ?? null) === 'phase' && ($run['id'] ?? null) === $phaseId) {
+                $comboXp = app(EnergyService::class)->phaseComboXp($user, $run);
+                if ($comboXp > 0) {
+                    $user->addXp($comboXp, EnergyService::COMBO_XP_SOURCE, $phaseId, $required->first()->legislation_id);
+                    $xpGained += $comboXp;
                 }
             }
         });
@@ -397,7 +408,7 @@ class BetaPlayController extends LegislationPlayController
         return $run;
     }
 
-    /** @return array{kind: string, id: int, review: bool, pending: int, corrects: int, streak: int, out: bool} */
+    /** @return array{kind: string, id: int, review: bool, pending: int, corrects: int, streak: int, combos: int, out: bool} */
     private function newRun(array $phase, int $pending): array
     {
         return [
@@ -407,6 +418,7 @@ class BetaPlayController extends LegislationPlayController
             'pending' => $pending,
             'corrects' => 0,
             'streak' => 0,
+            'combos' => 0,
             'out' => false,
         ];
     }

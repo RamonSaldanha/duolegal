@@ -163,9 +163,23 @@ class BetaCheckpointController extends BetaPlayController
         $energy = app(EnergyService::class);
         $spent = match (true) {
             $wasDone => $energy->challengeAnswer($user, $found['key'], $isCorrect, true, review: true),
-            $isNew => $energy->challengeAnswer($user, $found['key'], $isCorrect, $saved['checkpoint']['completed'] < $saved['checkpoint']['total']),
+            $isNew => $energy->challengeAnswer(
+                $user,
+                $found['key'],
+                $isCorrect,
+                $saved['checkpoint']['completed'] < $saved['checkpoint']['total'],
+                material: $material->id,
+                legislationId: $material->legislation_id,
+            ),
             default => ['energy' => $energy->payload($user), 'combo' => null, 'out_of_energy' => false],
         };
+
+        // O combo de quem assina rendeu XP agora (combo.xp; xp_gained segue sendo o do material)
+        if (($spent['combo']['xp'] ?? 0) > 0) {
+            $saved['user']['xp'] = $user->xp;
+            $saved['discipline_level_up'] ??= app(XpService::class)
+                ->detectDisciplineLevelUp($user, $material->legislation_id, $spent['combo']['xp']);
+        }
 
         return response()->json([
             'is_correct' => $isCorrect,

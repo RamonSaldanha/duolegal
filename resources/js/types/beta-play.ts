@@ -143,10 +143,15 @@ export interface RewardAdResponse {
     ad: RewardAd;
 }
 
-/** Combo: a sequência de acertos fechou um múltiplo e devolveu energia. */
+/**
+ * Combo: a sequência de acertos fechou um múltiplo. Devolve energia (`gained`) a quem não
+ * assina; quem assina ganha XP (`xp`): na fase ele entra no fim, junto com o XP da fase; no
+ * desafio, na hora.
+ */
 export interface EnergyCombo {
     streak: number;
     gained: number;
+    xp: number;
 }
 
 /** Resposta de cada bloco verificado na fase (e de cada questão nova do desafio). */

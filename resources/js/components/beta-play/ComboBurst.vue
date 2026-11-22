@@ -7,8 +7,9 @@ import { nextTick, onBeforeUnmount, ref, watch } from 'vue';
  * "COMBO x3" salta no meio com a energia ganha e um raiozinho voa até a bateria
  * ([data-energy-meter]); quando ele chega, `arrive` (a página credita a energia e o medidor
  * pulsa). Cresce com a sequência: x3 amarelo, x6 laranja ("Pegando fogo!"), x9 laranja forte
- * ("Imparável!"). Igual ao app (src/components/trail/ComboBurst.tsx). Com "reduzir movimento",
- * só credita.
+ * ("Imparável!"). Quem assina não ganha energia: o combo mostra "+5 XP" e não há raiozinho
+ * voando (o XP da fase entra no fim). Igual ao app (src/components/trail/ComboBurst.tsx). Com
+ * "reduzir movimento", só credita.
  */
 const props = defineProps<{ combo: EnergyCombo | null }>();
 const emit = defineEmits<{ arrive: [] }>();
@@ -129,7 +130,7 @@ async function run(combo: EnergyCombo) {
         { duration: 440 },
     );
     if (my !== token) return;
-    await wait(550);
+    await wait(combo.xp > 0 ? 800 : 550);
     if (my !== token) return;
 
     play(
@@ -140,6 +141,14 @@ async function run(combo: EnergyCombo) {
         ],
         { duration: 280, easing: 'ease-in' },
     );
+    // XP de quem assina: não há bateria para onde voar
+    if ((combo.xp ?? 0) > 0) {
+        await wait(280);
+        if (my !== token) return;
+        emit('arrive');
+        shown.value = null;
+        return;
+    }
     const flyer = root.querySelector('.flyer')!;
     const from = { x: w / 2, y: cy + 40 };
     const to = meterCenter(w);
@@ -182,7 +191,15 @@ onBeforeUnmount(() => {
                     <p class="word" :class="{ big: shown.combo.streak >= 9 }" :style="{ '--c': shown.tier.c, '--e': shown.tier.e }">
                         COMBO x{{ shown.combo.streak }}
                     </p>
-                    <p v-if="shown.combo.gained > 0" class="gain">
+                    <p v-if="shown.combo.xp > 0" class="gain">
+                        <svg viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                            <path
+                                d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"
+                            />
+                        </svg>
+                        +{{ shown.combo.xp }} XP
+                    </p>
+                    <p v-else-if="shown.combo.gained > 0" class="gain">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="m11 7-3 5h4l-3 5" />
                             <path d="M14.856 6H16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.935" />

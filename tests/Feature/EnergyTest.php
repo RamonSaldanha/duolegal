@@ -80,7 +80,7 @@ test('na fase nova o certo custa 1, o errado 2, e 3 certos seguidos devolvem 1',
 
     energyAttempts($this, 1, true, 2);
     $this->postJson('/api/v1/trail/attempt', ['phase_id' => 1, 'correct' => true])
-        ->assertJsonPath('combo', ['streak' => 3, 'gained' => 1])
+        ->assertJsonPath('combo', ['streak' => 3, 'gained' => 1, 'xp' => 0])
         ->assertJsonPath('energy.value', 23);
 
     $this->postJson('/api/v1/trail/attempt', ['phase_id' => 1, 'correct' => false])
@@ -302,6 +302,109 @@ test('quem assina tem energia infinita: abre sem energia e não gasta', function
     energyAttempts($this, 1, true, 5)->assertJsonPath('combo', null);
 
     expect(EnergyTransaction::where('user_id', $user->id)->count())->toBe(0);
+});
+
+/** Os resultados de uma fase inteira acertada (blocos $from a $to). */
+function energyResults($legislation, int $from, int $to): array
+{
+    return array_map(fn ($i) => [
+        'segment_uuid' => energyKey($legislation, $i),
+        'answers' => [],
+        'correct_count' => 1,
+        'total_count' => 1,
+    ], range($from, $to));
+}
+
+test('o combo de quem assina vale XP, pago no fim da fase e só na primeira conclusão', function () {
+    $legislation = studyLegislation(30);
+    $user = energyPlayer();
+    giveActiveSubscription($user);
+
+    $this->getJson('/api/v1/trail/phases/1')->assertOk();
+
+    energyAttempts($this, 1, true, 2)->assertJsonPath('combo', null);
+    $this->postJson('/api/v1/trail/attempt', ['phase_id' => 1, 'correct' => true])
+        ->assertJsonPath('combo', ['streak' => 3, 'gained' => 0, 'xp' => 5]);
+    energyAttempts($this, 1, true, 3)->assertJsonPath('combo.xp', 5);
+
+    // O XP do combo só entra no fim
+    expect($user->fresh()->xp)->toBe(0);
+
+    $this->postJson('/api/v1/trail/finish', ['phase_id' => 1, 'results' => energyResults($legislation, 0, 9)])
+        ->assertOk()
+        ->assertJsonPath('xp_gained', 110)
+        ->assertJsonPath('user.xp', 110);
+
+    expect($user->xpTransactions()->where('source_type', 'combo')->sole())
+        ->amount->toBe(10)
+        ->source_id->toBe(1)
+        ->legislation_id->toBe($legislation->id);
+
+    // Refazer a fase (revisão) não tem combo nem XP
+    $this->getJson('/api/v1/trail/phases/1')->assertOk()->assertJsonPath('isReview', true);
+    energyAttempts($this, 1, true, 3)->assertJsonPath('combo', null);
+    $this->postJson('/api/v1/trail/finish', ['phase_id' => 1, 'results' => energyResults($legislation, 0, 9)])
+        ->assertJsonPath('xp_gained', 0);
+    expect($user->fresh()->xp)->toBe(110);
+});
+
+test('o XP do combo de quem assina não passa do que os blocos da fase permitem', function () {
+    $legislation = studyLegislation(30);
+    $user = energyPlayer();
+    giveActiveSubscription($user);
+
+    $this->getJson('/api/v1/trail/phases/1')->assertOk();
+    energyAttempts($this, 1, true, 30);
+
+    // 10 blocos: no máximo 3 combos
+    $this->postJson('/api/v1/trail/finish', ['phase_id' => 1, 'results' => energyResults($legislation, 0, 9)])
+        ->assertJsonPath('xp_gained', 115);
+});
+
+test('quem não assina ganha energia com o combo, não XP', function () {
+    $legislation = studyLegislation(30);
+    $user = energyPlayer();
+
+    $this->getJson('/api/v1/trail/phases/1')->assertOk();
+    energyAttempts($this, 1, true, 10);
+
+    $this->postJson('/api/v1/trail/finish', ['phase_id' => 1, 'results' => energyResults($legislation, 0, 9)])
+        ->assertJsonPath('xp_gained', 100);
+    expect($user->xpTransactions()->where('source_type', 'combo')->exists())->toBeFalse();
+});
+
+test('no desafio, o combo de quem assina vale XP na hora', function () {
+    $legislation = studyLegislation(170);
+    $material = studyMaterial($legislation, 0, 39);
+    $service = app(App\Services\StudyMaterialService::class);
+    $questions = studyQuestions();
+    $questions[] = ['statement' => 'A União também zelará pelo dispositivo seguinte.'] + $questions[0];
+    $service->replaceQuestions($material, $service->validateContent(['title' => 't', 'summary' => 's', 'questions' => $questions])['questions']);
+
+    $user = energyPlayer();
+    giveActiveSubscription($user);
+    energyComplete($user, $legislation, 0, 39);
+    $key = energyKey($legislation, 39);
+    $answer = fn (int $position, string $given) => $this->postJson("/api/v1/trail/challenges/{$key}/answer", ['material' => $material->uuid, 'position' => $position, 'answer' => $given]);
+
+    $answer(1, 'certo')->assertJsonPath('combo', null);
+    $answer(2, 'C')->assertJsonPath('combo', null);
+    $answer(3, 'certo')
+        ->assertOk()
+        ->assertJsonPath('combo', ['streak' => 3, 'gained' => 0, 'xp' => 5])
+        ->assertJsonPath('material_completed', true)
+        ->assertJsonPath('xp_gained', 55)
+        ->assertJsonPath('user.xp', 60);
+
+    expect($user->xpTransactions()->where('source_type', 'combo')->sole())
+        ->amount->toBe(5)
+        ->source_id->toBe($material->id);
+
+    // Refazer o material já feito não tem combo
+    foreach ([1 => 'certo', 2 => 'C', 3 => 'certo'] as $position => $given) {
+        $answer($position, $given)->assertJsonPath('combo', null);
+    }
+    expect($user->fresh()->xp)->toBe(60);
 });
 
 test('na web a energia vem para todos', function () {
