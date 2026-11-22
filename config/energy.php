@@ -18,14 +18,15 @@ return [
     // Recarga com o tempo: +1 a cada tantos minutos, até a barra cheia
     'regen_minutes' => 60,
 
-    // Fase nova: o mínimo para abrir (ou o custo da fase sem erro, se ela tem menos blocos),
-    // o custo de cada tentativa e o combo de blocos certos seguidos. Com a barra cheia, quem
-    // acerta tudo joga no máximo 2 fases (cada uma gasta 10 - 2 = 8: 25, 17, 9 e a 3ª não abre)
+    // Fase nova: o mínimo para abrir (ou o custo da fase errando cada bloco uma vez, se ela tem
+    // poucos blocos), o custo de cada tentativa e o combo de blocos certos seguidos. Com a barra
+    // cheia, quem acerta tudo joga no máximo 2 fases (cada uma gasta 10 - 3 = 7: 25, 18, 11 e a
+    // 3ª, que pede 12, não abre)
     'phase' => [
-        'open' => 10,
+        'open' => 12,
         'correct' => 1,
         'wrong' => 2,
-        'combo_every' => 5,
+        'combo_every' => 3,
         'combo_gain' => 1,
     ],
 
@@ -57,6 +58,6 @@ return [
         'retake' => 5,
     ],
 
-    // Anúncio assistido
-    'ad_reward' => 5,
+    // Anúncio assistido (pouco, para o anúncio não virar energia sem fim)
+    'ad_reward' => 3,
 ];

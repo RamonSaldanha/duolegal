@@ -12,13 +12,13 @@ import { computed, onUnmounted, ref } from 'vue';
 
 // Sem energia (mapa beta), no mesmo desenho do convite Premium do fim de fase: o corredor
 // cansado e a frase com marca-texto, quando volta o próximo +1, o Premium anual (energia
-// infinita), o anúncio (+5) e esperar a recarga. Cabe numa tela só; o GIF encolhe para caber.
+// infinita), o anúncio (+3) e esperar a recarga. Cabe numa tela só; o GIF encolhe para caber.
 const props = defineProps<{
     energy: EnergyState;
     ad_reward: number;
 }>();
 
-const PHASE_OPEN = 10;
+const PHASE_OPEN = 12;
 
 const now = ref(Date.now());
 const ticker = setInterval(() => (now.value = Date.now()), 30_000);

@@ -56,6 +56,21 @@ test('conta que já passou do onboarding não ganha XP nem oferta pela URL', fun
     expect($user->welcome_offer_expires_at)->toBeNull();
 });
 
+test('a prévia abre o onboarding já concluído só para administradores, sem gravar nada', function () {
+    $user = User::factory()->create(['onboarding_completed_at' => now()->subMonth()]);
+    $admin = User::factory()->create(['onboarding_completed_at' => now()->subMonth(), 'is_admin' => true]);
+
+    $this->actingAs($user)->get(route('onboarding.show', ['previa' => 1]))->assertRedirect(route('play.map'));
+
+    $this->actingAs($admin)->get(route('onboarding.show', ['previa' => 1]))
+        ->assertInertia(fn ($page) => $page->component('Onboarding/Index')
+            ->where('preview', true)
+            ->where('challengeDone', false)
+            ->where('welcomeOffer.percent_off', config('subscription.welcome_offer.percent_off')));
+
+    expect($admin->fresh()->welcome_offer_expires_at)->toBeNull();
+});
+
 test('o JSON cru do usuário na API segue sem os campos do onboarding', function () {
     $user = User::factory()->create([
         'onboarding_answers' => ['goal' => 'oab'],

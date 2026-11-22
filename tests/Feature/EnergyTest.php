@@ -72,27 +72,27 @@ test('o tempo recarrega +1 por hora até a barra cheia, e não passa dela', func
     $this->getJson('/api/v1/me')->assertJsonPath('energy.value', 40);
 });
 
-test('na fase nova o certo custa 1, o errado 2, e 5 certos seguidos devolvem 1', function () {
+test('na fase nova o certo custa 1, o errado 2, e 3 certos seguidos devolvem 1', function () {
     studyLegislation(30);
     $user = energyPlayer();
 
     $this->getJson('/api/v1/trail/phases/1')->assertOk()->assertJsonPath('isReview', false);
 
-    energyAttempts($this, 1, true, 4);
+    energyAttempts($this, 1, true, 2);
     $this->postJson('/api/v1/trail/attempt', ['phase_id' => 1, 'correct' => true])
-        ->assertJsonPath('combo', ['streak' => 5, 'gained' => 1])
-        ->assertJsonPath('energy.value', 21);
+        ->assertJsonPath('combo', ['streak' => 3, 'gained' => 1])
+        ->assertJsonPath('energy.value', 23);
 
     $this->postJson('/api/v1/trail/attempt', ['phase_id' => 1, 'correct' => false])
-        ->assertJsonPath('energy.value', 19)
+        ->assertJsonPath('energy.value', 21)
         ->assertJsonPath('combo', null);
 
-    // A sequência recomeça depois do erro: o 5º certo depois dele é o próximo combo
-    energyAttempts($this, 1, true, 4)->assertJsonPath('combo', null);
+    // A sequência recomeça depois do erro: o 3º certo depois dele é o próximo combo
+    energyAttempts($this, 1, true, 2)->assertJsonPath('combo', null);
 
-    expect($user->fresh()->energy)->toBe(15)
+    expect($user->fresh()->energy)->toBe(19)
         ->and(EnergyTransaction::where('user_id', $user->id)->pluck('reason')->countBy()->all())
-        ->toEqualCanonicalizing([EnergyTransaction::PHASE => 9, EnergyTransaction::COMBO => 1, EnergyTransaction::FAIL => 1]);
+        ->toEqualCanonicalizing([EnergyTransaction::PHASE => 5, EnergyTransaction::COMBO => 1, EnergyTransaction::FAIL => 1]);
 });
 
 test('a recarga conta da hora em que a barra deixou de estar cheia', function () {
@@ -111,11 +111,11 @@ test('a recarga conta da hora em que a barra deixou de estar cheia', function ()
 
 test('se a energia acaba no meio da fase nova a pessoa sai e o fim é recusado', function () {
     studyLegislation(30);
-    $user = energyPlayer(10);
+    $user = energyPlayer(12);
 
     $this->getJson('/api/v1/trail/phases/1')->assertOk();
 
-    energyAttempts($this, 1, false, 4)->assertJsonPath('out_of_energy', false);
+    energyAttempts($this, 1, false, 5)->assertJsonPath('out_of_energy', false);
     $this->postJson('/api/v1/trail/attempt', ['phase_id' => 1, 'correct' => false])
         ->assertJsonPath('energy.value', 0)
         ->assertJsonPath('out_of_energy', true);
@@ -127,7 +127,7 @@ test('se a energia acaba no meio da fase nova a pessoa sai e o fim é recusado',
 
     expect(UserSegmentProgress::where('user_id', $user->id)->count())->toBe(0);
 
-    // E a fase nova não abre de novo até ter 10
+    // E a fase nova não abre de novo até ter 12
     $this->getJson('/api/v1/trail/phases/1')->assertForbidden()->assertJsonPath('code', 'no_energy');
 });
 
@@ -159,7 +159,7 @@ test('a tela sem energia traz a energia e o anúncio', function () {
     $this->getJson('/api/v1/trail/energy')
         ->assertOk()
         ->assertJsonPath('energy.value', 0)
-        ->assertJsonPath('ad_reward', 5)
+        ->assertJsonPath('ad_reward', 3)
         ->assertJsonMissingPath('review');
 });
 
@@ -256,12 +256,12 @@ test('o Dia da prova pode passar da barra cheia até 50', function () {
     expect($user->fresh()->energy)->toBe(49);
 });
 
-test('o anúncio dá 5, sem passar da barra cheia', function () {
+test('o anúncio dá 3, sem passar da barra cheia', function () {
     $user = energyPlayer(10);
 
-    $this->postJson('/api/v1/trail/energy/reward')->assertOk()->assertJsonPath('energy.value', 15);
+    $this->postJson('/api/v1/trail/energy/reward')->assertOk()->assertJsonPath('energy.value', 13);
 
-    $user->forceFill(['energy' => 22])->save();
+    $user->forceFill(['energy' => 23])->save();
     $this->postJson('/api/v1/trail/energy/reward')->assertJsonPath('energy.value', 25);
 });
 
@@ -313,10 +313,11 @@ test('acertando tudo, a energia acaba: na fase nova, na revisão, no desafio e n
         energyAttempts($this, 1, true, 10);
         expect(++$played)->toBeLessThan(10);
     }
-    // Com a barra cheia, no máximo 2 fases: 25, 17, 9 e a 3ª não abre
-    expect($played)->toBe(2)->and($user->fresh()->energy)->toBe(9);
+    // Com a barra cheia, no máximo 2 fases: 25, 18, 11 e a 3ª (pede 12) não abre
+    expect($played)->toBe(2)->and($user->fresh()->energy)->toBe(11);
 
-    // Revisão sem errar: gasta 1 por bloco até a pessoa sair
+    // Revisão sem errar, começando com 9: gasta 1 por bloco até a pessoa sair
+    $user->forceFill(['energy' => 9])->save();
     energyComplete($user, $legislation, 0, 159);
     foreach ([39 => $first, 79 => $second] as $last => $material) {
         UserBetaCheckpoint::create([
@@ -375,5 +376,5 @@ test('com a barra cheia, quem erra 7 vezes ainda termina a primeira fase', funct
     energyAttempts($this, 1, false, 7)->assertJsonPath('out_of_energy', false);
     energyAttempts($this, 1, true, 10)
         ->assertJsonPath('out_of_energy', false)
-        ->assertJsonPath('energy.value', 3);
+        ->assertJsonPath('energy.value', 4);
 });

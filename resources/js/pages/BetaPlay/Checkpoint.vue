@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ComboBurst from '@/components/beta-play/ComboBurst.vue';
 import PhaseEnd from '@/components/beta-preview/PhaseEnd.vue';
 import EnergyMeter from '@/components/EnergyMeter.vue';
 import GuidedReading from '@/components/GuidedReading.vue';
@@ -74,6 +75,18 @@ const checking = ref(false);
 const checkError = ref(false);
 // Gabarito comentado da questão atual: só chega do servidor depois da resposta
 const feedback = ref<CheckpointAnswerResponse | null>(null);
+// A energia com o combo espera o raiozinho chegar na bateria (ComboBurst)
+let comboEnergy: EnergyState | null = null;
+
+function setEnergy(value: EnergyState) {
+    energy.value = value;
+    if (authUser.value.energy) authUser.value.energy = value;
+}
+
+function comboArrived() {
+    if (comboEnergy) setEnergy(comboEnergy);
+    comboEnergy = null;
+}
 // Só o que foi respondido nesta visita, para a tela do fim
 const correctCount = ref(0);
 const answeredCount = ref(0);
@@ -220,9 +233,13 @@ async function check() {
         if (data.is_correct) correctCount.value++;
         applyStep(data);
         feedback.value = data;
-        energy.value = data.energy;
+        if (data.combo && data.combo.gained > 0) {
+            comboEnergy = data.energy;
+            energy.value = { ...data.energy, value: data.energy.value - data.combo.gained };
+        } else {
+            setEnergy(data.energy);
+        }
         outOfEnergy.value = data.out_of_energy;
-        if (authUser.value.energy) authUser.value.energy = data.energy;
 
         // O comentário aparece embaixo das alternativas
         await nextTick();
@@ -468,6 +485,7 @@ function choiceClass(key: string) {
                 </ResultBar>
             </div>
         </template>
+        <ComboBurst :combo="feedback?.combo ?? null" @arrive="comboArrived" />
     </div>
 </template>
 

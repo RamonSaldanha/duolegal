@@ -50,6 +50,8 @@ interface Props {
     challengeDone: boolean;
     yearlyPlan: { price: number; monthly_price: number } | null;
     welcomeOffer: { percent_off: number; expires_at: string } | null;
+    // Prévia do administrador (/boas-vindas?previa=1): o mesmo fluxo, sem gravar nada
+    preview?: boolean;
 }
 
 const props = defineProps<Props>();
@@ -161,6 +163,7 @@ function toggleLaw(id: number) {
 
 function saveTrail() {
     if (!trail.value.length || savingTrail.value) return;
+    if (props.preview) return next();
     savingTrail.value = true;
     router.post(
         route('onboarding.trail'),
@@ -181,7 +184,7 @@ const challengeSolved = ref(props.challengeDone);
 
 function onSolved() {
     challengeSolved.value = true;
-    if (!props.challengeDone) {
+    if (!props.challengeDone && !props.preview) {
         router.post(route('onboarding.challenge'), {}, { preserveState: true, preserveScroll: true });
     }
 }
@@ -225,6 +228,7 @@ const discounted = computed(() => (props.yearlyPlan ? Math.round(props.yearlyPla
 
 function finish(nextPage: 'map' | 'subscription') {
     if (finishing.value) return;
+    if (props.preview) return router.visit(route(nextPage === 'map' ? 'play.map' : 'subscription.index'));
     finishing.value = nextPage;
     router.post(route('onboarding.finish'), { next: nextPage }, { onFinish: () => (finishing.value = null) });
 }

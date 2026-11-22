@@ -41,6 +41,7 @@ watch(
         :class="{ 'is-pill': pill, 'is-super': isSuper, 'is-empty': isEmpty, 'is-bump': bump }"
         :title="hint"
         :aria-label="hint"
+        data-energy-meter
         role="img"
         @animationend="bump = false"
     >

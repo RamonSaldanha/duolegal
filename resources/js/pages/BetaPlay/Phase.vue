@@ -4,6 +4,7 @@ import axios from 'axios';
 import { BatteryCharging, X } from 'lucide-vue-next';
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
 // @ts-expect-error: vue-rewards package does not provide proper type definitions
+import ComboBurst from '@/components/beta-play/ComboBurst.vue';
 import PhaseEnd from '@/components/beta-preview/PhaseEnd.vue';
 import EnergyMeter from '@/components/EnergyMeter.vue';
 import ActiveChallenge from '@/components/legislation-play/ActiveChallenge.vue';
@@ -49,10 +50,12 @@ const attempt = ref(0);
 const lastResult = ref<(ChallengeResult & { passed: boolean }) | null>(null);
 const stage = ref<'playing' | 'saving' | 'failed-to-save' | 'done'>('playing');
 
-// Energia: cada bloco verificado gasta na hora; 5 certos seguidos devolvem um tanto (combo).
+// Energia: cada bloco verificado gasta na hora; 3 certos seguidos devolvem 1 (combo).
 // Se ela acaba no meio da fase nova, a pessoa sai e perde a fase.
 const energy = ref<EnergyState>(props.energy);
 const combo = ref<EnergyCombo | null>(null);
+// A energia com o combo espera o raiozinho chegar na bateria (ComboBurst)
+let comboEnergy: EnergyState | null = null;
 const outOfEnergy = ref(false);
 const showExitConfirm = ref(false);
 
@@ -160,13 +163,28 @@ async function handleSubmit(data: ChallengeResult) {
     // Certo ou errado, a energia sai na hora (o progresso continua só no navegador)
     try {
         const response = await axios.post<EnergySpend>(route('beta.play.attempt'), { phase_id: props.phaseId, correct: isPass });
-        energy.value = response.data.energy;
-        combo.value = response.data.combo;
-        outOfEnergy.value = response.data.out_of_energy;
-        if (authUser.value.energy) authUser.value.energy = response.data.energy;
+        const spent = response.data;
+        if (spent.combo && spent.combo.gained > 0) {
+            comboEnergy = spent.energy;
+            energy.value = { ...spent.energy, value: spent.energy.value - spent.combo.gained };
+        } else {
+            setEnergy(spent.energy);
+        }
+        combo.value = spent.combo;
+        outOfEnergy.value = spent.out_of_energy;
     } catch {
         // Falha de rede aqui não deve travar a fase
     }
+}
+
+function setEnergy(value: EnergyState) {
+    energy.value = value;
+    if (authUser.value.energy) authUser.value.energy = value;
+}
+
+function comboArrived() {
+    if (comboEnergy) setEnergy(comboEnergy);
+    comboEnergy = null;
 }
 
 function leaveWithoutEnergy() {
@@ -326,6 +344,7 @@ onUnmounted(() => {
                         <div class="h-full rounded-full bg-green-500 transition-all duration-500" :style="{ width: `${progressPercent}%` }" />
                     </div>
                     <EnergyMeter :energy="energy" />
+                    <ComboBurst :combo="combo" @arrive="comboArrived" />
                 </div>
                 <p class="mx-auto mt-2 w-full truncate text-xs font-medium text-gray-400 dark:text-gray-500 sm:w-[95%] lg:w-[50rem]">
                     {{ legislation.title }} · Passo {{ phaseNumber }} de {{ phasesPerGroup }}

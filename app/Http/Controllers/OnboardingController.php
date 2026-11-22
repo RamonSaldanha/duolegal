@@ -19,14 +19,30 @@ use Inertia\Response;
  * (Api\V1\OnboardingController), com as mesmas regras (OnboardingService).
  * Contas antigas já têm `onboarding_completed_at` preenchido e são mandadas
  * para o mapa. Nada aqui trava rota do jogo.
+ *
+ * Prévia: `/boas-vindas?previa=1` abre o onboarding para administradores mesmo
+ * já concluído, sem gravar nada (a página não chama as rotas POST).
  */
 class OnboardingController extends Controller
 {
     public function __construct(private OnboardingService $onboarding) {}
 
-    public function show(): Response|RedirectResponse
+    public function show(Request $request): Response|RedirectResponse
     {
         $user = Auth::user();
+
+        if ($request->boolean('previa') && $user->isAdmin()) {
+            return Inertia::render('Onboarding/Index', [
+                'legislations' => $this->onboarding->legislations(),
+                'challengeDone' => false,
+                'yearlyPlan' => $this->onboarding->yearlyPlan(),
+                'welcomeOffer' => [
+                    'percent_off' => config('subscription.welcome_offer.percent_off'),
+                    'expires_at' => now()->addDay()->toIso8601String(),
+                ],
+                'preview' => true,
+            ]);
+        }
 
         if ($this->onboarding->completed($user)) {
             return redirect()->route('play.map');

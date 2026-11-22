@@ -155,12 +155,12 @@ class BetaPlayController extends LegislationPlayController
             return 'unavailable';
         }
 
-        // O mínimo para abrir: na fase nova, o de config ou o custo dela sem erro se tem poucos
-        // blocos; na revisão, o de config
+        // O mínimo para abrir: na fase nova, o de config ou, se ela tem poucos blocos, o custo de
+        // errar cada um uma vez; na revisão, o de config
         $energy = app(EnergyService::class);
         $need = $phase['is_complete']
             ? (int) config('energy.review.open')
-            : min((int) config('energy.phase.open'), $pending->count() * (int) config('energy.phase.correct'));
+            : min((int) config('energy.phase.open'), $pending->count() * (int) config('energy.phase.wrong'));
         if (! $energy->has($user, $need)) {
             return 'no_energy';
         }
