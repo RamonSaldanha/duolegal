@@ -113,7 +113,7 @@ import AppLogo from '@/components/AppLogo.vue';
                         <li>Artigos estudados e pontuações obtidas</li>
                         <li>Preferências de estudo</li>
                         <li>Histórico de exercícios realizados</li>
-                        <li>Tipo de plano utilizado (Gratuito com anúncios ou Premium)</li>
+                        <li>Tipo de plano utilizado (Gratuito com anúncios ou Plus)</li>
                         <li>Sistema de vidas e seu uso (aplicável ao plano gratuito)</li>
                         <li>Interações com anúncios (aplicável ao plano gratuito)</li>
                     </ul>
@@ -136,7 +136,7 @@ import AppLogo from '@/components/AppLogo.vue';
                     <ul class="list-disc text-gray-700">
                         <li><strong>Prestação do Serviço:</strong> Fornecer acesso à plataforma de estudos e acompanhar seu progresso educacional</li>
                         <li><strong>Personalização:</strong> Adaptar o conteúdo e exercícios ao seu nível de conhecimento e objetivos</li>
-                        <li><strong>Gestão de Planos:</strong> Administrar seu plano de uso (Gratuito com anúncios ou Premium), incluindo controle de vidas no plano gratuito</li>
+                        <li><strong>Gestão de Planos:</strong> Administrar seu plano de uso (Gratuito com anúncios ou Plus), incluindo controle de vidas no plano gratuito</li>
                         <li><strong>Publicidade:</strong> Exibir anúncios personalizados para usuários do plano gratuito</li>
                         <li><strong>Comunicação:</strong> Enviar notificações sobre seu progresso, lembretes de estudo e atualizações importantes</li>
                         <li><strong>Melhoria do Serviço:</strong> Analisar dados de uso para aprimorar nossa plataforma e desenvolver novos recursos</li>
@@ -173,7 +173,7 @@ import AppLogo from '@/components/AppLogo.vue';
                         <li>Dados comportamentais podem ser compartilhados com parceiros de publicidade (de forma anonimizada)</li>
                     </ul>
 
-                    <h3 class="text-xl font-semibold text-gray-800">Plano Premium</h3>
+                    <h3 class="text-xl font-semibold text-gray-800">Plano Plus</h3>
                     <ul class="list-disc text-gray-700">
                         <li>Sem anúncios e sem limitação de vidas</li>
                         <li>Não compartilhamos dados com parceiros de publicidade</li>
@@ -186,7 +186,7 @@ import AppLogo from '@/components/AppLogo.vue';
                     <h3 class="text-xl font-semibold text-gray-800">Planos Oferecidos</h3>
                     <ul class="list-disc text-gray-700">
                         <li><strong>Plano Gratuito:</strong> Acesso básico com funcionalidades limitadas</li>
-                        <li><strong>Plano Premium:</strong> Acesso completo a todos os recursos e conteúdos</li>
+                        <li><strong>Plano Plus:</strong> Acesso completo a todos os recursos e conteúdos</li>
                     </ul>
 
                     <h2 class="text-2xl font-bold heading-font text-gray-800">6. Proteção de Dados</h2>

@@ -40,7 +40,7 @@ const VADE_MECUM = 'R$ 200+';
                     <img src="/img/premium-nomeado.gif" alt="" class="w-full" />
                 </div>
                 <h1 class="text-center text-[1.375rem] font-bold leading-[1.2] text-foreground">
-                    Com Premium você
+                    Com o Plus você
                     <span class="block" aria-live="polite">
                         <Transition name="swap" mode="out-in">
                             <span :key="index" class="mark">{{ endings[index] }}</span>

@@ -82,6 +82,15 @@ html {
         --mz-premium: #8b5cc7;
         --mz-premium-edge: #643f96;
         --mz-premium-hover: #7f51ba;
+        /* XP em azul (o contador, o raio do combo de quem assina) e o Plus em magenta (o
+           convite e o selo da barra do topo). Ver docs/design/plus-barra-combo.html */
+        --mz-xp: #3b82f6;
+        --mz-xp-edge: #1d4ed8;
+        --mz-xp-light: #7db3ff;
+        --mz-xp-ink: #1d4ed8;
+        --mz-plus: #d6438d;
+        --mz-plus-edge: #9c2a62;
+        --mz-plus-ink: #b8306f;
     }
 
     .dark {
@@ -141,6 +150,8 @@ html {
         --mz-bad-soft: #2e1a18;
         --mz-bad-ink: #efb0a8;
         --mz-press: rgba(0, 0, 0, 0.35);
+        --mz-xp-ink: #7db3ff;
+        --mz-plus-ink: #f3a3cb;
     }
 }
 
@@ -152,6 +163,24 @@ html {
     body {
         @apply bg-background text-foreground;
     }
+}
+
+/* O "+5 XP" do combo de quem assina na barra de resultado. As faíscas do ComboBurst descem até
+   ele ([data-combo-xp]) e o acendem (.is-lit) */
+.combo-xp {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 0 6px;
+    border-radius: 999px;
+    color: var(--mz-xp-ink);
+    transition:
+        background-color 0.2s,
+        color 0.2s;
+}
+.combo-xp.is-lit {
+    background: var(--mz-xp);
+    color: #fff;
 }
 
 /* ===== Família de botões (docs/design/componentes.html) =====

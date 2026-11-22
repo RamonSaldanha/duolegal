@@ -381,7 +381,7 @@ const tiles = computed(() => [
         chip: 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300',
     },
     {
-        label: 'Premium ativos',
+        label: 'Plus ativos',
         value: formatNumber(props.stats.paying_users),
         hint: `${percent(props.stats.paying_users, props.stats.total_users)} da base`,
         icon: Crown,
@@ -435,7 +435,7 @@ type FilterKey = 'all' | 'premium' | 'free' | 'active' | 'inactive' | 'never' | 
 
 const FILTERS: { key: FilterKey; label: string; test: (u: AdminUser) => boolean }[] = [
     { key: 'all', label: 'Todos', test: () => true },
-    { key: 'premium', label: 'Premium', test: (u) => u.is_premium },
+    { key: 'premium', label: 'Plus', test: (u) => u.is_premium },
     { key: 'free', label: 'Gratuitos', test: (u) => !u.is_premium },
     { key: 'active', label: 'Ativos (7 dias)', test: (u) => !!u.last_played_at && daysSince(u.last_played_at) < 7 },
     { key: 'inactive', label: `Parados (${INACTIVE_DAYS}+ dias)`, test: (u) => daysSince(u.last_played_at ?? u.created_at) >= INACTIVE_DAYS },
@@ -562,7 +562,7 @@ const PlanBadge = defineComponent({
                   {
                       class: 'inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
                   },
-                  [h(Crown, { class: 'h-3 w-3' }), 'Premium'],
+                  [h(Crown, { class: 'h-3 w-3' }), 'Plus'],
               )
             : h('span', { class: 'inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold text-muted-foreground' }, 'Grátis'),
 });

@@ -10,7 +10,7 @@
                         <Gem class="w-32 h-32 text-blue-500" />
                     </div>
                 </div>
-                <h1 class="text-4xl font-bold mb-4">Você é um assinante Premium!</h1>
+                <h1 class="text-4xl font-bold mb-4">Você é um assinante Plus!</h1>
                 <Notice tone="info" title="Você tem vidas infinitas" class="mb-8">Esta página é só para quem ficou sem vidas.</Notice>
                 <div class="flex flex-col sm:flex-row gap-4 justify-center">
                     <Link :href="route('play.map')" class="inline-flex items-center">
@@ -40,7 +40,7 @@
                     <Link :href="route('subscription.index')" class="inline-flex items-center w-full">
                         <Button variant="outline" class="w-full">
                             <Gem class="mr-2 h-4 w-4" />
-                            Assinar Premium
+                            Assinar Plus
                         </Button>
                     </Link>
                 </div>

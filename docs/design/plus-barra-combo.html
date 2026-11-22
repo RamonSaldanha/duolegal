@@ -1,0 +1,780 @@
+<title>Barra do topo e combo Plus</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: uma coluna de leitura; cada escolha é uma fileira de celulares iguais, lado a lado,
+   que viram uma coluna no celular. Cores do papel do Memorize; os celulares seguem o tema escolhido. */
+:root {
+  --bg: #f8f6f1;
+  --panel: #efebe3;
+  --line: #e4ded2;
+  --ink: #1b1a17;
+  --mute: #78726a;
+  --brand: #efc12f;
+  --brand-edge: #b38c17;
+  --brand-soft: #f6ecc8;
+  --brand-soft-ink: #5e4800;
+  --pick: #3c5f9e;
+  --pick-soft: #edf1f8;
+  --font: "Instrument Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12110f; --panel: #1b1a17; --line: #2b2925; --ink: #efebe3; --mute: #a8a297;
+    --brand-soft: #3a3214; --brand-soft-ink: #f1dc95; --pick: #b3c7ea; --pick-soft: #1c2537;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12110f; --panel: #1b1a17; --line: #2b2925; --ink: #efebe3; --mute: #a8a297;
+  --brand-soft: #3a3214; --brand-soft-ink: #f1dc95; --pick: #b3c7ea; --pick-soft: #1c2537;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 16px;
+  line-height: 1.5;
+}
+.wrap {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 40px 80px;
+  display: grid;
+  gap: 56px;
+}
+h1, h2, h3 { margin: 0; text-wrap: balance; line-height: 1.15; }
+h1 { font-size: clamp(30px, 5vw, 44px); font-weight: 700; letter-spacing: -0.02em; }
+h2 { font-size: 26px; font-weight: 700; letter-spacing: -0.01em; }
+h3 { font-size: 17px; font-weight: 700; }
+p { margin: 0; max-width: 68ch; }
+.lead { color: var(--mute); font-size: 18px; }
+.eyebrow { font-size: 13px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--mute); }
+section { display: grid; gap: 20px; }
+.head { display: grid; gap: 8px; }
+
+/* Controles: chips de alternar */
+.controls { display: flex; flex-wrap: wrap; gap: 20px 28px; align-items: center; padding: 16px 18px; background: var(--panel); border-radius: 14px; }
+.ctl { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.ctl > span { font-size: 14px; font-weight: 600; color: var(--mute); margin-right: 2px; }
+.seg { display: inline-flex; background: var(--bg); border: 2px solid var(--line); border-radius: 999px; padding: 3px; gap: 2px; }
+.seg button {
+  font: inherit; font-size: 14px; font-weight: 600; color: var(--mute);
+  background: none; border: 0; border-radius: 999px; padding: 5px 12px; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.seg button:focus-visible, .pick:focus-within, .play:focus-visible, .copy:focus-visible { outline: 3px solid var(--pick); outline-offset: 2px; }
+.dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+
+/* Fileira de opções */
+.options { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px; }
+.opt { display: grid; gap: 12px; align-content: start; min-width: 0; }
+.opt-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.opt-id { font-size: 13px; font-weight: 700; color: var(--mute); letter-spacing: 0.06em; }
+.opt p { font-size: 15px; color: var(--mute); }
+.pick { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 700; cursor: pointer; padding: 6px 12px 6px 8px; border-radius: 999px; border: 2px solid var(--line); }
+.pick input { accent-color: var(--pick); margin: 0; width: 16px; height: 16px; }
+.pick:has(input:checked) { background: var(--pick-soft); border-color: var(--pick); color: var(--pick); }
+.opt:has(input:checked) .phone { outline: 3px solid var(--pick); outline-offset: 4px; }
+
+.row-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.play {
+  font: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
+  background: var(--brand); color: #2a2100; border: 0; border-radius: 12px;
+  padding: 8px 14px; box-shadow: 0 3px 0 var(--brand-edge);
+  translate: 0 0;
+}
+.play:active { translate: 0 3px; box-shadow: 0 0 0 var(--brand-edge); }
+.play.second { background: var(--panel); color: var(--ink); box-shadow: 0 3px 0 var(--line); }
+
+/* ===== O celular (os tokens --m-* mudam com o tema dos celulares) ===== */
+.phones-dark {
+  --m-bg: #1b1a17; --m-surface: #2b2925; --m-line: #3b3833; --m-ink: #efebe3; --m-mute: #a8a297;
+  --m-ok: #3f7d55; --m-ok-soft: #16261c; --m-ok-ink: #a6d9b7;
+  --m-energy: #efc12f; --m-energy-soft: #3a3214; --m-energy-ink: #f1dc95;
+  --m-streak: #f97316; --m-streak-soft: #3a2214;
+}
+.phones-light {
+  --m-bg: #f8f6f1; --m-surface: #ffffff; --m-line: #e4ded2; --m-ink: #1b1a17; --m-mute: #78726a;
+  --m-ok: #86c39c; --m-ok-soft: #edf5ef; --m-ok-ink: #2e7348;
+  --m-energy: #efc12f; --m-energy-soft: #f6ecc8; --m-energy-ink: #5e4800;
+  --m-streak: #ea6a0c; --m-streak-soft: #fbe6d6;
+}
+.phone {
+  position: relative;
+  width: 100%;
+  max-width: 360px;
+  aspect-ratio: 9 / 16.5;
+  background: var(--m-bg);
+  color: var(--m-ink);
+  border: 8px solid #0d0c0b;
+  border-radius: 34px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  isolation: isolate;
+}
+.urlbar { display: flex; align-items: center; gap: 8px; padding: 10px 12px 6px; background: var(--m-bg); }
+.urlbar div { flex: 1; height: 26px; border-radius: 999px; background: var(--m-surface); color: var(--m-mute); font-size: 12px; display: flex; align-items: center; padding: 0 12px; }
+.status { height: 22px; flex: none; }
+
+/* Barra do topo */
+.bar { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 10px 14px 12px; border-bottom: 2px solid var(--m-line); flex: none; }
+.stat { display: inline-flex; align-items: center; gap: 5px; font-weight: 700; font-size: 16px; font-variant-numeric: tabular-nums; white-space: nowrap; line-height: 1; }
+.stat svg { width: 19px; height: 19px; flex: none; }
+.pill { padding: 7px 10px; border-radius: 999px; }
+.energy { color: var(--m-energy); }
+.energy.pill { background: var(--m-energy-soft); color: var(--m-energy-ink); }
+.energy.pill svg { color: var(--m-energy); }
+.streak { color: var(--m-streak); }
+.streak.pill { background: var(--m-streak-soft); }
+.xp { color: var(--xp); border-radius: 10px; }
+.xp .tag { font-size: 11px; font-weight: 800; letter-spacing: 0.04em; padding: 4px 5px; border-radius: 6px; background: var(--xp-soft); color: var(--xp); }
+.xp.pill { background: var(--xp-soft); }
+.xp .num { display: inline-block; min-width: 3ch; }
+.plus { display: inline-flex; align-items: center; gap: 4px; font-weight: 800; font-size: 13px; white-space: nowrap; border-radius: 999px; padding: 7px 10px; line-height: 1; }
+.plus svg { width: 15px; height: 15px; }
+.plus.solid { background: var(--plus); color: var(--plus-on); box-shadow: 0 3px 0 var(--plus-edge); }
+.plus.soft { background: var(--plus-soft); color: var(--plus-ink); }
+.plus.line { border: 2px solid var(--plus); color: var(--plus-ink); padding: 5px 9px; }
+.plus.text { padding: 0; color: var(--plus-ink); font-size: 14px; }
+.plus-energy { background: var(--plus-soft); color: var(--plus-ink); }
+.plus-energy svg { color: var(--plus); }
+/* Na web o avatar fica: a barra aperta um pouco para caber */
+.phone.web .bar { padding-inline: 10px; gap: 4px; }
+.phone.web .stat { font-size: 15px; }
+.phone.web .pill, .phone.web .plus:not(.text) { padding-inline: 8px; }
+.phone.web .plus.line { padding-inline: 7px; }
+.avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--m-surface); color: var(--m-ink); display: grid; place-items: center; font-weight: 700; font-size: 14px; flex: none; }
+
+/* Corpo: uma fase em jogo */
+.body { flex: 1; padding: 16px 16px 0; display: grid; align-content: start; gap: 10px; min-height: 0; }
+.progress { height: 12px; border-radius: 999px; background: var(--m-surface); overflow: hidden; }
+.progress i { display: block; height: 100%; width: 46%; background: var(--m-ok); border-radius: 999px; }
+.law { font-size: 13px; color: var(--m-mute); font-weight: 600; }
+.text { font-size: 15px; line-height: 1.55; }
+.gap { display: inline-block; padding: 0 6px; border-radius: 6px; background: var(--m-ok-soft); color: var(--m-ok-ink); font-weight: 700; border-bottom: 2px solid var(--m-ok); }
+.result { flex: none; margin-top: auto; background: var(--m-ok-soft); color: var(--m-ok-ink); padding: 14px 16px 16px; display: grid; gap: 4px; }
+.result b { font-size: 17px; }
+.result .seq { display: inline-flex; align-items: center; gap: 4px; font-weight: 700; font-size: 14px; }
+.result .seq em { font-style: normal; color: var(--xp-on-ok); display: inline-flex; align-items: center; gap: 3px; }
+.result .seq svg { width: 14px; height: 14px; }
+.result .cont { margin-top: 8px; height: 40px; border-radius: 12px; background: var(--m-ok); box-shadow: 0 3px 0 color-mix(in srgb, var(--m-ok) 60%, #000); }
+
+/* Camada da animação, presa ao celular */
+.fx { position: absolute; inset: 0; pointer-events: none; z-index: 5; overflow: hidden; }
+.fx svg.full { position: absolute; inset: 0; width: 100%; height: 100%; }
+.fx .flash { position: absolute; inset: 0; background: var(--xp); opacity: 0; }
+.fx .word-wrap { position: absolute; left: 0; right: 0; display: grid; justify-items: center; gap: 8px; opacity: 0; }
+.fx .kick { font-size: 15px; font-weight: 800; color: var(--xp-light); }
+.fx .word {
+  font-size: 34px; font-weight: 800; letter-spacing: 0.03em; white-space: nowrap; line-height: 1.1;
+  color: var(--xp-light); -webkit-text-stroke: 0.09em var(--xp-edge); paint-order: stroke fill;
+  text-shadow: 0 0.08em 0 var(--xp-edge);
+}
+.fx .chip { display: inline-flex; align-items: center; gap: 4px; padding: 5px 11px 5px 8px; border-radius: 999px; background: var(--xp); color: #fff; font-weight: 800; font-size: 14px; }
+.fx .chip svg { width: 15px; height: 15px; }
+.fx .spark { position: absolute; left: 0; top: 0; width: 9px; height: 9px; border-radius: 2px; background: var(--xp-light); }
+.fx .mini { position: absolute; font-size: 12px; font-weight: 800; color: var(--xp); white-space: nowrap; opacity: 0; }
+.fx .plus5 { position: absolute; font-size: 15px; font-weight: 800; color: var(--xp-light); -webkit-text-stroke: 0.12em var(--xp-edge); paint-order: stroke fill; opacity: 0; }
+.fx .ring { position: absolute; width: 20px; height: 20px; border-radius: 50%; border: 4px solid var(--xp-light); opacity: 0; }
+.xp.hit { background: var(--xp) !important; color: #fff !important; }
+.xp.hit .tag { background: rgba(255,255,255,.25); color: #fff; }
+
+/* Nomes */
+.names { width: 100%; border-collapse: collapse; font-size: 15px; }
+.names-scroll { overflow-x: auto; border: 2px solid var(--line); border-radius: 14px; }
+.names th, .names td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.names tr:last-child td { border-bottom: 0; }
+.names th { font-size: 13px; color: var(--mute); font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; background: var(--panel); }
+.names td:first-child { font-weight: 700; white-space: nowrap; }
+.names td.pickcell { width: 1%; }
+.tagline { display: inline-block; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--brand-soft); color: var(--brand-soft-ink); margin-left: 6px; }
+.note { padding: 16px 18px; border-radius: 14px; background: var(--panel); display: grid; gap: 8px; }
+.note p { font-size: 15px; }
+
+/* Resumo */
+.summary { display: grid; gap: 12px; padding: 20px; border-radius: 16px; border: 2px solid var(--line); }
+.summary output { font-size: 17px; font-weight: 600; }
+.copy { font: inherit; font-size: 14px; font-weight: 700; justify-self: start; cursor: pointer; background: var(--ink); color: var(--bg); border: 0; border-radius: 12px; padding: 9px 16px; }
+.copied { font-size: 14px; color: var(--mute); }
+
+@media (max-width: 640px) {
+  .wrap { gap: 44px; padding-block: 24px 56px; }
+  .phone { margin-inline: auto; }
+}
+</style>
+
+<div class="wrap">
+  <header class="head">
+    <p class="eyebrow">Memorize · proposta para escolher</p>
+    <h1>Barra do topo e combo azul do Plus</h1>
+    <p class="lead">Para quem assina, o combo rende XP e não energia. Aqui estão três animações com o trovão azul, quatro barras do topo para a web e o app, as cores do XP e do Plus, e os nomes possíveis para o plano. Marque uma de cada e copie o resumo no fim.</p>
+  </header>
+
+  <div class="controls" role="group" aria-label="Como os celulares aparecem">
+    <div class="ctl"><span>Cor do XP</span><div class="seg" id="xpColor"></div></div>
+    <div class="ctl"><span>Cor do Plus</span><div class="seg" id="plusColor"></div></div>
+    <div class="ctl"><span>Quem vê</span><div class="seg" id="who"></div></div>
+    <div class="ctl"><span>Tela</span><div class="seg" id="mode"></div></div>
+  </div>
+
+  <section id="anim">
+    <div class="head">
+      <p class="eyebrow">1 · Combo de quem assina</p>
+      <h2>O trovão azul que vira XP</h2>
+      <p>O raio amarelo continua sendo da energia e voa para a bateria. O azul é o do XP: cai, mostra o ganho e termina no contador de XP, que soma +5 na hora. Em x6 e x9 ele cresce, como hoje. Estes celulares são sempre de quem assina e usam a barra que você marcar abaixo.</p>
+    </div>
+    <div class="controls" role="group" aria-label="Tamanho do combo">
+      <div class="ctl"><span>Sequência</span><div class="seg" id="tier"></div></div>
+      <button class="play" type="button" id="playAll">Tocar as três</button>
+    </div>
+    <div class="options" id="animOptions"></div>
+  </section>
+
+  <section id="bars">
+    <div class="head">
+      <p class="eyebrow">2 · Barra do topo</p>
+      <h2>Quatro jeitos de arrumar o topo</h2>
+      <p>Em todas, os itens se espalham de ponta a ponta, o XP ganha a cor própria e o Plus tem sempre um lugar: quem não assina vê o convite, quem assina vê o selo. No app o avatar sai, porque o Perfil já está na barra de baixo. Na web ele fica, porque é por ele que se chega às configurações e ao sair.</p>
+    </div>
+    <div class="controls" role="group" aria-label="Onde">
+      <div class="ctl"><span>Onde</span><div class="seg" id="platform"></div></div>
+    </div>
+    <div class="options" id="barOptions"></div>
+  </section>
+
+  <section id="names-sec">
+    <div class="head">
+      <p class="eyebrow">3 · Nome do plano</p>
+      <h2>Plus, ou outro nome?</h2>
+      <p>O nome aparece no botão ("Seja ___"), no selo da barra e na tela de assinatura. Ele precisa caber num botão pequeno e soar bem nessa frase.</p>
+    </div>
+    <div class="names-scroll">
+      <table class="names">
+        <thead><tr><th scope="col"></th><th scope="col">Nome</th><th scope="col">No botão</th><th scope="col">Como soa</th></tr></thead>
+        <tbody id="nameRows"></tbody>
+      </table>
+    </div>
+    <div class="note">
+      <h3>O que eu escolheria</h3>
+      <p><b>Plus</b> é o que mais pega: todo mundo já conhece pelo streaming e pelos apps (Disney+, Paramount+, o antigo Duolingo Plus), é curto e cabe em qualquer botão. Ele também combina com o símbolo de "+" no selo e não promete nada que o plano não entrega.</p>
+      <p>Se quiser personalidade de Direito, <b>Supremo</b> é o mais divertido para estudante ("Seja Supremo", "Você é Supremo"), mas pode soar exagerado em aviso de cobrança e no recibo. Um meio-termo é chamar o plano de Plus e usar "Supremo" só no texto da festa, como no "Imparável!".</p>
+    </div>
+  </section>
+
+  <section class="summary" aria-live="polite">
+    <p class="eyebrow">Sua escolha</p>
+    <output id="summary"></output>
+    <button class="copy" type="button" id="copy">Copiar resumo</button>
+    <span class="copied" id="copied" hidden>Copiado. Cole na conversa.</span>
+  </section>
+</div>
+
+<script>
+(() => {
+  // ---------- Dados ----------
+  const XP_COLORS = {
+    azul:   { name: 'Azul',   c: '#3b82f6', edge: '#1d4ed8', light: '#7db3ff' },
+    ceu:    { name: 'Céu',    c: '#1ea0e6', edge: '#0d6aa0', light: '#74cdf7' },
+    indigo: { name: 'Índigo', c: '#6366f1', edge: '#4338ca', light: '#a5a8ff' },
+  };
+  const PLUS_COLORS = {
+    roxo:    { name: 'Roxo',    c: '#8b5cc7', edge: '#643f96', light: '#c3a6ec' },
+    magenta: { name: 'Magenta', c: '#d6438d', edge: '#9c2a62', light: '#f3a3cb' },
+    tinta:   { name: 'Preto',   c: 'var(--m-ink)', edge: 'var(--m-mute)', light: 'var(--m-ink)', ink: true },
+  };
+  const ANIMS = [
+    { id: 'A1', name: 'Trovão do céu', text: 'A tela pisca em azul, um trovão cai do alto até o meio, "COMBO x3" salta com o "+5 XP" e a etiqueta voa até o contador do topo.' },
+    { id: 'A2', name: 'Descarga até o XP', text: 'Sem nada no meio da tela: uma descarga sai da barra de resultado e sobe até o contador de XP, que acende e soma +5. É o mais discreto.' },
+    { id: 'A3', name: 'Tempestade azul', text: 'A festa de hoje, em azul: raios cruzam a tela, "COMBO x3" salta no meio e o +5 se parte em faíscas que entram uma a uma no contador.' },
+  ];
+  const BARS = [
+    { id: 'B1', name: 'Em linha', text: 'O desenho de hoje, espalhado. XP com a etiqueta na cor nova e o Plus como uma pílula pequena no fim.' },
+    { id: 'B2', name: 'Pílulas', text: 'Cada número na sua pílula colorida, todas da mesma altura. O Plus é um botão de verdade, com a base 3D.' },
+    { id: 'B3', name: 'Plus na energia', text: 'Para quem assina, a energia vira o selo: "∞ Plus" na cor do plano, e sobra espaço. Quem não assina vê a bateria e o botão no fim.' },
+    { id: 'B4', name: 'Sem caixas', text: 'Só ícone e número, sem fundo. O Plus vira um texto com o "+". É o mais leve e o que mais cabe em tela pequena.' },
+  ];
+  const NAMES = [
+    ['Plus', 'Seja Plus', 'Conhecido, curto, combina com o "+". O mais seguro.', true],
+    ['Pro', 'Seja Pro', 'Soa profissional e sério, bom para quem vai fazer a OAB. Lembra ferramenta de trabalho.'],
+    ['Premium', 'Seja Premium', 'O nome de hoje. Claro, mas longo para o selo e genérico.'],
+    ['Supremo', 'Seja Supremo', 'Trocadilho com o STF, divertido e memorável. Pode soar exagerado em cobrança.'],
+    ['Ilimitado', 'Assine o Ilimitado', 'Diz o principal (energia sem fim), mas fica preso a isso se o plano mudar.'],
+    ['Max', 'Seja Max', 'Moderno e curto, mas sem ligação com estudo nem com Direito.'],
+    ['Toga', 'Vista a Toga', 'Bonito e temático, mas a toga é do juiz; quem estuda para a OAB quer ser advogado.'],
+  ];
+
+  const state = { xp: 'azul', plus: 'roxo', who: 'sub', mode: 'dark', tier: 3, platform: 'app', anim: null, bar: null, name: null };
+
+  // ---------- Ícones (traços do Lucide) ----------
+  const I = {
+    battery: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m11 7-3 5h4l-3 5"/><path d="M14.856 6H16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.935"/><path d="M5.14 18H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h2.936"/><path d="M22 14v-4"/></svg>',
+    flame: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>',
+    zap: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg>',
+    inf: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 12c-2-2.67-4-4-6-4a4 4 0 1 0 0 8c2 0 4-1.33 6-4Zm0 0c2 2.67 4 4 6 4a4 4 0 0 0 0-8c-2 0-4 1.33-6 4Z"/></svg>',
+    plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  };
+
+  const fmt = (n) => n.toLocaleString('pt-BR');
+  const data = (sub) => sub
+    ? { energy: null, streak: 47, xp: 59840 }
+    : { energy: 9, streak: 2, xp: 1730 };
+  const planName = () => (state.name || 'Plus');
+
+  // ---------- A barra ----------
+  function barHTML(bar, platform, sub) {
+    const d = data(sub);
+    const name = planName();
+    const energyVal = sub ? I.inf : `<span>${d.energy}</span>`;
+    const xpNum = `<span class="num" data-xp-num>${fmt(d.xp)}</span>`;
+    const avatar = platform === 'web' ? '<span class="avatar">H</span>' : '';
+    let items = [];
+    if (bar === 'B1') {
+      items = [
+        `<span class="stat energy pill">${I.battery}${energyVal}</span>`,
+        `<span class="stat streak">${I.flame}<span>${d.streak}</span></span>`,
+        `<span class="stat xp" data-xp><span class="tag">XP</span>${xpNum}</span>`,
+        sub ? `<span class="plus soft">${I.plus}${name}</span>` : `<span class="plus line">${I.plus}${name}</span>`,
+      ];
+    } else if (bar === 'B2') {
+      items = [
+        `<span class="stat energy pill">${I.battery}${energyVal}</span>`,
+        `<span class="stat streak pill">${I.flame}<span>${d.streak}</span></span>`,
+        `<span class="stat xp pill" data-xp>${I.zap.replace('<svg', '<svg style="color:var(--xp)"')}${xpNum}</span>`,
+        sub ? `<span class="plus soft">${I.plus}${name}</span>` : `<span class="plus solid">Seja ${name}</span>`,
+      ];
+    } else if (bar === 'B3') {
+      items = sub
+        ? [
+            `<span class="stat pill plus-energy">${I.inf}<span style="font-size:14px">${name}</span></span>`,
+            `<span class="stat streak pill">${I.flame}<span>${d.streak}</span></span>`,
+            `<span class="stat xp pill" data-xp><span class="tag">XP</span>${xpNum}</span>`,
+          ]
+        : [
+            `<span class="stat energy pill">${I.battery}${energyVal}</span>`,
+            `<span class="stat streak pill">${I.flame}<span>${d.streak}</span></span>`,
+            `<span class="stat xp pill" data-xp><span class="tag">XP</span>${xpNum}</span>`,
+            `<span class="plus solid">${I.plus}${name}</span>`,
+          ];
+    } else {
+      items = [
+        `<span class="stat energy">${I.battery}${energyVal}</span>`,
+        `<span class="stat streak">${I.flame}<span>${d.streak}</span></span>`,
+        `<span class="stat xp" data-xp>${I.zap}${xpNum}</span>`,
+        sub ? `<span class="plus text">${I.plus}${name}</span>` : `<span class="plus text">${I.plus}Seja ${name}</span>`,
+      ];
+    }
+    return `<div class="bar">${items.join('')}${avatar}</div>`;
+  }
+
+  function phoneHTML(bar, platform, withResult, sub = state.who === 'sub') {
+    const top = platform === 'web'
+      ? '<div class="urlbar"><div>memorizedireito.com/play</div></div>'
+      : '<div class="status"></div>';
+    const result = withResult
+      ? `<div class="result"><b>Muito bem!</b><span class="seq">Sequência de ${state.tier}! <em>${I.zap}+5 XP</em></span><div class="cont"></div></div>`
+      : '';
+    return `<div class="phone ${platform}">${top}${barHTML(bar, platform, sub)}
+      <div class="body">
+        <div class="progress"><i></i></div>
+        <p class="law">Estatuto da OAB · Art. 7º</p>
+        <p class="text">São direitos do advogado exercer, com <span class="gap">liberdade</span>, a profissão em todo o território nacional.</p>
+      </div>${result}<div class="fx"></div></div>`;
+  }
+
+  // ---------- Cores ----------
+  function applyColors() {
+    const x = XP_COLORS[state.xp];
+    const p = PLUS_COLORS[state.plus];
+    const root = document.querySelectorAll('.phones');
+    root.forEach((el) => {
+      el.className = `phones phones-${state.mode}`;
+      el.style.setProperty('--xp', x.c);
+      el.style.setProperty('--xp-edge', x.edge);
+      el.style.setProperty('--xp-light', x.light);
+      el.style.setProperty('--xp-soft', `color-mix(in srgb, ${x.c} ${state.mode === 'dark' ? 22 : 14}%, var(--m-bg))`);
+      el.style.setProperty('--xp-on-ok', state.mode === 'dark' ? x.light : x.edge);
+      el.style.setProperty('--plus', p.c);
+      el.style.setProperty('--plus-edge', p.ink ? 'color-mix(in srgb, var(--m-ink) 55%, var(--m-bg))' : p.edge);
+      el.style.setProperty('--plus-on', p.ink ? 'var(--m-bg)' : '#fff');
+      el.style.setProperty('--plus-soft', p.ink ? 'var(--m-surface)' : `color-mix(in srgb, ${p.c} ${state.mode === 'dark' ? 24 : 14}%, var(--m-bg))`);
+      el.style.setProperty('--plus-ink', p.ink ? 'var(--m-ink)' : (state.mode === 'dark' ? p.light : p.edge));
+    });
+  }
+
+  // ---------- Montagem ----------
+  function seg(id, options, key, after) {
+    const el = document.getElementById(id);
+    el.innerHTML = options.map(([v, label, dot]) =>
+      `<button type="button" data-v="${v}" aria-pressed="${String(state[key]) === String(v)}">${dot ? `<span class="dot" style="background:${dot}"></span>` : ''}${label}</button>`).join('');
+    el.addEventListener('click', (e) => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      state[key] = key === 'tier' ? Number(b.dataset.v) : b.dataset.v;
+      el.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+      after();
+    });
+  }
+
+  const animWrap = document.getElementById('animOptions');
+  const barWrap = document.getElementById('barOptions');
+
+  function renderAnims() {
+    animWrap.classList.add('phones');
+    animWrap.innerHTML = ANIMS.map((a) => `
+      <article class="opt" data-anim="${a.id}">
+        <div class="opt-top"><h3>${a.name}</h3><span class="opt-id">${a.id}</span></div>
+        ${phoneHTML(state.bar || 'B1', 'app', true, true)}
+        <p>${a.text}</p>
+        <div class="row-actions">
+          <button class="play" type="button" data-play="${a.id}">Tocar</button>
+          <label class="pick"><input type="radio" name="anim" value="${a.id}" ${state.anim === a.id ? 'checked' : ''}> Quero esta</label>
+        </div>
+      </article>`).join('');
+  }
+  function renderBars() {
+    barWrap.classList.add('phones');
+    barWrap.innerHTML = BARS.map((b) => `
+      <article class="opt">
+        <div class="opt-top"><h3>${b.name}</h3><span class="opt-id">${b.id}</span></div>
+        ${phoneHTML(b.id, state.platform, false)}
+        <p>${b.text}</p>
+        <div class="row-actions">
+          <label class="pick"><input type="radio" name="bar" value="${b.id}" ${state.bar === b.id ? 'checked' : ''}> Quero esta</label>
+        </div>
+      </article>`).join('');
+  }
+  function renderNames() {
+    document.getElementById('nameRows').innerHTML = NAMES.map(([n, btn, how, best]) => `
+      <tr>
+        <td class="pickcell"><label class="pick"><input type="radio" name="name" value="${n}" ${state.name === n ? 'checked' : ''}><span class="sr">${n}</span></label></td>
+        <td>${n}${best ? '<span class="tagline">recomendo</span>' : ''}</td>
+        <td>${btn}</td>
+        <td>${how}</td>
+      </tr>`).join('');
+    document.querySelectorAll('#nameRows .sr').forEach((s) => { s.style.cssText = 'position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)'; });
+  }
+  function renderAll() {
+    renderAnims();
+    renderBars();
+    applyColors();
+    summary();
+  }
+
+  function summary() {
+    const a = ANIMS.find((x) => x.id === state.anim);
+    const b = BARS.find((x) => x.id === state.bar);
+    const parts = [
+      a ? `Combo: ${a.id} (${a.name})` : 'Combo: ainda não escolhido',
+      b ? `Barra: ${b.id} (${b.name})` : 'Barra: ainda não escolhida',
+      `XP: ${XP_COLORS[state.xp].name.toLowerCase()}`,
+      `Plus: ${PLUS_COLORS[state.plus].name.toLowerCase()}`,
+      `Nome: ${state.name || 'ainda não escolhido'}`,
+    ];
+    document.getElementById('summary').textContent = parts.join(' · ');
+  }
+
+  document.addEventListener('change', (e) => {
+    const t = e.target;
+    if (t.name === 'anim') state.anim = t.value;
+    if (t.name === 'bar') { state.bar = t.value; renderAnims(); applyColors(); }
+    if (t.name === 'name') { state.name = t.value; renderAll(); }
+    summary();
+  });
+
+  document.getElementById('copy').addEventListener('click', () => {
+    const text = document.getElementById('summary').textContent;
+    const done = () => { document.getElementById('copied').hidden = false; };
+    try {
+      navigator.clipboard.writeText(text).then(done, () => selectSummary());
+    } catch { selectSummary(); }
+  });
+  function selectSummary() {
+    const r = document.createRange();
+    r.selectNodeContents(document.getElementById('summary'));
+    const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+  }
+
+  // ---------- Animação ----------
+  const reduce = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  const play = (el, k, o = {}) => el.animate(k, { fill: 'forwards', easing: 'cubic-bezier(.22,1,.36,1)', ...o }).finished.catch(() => {});
+  const NS = 'http://www.w3.org/2000/svg';
+
+  // Um raio em zigue-zague entre dois pontos
+  function jag(a, b, n, amp) {
+    const dx = b.x - a.x, dy = b.y - a.y, len = Math.hypot(dx, dy) || 1;
+    const nx = -dy / len, ny = dx / len;
+    let d = `M ${a.x.toFixed(1)} ${a.y.toFixed(1)}`;
+    for (let k = 1; k < n; k++) {
+      const t = k / n;
+      const off = (k % 2 ? 1 : -1) * amp * (0.5 + Math.random() * 0.6);
+      d += ` L ${(a.x + dx * t + nx * off).toFixed(1)} ${(a.y + dy * t + ny * off).toFixed(1)}`;
+    }
+    return d + ` L ${b.x.toFixed(1)} ${b.y.toFixed(1)}`;
+  }
+  function bolt(svg, d, width, delay = 0, hold = 260) {
+    const out = [];
+    for (const cls of ['edge', 'core']) {
+      const p = document.createElementNS(NS, 'path');
+      p.setAttribute('d', d);
+      p.setAttribute('pathLength', '1');
+      p.setAttribute('fill', 'none');
+      p.setAttribute('stroke-linejoin', 'miter');
+      p.setAttribute('stroke-linecap', 'square');
+      p.setAttribute('stroke-dasharray', '1');
+      p.setAttribute('stroke-dashoffset', '1');
+      p.style.stroke = cls === 'edge' ? 'var(--xp-edge)' : 'var(--xp-light)';
+      p.setAttribute('stroke-width', cls === 'edge' ? width + 8 : width);
+      svg.append(p);
+      out.push(play(p, [
+        { strokeDashoffset: 1, opacity: 1 },
+        { strokeDashoffset: 0, opacity: 1, offset: 0.35 },
+        { strokeDashoffset: 0, opacity: 1, offset: 0.7 },
+        { strokeDashoffset: 0, opacity: 0 },
+      ], { duration: 520 + hold, delay, easing: 'ease-out' }));
+    }
+    return Promise.all(out);
+  }
+
+  const TIER = (s) => (s >= 9 ? { k: 'Imparável!', bolts: 5, sparks: 16, w: 1.35 } : s >= 6 ? { k: 'Eletrizante!', bolts: 3, sparks: 10, w: 1.15 } : { k: '', bolts: 2, sparks: 0, w: 1 });
+
+  function rel(phone, el) {
+    const a = phone.getBoundingClientRect(), b = el.getBoundingClientRect();
+    return { x: b.left - a.left + b.width / 2, y: b.top - a.top + b.height / 2, w: b.width, h: b.height };
+  }
+
+  // O contador de XP acende e soma
+  async function hitXp(phone, add, steps = 1) {
+    const xp = phone.querySelector('[data-xp]');
+    const num = phone.querySelector('[data-xp-num]');
+    if (!xp || !num) return;
+    const start = Number(num.dataset.base || num.textContent.replace(/\./g, ''));
+    num.dataset.base = start;
+    xp.classList.add('hit');
+    play(xp, [{ scale: 1 }, { scale: 1.18, offset: 0.35 }, { scale: 1 }], { duration: 420, fill: 'none' });
+    for (let i = 1; i <= steps; i++) {
+      num.textContent = fmt(start + Math.round((add * i) / steps));
+      await wait(steps > 1 ? 70 : 0);
+    }
+    await wait(380);
+    xp.classList.remove('hit');
+  }
+  function resetXp(phone) {
+    const num = phone.querySelector('[data-xp-num]');
+    if (num && num.dataset.base) num.textContent = fmt(Number(num.dataset.base));
+  }
+
+  function stage(phone) {
+    const fx = phone.querySelector('.fx');
+    fx.replaceChildren();
+    resetXp(phone);
+    const svg = document.createElementNS(NS, 'svg');
+    svg.setAttribute('class', 'full');
+    const w = phone.clientWidth, h = phone.clientHeight;
+    svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+    fx.append(svg);
+    return { fx, svg, w, h };
+  }
+  function wordBlock(fx, y, streak, tier, withChip = true) {
+    const box = document.createElement('div');
+    box.className = 'word-wrap';
+    box.style.top = `${y}px`;
+    box.innerHTML = `${tier.k ? `<span class="kick">${tier.k}</span>` : ''}<span class="word">COMBO x${streak}</span>${withChip ? `<span class="chip">${I.zap}+5 XP</span>` : ''}`;
+    fx.append(box);
+    return box;
+  }
+  function sparks(fx, n, x, y) {
+    for (let i = 0; i < n; i++) {
+      const s = document.createElement('i');
+      s.className = 'spark';
+      if (i % 3 === 0) s.style.background = 'var(--xp)';
+      fx.append(s);
+      const a = (Math.PI * 2 * i) / n + Math.random() * 0.5;
+      const dist = 90 * (0.6 + Math.random() * 0.6);
+      play(s, [
+        { transform: `translate(${x}px, ${y}px) rotate(0) scale(1)`, opacity: 1 },
+        { transform: `translate(${x + Math.cos(a) * dist}px, ${y + Math.sin(a) * dist}px) rotate(220deg) scale(.4)`, opacity: 0 },
+      ], { duration: 700 + Math.random() * 300, easing: 'cubic-bezier(.2,.8,.3,1)' });
+    }
+  }
+  function flash(fx, peak = 0.35) {
+    const f = document.createElement('div');
+    f.className = 'flash';
+    fx.append(f);
+    return play(f, [{ opacity: 0 }, { opacity: peak, offset: 0.2 }, { opacity: 0 }], { duration: 480, easing: 'ease-out' });
+  }
+
+  // A1: trovão do céu
+  async function a1(phone, streak) {
+    const t = TIER(streak);
+    const { fx, svg, w, h } = stage(phone);
+    const cy = h * 0.44;
+    flash(fx, 0.3);
+    bolt(svg, jag({ x: w * 0.55, y: -10 }, { x: w * 0.5, y: cy - 30 }, 7, 22), 12 * t.w);
+    for (let i = 1; i < t.bolts; i++) {
+      const side = i % 2 ? -1 : 1;
+      bolt(svg, jag({ x: w * (0.5 + side * 0.28 * Math.ceil(i / 2)), y: -10 }, { x: w * 0.5 + side * 20, y: cy - 40 }, 6, 16), 7, 60 * i, 160);
+    }
+    await wait(170);
+    const ring = document.createElement('i');
+    ring.className = 'ring';
+    fx.append(ring);
+    play(ring, [
+      { transform: `translate(${w / 2 - 10}px, ${cy - 40}px) scale(1)`, opacity: 1 },
+      { transform: `translate(${w / 2 - 10}px, ${cy - 40}px) scale(${7 * t.w})`, opacity: 0 },
+    ], { duration: 560, easing: 'ease-out' });
+    sparks(fx, t.sparks, w / 2, cy - 30);
+    const box = wordBlock(fx, cy - 40, streak, t);
+    await play(box, [
+      { transform: 'scale(.3) rotate(-8deg)', opacity: 0 },
+      { transform: 'scale(1.15) rotate(2deg)', opacity: 1, offset: 0.6 },
+      { transform: 'scale(1) rotate(0)', opacity: 1 },
+    ], { duration: 420 });
+    await wait(650);
+    // A etiqueta "+5 XP" voa até o contador
+    const chip = box.querySelector('.chip');
+    const from = rel(phone, chip);
+    const to = rel(phone, phone.querySelector('[data-xp]'));
+    const flyer = chip.cloneNode(true);
+    flyer.style.cssText = 'position:absolute;left:0;top:0;';
+    fx.append(flyer);
+    chip.style.visibility = 'hidden';
+    play(box, [{ opacity: 1 }, { opacity: 0, transform: 'translateY(-14px) scale(.94)' }], { duration: 260, easing: 'ease-in' });
+    const fw = flyer.offsetWidth / 2, fh = flyer.offsetHeight / 2;
+    await play(flyer, [
+      { transform: `translate(${from.x - fw}px, ${from.y - fh}px) scale(1)` },
+      { transform: `translate(${(from.x + to.x) / 2 + 30 - fw}px, ${(from.y + to.y) / 2 - fh}px) scale(.9)`, offset: 0.5 },
+      { transform: `translate(${to.x - fw}px, ${to.y - fh}px) scale(.45)`, opacity: 0.3 },
+    ], { duration: 560, easing: 'cubic-bezier(.5,0,.3,1)' });
+    flyer.remove();
+    await hitXp(phone, 5);
+  }
+
+  // A2: descarga da barra de resultado até o XP
+  async function a2(phone, streak) {
+    const t = TIER(streak);
+    const { fx, svg } = stage(phone);
+    const from = rel(phone, phone.querySelector('.result .seq em') || phone.querySelector('.result'));
+    const xpEl = phone.querySelector('[data-xp]');
+    const to = rel(phone, xpEl);
+    const a = { x: from.x, y: from.y - 6 }, b = { x: to.x, y: to.y + to.h / 2 };
+    for (let i = 0; i < t.bolts - 1; i++) {
+      bolt(svg, jag(a, b, 9, 18 + i * 6), (i === 0 ? 7 : 4) * t.w, i * 70, 140);
+    }
+    flash(fx, 0.12);
+    await wait(260);
+    const p = document.createElement('span');
+    p.className = 'plus5';
+    p.textContent = '+5';
+    fx.append(p);
+    p.style.left = `${to.x - 12}px`;
+    p.style.top = `${to.y + to.h / 2 + 4}px`;
+    const m = document.createElement('span');
+    m.className = 'mini';
+    m.textContent = t.k ? `COMBO x${streak} · ${t.k}` : `COMBO x${streak}`;
+    fx.append(m);
+    m.style.left = `${Math.max(8, to.x - 60)}px`;
+    m.style.top = `${to.y + to.h / 2 + 26}px`;
+    play(p, [{ opacity: 0, transform: 'translateY(4px) scale(.6)' }, { opacity: 1, transform: 'translateY(-10px) scale(1.2)', offset: 0.4 }, { opacity: 0, transform: 'translateY(-30px) scale(1)' }], { duration: 1100 });
+    play(m, [{ opacity: 0, transform: 'translateY(-4px)' }, { opacity: 1, transform: 'translateY(0)', offset: 0.2 }, { opacity: 1, offset: 0.8 }, { opacity: 0 }], { duration: 1500 });
+    sparks(fx, t.sparks, to.x, to.y);
+    await hitXp(phone, 5);
+  }
+
+  // A3: tempestade azul, o +5 em faíscas
+  async function a3(phone, streak) {
+    const t = TIER(streak);
+    const { fx, svg, w, h } = stage(phone);
+    const cy = h * 0.44;
+    flash(fx, 0.35);
+    const n = t.bolts + 1;
+    for (let i = 0; i < n; i++) {
+      const x0 = w * (0.1 + 0.8 * ((i + 0.5) / n));
+      const drift = (i % 2 ? -1 : 1) * w * 0.3;
+      bolt(svg, jag({ x: x0, y: -20 }, { x: x0 + drift, y: h + 20 }, 7, 22), 10, i * 60, 120);
+    }
+    sparks(fx, t.sparks, w / 2, cy);
+    const box = wordBlock(fx, cy - 40, streak, t);
+    await play(box, [
+      { transform: 'scale(.3) rotate(-10deg)', opacity: 0 },
+      { transform: 'scale(1.18) rotate(3deg)', opacity: 1, offset: 0.6 },
+      { transform: 'scale(1) rotate(0)', opacity: 1 },
+    ], { duration: 440 });
+    await wait(600);
+    const chip = box.querySelector('.chip');
+    const from = rel(phone, chip);
+    const to = rel(phone, phone.querySelector('[data-xp]'));
+    play(box, [{ opacity: 1 }, { opacity: 0, transform: 'translateY(-14px) scale(.94)' }], { duration: 260, easing: 'ease-in' });
+    const xpNum = phone.querySelector('[data-xp-num]');
+    const base = Number(xpNum.textContent.replace(/\./g, ''));
+    xpNum.dataset.base = base;
+    const flights = [];
+    for (let i = 0; i < 5; i++) {
+      const s = document.createElement('span');
+      s.innerHTML = I.zap;
+      s.style.cssText = 'position:absolute;left:0;top:0;width:16px;height:16px;color:var(--xp-light)';
+      s.firstChild.style.cssText = 'width:16px;height:16px;display:block';
+      fx.append(s);
+      const midX = (from.x + to.x) / 2 + (i - 2) * 26;
+      flights.push(play(s, [
+        { transform: `translate(${from.x - 8 + (i - 2) * 10}px, ${from.y - 8}px) scale(1.3)`, opacity: 1 },
+        { transform: `translate(${midX - 8}px, ${(from.y + to.y) / 2}px) scale(1)`, opacity: 1, offset: 0.5 },
+        { transform: `translate(${to.x - 8}px, ${to.y - 8}px) scale(.5)`, opacity: 0.2 },
+      ], { duration: 520, delay: i * 90, easing: 'cubic-bezier(.5,0,.3,1)' }).then(() => {
+        s.remove();
+        xpNum.textContent = fmt(base + i + 1);
+        const xp = phone.querySelector('[data-xp]');
+        xp.classList.add('hit');
+        play(xp, [{ scale: 1 }, { scale: 1.12, offset: 0.4 }, { scale: 1 }], { duration: 200, fill: 'none' });
+      }));
+    }
+    await Promise.all(flights);
+    await wait(300);
+    phone.querySelector('[data-xp]').classList.remove('hit');
+  }
+
+  const RUN = { A1: a1, A2: a2, A3: a3 };
+  const running = new WeakMap();
+  async function runAnim(id) {
+    const phone = animWrap.querySelector(`[data-anim="${id}"] .phone`);
+    if (!phone || running.get(phone)) return;
+    running.set(phone, true);
+    try {
+      if (reduce()) await hitXp(phone, 5);
+      else await RUN[id](phone, state.tier);
+    } finally {
+      running.set(phone, false);
+      await wait(900);
+      if (!running.get(phone)) resetXp(phone);
+    }
+  }
+  animWrap.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-play]');
+    if (b) runAnim(b.dataset.play);
+  });
+  document.getElementById('playAll').addEventListener('click', () => ANIMS.forEach((a, i) => setTimeout(() => runAnim(a.id), i * 200)));
+
+  // ---------- Controles ----------
+  seg('xpColor', Object.entries(XP_COLORS).map(([k, v]) => [k, v.name, v.c]), 'xp', () => { applyColors(); summary(); });
+  seg('plusColor', Object.entries(PLUS_COLORS).map(([k, v]) => [k, v.name, v.ink ? '#1b1a17' : v.c]), 'plus', () => { applyColors(); summary(); });
+  seg('who', [['sub', 'Quem assina'], ['free', 'Quem não assina']], 'who', renderAll);
+  seg('mode', [['dark', 'Escura'], ['light', 'Clara']], 'mode', applyColors);
+  seg('tier', [[3, 'x3'], [6, 'x6'], [9, 'x9']], 'tier', () => { renderAnims(); applyColors(); });
+  seg('platform', [['app', 'App'], ['web', 'Web no celular']], 'platform', () => { renderBars(); applyColors(); });
+
+  renderNames();
+  renderAll();
+  // Mostra a primeira animação uma vez, ao abrir
+  setTimeout(() => runAnim('A1'), 700);
+})();
+</script>

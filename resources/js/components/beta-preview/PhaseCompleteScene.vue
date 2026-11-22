@@ -13,6 +13,8 @@ const props = defineProps<{
     count: number;
     countLabel: string;
     xp: number;
+    // A parte do XP que veio do combo de quem assina (Plus), mostrada embaixo dos números
+    comboXp?: number;
     accuracy: number;
 }>();
 
@@ -47,20 +49,26 @@ const { shown: shownAccuracy } = useCountUp(toRef(props, 'accuracy'), { from: 0,
                         <div class="mt-0.5 whitespace-nowrap text-[13px] text-muted-foreground sm:text-sm">{{ countLabel }}</div>
                     </div>
                     <div class="min-w-0 px-1 py-3 text-center">
-                        <div class="flex items-center justify-center gap-1.5 text-xl font-bold tabular-nums text-brand-soft-ink dark:text-brand">
-                            <Zap class="h-5 w-5" />
+                        <div class="flex items-center justify-center gap-1.5 text-xl font-bold tabular-nums text-xp-ink">
+                            <Zap class="h-5 w-5 fill-current" />
                             {{ shownXp }}
                         </div>
                         <div class="mt-0.5 whitespace-nowrap text-[13px] text-muted-foreground sm:text-sm">XP recebido</div>
                     </div>
                     <div class="min-w-0 px-1 py-3 text-center">
-                        <div class="flex items-center justify-center gap-1.5 text-xl font-bold tabular-nums text-blue-500">
+                        <div class="flex items-center justify-center gap-1.5 text-xl font-bold tabular-nums text-brand-soft-ink dark:text-brand">
                             <Target class="h-5 w-5" />
                             {{ shownAccuracy }}%
                         </div>
                         <div class="mt-0.5 whitespace-nowrap text-[13px] text-muted-foreground sm:text-sm">Precisão</div>
                     </div>
                 </div>
+
+                <!-- Quanto o combo rendeu a mais, para quem assina -->
+                <p v-if="comboXp && comboXp > 0" class="mt-3 flex items-center justify-center gap-1.5 text-sm font-bold text-xp-ink">
+                    <Zap class="h-4 w-4 fill-current" />
+                    +{{ comboXp }} XP dos combos, por ser <span class="text-plus-ink">Plus</span>
+                </p>
 
                 <div class="mt-6">
                     <GameButton variant="main" size="lg" class="w-full" @click="(e: MouseEvent) => emit('continue', e)">Continuar</GameButton>

@@ -63,7 +63,7 @@ onUnmounted(() => {
                     <AppLogo height="64px" width="120px" class="justify-items-center" />
                 </div>
 
-                <p class="mt-4 text-center text-xs font-bold uppercase tracking-widest text-amber-600 dark:text-amber-400">Memorize Premium</p>
+                <p class="mt-4 text-center text-xs font-bold uppercase tracking-widest text-amber-600 dark:text-amber-400">Memorize Plus</p>
                 <h2 id="premium-upsell-title" class="mt-2 text-center text-2xl font-bold leading-tight text-gray-900 dark:text-white">
                     Libere resumos e questões de cada etapa
                 </h2>
@@ -84,7 +84,7 @@ onUnmounted(() => {
                 </ul>
 
                 <div class="mt-auto pt-10">
-                    <GameButton variant="purple" size="lg" class="w-full" :href="route('subscription.index')">Conhecer o Premium</GameButton>
+                    <GameButton variant="purple" size="lg" class="w-full" :href="route('subscription.index')">Conhecer o Plus</GameButton>
                     <button
                         type="button"
                         class="mz-btn mz-sm mz-ghost mt-3 w-full"

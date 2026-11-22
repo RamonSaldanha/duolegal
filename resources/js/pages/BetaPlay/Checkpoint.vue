@@ -92,6 +92,8 @@ const correctCount = ref(0);
 const answeredCount = ref(0);
 
 const xpGained = ref(0);
+// O que o combo de quem assina rendeu neste desafio (já dentro de xpGained), para o fim mostrar
+const comboXp = ref(0);
 // A estrela ganha no desafio aparece na tela da conquista, no fim (PhaseEnd)
 const levelUp = ref<DisciplineLevelUp | null>(null);
 
@@ -234,6 +236,7 @@ async function check() {
         applyStep(data);
         // O combo de quem assina rende XP na hora
         xpGained.value += data.combo?.xp ?? 0;
+        comboXp.value += data.combo?.xp ?? 0;
         feedback.value = data;
         if (data.combo && data.combo.gained > 0) {
             comboEnergy = data.energy;
@@ -313,6 +316,7 @@ function choiceClass(key: string) {
             :count="answeredCount"
             :count-label="answeredCount === 1 ? 'Questão' : 'Questões'"
             :xp="xpGained"
+            :combo-xp="comboXp"
             :accuracy="accuracy"
             :level-up="levelUp"
             @done="backToMap"
@@ -475,7 +479,9 @@ function choiceClass(key: string) {
                 >
                     <p v-if="feedback.combo" class="mb-1 flex items-center gap-1 font-bold">
                         Sequência de {{ feedback.combo.streak }}!
-                        <template v-if="feedback.combo.xp > 0"> <Zap class="h-4 w-4 fill-current" /> +{{ feedback.combo.xp }} XP </template>
+                        <span v-if="feedback.combo.xp > 0" class="combo-xp" data-combo-xp
+                            ><Zap class="h-4 w-4 fill-current" /> +{{ feedback.combo.xp }} XP</span
+                        >
                         <template v-else-if="feedback.combo.gained > 0"> <BatteryCharging class="h-4 w-4" /> +{{ feedback.combo.gained }} </template>
                     </p>
                     <p v-if="outOfEnergy" class="mb-1 font-bold">Sua energia acabou. O que você fez fica guardado.</p>

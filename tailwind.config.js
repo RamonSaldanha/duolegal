@@ -99,6 +99,18 @@ export default {
                     soft2: 'var(--mz-danger-soft2)',
                     'soft-ink': 'var(--mz-danger-soft-ink)',
                 },
+                // XP (azul) e Plus (magenta), na barra do topo e no combo de quem assina
+                xp: {
+                    DEFAULT: 'var(--mz-xp)',
+                    edge: 'var(--mz-xp-edge)',
+                    light: 'var(--mz-xp-light)',
+                    ink: 'var(--mz-xp-ink)',
+                },
+                plus: {
+                    DEFAULT: 'var(--mz-plus)',
+                    edge: 'var(--mz-plus-edge)',
+                    ink: 'var(--mz-plus-ink)',
+                },
                 choice: {
                     DEFAULT: 'var(--mz-choice)',
                     soft: 'var(--mz-choice-soft)',

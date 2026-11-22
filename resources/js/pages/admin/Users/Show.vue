@@ -23,7 +23,7 @@
                                 v-if="user.is_premium"
                                 class="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
                             >
-                                <Crown class="h-3 w-3" /> Premium
+                                <Crown class="h-3 w-3" /> Plus
                             </span>
                             <span v-else class="rounded-full border px-2 py-0.5 text-muted-foreground">Grátis</span>
                             <span v-if="user.is_admin" class="rounded-full border border-purple-300 px-2 py-0.5 text-purple-700 dark:text-purple-300"

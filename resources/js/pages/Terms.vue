@@ -199,7 +199,7 @@ import AppLogo from '@/components/AppLogo.vue';
                     <h3 class="text-xl font-semibold text-gray-800">Planos Oferecidos</h3>
                     <ul class="list-disc text-gray-700">
                         <li><strong>Plano Gratuito:</strong> Acesso básico com funcionalidades limitadas, sistema de vidas e anúncios</li>
-                        <li><strong>Plano Premium:</strong> Acesso completo a todos os recursos e conteúdos, sem anúncios e sem limitação de vidas</li>
+                        <li><strong>Plano Plus:</strong> Acesso completo a todos os recursos e conteúdos, sem anúncios e sem limitação de vidas</li>
                     </ul>
 
                     <h3 class="text-xl font-semibold text-gray-800">Características dos Planos</h3>
@@ -211,7 +211,7 @@ import AppLogo from '@/components/AppLogo.vue';
                         <li>Funcionalidades limitadas de acompanhamento de progresso</li>
                     </ul>
                     
-                    <p><strong>Plano Premium oferece:</strong></p>
+                    <p><strong>Plano Plus oferece:</strong></p>
                     <ul class="list-disc text-gray-700">
                         <li>Acesso ilimitado sem sistema de vidas</li>
                         <li>Experiência livre de anúncios</li>

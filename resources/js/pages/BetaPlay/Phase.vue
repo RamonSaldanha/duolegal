@@ -63,6 +63,8 @@ const showExitConfirm = ref(false);
 const gapsAnswered = ref(0);
 const gapsCorrect = ref(0);
 const xpGained = ref(0);
+// O que o combo de quem assina rendeu nesta fase (já dentro de xpGained), para o fim mostrar
+const comboXp = ref(0);
 const levelUp = ref<DisciplineLevelUp | null>(null);
 
 const total = props.challenges.length;
@@ -227,6 +229,7 @@ async function finish() {
         });
 
         xpGained.value = response.data.xp_gained;
+        comboXp.value = response.data.combo_xp ?? 0;
         authUser.value.xp = response.data.user.xp;
         energy.value = response.data.user.energy;
         if (authUser.value.energy) authUser.value.energy = response.data.user.energy;
@@ -314,6 +317,7 @@ onUnmounted(() => {
             :count="total"
             count-label="Desafios"
             :xp="xpGained"
+            :combo-xp="comboXp"
             :accuracy="accuracy"
             :level-up="levelUp"
             @done="backToMap"
@@ -391,7 +395,7 @@ onUnmounted(() => {
                 >
                     <p v-if="combo" class="mb-1 flex items-center gap-1 font-bold">
                         Sequência de {{ combo.streak }}!
-                        <template v-if="combo.xp > 0"> <Zap class="h-4 w-4 fill-current" /> +{{ combo.xp }} XP </template>
+                        <span v-if="combo.xp > 0" class="combo-xp" data-combo-xp><Zap class="h-4 w-4 fill-current" /> +{{ combo.xp }} XP</span>
                         <template v-else-if="combo.gained > 0"> <BatteryCharging class="h-4 w-4" /> +{{ combo.gained }} </template>
                     </p>
                     <p v-if="outOfEnergy" class="mb-1 font-bold">Sua energia acabou. Esta fase vai recomeçar.</p>

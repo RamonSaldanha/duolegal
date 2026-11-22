@@ -13,7 +13,7 @@
                     <div class="hero-gif">
                         <img src="/img/premium-nomeado.gif" alt="" class="w-full" />
                     </div>
-                    <h1 class="text-[1.625rem] font-bold leading-tight text-foreground">Seja <HighlightMark :delay="250">Premium</HighlightMark></h1>
+                    <h1 class="text-[1.625rem] font-bold leading-tight text-foreground">Seja <HighlightMark :delay="250">Plus</HighlightMark></h1>
                     <PerkList class="mt-4" :delay="300" />
                 </div>
 
@@ -146,15 +146,13 @@
                     <div class="hero-gif">
                         <img src="/img/premium-nomeado.gif" alt="" class="w-full" />
                     </div>
-                    <h1 class="text-[1.625rem] font-bold leading-tight text-foreground">
-                        Você é <HighlightMark :delay="250">Premium!</HighlightMark>
-                    </h1>
+                    <h1 class="text-[1.625rem] font-bold leading-tight text-foreground">Você é <HighlightMark :delay="250">Plus!</HighlightMark></h1>
                     <PerkList class="mt-4" :delay="300" />
                 </div>
 
                 <div class="mz-choice is-selected plan-active mt-6">
                     <span class="min-w-0 flex-1 leading-tight">
-                        <span class="block text-base font-bold">Memorize Premium</span>
+                        <span class="block text-base font-bold">Memorize Plus</span>
                         <span class="block text-sm text-muted-foreground">{{ props.subscriptionCancelled ? 'Cancelamento agendado' : 'Ativo' }}</span>
                     </span>
                     <span class="text-right leading-tight">

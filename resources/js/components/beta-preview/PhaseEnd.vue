@@ -17,6 +17,8 @@ const props = defineProps<{
     count: number;
     countLabel: string;
     xp: number;
+    // A parte do XP que veio do combo de quem assina, mostrada à parte
+    comboXp?: number;
     accuracy: number;
     premium: boolean;
     // A estrela que a fase deu (chega com o fim da fase), se deu
@@ -72,7 +74,16 @@ function afterAchievement() {
     <div class="relative flex min-h-0 flex-1 flex-col overflow-hidden">
         <div v-if="stage === 'blank'" class="sheet" />
         <div v-else-if="stage === 'complete'" class="sheet">
-            <PhaseCompleteScene :title="title" :mark="mark" :count="count" :count-label="countLabel" :xp="xp" :accuracy="accuracy" @continue="next" />
+            <PhaseCompleteScene
+                :title="title"
+                :mark="mark"
+                :count="count"
+                :count-label="countLabel"
+                :xp="xp"
+                :combo-xp="comboXp ?? 0"
+                :accuracy="accuracy"
+                @continue="next"
+            />
         </div>
         <div v-else-if="stage === 'achievement' && levelUp" class="sheet">
             <AchievementScene :level-up="levelUp" @continue="afterAchievement" />

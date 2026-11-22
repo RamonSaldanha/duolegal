@@ -331,10 +331,11 @@ class BetaPlayController extends LegislationPlayController
 
         $legislationId = $required->first()->legislation_id;
         $xpGained = 0;
+        $comboXp = 0;
 
         $phaseId = $phase['id'];
 
-        DB::transaction(function () use ($required, $results, $done, $user, $run, $phaseId, &$xpGained) {
+        DB::transaction(function () use ($required, $results, $done, $user, $run, $phaseId, &$xpGained, &$comboXp) {
             foreach ($required as $block) {
                 $result = $results->get($block->uuid);
 
@@ -375,6 +376,8 @@ class BetaPlayController extends LegislationPlayController
 
         return response()->json([
             'xp_gained' => $xpGained,
+            // A parte do xp_gained que veio do combo de quem assina (a tela mostra à parte)
+            'combo_xp' => $comboXp,
             'discipline_level_up' => $levelUp,
             'user' => [
                 'lives' => $user->lives,

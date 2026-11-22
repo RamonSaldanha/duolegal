@@ -121,7 +121,7 @@ class ReengagementMail extends Mailable
             'intro' => $intro,
             'gift_title' => $boost ? "XP turbinado por {$boostDays} dias" : "+{$lives} vidas",
             'gift_text' => $boost
-                ? "Você é Premium, então vida infinita você já tem. O presente é outro: cada lacuna certa rende {$boostPercent}% a mais de XP. O ranking que lute."
+                ? "Você é Plus, então vida infinita você já tem. O presente é outro: cada lacuna certa rende {$boostPercent}% a mais de XP. O ranking que lute."
                 : 'Pra você errar sem medo e aprender no processo. Errou? Tenta de novo. É assim que a lei gruda.',
             'gift_note' => $boost ? "Os {$boostDays} dias começam a contar quando você abrir o presente." : null,
             'goal' => self::goalLine($user->onboarding_answers['goal'] ?? null),

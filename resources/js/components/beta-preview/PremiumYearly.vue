@@ -14,7 +14,7 @@ defineProps<{ line?: string }>();
             <!-- Etiqueta suspensa na borda de cima, fora da linha do texto -->
             <span class="tag absolute -top-2.5 right-4">{{ YEARLY_OFF }}</span>
             <span class="min-w-0 flex-1 leading-tight">
-                <span class="block text-base font-bold">Premium anual</span>
+                <span class="block text-base font-bold">Plus anual</span>
                 <span class="block text-sm text-muted-foreground">{{ line ?? `${YEARLY_PER_MONTH} por mês` }}</span>
             </span>
             <span class="text-xl font-bold tabular-nums">{{ YEARLY }}</span>

@@ -333,6 +333,7 @@ test('o combo de quem assina vale XP, pago no fim da fase e só na primeira conc
     $this->postJson('/api/v1/trail/finish', ['phase_id' => 1, 'results' => energyResults($legislation, 0, 9)])
         ->assertOk()
         ->assertJsonPath('xp_gained', 110)
+        ->assertJsonPath('combo_xp', 10)
         ->assertJsonPath('user.xp', 110);
 
     expect($user->xpTransactions()->where('source_type', 'combo')->sole())

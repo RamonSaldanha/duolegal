@@ -163,6 +163,8 @@ export interface EnergySpend {
 
 export interface BetaFinishResponse {
     xp_gained: number;
+    // A parte do xp_gained que veio do combo de quem assina
+    combo_xp?: number;
     discipline_level_up: DisciplineLevelUp | null;
     user: PlayUserData & { energy: EnergyState };
 }

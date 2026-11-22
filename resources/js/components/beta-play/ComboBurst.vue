@@ -4,26 +4,37 @@ import { nextTick, onBeforeUnmount, ref, watch } from 'vue';
 
 /**
  * A festa do combo (acertos seguidos na fase e no desafio): a tela pisca, raios cruzam a tela,
- * "COMBO x3" salta no meio com a energia ganha e um raiozinho voa até a bateria
- * ([data-energy-meter]); quando ele chega, `arrive` (a página credita a energia e o medidor
- * pulsa). Cresce com a sequência: x3 amarelo, x6 laranja ("Pegando fogo!"), x9 laranja forte
- * ("Imparável!"). Quem assina não ganha energia: o combo mostra "+5 XP" e não há raiozinho
- * voando (o XP da fase entra no fim). Igual ao app (src/components/trail/ComboBurst.tsx). Com
- * "reduzir movimento", só credita.
+ * "COMBO x3" salta no meio com o ganho e termina num destino; aí `arrive`. Cresce com a
+ * sequência (x3, x6 "Pegando fogo!", x9 "Imparável!").
+ *
+ * - Quem não assina ganha energia: tudo amarelo e laranja, e um raiozinho voa até a bateria
+ *   ([data-energy-meter]); a página credita a energia quando ele chega e o medidor pulsa.
+ * - Quem assina ganha XP (`combo.xp`): a tempestade é azul e o "+5 XP" se parte em faíscas que
+ *   descem até o "+5 XP" da barra de resultado ([data-combo-xp]), que acende a cada uma
+ *   (docs/design/plus-barra-combo.html, A3). Não há contador de XP na fase.
+ *
+ * Igual ao app (src/components/trail/ComboBurst.tsx). Com "reduzir movimento", só credita.
  */
 const props = defineProps<{ combo: EnergyCombo | null }>();
 const emit = defineEmits<{ arrive: [] }>();
 
-const BOLT = '#f7d84a';
-const TIERS = [
-    { c: '#efc12f', e: '#b38c17', bolts: 2, sparks: 0, kick: null },
-    { c: '#f59e0b', e: '#b45309', bolts: 3, sparks: 10, kick: 'Pegando fogo!' },
-    { c: '#f97316', e: '#c2410c', bolts: 5, sparks: 16, kick: 'Imparável!' },
-] as const;
-type Tier = (typeof TIERS)[number];
+type Tier = { c: string; e: string; bolt: string; bolts: number; sparks: number; kick: string | null };
+const TIERS: Tier[] = [
+    { c: '#efc12f', e: '#b38c17', bolt: '#f7d84a', bolts: 2, sparks: 0, kick: null },
+    { c: '#f59e0b', e: '#b45309', bolt: '#f7d84a', bolts: 3, sparks: 10, kick: 'Pegando fogo!' },
+    { c: '#f97316', e: '#c2410c', bolt: '#f7d84a', bolts: 5, sparks: 16, kick: 'Imparável!' },
+];
+// O combo de quem assina: azul, do mais claro ao mais forte
+const XP_TIERS: Tier[] = [
+    { c: '#7db3ff', e: '#1d4ed8', bolt: '#7db3ff', bolts: 3, sparks: 0, kick: null },
+    { c: '#60a5fa', e: '#1e40af', bolt: '#7db3ff', bolts: 4, sparks: 10, kick: 'Eletrizante!' },
+    { c: '#93c5fd', e: '#1e3a8a', bolt: '#a5c8ff', bolts: 6, sparks: 16, kick: 'Imparável!' },
+];
+// Em quantas faíscas o XP se parte
+const XP_SPARKS = 5;
 
 const layer = ref<HTMLElement | null>(null);
-const shown = ref<{ combo: EnergyCombo; tier: Tier } | null>(null);
+const shown = ref<{ combo: EnergyCombo; tier: Tier; xp: boolean } | null>(null);
 let token = 0;
 
 const play = (el: Element, keyframes: Keyframe[], options: KeyframeAnimationOptions = {}) =>
@@ -45,23 +56,30 @@ function zigzag(w: number, h: number, i: number, n: number) {
     return d;
 }
 
-// A bateria visível na tela (a do topo da fase), para onde o raiozinho voa
-function meterCenter(w: number) {
-    const meters = Array.from(document.querySelectorAll<HTMLElement>('[data-energy-meter]'));
-    const visible = meters.map((m) => m.getBoundingClientRect()).find((r) => r.width > 0 && r.bottom > 0 && r.top < window.innerHeight);
-    return visible ? { x: visible.left + 12, y: visible.top + visible.height / 2 } : { x: w - 40, y: 32 };
+// O elemento visível na tela para onde o raiozinho (ou as faíscas) vai
+function visible(selector: string) {
+    return Array.from(document.querySelectorAll<HTMLElement>(selector)).find((el) => {
+        const r = el.getBoundingClientRect();
+        return r.width > 0 && r.bottom > 0 && r.top < window.innerHeight;
+    });
+}
+function centerOf(el: HTMLElement | undefined, fallback: { x: number; y: number }) {
+    if (!el) return fallback;
+    const r = el.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
 }
 
 async function run(combo: EnergyCombo) {
     const my = ++token;
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const xp = (combo.xp ?? 0) > 0;
     if (reduce) {
         emit('arrive');
         return;
     }
 
-    const tier = TIERS[combo.streak >= 9 ? 2 : combo.streak >= 6 ? 1 : 0];
-    shown.value = { combo, tier };
+    const tier = (xp ? XP_TIERS : TIERS)[combo.streak >= 9 ? 2 : combo.streak >= 6 ? 1 : 0];
+    shown.value = { combo, tier, xp };
     await nextTick();
     const root = layer.value;
     if (!root || my !== token) return;
@@ -71,7 +89,7 @@ async function run(combo: EnergyCombo) {
     const cy = h * 0.42;
 
     const flash = root.querySelector('.flash')!;
-    play(flash, [{ opacity: 0 }, { opacity: 0.9, offset: 0.25 }, { opacity: 0 }], { duration: 520, easing: 'ease-out' });
+    play(flash, [{ opacity: 0 }, { opacity: xp ? 0.3 : 0.6, offset: 0.25 }, { opacity: 0 }], { duration: 520, easing: 'ease-out' });
 
     const svg = root.querySelector('svg.bolts')!;
     svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
@@ -83,7 +101,7 @@ async function run(combo: EnergyCombo) {
             path.setAttribute('d', d);
             path.setAttribute('pathLength', '1');
             path.setAttribute('class', cls);
-            if (cls === 'bolt-edge') path.style.stroke = tier.e;
+            path.style.stroke = cls === 'bolt-edge' ? tier.e : tier.bolt;
             svg.append(path);
             const peak = cls === 'bolt' ? 0.95 : 0.3;
             play(
@@ -102,7 +120,7 @@ async function run(combo: EnergyCombo) {
     sparks.replaceChildren();
     for (let i = 0; i < tier.sparks; i++) {
         const spark = document.createElement('i');
-        spark.style.background = i % 3 === 0 ? '#2b8a52' : i % 2 ? tier.c : BOLT;
+        spark.style.background = i % 3 === 0 ? (xp ? '#3b82f6' : '#2b8a52') : i % 2 ? tier.c : tier.bolt;
         sparks.append(spark);
         const a = (Math.PI * 2 * i) / tier.sparks + Math.random() * 0.5;
         const dist = 120 * (0.6 + Math.random() * 0.6);
@@ -130,7 +148,7 @@ async function run(combo: EnergyCombo) {
         { duration: 440 },
     );
     if (my !== token) return;
-    await wait(combo.xp > 0 ? 800 : 550);
+    await wait(xp ? 650 : 550);
     if (my !== token) return;
 
     play(
@@ -141,30 +159,60 @@ async function run(combo: EnergyCombo) {
         ],
         { duration: 280, easing: 'ease-in' },
     );
-    // XP de quem assina: não há bateria para onde voar
-    if ((combo.xp ?? 0) > 0) {
-        await wait(280);
-        if (my !== token) return;
-        emit('arrive');
-        shown.value = null;
-        return;
-    }
-    const flyer = root.querySelector('.flyer')!;
     const from = { x: w / 2, y: cy + 40 };
-    const to = meterCenter(w);
-    const mid = { x: (from.x + to.x) / 2 + 30, y: Math.min(from.y, to.y) + (from.y - to.y) * 0.25 };
-    await play(
-        flyer,
-        [
-            { transform: `translate(${from.x - 15}px, ${from.y - 15}px) scale(1.5)`, opacity: 1 },
-            { transform: `translate(${mid.x - 15}px, ${mid.y - 15}px) scale(1.1)`, opacity: 1, offset: 0.5 },
-            { transform: `translate(${to.x - 15}px, ${to.y - 15}px) scale(.5)`, opacity: 0.2 },
-        ],
-        { duration: 620, easing: 'cubic-bezier(.5,0,.3,1)' },
-    );
-    if (my !== token) return;
+
+    if (xp) {
+        await sparksToResult(root, from, my);
+        if (my !== token) return;
+    } else {
+        const flyer = root.querySelector('.flyer')!;
+        const to = centerOf(visible('[data-energy-meter]'), { x: w - 40, y: 32 });
+        const mid = { x: (from.x + to.x) / 2 + 30, y: Math.min(from.y, to.y) + (from.y - to.y) * 0.25 };
+        await play(
+            flyer,
+            [
+                { transform: `translate(${from.x - 15}px, ${from.y - 15}px) scale(1.5)`, opacity: 1 },
+                { transform: `translate(${mid.x - 15}px, ${mid.y - 15}px) scale(1.1)`, opacity: 1, offset: 0.5 },
+                { transform: `translate(${to.x - 15}px, ${to.y - 15}px) scale(.5)`, opacity: 0.2 },
+            ],
+            { duration: 620, easing: 'cubic-bezier(.5,0,.3,1)' },
+        );
+        if (my !== token) return;
+    }
     emit('arrive');
     shown.value = null;
+}
+
+// O "+5 XP" se parte em faíscas que descem uma a uma até o "+5 XP" da barra de resultado, que
+// acende a cada uma que chega
+async function sparksToResult(root: HTMLElement, from: { x: number; y: number }, my: number) {
+    const target = visible('[data-combo-xp]');
+    const to = centerOf(target, { x: from.x, y: window.innerHeight - 80 });
+    const icon = root.querySelector('.flyer')!.innerHTML;
+    const flights = Array.from({ length: XP_SPARKS }, (_, i) => {
+        const el = document.createElement('span');
+        el.className = 'xp-spark';
+        el.innerHTML = icon;
+        root.append(el);
+        const spread = (i - (XP_SPARKS - 1) / 2) * 28;
+        const midY = from.y + (to.y - from.y) * 0.45;
+        return play(
+            el,
+            [
+                { transform: `translate(${from.x - 10 + spread / 3}px, ${from.y - 10}px) scale(1.3)`, opacity: 1 },
+                { transform: `translate(${(from.x + to.x) / 2 + spread - 10}px, ${midY - 10}px) scale(1)`, opacity: 1, offset: 0.5 },
+                { transform: `translate(${to.x - 10}px, ${to.y - 10}px) scale(.5)`, opacity: 0.2 },
+            ],
+            { duration: 520, delay: i * 90, easing: 'cubic-bezier(.5,0,.3,1)' },
+        ).then(() => {
+            el.remove();
+            if (my !== token || !target) return;
+            target.animate([{ scale: '1' }, { scale: '1.25', offset: 0.4 }, { scale: '1' }], { duration: 220, easing: 'ease-out' });
+            target.classList.add('is-lit');
+        });
+    });
+    await Promise.all(flights);
+    await wait(250);
 }
 
 watch(
@@ -181,7 +229,7 @@ onBeforeUnmount(() => {
 
 <template>
     <Teleport to="body">
-        <div v-if="shown" ref="layer" class="combo-burst" aria-hidden="true">
+        <div v-if="shown" ref="layer" class="combo-burst" :class="{ 'is-xp': shown.xp }" aria-hidden="true">
             <div class="flash" />
             <svg class="bolts" preserveAspectRatio="none" />
             <div class="sparks" />
@@ -191,7 +239,7 @@ onBeforeUnmount(() => {
                     <p class="word" :class="{ big: shown.combo.streak >= 9 }" :style="{ '--c': shown.tier.c, '--e': shown.tier.e }">
                         COMBO x{{ shown.combo.streak }}
                     </p>
-                    <p v-if="shown.combo.xp > 0" class="gain">
+                    <p v-if="shown.xp" class="gain gain-xp">
                         <svg viewBox="0 0 24 24" fill="currentColor" stroke="none">
                             <path
                                 d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"
@@ -211,7 +259,13 @@ onBeforeUnmount(() => {
                 </div>
             </div>
             <div class="flyer">
-                <svg viewBox="0 0 24 24" fill="#efc12f" stroke="#b38c17" stroke-width="2" stroke-linejoin="round">
+                <svg
+                    viewBox="0 0 24 24"
+                    :fill="shown.xp ? '#7db3ff' : '#efc12f'"
+                    :stroke="shown.xp ? '#1d4ed8' : '#b38c17'"
+                    stroke-width="2"
+                    stroke-linejoin="round"
+                >
                     <path
                         d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"
                     />
@@ -229,14 +283,19 @@ onBeforeUnmount(() => {
     pointer-events: none;
     overflow: hidden;
 }
+/* Lampejo chapado: amarelo-claro para a energia, azul para o XP */
 .flash {
     position: absolute;
     inset: 0;
-    background: radial-gradient(circle at 50% 42%, #fff4c2, transparent 70%);
+    background: #fff4c2;
     opacity: 0;
 }
 :global(.dark) .flash {
-    background: radial-gradient(circle at 50% 42%, #4a4019, transparent 70%);
+    background: #4a4019;
+}
+.is-xp .flash,
+:global(.dark) .is-xp .flash {
+    background: var(--mz-xp);
 }
 .bolts {
     position: absolute;
@@ -252,7 +311,6 @@ onBeforeUnmount(() => {
     stroke-dashoffset: 1;
 }
 .bolts :deep(.bolt) {
-    stroke: #f7d84a;
     stroke-width: 14;
 }
 .bolts :deep(.bolt-edge) {
@@ -313,6 +371,11 @@ onBeforeUnmount(() => {
     background: #3a3214;
     color: #f1dc95;
 }
+.gain-xp,
+:global(.dark) .gain-xp {
+    background: var(--mz-xp);
+    color: #fff;
+}
 .gain svg {
     width: 18px;
     height: 18px;
@@ -325,8 +388,17 @@ onBeforeUnmount(() => {
     height: 30px;
     opacity: 0;
 }
-.flyer svg {
+.flyer svg,
+.combo-burst :deep(.xp-spark svg) {
     width: 100%;
     height: 100%;
+}
+/* As faíscas do XP são criadas no script, então o estilo precisa do :deep */
+.combo-burst :deep(.xp-spark) {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 20px;
+    height: 20px;
 }
 </style>

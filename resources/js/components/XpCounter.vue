@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { useCountUp } from '@/composables/useCountUp';
+import { Zap } from 'lucide-vue-next';
 import { onMounted, ref, toRef, watch } from 'vue';
 
-// Contador de XP do topo. Guarda no navegador o último XP mostrado: quando a pessoa volta de
-// uma fase com mais XP, o número sobe contando a partir do anterior e mostra o "+N" ganho.
+// Contador de XP do topo: o raio e o número em azul, sem caixa. Guarda no navegador o último XP
+// mostrado: quando a pessoa volta de uma fase com mais XP, o número sobe contando a partir do
+// anterior e mostra o "+N" ganho. `data-xp-meter` é para onde voam as faíscas do combo de quem
+// assina (ComboBurst).
 const props = defineProps<{ xp: number; userId: number }>();
 
 const storageKey = `memorize:xp-seen:${props.userId}`;
@@ -46,13 +49,13 @@ watch(
 </script>
 
 <template>
-    <div class="relative flex items-center gap-1" :class="{ 'xp-counting': animating }">
-        <span class="rounded bg-brand-soft px-2 py-1 text-xs font-bold text-brand-soft-ink">XP</span>
-        <span class="xp-value whitespace-nowrap text-sm font-bold tabular-nums text-brand-soft-ink dark:text-brand sm:text-base">{{ shown }}</span>
+    <div class="relative flex items-center gap-1 text-xp-ink" :class="{ 'xp-counting': animating }" :title="`${shown} de XP`" data-xp-meter>
+        <Zap class="h-5 w-5 text-xp" fill="currentColor" />
+        <span class="xp-value whitespace-nowrap font-bold tabular-nums">{{ shown }}</span>
         <span
             v-if="gained > 0"
             :key="gained"
-            class="xp-gain pointer-events-none absolute -bottom-5 right-0 whitespace-nowrap text-xs font-bold text-brand-soft-ink dark:text-brand"
+            class="xp-gain pointer-events-none absolute -bottom-5 right-0 whitespace-nowrap text-xs font-bold text-xp-ink"
             aria-hidden="true"
             @animationend="gained = 0"
             >+{{ gained }}</span

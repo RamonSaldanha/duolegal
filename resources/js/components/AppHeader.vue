@@ -9,7 +9,7 @@ import XpCounter from '@/components/XpCounter.vue';
 import type { AvatarConfig } from '@/lib/avatar';
 import type { EnergyState } from '@/types/beta-play';
 import { Link, usePage } from '@inertiajs/vue3';
-import { Flame, Gem, Heart, Infinity } from 'lucide-vue-next';
+import { Flame, Heart, Infinity, Plus } from 'lucide-vue-next';
 import { computed, watch } from 'vue';
 
 const page = usePage<{
@@ -67,14 +67,18 @@ watch(userLives, (newValue, oldValue) => {
                 <AppLogo />
             </Link>
 
-            <!-- Stats Container - Centered on mobile, right on desktop -->
-            <div class="justify-left flex flex-1 items-center gap-2 sm:gap-4 lg:flex-none lg:justify-end lg:gap-8">
+            <!--
+                Sem caixas (docs/design/plus-barra-combo.html, B4): só ícone e número, espalhados
+                de ponta a ponta no celular e à direita no computador. O avatar fica porque é por
+                ele que se chega às configurações e ao sair.
+            -->
+            <div class="flex flex-1 items-center justify-between gap-2 sm:gap-4 lg:flex-none lg:justify-end lg:gap-8">
                 <!-- Energia -->
-                <EnergyMeter v-if="energy" :energy="energy" pill />
+                <EnergyMeter v-if="energy" :energy="energy" />
 
                 <!-- Lives Counter -->
                 <div v-else-if="auth.user?.lives !== undefined" class="flex items-center">
-                    <div class="flex items-center gap-1 rounded-full bg-pink-50 px-2 py-1 dark:bg-pink-900/20 sm:gap-1.5 sm:px-3 sm:py-1.5">
+                    <div class="flex items-center gap-1 sm:gap-1.5">
                         <template v-if="!hasSubscription">
                             <Heart
                                 class="animate-pulse-once h-5 w-5 transition-transform"
@@ -96,7 +100,7 @@ watch(userLives, (newValue, oldValue) => {
                 <Link
                     v-if="auth.user"
                     :href="route('ofensiva.index')"
-                    class="flex items-center gap-1 rounded-full bg-orange-50 px-2 py-1 transition-colors hover:bg-orange-100 dark:bg-orange-900/20 dark:hover:bg-orange-900/30 sm:gap-1.5 sm:px-3 sm:py-1.5"
+                    class="flex items-center gap-1 sm:gap-1.5"
                     :title="`Ofensiva: ${currentStreak} ${currentStreak === 1 ? 'dia' : 'dias'}`"
                 >
                     <Flame class="h-5 w-5" :class="currentStreak > 0 ? 'text-orange-500' : 'text-gray-400'" fill="currentColor" />
@@ -108,10 +112,13 @@ watch(userLives, (newValue, oldValue) => {
                 <!-- XP Counter -->
                 <XpCounter v-if="auth.user?.xp !== undefined" :xp="auth.user.xp" :user-id="auth.user.id" />
 
-                <!-- Diamond / Premium -->
-                <Link :href="route('subscription.index')" class="flex items-center gap-2 text-blue-500 transition-colors hover:text-blue-600">
-                    <Gem class="h-5 w-5 sm:h-6 sm:w-6" />
-                    <span class="hidden text-sm font-medium lg:inline">Assine Premium</span>
+                <!-- Plus: o convite para quem não assina, o selo para quem assina -->
+                <Link
+                    :href="route('subscription.index')"
+                    class="flex items-center gap-0.5 whitespace-nowrap text-sm font-extrabold text-plus-ink transition-opacity hover:opacity-80 sm:text-base"
+                >
+                    <Plus class="h-4 w-4 sm:h-5 sm:w-5" :stroke-width="3.2" />
+                    {{ hasSubscription ? 'Plus' : 'Seja Plus' }}
                 </Link>
 
                 <!-- User Avatar with Dropdown -->
@@ -125,7 +132,7 @@ watch(userLives, (newValue, oldValue) => {
                         <Button
                             variant="ghost"
                             size="icon"
-                            class="relative ml-auto size-[38px] rounded-full p-0 focus-within:ring-2 focus-within:ring-primary sm:size-[42px]"
+                            class="relative size-[38px] shrink-0 rounded-full p-0 focus-within:ring-2 focus-within:ring-primary sm:size-[42px]"
                         >
                             <UserAvatar :config="auth.user.avatar_config" :name="auth.user.name" class="size-full rounded-full text-sm" />
                         </Button>

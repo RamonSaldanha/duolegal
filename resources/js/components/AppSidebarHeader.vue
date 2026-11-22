@@ -92,7 +92,7 @@ const userLives = computed(() => page.props.auth.user?.lives ?? 0);
                     class="flex items-center gap-1 text-sm text-blue-500 hover:text-blue-600 font-medium"
                 >
                     <Gem class="w-5" />
-                    <span class="hidden sm:inline">Premium</span>
+                    <span class="hidden sm:inline">Plus</span>
                 </Link>
             </div>
         </div>

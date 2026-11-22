@@ -175,7 +175,7 @@ onUnmounted(() => {
             <!-- O nosso, quando o vídeo não carrega -->
             <div v-else-if="ad.kind === 'house'" class="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center">
                 <img src="/img/premium-nomeado.gif" alt="" class="w-48" />
-                <p class="text-2xl font-bold text-foreground">Memorize Direito Premium</p>
+                <p class="text-2xl font-bold text-foreground">Memorize Direito Plus</p>
                 <p class="text-muted-foreground">Energia infinita, todas as leis, fantasias exclusivas e sem anúncios.</p>
             </div>
 
