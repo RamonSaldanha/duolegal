@@ -1,0 +1,549 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Anúncio Premium</title>
+<link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 1080px; height: 1920px; overflow: hidden; background: #f4f1ea; font-family: 'Instrument Sans', sans-serif; color: #2b2925; }
+.scene { position: absolute; inset: 0; overflow: hidden; visibility: hidden; }
+.abs { position: absolute; }
+.h { position: absolute; left: 70px; right: 70px; text-align: center; font-weight: 700; font-size: 96px; line-height: 1.04; letter-spacing: -0.03em; }
+.w { display: inline-block; white-space: pre; }
+.mark { --m: 0%; background: linear-gradient(#f3d873, #f3d873) no-repeat 0 82% / var(--m) 42%; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+.center-x { left: 50%; }
+
+/* bateria grande */
+#battery { left: 270px; top: 470px; width: 540px; height: 280px; }
+
+/* pílula de energia */
+.pill { display: inline-flex; align-items: center; gap: 6px; background: #f6ecc8; color: #5e4800; border-radius: 999px; font-weight: 700; padding: 6px 16px 6px 10px; font-size: 28px; line-height: 1; }
+.pill svg { width: 30px; height: 30px; }
+
+/* celular */
+.phone { position: absolute; left: 230px; top: 470px; width: 620px; height: 1260px; border-radius: 82px; background: #1b1a17; padding: 18px; box-shadow: 0 40px 80px -30px rgba(43,41,37,.45); }
+.screen { position: relative; width: 100%; height: 100%; border-radius: 66px; background: #f8f6f1; overflow: hidden; }
+.law { position: absolute; left: 34px; right: 34px; font-size: 31px; line-height: 1.6; }
+.faded { color: #c4bdb0; }
+.gap { display: inline-block; vertical-align: baseline; height: 50px; line-height: 50px; border-radius: 14px; background: #f6ecc8; color: #b38c17; font-weight: 700; text-align: center; position: relative; }
+.chip { position: absolute; height: 58px; line-height: 50px; padding: 0 20px; border-radius: 16px; background: #fff; border: 2px solid #dcd6ca; box-shadow: 0 5px 0 #dcd6ca; font-weight: 700; font-size: 31px; white-space: nowrap; }
+.slot { position: absolute; height: 58px; border-radius: 16px; background: #ebe7df; }
+.btn { position: absolute; height: 74px; border-radius: 20px; font-weight: 700; font-size: 29px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+
+/* combo */
+.combo-word { font-size: 150px; font-weight: 700; line-height: 1; white-space: nowrap; letter-spacing: 0.04em; color: #efc12f; -webkit-text-stroke: 0.09em #b38c17; paint-order: stroke fill; text-shadow: 0 0.08em 0 #b38c17; }
+
+/* cartões de lei */
+.card { position: absolute; left: 80px; width: 920px; height: 156px; border-radius: 34px; background: #fff; border: 3px solid #e4ded2; box-shadow: 0 7px 0 #e4ded2; display: flex; align-items: center; gap: 26px; padding: 0 30px 0 22px; }
+.card img { width: 124px; height: 124px; }
+.card .t { font-size: 42px; font-weight: 700; flex: 1; letter-spacing: -0.01em; }
+.lock { width: 76px; height: 76px; border-radius: 50%; display: grid; place-items: center; position: relative; }
+.lock > * { position: absolute; }
+
+/* avatar */
+.stage { position: absolute; left: 190px; top: 470px; width: 700px; height: 700px; border-radius: 64px; overflow: hidden; background: #f6ecc8; }
+.stage svg, .thumb svg { width: 100%; height: 100%; display: block; }
+.opt { position: absolute; top: 1260px; width: 250px; text-align: center; }
+.thumb { width: 210px; height: 210px; margin: 0 auto; border-radius: 40px; overflow: hidden; border: 5px solid transparent; position: relative; }
+.opt p { margin-top: 14px; font-size: 34px; font-weight: 700; }
+.crown { position: absolute; top: -18px; right: 6px; background: #8b5cc7; color: #fff; font-size: 24px; font-weight: 700; border-radius: 999px; padding: 6px 14px; box-shadow: 0 4px 0 #643f96; }
+
+/* anúncio falso */
+.ad { position: absolute; left: 140px; top: 500px; width: 800px; height: 820px; border-radius: 48px; background: #e4ded2; overflow: hidden; }
+
+/* preço */
+#s7 { background: radial-gradient(circle at 50% 30%, #a27ad6, #8b5cc7 55%, #7a4fb6); color: #fff; }
+.perk { position: absolute; background: #fff; color: #2b2925; font-weight: 700; font-size: 42px; border-radius: 999px; padding: 18px 34px; box-shadow: 0 6px 0 #643f96; white-space: nowrap; }
+
+/* fim */
+#s8 { background: #efc12f; }
+.cta { position: absolute; left: 160px; top: 1440px; width: 760px; height: 150px; border-radius: 40px; background: #8b5cc7; box-shadow: 0 12px 0 #643f96; color: #fff; font-size: 62px; font-weight: 700; display: grid; place-items: center; }
+
+.sweep { position: absolute; top: -10px; height: 1940px; width: 1700px; background: #efc12f; transform-origin: 0 0; z-index: 50; }
+.sweep2 { background: #f3d873; width: 160px; }
+.tap { position: absolute; width: 96px; height: 96px; margin: -48px 0 0 -48px; border-radius: 50%; z-index: 40; }
+</style>
+</head>
+<body>
+
+<!-- 1 e 2: sem energia → energia infinita -->
+<section class="scene" id="s1">
+    <div class="abs" id="flash1" style="inset:0;background:radial-gradient(circle at 50% 32%, #fff4c2, rgba(255,244,194,0) 70%);opacity:0"></div>
+    <h1 class="h" id="h1a" style="top:190px">Ficou sem <span class="mark">energia?</span></h1>
+    <h1 class="h" id="h1b" style="top:150px">Com o Premium, ela <span class="mark">nunca acaba.</span></h1>
+    <svg id="battery" class="abs" viewBox="0 0 540 280">
+        <rect id="bfill" x="38" y="38" width="0" height="204" rx="22" fill="#d9534f" />
+        <rect x="14" y="14" width="472" height="252" rx="48" fill="none" stroke="#2b2925" stroke-width="22" />
+        <rect x="498" y="98" width="30" height="84" rx="12" fill="#2b2925" />
+        <path id="bbolt" d="M268 54 L196 150 H262 L232 228 L322 124 H256 L290 54 Z" fill="#2b2925" stroke="#2b2925" stroke-width="8" stroke-linejoin="round" opacity="0" />
+    </svg>
+    <p id="zero" class="abs" style="left:0;right:0;top:800px;text-align:center;font-size:58px;font-weight:700;color:#a8423a">0 de 25</p>
+    <img id="runner" class="abs" style="left:300px;top:900px;width:480px;height:720px" src="a/sem-energia-0.png">
+    <div id="inf" class="abs combo-word" style="left:0;right:0;top:880px;text-align:center;font-size:460px;line-height:1;letter-spacing:0">∞</div>
+    <p id="inf2" class="abs" style="left:0;right:0;top:1420px;text-align:center;font-size:56px;font-weight:700;color:#5e4800">Jogue quantas fases quiser</p>
+    <svg id="bolts1" class="abs" style="inset:0" width="1080" height="1920" viewBox="0 0 1080 1920"></svg>
+    <div id="sparks1"></div>
+</section>
+
+<!-- 3: a fase -->
+<section class="scene" id="s3">
+    <h1 class="h" id="h3" style="top:150px">Fase atrás de fase, <span class="mark">sem parar.</span></h1>
+    <div class="phone" id="phone">
+        <div class="screen" id="screen">
+            <svg class="abs" style="left:34px;top:46px" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#78726a" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            <div class="abs" style="left:92px;top:52px;width:330px;height:22px;border-radius:11px;background:#e4ded2"><div id="prog" style="height:100%;width:30%;border-radius:11px;background:#2b8a52"></div></div>
+            <div class="abs pill" id="ppill" style="left:448px;top:40px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m11 7-3 5h4l-3 5" /><path d="M14.856 6H16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.935" /><path d="M5.14 18H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h2.936" /><path d="M22 14v-4" /></svg><b style="font-size:34px">∞</b></div>
+            <p class="abs" style="left:34px;top:112px;font-size:21px;color:#78726a;font-weight:500">Constituição Federal · Passo 2 de 4</p>
+            <p class="law faded" style="top:160px"><b>Parágrafo único.</b> Todo o poder emana do povo, que o exerce por meio de representantes eleitos ou diretamente, nos termos desta Constituição.</p>
+            <p class="law" id="lawtext" style="top:430px"><b>Art. 5º</b> Todos são iguais perante a <span class="gap" id="g1" style="width:96px">(...)</span>, sem distinção de qualquer natureza, garantindo-se aos brasileiros e aos estrangeiros residentes no País a inviolabilidade do direito à <span class="gap" id="g2" style="width:122px">(...)</span>, à liberdade, à igualdade, à segurança e à propriedade.</p>
+            <div class="abs" style="left:0;right:0;top:964px;height:2px;background:#e4ded2"></div>
+            <div id="bank"></div>
+            <div class="btn" style="left:34px;top:1100px;width:200px;border:3px solid #dcd6ca;color:#47433c;background:#fff">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>Limpar</div>
+            <div class="btn" id="verify" style="left:330px;top:1100px;width:220px;background:#ebe7df;color:#a8a297">Verificar</div>
+            <div class="abs" id="result" style="left:0;right:0;top:1224px;height:300px;background:#edf5ef;border-top:3px solid #86c39c">
+                <div class="abs" style="left:34px;top:34px;display:flex;align-items:center;gap:16px">
+                    <div style="width:64px;height:64px;border-radius:50%;background:#2b8a52;display:grid;place-items:center"><svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
+                    <b style="font-size:42px;color:#2e7348">Muito bem!</b>
+                </div>
+                <div class="btn" style="left:34px;right:34px;top:150px;height:84px;background:#2b8a52;box-shadow:0 7px 0 #1d5f38;color:#fff;font-size:32px">Continuar</div>
+            </div>
+        </div>
+    </div>
+    <div class="tap" id="tap3"></div>
+    <div class="abs" id="flash3" style="inset:0;background:radial-gradient(circle at 50% 46%, #fff4c2, rgba(255,244,194,0) 70%);opacity:0"></div>
+    <svg id="bolts3" class="abs" style="inset:0" width="1080" height="1920" viewBox="0 0 1080 1920"></svg>
+    <div id="sparks3"></div>
+    <div class="abs" id="combo" style="left:0;right:0;top:760px;text-align:center">
+        <div class="combo-word" id="comboword">COMBO x3</div>
+    </div>
+</section>
+
+<!-- 4: as leis -->
+<section class="scene" id="s4">
+    <h1 class="h" id="h4" style="top:150px">Todas as leis <span class="mark">liberadas.</span></h1>
+    <div id="cards"></div>
+</section>
+
+<!-- 5: fantasias -->
+<section class="scene" id="s5">
+    <h1 class="h" id="h5" style="top:150px">Fantasias <span class="mark">exclusivas.</span></h1>
+    <div class="stage" id="stage"><div id="stagein" style="width:100%;height:100%"></div></div>
+    <div id="sparks5"></div>
+    <div id="opts"></div>
+</section>
+
+<!-- 6: sem anúncios -->
+<section class="scene" id="s6">
+    <h1 class="h" id="h6" style="top:150px">E sem <span class="mark">anúncios.</span></h1>
+    <div class="ad" id="adcard">
+        <div class="abs" style="left:0;right:0;top:0;height:520px;background:#cfc8ba"></div>
+        <div class="abs" style="left:330px;top:190px;width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,.85);display:grid;place-items:center"><svg width="60" height="60" viewBox="0 0 24 24"><path d="M7 4v16l13-8z" fill="#78726a"/></svg></div>
+        <div class="abs" style="left:34px;top:34px;background:#2b2925;color:#fff;font-size:30px;font-weight:700;padding:8px 20px;border-radius:12px">Anúncio</div>
+        <div class="abs" style="right:34px;top:430px;background:rgba(43,41,37,.75);color:#fff;font-size:30px;font-weight:600;padding:12px 24px;border-radius:999px">Pular em <span id="adcount">5</span></div>
+        <div class="abs" style="left:50px;top:580px;width:560px;height:40px;border-radius:12px;background:#cfc8ba"></div>
+        <div class="abs" style="left:50px;top:650px;width:420px;height:30px;border-radius:10px;background:#d8d1c4"></div>
+        <div class="abs" style="left:50px;top:710px;width:700px;height:70px;border-radius:20px;background:#bdb5a6"></div>
+    </div>
+    <div class="abs" id="okc" style="left:390px;top:640px;width:300px;height:300px;border-radius:50%;background:#2b8a52;box-shadow:0 14px 0 #1d5f38;display:grid;place-items:center"><svg width="170" height="170" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
+    <p class="abs" id="nem" style="left:0;right:0;top:1060px;text-align:center;font-size:72px;font-weight:700;color:#47433c">Nem este aqui.</p>
+    <div id="sparks6"></div>
+</section>
+
+<!-- 7: preço -->
+<section class="scene" id="s7">
+    <div class="abs" id="p7chip" style="left:0;right:0;top:330px;text-align:center"><span style="display:inline-block;background:rgba(255,255,255,.18);border-radius:999px;padding:14px 34px;font-size:44px;font-weight:700">Plano anual <span style="background:#efc12f;color:#2b2925;border-radius:999px;padding:4px 16px;margin-left:8px">-25%</span></span></div>
+    <div class="abs" id="p7price" style="left:0;right:0;top:450px;text-align:center;white-space:nowrap"><span style="font-size:250px;font-weight:700;letter-spacing:-.04em">R$ 8,99</span><span style="font-size:72px;font-weight:700;opacity:.85">/mês</span></div>
+    <p class="abs h" id="h7" style="top:800px;font-size:78px;color:#fff">menos de <span class="mark" id="m7">R$ 0,30 por dia</span></p>
+    <div id="perks"></div>
+    <p class="abs" id="p7g" style="left:0;right:0;top:1560px;text-align:center;font-size:46px;font-weight:600;opacity:.95">Garantia de 7 dias</p>
+</section>
+
+<!-- 8: fim -->
+<section class="scene" id="s8">
+    <div class="abs" id="gifwrap" style="left:290px;top:250px;width:500px;height:500px;border-radius:50%;background:#fff6d6;overflow:hidden"><img id="lawyer" src="a/premium-nomeado-0.png" style="width:100%;height:100%"></div>
+    <img id="logo" class="abs" src="a/logo-ink.svg" style="left:110px;top:760px;width:860px">
+    <p class="abs" id="tag" style="left:0;right:0;top:1290px;text-align:center;font-size:58px;font-weight:700">Energia infinita. Sem anúncios.</p>
+    <div class="cta" id="cta">Seja Premium</div>
+    <div class="tap" id="tap8"></div>
+    <p class="abs" id="url" style="left:0;right:0;top:1680px;text-align:center;font-size:42px;font-weight:600;color:#5e4800">memorizedireito.com</p>
+</section>
+
+<div class="sweep" id="sw"></div>
+<div class="sweep sweep2" id="sw2"></div>
+
+<script>
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const P = (t, s, d) => clamp((t - s) / d);
+const lerp = (a, b, k) => a + (b - a) * k;
+const E = {
+    out: (x) => 1 - Math.pow(1 - x, 3),
+    in: (x) => x * x * x,
+    io: (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2),
+    back: (x) => { const c1 = 2.0, c3 = c1 + 1; return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); },
+};
+const $ = (id) => document.getElementById(id);
+function tf(el, { x = 0, y = 0, s = 1, sx, sy, r = 0, o } = {}) {
+    el.style.transform = `translate(${x}px,${y}px) rotate(${r}deg) scale(${sx ?? s},${sy ?? s})`;
+    if (o !== undefined) el.style.opacity = o;
+}
+function rng(seed) { return () => { seed |= 0; seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+
+// Quebra os títulos em palavras para entrarem uma a uma
+function split(el) {
+    const walk = (node) => {
+        for (const child of [...node.childNodes]) {
+            if (child.nodeType === 3) {
+                const frag = document.createDocumentFragment();
+                child.textContent.split(/(\s+)/).forEach((part) => {
+                    if (!part) return;
+                    if (/^\s+$/.test(part)) { frag.append(document.createTextNode(' ')); return; }
+                    const s = document.createElement('span'); s.className = 'w'; s.textContent = part; frag.append(s);
+                });
+                child.replaceWith(frag);
+            } else if (child.nodeType === 1) walk(child);
+        }
+    };
+    walk(el);
+    return [...el.querySelectorAll('.w')];
+}
+const heads = {};
+for (const id of ['h1a', 'h1b', 'h3', 'h4', 'h5', 'h6', 'h7']) heads[id] = split($(id));
+function wordsIn(id, t, start, stagger = 0.07) {
+    heads[id].forEach((w, i) => { const k = P(t, start + i * stagger, 0.45); tf(w, { y: (1 - E.back(k)) * 70, o: clamp(k * 3) }); });
+}
+function wordsOut(id, t, start) {
+    heads[id].forEach((w, i) => { const k = E.in(P(t, start + i * 0.03, 0.3)); if (k > 0) tf(w, { y: -k * 90, o: 1 - k }); });
+}
+function mark(el, t, start, dur = 0.45) { el.style.setProperty('--m', E.io(P(t, start, dur)) * 100 + '%'); }
+
+// Raios em zigue-zague, como o ComboBurst do jogo
+function bolts(svg, n, seed, w = 1080, h = 1920, width = 1) {
+    const r = rng(seed); const list = [];
+    for (let i = 0; i < n; i++) {
+        const x0 = w * (0.12 + 0.76 * ((i + 0.5) / n)) + (r() - 0.5) * 60;
+        const drift = (i % 2 ? -1 : 1) * w * 0.3;
+        let d = `M ${x0.toFixed(1)} -40`;
+        for (let k = 1; k <= 7; k++) {
+            const y = -40 + ((h + 80) * k) / 7;
+            const x = x0 + (drift * k) / 7 + (k % 2 ? 1 : -1) * (36 + r() * 44);
+            d += ` L ${x.toFixed(1)} ${y.toFixed(1)}`;
+        }
+        const pair = ['#b38c17', '#f7d84a'].map((c, j) => {
+            const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            p.setAttribute('d', d); p.setAttribute('pathLength', '1'); p.setAttribute('fill', 'none');
+            p.setAttribute('stroke', c); p.setAttribute('stroke-width', (j ? 22 : 36) * width);
+            p.setAttribute('stroke-linejoin', 'miter'); p.setAttribute('stroke-dasharray', '1'); p.setAttribute('stroke-dashoffset', '1');
+            svg.append(p); return p;
+        });
+        list.push(pair);
+    }
+    return list;
+}
+function drawBolts(list, t, start) {
+    list.forEach((pair, i) => pair.forEach((p, j) => {
+        const k = P(t, start + i * 0.07, 1.0);
+        const peak = j ? 0.95 : 0.35;
+        p.setAttribute('stroke-dashoffset', 1 - E.out(clamp(k / 0.3)));
+        p.setAttribute('opacity', k <= 0 ? 0 : k < 0.3 ? peak : peak * (1 - (k - 0.3) / 0.7));
+    }));
+}
+function sparks(host, n, seed, cx, cy, dist, colors) {
+    const r = rng(seed); const list = [];
+    for (let i = 0; i < n; i++) {
+        const el = document.createElement('i');
+        el.style.cssText = `position:absolute;left:${cx - 9}px;top:${cy - 9}px;width:${16 + r() * 10}px;height:${16 + r() * 10}px;border-radius:4px;background:${colors[i % colors.length]};opacity:0`;
+        host.append(el);
+        list.push({ el, a: (Math.PI * 2 * i) / n + r() * 0.5, d: dist * (0.6 + r() * 0.6), rot: 180 + r() * 220, dur: 0.7 + r() * 0.35 });
+    }
+    return list;
+}
+function drawSparks(list, t, start) {
+    list.forEach((s) => {
+        const k = P(t, start, s.dur);
+        if (k <= 0 || k >= 1) { s.el.style.opacity = 0; return; }
+        const e = 1 - Math.pow(1 - k, 2.4);
+        tf(s.el, { x: Math.cos(s.a) * s.d * e, y: Math.sin(s.a) * s.d * e + k * k * 60, r: s.rot * e, s: 1 - 0.6 * k, o: 1 - k });
+    });
+}
+
+// ---------- cena 1/2
+const b1 = bolts($('bolts1'), 5, 7);
+const sp1 = sparks($('sparks1'), 22, 3, 540, 1080, 420, ['#f7d84a', '#efc12f', '#2b8a52', '#f59e0b']);
+const runnerFrames = [...Array(6)].map((_, i) => `a/sem-energia-${i}.png`);
+const lawyerFrames = [...Array(9)].map((_, i) => `a/premium-nomeado-${i}.png`);
+[...runnerFrames, ...lawyerFrames].forEach((src) => { const im = new Image(); im.src = src; });
+
+// ---------- cena 3
+const screen = $('screen');
+const bankWords = [
+    { w: 'vida', x: 34 }, { w: 'honra', x: 158 }, { w: 'lei', x: 302 }, { w: 'justiça', x: 394 },
+];
+const bankEls = bankWords.map((b) => {
+    const slot = document.createElement('div'); slot.className = 'slot'; slot.style.left = b.x + 'px'; slot.style.top = '1000px';
+    const chip = document.createElement('div'); chip.className = 'chip'; chip.textContent = b.w; chip.style.left = b.x + 'px'; chip.style.top = '1000px';
+    $('bank').append(slot, chip);
+    return { slot, chip };
+});
+bankEls.forEach((b) => { b.slot.style.width = b.chip.offsetWidth + 'px'; });
+function gapPos(id) {
+    const g = $(id).getBoundingClientRect(); const s = screen.getBoundingClientRect();
+    return { x: g.left - s.left, y: g.top - s.top };
+}
+let G1, G2;
+const b3 = bolts($('bolts3'), 3, 11);
+const sp3 = sparks($('sparks3'), 16, 5, 540, 840, 360, ['#f7d84a', '#f59e0b', '#2b8a52']);
+
+// ---------- cena 4
+const laws = [
+    ['Constituição Federal', 'constitucional-5'], ['Código Civil', 'civil-5'], ['Código Penal', 'criminal-5'],
+    ['CLT', 'trabalhista-5'], ['Código Tributário', 'tributario-3'], ['Processo Civil', 'processo-5'],
+];
+const cardEls = laws.map(([t, img], i) => {
+    const c = document.createElement('div'); c.className = 'card'; c.style.top = 440 + i * 196 + 'px';
+    c.innerHTML = `<img src="a/${img}.png"><span class="t">${t}</span><div class="lock"><div class="lk" style="inset:0;border-radius:50%;background:#ebe7df;display:grid;place-items:center"><svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#a8a297" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div><div class="ok" style="inset:0;border-radius:50%;background:#2b8a52;display:grid;place-items:center;opacity:0"><svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div></div>`;
+    $('cards').append(c); return c;
+});
+
+// ---------- cena 5
+let AV = {};
+const optDefs = [['Nenhuma', 'ana_nenhum', false], ['Toga de juiz', 'ana_toga', true], ['Astronauta', 'ana_astronauta', true]];
+const sp5 = sparks($('sparks5'), 18, 9, 540, 820, 430, ['#f7d84a', '#8b5cc7', '#87a5d8', '#2b8a52']);
+const sp5b = sparks($('sparks5'), 18, 13, 540, 820, 430, ['#f7d84a', '#8b5cc7', '#87a5d8', '#2b8a52']);
+
+// ---------- cena 6
+const sp6 = sparks($('sparks6'), 26, 21, 540, 900, 460, ['#cfc8ba', '#bdb5a6', '#78726a', '#e4ded2']);
+
+// ---------- cena 7
+const perkDefs = [['Energia infinita', 150, 1120], ['Todas as leis', 600, 1120], ['Fantasias exclusivas', 110, 1270], ['Sem anúncios', 610, 1270], ['Todas as fases', 0, 0]];
+const perkEls = perkDefs.slice(0, 4).map(([t, x, y]) => { const p = document.createElement('div'); p.className = 'perk'; p.textContent = t; p.style.left = x + 'px'; p.style.top = y + 'px'; $('perks').append(p); return p; });
+
+function init(avatars) {
+    AV = avatars;
+    G1 = gapPos('g1'); G2 = gapPos('g2');
+    optDefs.forEach(([label, key, premium], i) => {
+        const o = document.createElement('div'); o.className = 'opt'; o.style.left = 140 + i * 280 + 'px';
+        o.innerHTML = `<div class="thumb">${AV[key].replace(/id="/g, 'id="t' + i).replace(/url\(#/g, 'url(#t' + i).replace(/href="#/g, 'href="#t' + i)}</div><p>${label}</p>` + (premium ? '<span class="crown">Premium</span>' : '');
+        $('opts').append(o);
+    });
+    // centraliza as opções de preço
+    perkEls.forEach((p, i) => {
+        const row = i < 2 ? [perkEls[0], perkEls[1]] : [perkEls[2], perkEls[3]];
+        const total = row[0].offsetWidth + row[1].offsetWidth + 24;
+        const left = (1080 - total) / 2;
+        row[0].style.left = left + 'px'; row[1].style.left = left + row[0].offsetWidth + 24 + 'px';
+    });
+}
+let lastOutfit = null;
+
+// ---------- linha do tempo
+const SCENES = { s1: [0, 5.6], s3: [5.6, 10.4], s4: [10.4, 13.3], s5: [12.85, 15.75], s6: [15.6, 18.4], s7: [17.9, 21.2], s8: [21.2, 99] };
+const DURATION = 24.6;
+
+function sweep(t, mid) {
+    const k = P(t, mid - 0.32, 0.64);
+    const on = k > 0 && k < 1;
+    $('sw').style.visibility = $('sw2').style.visibility = on ? 'visible' : 'hidden';
+    if (!on) return;
+    const x = lerp(-2150, 1500, E.io(k));
+    $('sw').style.transform = `translateX(${x}px) skewX(-12deg)`;
+    $('sw2').style.transform = `translateX(${x + 1760}px) skewX(-12deg)`;
+}
+
+function seek(t) {
+    for (const [id, [a, b]] of Object.entries(SCENES)) { const on = t >= a && t < b; $(id).style.display = on ? "block" : "none"; $(id).style.visibility = "visible"; }
+
+    // ----- 1/2
+    if (t < 5.6) {
+        wordsIn('h1a', t, 0.15); mark($('h1a').querySelector('.mark'), t, 0.8);
+        if (t > 2.7) wordsOut('h1a', t, 2.7);
+        $('h1a').style.visibility = t < 3.2 ? 'visible' : 'hidden';
+        $('h1b').style.visibility = t >= 3.1 ? 'visible' : 'hidden';
+        wordsIn('h1b', t, 3.2); mark($('h1b').querySelector('.mark'), t, 3.95);
+
+        const drop = E.back(P(t, 0, 0.55));
+        let bx = 0; if (t > 1.5 && t < 2.3) bx = Math.sin((t - 1.5) * 60) * 16 * (1 - P(t, 1.5, 0.8));
+        const pulse = t > 3.0 ? 1 + 0.14 * Math.sin(Math.PI * P(t, 3.05, 0.5)) : 1;
+        tf($('battery'), { x: bx, y: (1 - drop) * -500, s: pulse, o: clamp(P(t, 0, 0.2) * 3) });
+        const drain = t < 3.0 ? lerp(0.24, 0, E.io(P(t, 0.5, 1.0))) : E.out(P(t, 3.1, 0.6));
+        const fill = $('bfill');
+        fill.setAttribute('width', Math.max(0, 424 * drain));
+        fill.setAttribute('fill', t < 3.0 ? '#d9534f' : '#efc12f');
+        fill.setAttribute('opacity', t < 3.0 && drain < 0.02 ? 0 : 1);
+        $('bbolt').setAttribute('opacity', P(t, 3.4, 0.2));
+        const zk = P(t, 1.55, 0.3);
+        tf($('zero'), { y: (1 - E.back(zk)) * 30, o: t < 2.8 ? zk : 1 - P(t, 2.8, 0.25) });
+
+        const rk = P(t, 0.35, 0.5), rOut = E.in(P(t, 2.75, 0.35));
+        $('runner').src = runnerFrames[Math.floor((t * 1000) / 220) % 6];
+        tf($('runner'), { y: (1 - E.out(rk)) * 120 + rOut * 300, o: rk * (1 - rOut) });
+
+        const fk = P(t, 3.0, 0.55);
+        $('flash1').style.opacity = fk <= 0 ? 0 : fk < 0.25 ? fk / 0.25 * 0.95 : 0.95 * (1 - (fk - 0.25) / 0.75);
+        drawBolts(b1, t, 3.0);
+        drawSparks(sp1, t, 3.75);
+        const ik = P(t, 3.7, 0.5);
+        tf($('inf'), { s: 0.3 + 0.7 * E.back(ik), r: (1 - ik) * -14, o: clamp(ik * 3) });
+        const ik2 = P(t, 4.3, 0.4);
+        tf($('inf2'), { y: (1 - E.out(ik2)) * 40, o: ik2 });
+    }
+
+    // ----- 3
+    if (t >= 5.3 && t < 10.4) {
+        wordsIn('h3', t, 5.75); mark($('h3').querySelector('.mark'), t, 6.4);
+        const pk = E.back(P(t, 5.65, 0.6));
+        tf($('phone'), { y: (1 - pk) * 1400 });
+        // fichas voando para as lacunas
+        const moves = [[2, G1, 6.55], [0, G2, 7.15]];
+        bankEls.forEach((b, i) => {
+            const m = moves.find((mm) => mm[0] === i);
+            if (!m) { tf(b.chip, {}); return; }
+            const k = E.io(P(t, m[2], 0.38));
+            const from = { x: bankWords[i].x, y: 1000 };
+            const gw = $(m[1] === G1 ? 'g1' : 'g2').offsetWidth;
+            const to = { x: m[1].x + (gw - b.chip.offsetWidth) / 2, y: m[1].y - 4 };
+            const arc = Math.sin(Math.PI * k) * -90;
+            tf(b.chip, { x: (to.x - from.x) * k, y: (to.y - from.y) * k + arc, s: 1 + Math.sin(Math.PI * k) * 0.1 });
+        });
+        $('g1').style.color = t > 6.8 ? 'transparent' : '#b38c17';
+        $('g2').style.color = t > 7.4 ? 'transparent' : '#b38c17';
+        const ready = t > 7.45;
+        $('verify').style.background = ready ? '#efc12f' : '#ebe7df';
+        $('verify').style.color = ready ? '#2b2925' : '#a8a297';
+        $('verify').style.boxShadow = ready ? '0 7px 0 #b38c17' : 'none';
+        const press = t > 7.72 && t < 7.86 ? 6 : 0;
+        $('verify').style.transform = `translateY(${press}px)`;
+        $('verify').style.boxShadow = ready ? `0 ${7 - press}px 0 #b38c17` : 'none';
+        // dedo
+        const taps = [[6.4, 6.55, bankWords[2].x + 40, 1030], [7.0, 7.15, bankWords[0].x + 50, 1030], [7.62, 7.78, 440, 1137]];
+        const tapEl = $('tap3'); let shown = false;
+        for (const [a, b, x, y] of taps) {
+            if (t >= a - 0.15 && t < b + 0.25) {
+                const k = P(t, a - 0.15, 0.15), r = P(t, b, 0.25);
+                const sx = 230 + 18 + x, sy = 470 + 18 + y + (1 - pk) * 1400;
+                tapEl.style.left = sx + 'px'; tapEl.style.top = sy + 'px';
+                tapEl.style.background = `rgba(43,41,37,${0.28 * k * (1 - r)})`;
+                tapEl.style.boxShadow = `0 0 0 ${r * 40}px rgba(43,41,37,${0.18 * (1 - r)})`;
+                tf(tapEl, { s: t < b ? 1 - 0.15 * P(t, a, b - a) : 1 });
+                shown = true;
+            }
+        }
+        tapEl.style.visibility = shown ? 'visible' : 'hidden';
+        const rk = E.out(P(t, 7.85, 0.35));
+        tf($('result'), { y: (1 - rk) * 300 - rk * 300 });
+        // combo
+        const fk = P(t, 8.05, 0.55);
+        $('flash3').style.opacity = fk <= 0 ? 0 : fk < 0.25 ? fk / 0.25 * 0.85 : 0.85 * (1 - (fk - 0.25) / 0.75);
+        drawBolts(b3, t, 8.05);
+        drawSparks(sp3, t, 8.1);
+        const ck = P(t, 8.1, 0.45), cOut = E.in(P(t, 9.15, 0.3));
+        const cs = ck < 0.6 ? lerp(0.3, 1.18, E.out(ck / 0.6)) : lerp(1.18, 1, (ck - 0.6) / 0.4);
+        tf($('combo'), { s: cs * (1 - 0.08 * cOut), r: lerp(-10, 0, E.out(ck)), y: -cOut * 30, o: clamp(ck * 4) * (1 - cOut) });
+        $('prog').style.width = lerp(30, 55, E.io(P(t, 9.3, 0.5))) + '%';
+        const pp = 1 + 0.25 * Math.sin(Math.PI * P(t, 9.1, 0.35));
+        tf($('ppill'), { s: pp });
+    }
+
+    // ----- 4
+    if (t >= 10.1 && t < 13.4) {
+        wordsIn('h4', t, 10.45); mark($('h4').querySelector('.mark'), t, 11.0);
+        const out = E.io(P(t, 12.85, 0.4));
+        cardEls.forEach((c, i) => {
+            const k = E.back(P(t, 10.5 + i * 0.08, 0.5));
+            tf(c, { x: (1 - k) * 1100 - out * 1200, o: clamp(P(t, 10.5 + i * 0.08, 0.15)) });
+            const u = P(t, 11.3 + i * 0.16, 0.3);
+            const lk = c.querySelector('.lk'), ok = c.querySelector('.ok');
+            tf(lk, { s: 1 - 0.6 * E.in(u), o: 1 - u, r: u * 25 });
+            tf(ok, { s: 0.4 + 0.6 * E.back(u), o: clamp(u * 2) });
+        });
+        tf($('h4'), { x: -out * 1200 });
+    }
+
+    // ----- 5
+    if (t >= 12.85 && t < 16.0) {
+        const inn = E.io(P(t, 12.85, 0.4)), out = E.in(P(t, 15.4, 0.3));
+        wordsIn('h5', t, 13.1); mark($('h5').querySelector('.mark'), t, 13.6);
+        tf($('h5'), { x: (1 - inn) * 1200 });
+        const step = t < 13.8 ? 0 : t < 14.65 ? 1 : 2;
+        const key = optDefs[step][1];
+        if (key !== lastOutfit && AV[key]) { $('stagein').innerHTML = AV[key]; lastOutfit = key; }
+        const swapT = step === 1 ? 13.8 : step === 2 ? 14.65 : -9;
+        const sk = P(t, swapT, 0.45);
+        const sq = step && sk < 1 ? 1 + Math.sin(sk * Math.PI * 2.2) * 0.07 * (1 - sk) : 1;
+        tf($('stage'), { x: (1 - inn) * 1200, sx: 1 / sq, sy: sq, s: 1 - out * 0.9, o: 1 - out });
+        drawSparks(sp5, t, 13.8); drawSparks(sp5b, t, 14.65);
+        [...$('opts').children].forEach((o, i) => {
+            const k = E.back(P(t, 13.25 + i * 0.1, 0.45));
+            tf(o, { x: (1 - inn) * 1200, y: (1 - k) * 120 + out * 400, o: clamp(P(t, 13.25 + i * 0.1, 0.2)) * (1 - out) });
+            const th = o.querySelector('.thumb');
+            th.style.borderColor = i === step ? '#87a5d8' : 'transparent';
+            th.style.boxShadow = i === step ? '0 0 0 6px #edf1f8' : 'none';
+        });
+        tf($('h5'), { x: (1 - inn) * 1200, y: -out * 300, o: 1 - out });
+    }
+
+    // ----- 6
+    if (t >= 15.6 && t < 18.4) {
+        wordsIn('h6', t, 15.75); mark($('h6').querySelector('.mark'), t, 16.3);
+        const ak = E.back(P(t, 15.7, 0.5));
+        $('adcount').textContent = t < 16.2 ? 5 : 4;
+        let shake = 0; if (t > 16.45 && t < 16.85) shake = Math.sin((t - 16.45) * 70) * 18;
+        const crush = E.in(P(t, 16.85, 0.28));
+        tf($('adcard'), { x: shake, y: (1 - ak) * 900, s: 1 - crush * 0.95, r: crush * 30, o: 1 - P(t, 17.05, 0.08) });
+        drawSparks(sp6, t, 17.05);
+        const ok = P(t, 17.15, 0.45);
+        tf($('okc'), { s: 0.2 + 0.8 * E.back(ok), o: clamp(ok * 3) });
+        const nk = P(t, 17.4, 0.4);
+        tf($('nem'), { y: (1 - E.out(nk)) * 50, o: nk });
+    }
+
+    // ----- 7
+    if (t >= 17.9 && t < 21.4) {
+        const rk = E.io(P(t, 17.9, 0.5));
+        $('s7').style.clipPath = `circle(${rk * 1250}px at 540px 960px)`;
+        const ck = P(t, 18.25, 0.4); tf($('p7chip'), { y: (1 - E.out(ck)) * 40, o: ck });
+        const pk = P(t, 18.4, 0.5); tf($('p7price'), { s: 0.4 + 0.6 * E.back(pk), o: clamp(pk * 3) });
+        wordsIn('h7', t, 18.9);
+        const m7 = $('m7'); mark(m7, t, 19.45, 0.5);
+        m7.style.setProperty('background-image', 'linear-gradient(#efc12f,#efc12f)');
+        m7.style.backgroundSize = `${E.io(P(t, 19.45, 0.5)) * 100}% 92%`;
+        m7.style.backgroundPosition = '0 60%';
+        m7.style.color = P(t, 19.45, 0.5) > 0.45 ? '#2b2925' : '#fff';
+        perkEls.forEach((p, i) => { const k = P(t, 19.85 + i * 0.12, 0.45); tf(p, { y: (1 - E.back(k)) * 80, s: 0.7 + 0.3 * E.back(k), o: clamp(k * 3) }); });
+        const gk = P(t, 20.5, 0.4); tf($('p7g'), { y: (1 - E.out(gk)) * 30, o: gk * 0.95 });
+    }
+
+    // ----- 8
+    if (t >= 21.2) {
+        $('lawyer').src = lawyerFrames[Math.floor(((t - 21.2) * 1000) / 180) % 9];
+        const gk = P(t, 21.4, 0.5); tf($('gifwrap'), { s: 0.3 + 0.7 * E.back(gk), o: clamp(gk * 3) });
+        const lk = P(t, 21.6, 0.5); tf($('logo'), { s: 0.5 + 0.5 * E.back(lk), r: (1 - lk) * -6, o: clamp(lk * 3) });
+        const tk = P(t, 21.95, 0.4); tf($('tag'), { y: (1 - E.out(tk)) * 40, o: tk });
+        const bk = P(t, 22.15, 0.45);
+        const press = t > 23.25 && t < 23.42 ? 10 : 0;
+        const beat = 1 + 0.04 * Math.sin(Math.PI * P(t, 23.6, 0.5));
+        tf($('cta'), { y: (1 - E.back(bk)) * 200 + press, s: beat, o: clamp(bk * 3) });
+        $('cta').style.boxShadow = `0 ${12 - press}px 0 #643f96`;
+        const tapEl = $('tap8'); const a = 23.1, b = 23.35;
+        const on = t >= a && t < b + 0.3;
+        tapEl.style.visibility = on ? 'visible' : 'hidden';
+        if (on) {
+            const k = P(t, a, 0.15), r = P(t, b, 0.3);
+            tapEl.style.left = '700px'; tapEl.style.top = '1520px';
+            tapEl.style.background = `rgba(255,255,255,${0.45 * k * (1 - r)})`;
+            tapEl.style.boxShadow = `0 0 0 ${r * 50}px rgba(255,255,255,${0.3 * (1 - r)})`;
+        }
+        const uk = P(t, 22.35, 0.4); tf($('url'), { o: uk });
+    }
+
+    sweep(t, 5.6); sweep2(t);
+}
+function sweep2(t) {
+    // As outras passagens com o marca-texto amarelo
+    for (const mid of [10.4, 21.2]) if (t > mid - 0.33 && t < mid + 0.33) sweep(t, mid);
+}
+window.seek = seek; window.init = init; window.DURATION = DURATION;
+</script>
+</body>
+</html>

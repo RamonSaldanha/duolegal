@@ -126,6 +126,23 @@ export interface EnergyState {
     infinite: boolean;
 }
 
+/** O próximo anúncio da tela sem energia: o nosso (o vídeo do Premium) ou o do Google. */
+export interface RewardAd {
+    kind: 'house' | 'google';
+    video_url: string | null;
+    // Quanto o do Google conta antes de dar a energia
+    seconds: number;
+}
+
+/** Resposta do anúncio assistido até o fim. */
+export interface RewardAdResponse {
+    success: boolean;
+    gained: number;
+    energy: EnergyState;
+    ads_left: number;
+    ad: RewardAd;
+}
+
 /** Combo: a sequência de acertos fechou um múltiplo e devolveu energia. */
 export interface EnergyCombo {
     streak: number;

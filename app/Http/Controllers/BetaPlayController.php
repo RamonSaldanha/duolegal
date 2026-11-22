@@ -72,18 +72,26 @@ class BetaPlayController extends LegislationPlayController
         return Inertia::render('BetaPlay/NoEnergy', $this->energyStatus(Auth::user()));
     }
 
-    /** Anúncio assistido até o fim: um tanto de energia, até a barra cheia. */
+    /**
+     * Anúncio assistido até o fim: um tanto de energia, até a barra cheia, e no máximo
+     * `ad_daily` por dia. Depois disso, 429 com o código `ad_limit`.
+     */
     public function betaEnergyReward()
     {
         $user = Auth::user();
-        $energy = app(EnergyService::class);
-        $energy->apply($user, (int) config('energy.ad_reward'), EnergyTransaction::AD);
+        if ($this->adStatus($user)['ads_left'] <= 0) {
+            return response()->json(['message' => 'Os anúncios de hoje acabaram. Volte amanhã.', 'code' => 'ad_limit'], 429);
+        }
 
-        return response()->json(['success' => true, 'energy' => $energy->payload($user)]);
+        $energy = app(EnergyService::class);
+        $gained = $energy->apply($user, (int) config('energy.ad_reward'), EnergyTransaction::AD);
+
+        return response()->json(['success' => true, 'gained' => $gained, 'energy' => $energy->payload($user)] + $this->adStatus($user));
     }
 
     /**
-     * A tela sem energia: a energia (com a hora do próximo +1) e quanto o anúncio dá.
+     * A tela sem energia: a energia (com a hora do próximo +1), quanto o anúncio dá, quantos
+     * ainda valem hoje e qual vem agora.
      *
      * @return array<string, mixed>
      */
@@ -92,6 +100,30 @@ class BetaPlayController extends LegislationPlayController
         return [
             'energy' => app(EnergyService::class)->payload($user),
             'ad_reward' => (int) config('energy.ad_reward'),
+        ] + $this->adStatus($user);
+    }
+
+    /**
+     * Os anúncios de hoje (dia de Brasília) e o próximo: o nosso (o vídeo do Premium) e o do
+     * Google se revezam, começando pelo nosso. `seconds` é quanto o do Google conta antes de
+     * dar a energia; o nosso dá quando o vídeo acaba.
+     *
+     * @return array{ads_left: int, ad: array{kind: string, video_url: string|null, seconds: int}}
+     */
+    protected function adStatus(User $user): array
+    {
+        $ads = EnergyTransaction::where('user_id', $user->id)->where('reason', EnergyTransaction::AD);
+        $dayStart = now(config('energy.ad_timezone'))->startOfDay()->setTimezone(config('app.timezone'));
+        $today = (clone $ads)->where('created_at', '>=', $dayStart)->count();
+        $house = $ads->count() % 2 === 0;
+
+        return [
+            'ads_left' => max(0, (int) config('energy.ad_daily') - $today),
+            'ad' => [
+                'kind' => $house ? 'house' : 'google',
+                'video_url' => $house ? asset(config('energy.ad_video')) : null,
+                'seconds' => (int) config('energy.ad_google_seconds'),
+            ],
         ];
     }
 

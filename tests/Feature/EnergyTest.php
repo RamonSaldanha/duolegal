@@ -160,6 +160,9 @@ test('a tela sem energia traz a energia e o anúncio', function () {
         ->assertOk()
         ->assertJsonPath('energy.value', 0)
         ->assertJsonPath('ad_reward', 3)
+        ->assertJsonPath('ads_left', 3)
+        ->assertJsonPath('ad.kind', 'house')
+        ->assertJsonPath('ad.video_url', asset('ads/memorize-premium.mp4'))
         ->assertJsonMissingPath('review');
 });
 
@@ -262,7 +265,28 @@ test('o anúncio dá 3, sem passar da barra cheia', function () {
     $this->postJson('/api/v1/trail/energy/reward')->assertOk()->assertJsonPath('energy.value', 13);
 
     $user->forceFill(['energy' => 23])->save();
-    $this->postJson('/api/v1/trail/energy/reward')->assertJsonPath('energy.value', 25);
+    $this->postJson('/api/v1/trail/energy/reward')->assertJsonPath('energy.value', 25)->assertJsonPath('gained', 2);
+});
+
+test('são 3 anúncios por dia (o dia de Brasília), revezando o nosso e o do Google', function () {
+    // 23h de 21/11 em Brasília
+    Carbon::setTestNow('2026-11-22 02:00:00');
+    $user = energyPlayer(0);
+    $user->forceFill(['is_admin' => true])->save();
+
+    $this->postJson('/api/v1/trail/energy/reward')->assertOk()->assertJsonPath('ads_left', 2)->assertJsonPath('ad.kind', 'google')->assertJsonPath('ad.video_url', null);
+    $this->postJson('/api/v1/trail/energy/reward')->assertOk()->assertJsonPath('ads_left', 1)->assertJsonPath('ad.kind', 'house');
+    $this->postJson('/api/v1/trail/energy/reward')->assertOk()->assertJsonPath('ads_left', 0);
+    $this->postJson('/api/v1/trail/energy/reward')->assertStatus(429)->assertJsonPath('code', 'ad_limit');
+    $this->getJson('/api/v1/trail/energy')->assertJsonPath('energy.value', 9)->assertJsonPath('ads_left', 0)->assertJsonPath('ad.kind', 'google');
+
+    // 1h de 22/11 em Brasília: outro dia
+    Carbon::setTestNow('2026-11-22 04:00:00');
+    $this->getJson('/api/v1/trail/energy')->assertJsonPath('ads_left', 3);
+    $this->postJson('/api/v1/trail/energy/reward')->assertOk()->assertJsonPath('energy.value', 14);
+
+    // A web passa pela mesma regra
+    $this->actingAs($user)->post(route('beta.play.energy.reward'))->assertOk()->assertJsonPath('ads_left', 1);
 });
 
 test('quem assina tem energia infinita: abre sem energia e não gasta', function () {

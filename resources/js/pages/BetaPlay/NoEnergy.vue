@@ -1,21 +1,24 @@
 <script setup lang="ts">
-import AdComponent from '@/components/AdComponent.vue';
+import RewardedAd from '@/components/beta-play/RewardedAd.vue';
 import PremiumYearly from '@/components/beta-preview/PremiumYearly.vue';
 import EnergyMeter from '@/components/EnergyMeter.vue';
 import GameButton from '@/components/ui/GameButton.vue';
 import IconButton from '@/components/ui/IconButton.vue';
 import { YEARLY_PER_MONTH } from '@/lib/premium';
-import type { EnergyState } from '@/types/beta-play';
+import type { EnergyState, RewardAd } from '@/types/beta-play';
 import { Head, router } from '@inertiajs/vue3';
 import { X } from 'lucide-vue-next';
 import { computed, onUnmounted, ref } from 'vue';
 
 // Sem energia (mapa beta), no mesmo desenho do convite Premium do fim de fase: o corredor
 // cansado e a frase com marca-texto, quando volta o próximo +1, o Premium anual (energia
-// infinita), o anúncio (+3) e esperar a recarga. Cabe numa tela só; o GIF encolhe para caber.
+// infinita), o anúncio (+3, até 3 por dia, em tela cheia: o nosso e o do Google se revezam) e
+// esperar a recarga. Cabe numa tela só; o GIF encolhe para caber.
 const props = defineProps<{
     energy: EnergyState;
     ad_reward: number;
+    ads_left: number;
+    ad: RewardAd;
 }>();
 
 const PHASE_OPEN = 12;
@@ -32,7 +35,13 @@ const nextIn = computed(() => {
     return minutes > 0 ? `${minutes} min` : 'instantes';
 });
 
-const ad = ref<InstanceType<typeof AdComponent> | null>(null);
+const watching = ref(false);
+
+// Depois do anúncio, a tela pega de novo a energia e o próximo anúncio
+function adClosed() {
+    watching.value = false;
+    router.reload({ only: ['energy', 'ads_left', 'ad'] });
+}
 
 function backToMap() {
     router.visit(route('beta.play.map'));
@@ -78,21 +87,22 @@ function backToMap() {
                     <div class="mt-4 flex flex-col">
                         <PremiumYearly :line="`Energia infinita · ${YEARLY_PER_MONTH} por mês`" />
                     </div>
-                    <GameButton variant="second" size="lg" class="mt-3 w-full" @click="ad?.startAdExperience()">
+                    <GameButton v-if="ads_left > 0" variant="second" size="lg" class="mt-3 w-full" @click="watching = true">
                         Assistir anúncio (+{{ ad_reward }})
                     </GameButton>
+                    <p class="mt-2 text-center text-xs font-semibold text-muted-foreground">
+                        {{
+                            ads_left > 0
+                                ? `${ads_left === 1 ? 'Resta 1 anúncio' : `Restam ${ads_left} anúncios`} hoje`
+                                : 'Os anúncios de hoje acabaram. Volte amanhã.'
+                        }}
+                    </p>
                     <GameButton variant="ghost" size="sm" class="mt-1 w-full" @click="backToMap">Esperar a recarga</GameButton>
                 </template>
             </div>
         </div>
 
-        <AdComponent
-            ref="ad"
-            :reward-route="route('beta.play.energy.reward')"
-            :redirect-route="route('beta.play.energy')"
-            :prize="`${ad_reward} de energia`"
-            claim-label="Pegar a energia"
-        />
+        <RewardedAd v-if="watching" :ad="ad" :reward-route="route('beta.play.energy.reward')" @close="adClosed" />
     </div>
 </template>
 

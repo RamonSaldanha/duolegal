@@ -58,6 +58,12 @@ return [
         'retake' => 5,
     ],
 
-    // Anúncio assistido (pouco, para o anúncio não virar energia sem fim)
+    // Anúncio assistido até o fim (pouco, para o anúncio não virar energia sem fim): no máximo
+    // `ad_daily` por dia (o dia de Brasília). O do Google e o nosso (o vídeo do Premium em
+    // `ad_video`) se revezam; o do Google conta `ad_google_seconds` antes de dar a energia.
     'ad_reward' => 3,
+    'ad_daily' => 3,
+    'ad_timezone' => 'America/Sao_Paulo',
+    'ad_video' => 'ads/memorize-premium.mp4',
+    'ad_google_seconds' => 30,
 ];
