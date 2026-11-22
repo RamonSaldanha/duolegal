@@ -380,7 +380,10 @@ onUnmounted(() => {
                 </div>
 
                 <!-- Controles: palavras e Verificar (teleport), depois o resultado -->
-                <div v-show="!lastResult" class="shrink-0 border-t-2 border-gray-200 px-3 pb-5 dark:border-gray-800 md:px-4">
+                <div
+                    v-show="!lastResult"
+                    class="shrink-0 border-t-2 border-gray-200 px-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] dark:border-gray-800 md:px-4"
+                >
                     <div class="mx-auto w-full sm:w-[95%] lg:w-[50rem]">
                         <div id="beta-controls" />
                     </div>

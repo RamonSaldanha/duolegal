@@ -7,6 +7,7 @@ import ResultBar from '@/components/ResultBar.vue';
 import GameButton from '@/components/ui/GameButton.vue';
 import IconButton from '@/components/ui/IconButton.vue';
 import Notice from '@/components/ui/Notice.vue';
+import { useStrikeChoices } from '@/composables/useStrikeChoices';
 import { playPhaseComplete } from '@/lib/sounds';
 import type { EnergyState } from '@/types/beta-play';
 import type { DisciplineLevelUp } from '@/types/legislation-play';
@@ -125,57 +126,8 @@ const choices = computed(() => {
 
 const contentRef = ref<HTMLElement | null>(null);
 
-// Arrastar uma alternativa para a direita risca (ou desrisca) ela, para eliminar opções
-// como se faz na prova. Arrastar na vertical continua rolando a tela.
-const STRIKE_DISTANCE = 48;
-const struck = ref<Record<string, boolean>>({});
-const drag = ref<{ key: string; startX: number; startY: number; dx: number; horizontal: boolean | null } | null>(null);
-let ignoreNextClick = false;
-
-function onChoicePointerDown(event: PointerEvent, key: string) {
-    if (feedback.value || (event.pointerType === 'mouse' && event.button !== 0)) return;
-    drag.value = { key, startX: event.clientX, startY: event.clientY, dx: 0, horizontal: null };
-}
-
-function onChoicePointerMove(event: PointerEvent) {
-    const current = drag.value;
-    if (!current) return;
-
-    const dx = event.clientX - current.startX;
-    const dy = event.clientY - current.startY;
-
-    if (current.horizontal === null && Math.max(Math.abs(dx), Math.abs(dy)) > 8) {
-        current.horizontal = Math.abs(dx) > Math.abs(dy);
-        if (current.horizontal) (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
-    }
-    if (current.horizontal) current.dx = Math.max(0, Math.min(dx, STRIKE_DISTANCE + 24));
-}
-
-function onChoicePointerUp() {
-    const current = drag.value;
-    drag.value = null;
-    if (!current?.horizontal) return;
-
-    // Foi um arrasto, não um toque: não marca a alternativa
-    ignoreNextClick = true;
-    if (current.dx < STRIKE_DISTANCE) return;
-
-    struck.value[current.key] = !struck.value[current.key];
-    if (struck.value[current.key] && selected.value === current.key) selected.value = null;
-}
-
-function onChoiceClick(key: string) {
-    if (ignoreNextClick) {
-        ignoreNextClick = false;
-        return;
-    }
-    selected.value = key;
-    struck.value[key] = false;
-}
-
-function choiceOffset(key: string) {
-    return drag.value?.key === key && drag.value.horizontal ? drag.value.dx : 0;
-}
+// Arrastar uma alternativa para o lado (ou segurar) risca ela
+const strike = useStrikeChoices(selected, () => !!feedback.value);
 
 // O "Concluir" do resumo só libera quando a leitura guiada chega à última palavra
 const summaryRead = ref(false);
@@ -210,8 +162,7 @@ async function goTo(index: number) {
     summaryProgress.value = 0;
     summaryConfirmed.value = false;
     selected.value = null;
-    struck.value = {};
-    drag.value = null;
+    strike.reset();
     feedback.value = null;
     checkError.value = false;
     await nextTick();
@@ -412,34 +363,35 @@ function choiceClass(key: string) {
                                     :key="choice.key"
                                     type="button"
                                     class="choice mz-choice select-none text-sm"
-                                    :class="[choiceClass(choice.key), { 'is-dragging': drag?.key === choice.key && drag.horizontal }]"
-                                    :style="{ translate: `${choiceOffset(choice.key)}px 0` }"
+                                    :class="[choiceClass(choice.key), { 'is-dragging': strike.isDragging(choice.key) }]"
+                                    :style="{ translate: `${strike.offset(choice.key)}px 0` }"
                                     :disabled="!!feedback"
                                     :aria-pressed="selected === choice.key"
-                                    @pointerdown="onChoicePointerDown($event, choice.key)"
-                                    @pointermove="onChoicePointerMove"
-                                    @pointerup="onChoicePointerUp"
-                                    @pointercancel="drag = null"
-                                    @click="onChoiceClick(choice.key)"
+                                    @pointerdown="strike.onPointerDown($event, choice.key)"
+                                    @pointermove="strike.onPointerMove"
+                                    @pointerup="strike.onPointerUp"
+                                    @pointercancel="strike.onPointerCancel"
+                                    @contextmenu="strike.onContextMenu($event, choice.key)"
+                                    @click="strike.onClick(choice.key)"
                                 >
                                     <span
                                         v-if="step.question.type === 'multiple_choice'"
                                         class="mz-choice-key"
-                                        :class="{ 'line-through opacity-50': struck[choice.key] }"
+                                        :class="{ 'line-through opacity-50': strike.looksStruck(choice.key) }"
                                         >{{ choice.key }}</span
                                     >
                                     <span
                                         class="min-w-0 flex-1"
                                         :class="{
                                             'font-bold': step.question.type === 'true_false',
-                                            'line-through decoration-2 opacity-50': struck[choice.key],
+                                            'line-through decoration-2 opacity-50': strike.looksStruck(choice.key),
                                         }"
                                         >{{ choice.text }}</span
                                     >
                                 </button>
                             </div>
                             <p v-if="!feedback" class="mt-3 text-xs text-gray-400 dark:text-gray-500">
-                                Arraste uma alternativa para a direita para riscá-la.
+                                Arraste uma alternativa para o lado, ou segure, para riscá-la.
                             </p>
 
                             <!-- Comentário do gabarito; o aviso de acerto ou erro fica na barra de baixo -->
@@ -459,7 +411,7 @@ function choiceClass(key: string) {
                 <!-- Botão do passo -->
                 <div
                     v-if="step.kind === 'question' && !feedback"
-                    class="shrink-0 border-t-2 border-gray-100 px-3 pb-5 pt-4 dark:border-gray-800 md:px-4"
+                    class="shrink-0 border-t-2 border-gray-100 px-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-4 dark:border-gray-800 md:px-4"
                 >
                     <div class="mx-auto w-full sm:w-[95%] lg:w-[50rem]">
                         <Notice v-if="checkError" short class="mb-3">Não foi possível corrigir agora. Tente de novo.</Notice>
@@ -503,6 +455,7 @@ function choiceClass(key: string) {
    usa translate, e o afundar do .mz-choice usa transform: um não apaga o outro. */
 .choice {
     touch-action: pan-y;
+    -webkit-touch-callout: none;
     transition:
         translate 0.2s ease,
         transform 0.08s ease,

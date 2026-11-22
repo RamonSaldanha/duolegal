@@ -26,7 +26,7 @@ onMounted(() => {
 
 <template>
     <div
-        class="result-bar shrink-0 border-t-2 px-3 pb-5 pt-4 md:px-4"
+        class="result-bar shrink-0 border-t-2 px-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-4 md:px-4"
         :class="
             correct ? 'border-green-200 bg-green-100 dark:border-green-900 dark:bg-green-950' : 'border-red-200 bg-red-100 dark:border-red-900 dark:bg-red-950'
         "

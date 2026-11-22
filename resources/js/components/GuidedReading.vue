@@ -9,7 +9,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 // inteira por vez). Rolar a tela leva a leitura para o trecho que ficou à vista, e tocar numa
 // palavra leva a leitura até ela; apertar e segurar o texto prende o realce. O resumo só conta como lido quando a leitura, tocando, passou
 // por quase todas as palavras: rolar ou pular até o fim não vale. Os controles ficam num painel
-// vertical flutuante, que a pessoa arrasta para perto do dedão.
+// vertical flutuante, que a pessoa arrasta para perto do dedão: o play em cima, como no app.
 const props = defineProps<{
     html: string;
     // Elemento que rola o resumo (a área de conteúdo da fase)
@@ -569,6 +569,31 @@ onBeforeUnmount(() => {
         >
             <GripHorizontal class="h-3.5 w-3.5 text-gray-400" aria-hidden="true" />
 
+            <button
+                type="button"
+                class="mz-btn mz-sm mz-sq mz-main mb-1"
+                :aria-label="state === 'playing' ? 'Pausar a leitura guiada' : 'Iniciar a leitura guiada'"
+                @click="toggle"
+            >
+                <Pause v-if="state === 'playing'" class="h-4 w-4" fill="currentColor" />
+                <Play v-else class="h-4 w-4" fill="currentColor" />
+            </button>
+
+            <button type="button" class="mz-btn mz-sm mz-sq mz-tonal" :disabled="wpm >= WPM_MAX" aria-label="Aumentar a velocidade" @click="changeSpeed(1)">
+                <Plus class="h-4 w-4" />
+            </button>
+
+            <div class="flex flex-col items-center leading-none" aria-live="polite">
+                <span class="text-xs font-bold tabular-nums text-gray-900 dark:text-white">{{ wpm }}</span>
+                <span class="mt-0.5 text-[9px] text-gray-500 dark:text-gray-400" title="palavras por minuto">ppm</span>
+            </div>
+
+            <button type="button" class="mz-btn mz-sm mz-sq mz-tonal" :disabled="wpm <= WPM_MIN" aria-label="Diminuir a velocidade" @click="changeSpeed(-1)">
+                <Minus class="h-4 w-4" />
+            </button>
+
+            <div class="my-0.5 h-0.5 w-7 rounded-full bg-gray-200 dark:bg-gray-700" aria-hidden="true" />
+
             <div class="relative">
                 <button type="button" class="mz-btn mz-sm mz-sq mz-tonal" :aria-label="`Modo: ${MODE_LABELS[mode]}. Trocar o modo de leitura`" @click="toggleMode">
                     <WholeWord v-if="mode === 'chunk'" class="h-4 w-4" />
@@ -585,29 +610,6 @@ onBeforeUnmount(() => {
                     </div>
                 </Transition>
             </div>
-
-            <button type="button" class="mz-btn mz-sm mz-sq mz-tonal" :disabled="wpm >= WPM_MAX" aria-label="Aumentar a velocidade" @click="changeSpeed(1)">
-                <Plus class="h-4 w-4" />
-            </button>
-
-            <div class="flex flex-col items-center leading-none" aria-live="polite">
-                <span class="text-xs font-bold tabular-nums text-gray-900 dark:text-white">{{ wpm }}</span>
-                <span class="mt-0.5 text-[9px] text-gray-500 dark:text-gray-400" title="palavras por minuto">ppm</span>
-            </div>
-
-            <button type="button" class="mz-btn mz-sm mz-sq mz-tonal" :disabled="wpm <= WPM_MIN" aria-label="Diminuir a velocidade" @click="changeSpeed(-1)">
-                <Minus class="h-4 w-4" />
-            </button>
-
-            <button
-                type="button"
-                class="mz-btn mz-sm mz-sq mz-main mt-1"
-                :aria-label="state === 'playing' ? 'Pausar a leitura guiada' : 'Iniciar a leitura guiada'"
-                @click="toggle"
-            >
-                <Pause v-if="state === 'playing'" class="h-4 w-4" fill="currentColor" />
-                <Play v-else class="h-4 w-4" fill="currentColor" />
-            </button>
         </div>
     </Teleport>
 </template>

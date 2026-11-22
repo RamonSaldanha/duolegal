@@ -4,6 +4,7 @@ import ResultBar from '@/components/ResultBar.vue';
 import GameButton from '@/components/ui/GameButton.vue';
 import IconButton from '@/components/ui/IconButton.vue';
 import Notice from '@/components/ui/Notice.vue';
+import { useStrikeChoices } from '@/composables/useStrikeChoices';
 import { playPhaseComplete } from '@/lib/sounds';
 import type { BetaExamAnswerResponse, BetaExamAttempt, BetaExamGiven, BetaExamResult, EnergyState } from '@/types/beta-play';
 import type { DisciplineLevelUp } from '@/types/legislation-play';
@@ -55,6 +56,8 @@ const selected = ref<string | null>(null);
 const checking = ref(false);
 const checkError = ref(false);
 const feedback = ref<BetaExamGiven | null>(null);
+// Arrastar uma alternativa para o lado (ou segurar) risca ela, como no desafio do quadrado
+const strike = useStrikeChoices(selected, () => !!feedback.value);
 const confirmingExit = ref(false);
 const levelUp = ref<DisciplineLevelUp | null>(null);
 const contentRef = ref<HTMLElement | null>(null);
@@ -120,6 +123,7 @@ function enter(data: BetaExamAttempt) {
     const next = data.questions.findIndex((item) => !(item.uuid in data.answers));
     index.value = next === -1 ? 0 : next;
     selected.value = null;
+    strike.reset();
     feedback.value = null;
     result.value = null;
     timedOut.value = false;
@@ -209,6 +213,7 @@ async function advance() {
     }
     index.value++;
     selected.value = null;
+    strike.reset();
     feedback.value = null;
     checkError.value = false;
     await nextTick();
@@ -388,20 +393,44 @@ const answerLabel = (item: { type: string; options: Record<string, string> | nul
                                 v-for="choice in choices"
                                 :key="choice.key"
                                 type="button"
-                                class="mz-choice text-sm"
-                                :class="choiceClass(choice.key)"
+                                class="choice mz-choice select-none text-sm"
+                                :class="[choiceClass(choice.key), { 'is-dragging': strike.isDragging(choice.key) }]"
+                                :style="{ translate: `${strike.offset(choice.key)}px 0` }"
                                 :disabled="!!feedback"
                                 :aria-pressed="selected === choice.key"
-                                @click="selected = choice.key"
+                                @pointerdown="strike.onPointerDown($event, choice.key)"
+                                @pointermove="strike.onPointerMove"
+                                @pointerup="strike.onPointerUp"
+                                @pointercancel="strike.onPointerCancel"
+                                @contextmenu="strike.onContextMenu($event, choice.key)"
+                                @click="strike.onClick(choice.key)"
                             >
-                                <span v-if="question.type === 'multiple_choice'" class="mz-choice-key">{{ choice.key }}</span>
-                                <span class="min-w-0 flex-1" :class="{ 'font-bold': question.type === 'true_false' }">{{ choice.text }}</span>
+                                <span
+                                    v-if="question.type === 'multiple_choice'"
+                                    class="mz-choice-key"
+                                    :class="{ 'line-through opacity-50': strike.looksStruck(choice.key) }"
+                                    >{{ choice.key }}</span
+                                >
+                                <span
+                                    class="min-w-0 flex-1"
+                                    :class="{
+                                        'font-bold': question.type === 'true_false',
+                                        'line-through decoration-2 opacity-50': strike.looksStruck(choice.key),
+                                    }"
+                                    >{{ choice.text }}</span
+                                >
                             </button>
                         </div>
+                        <p v-if="!feedback" class="mt-3 text-xs text-gray-400 dark:text-gray-500">
+                            Arraste uma alternativa para o lado, ou segure, para riscá-la.
+                        </p>
                     </div>
                 </div>
 
-                <div v-if="!feedback" class="shrink-0 border-t-2 border-gray-100 px-3 pb-5 pt-4 dark:border-gray-800 md:px-4">
+                <div
+                    v-if="!feedback"
+                    class="shrink-0 border-t-2 border-gray-100 px-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-4 dark:border-gray-800 md:px-4"
+                >
                     <div class="mx-auto w-full sm:w-[95%] lg:w-[50rem]">
                         <Notice v-if="checkError" short class="mb-3">Não foi possível corrigir agora. Tente de novo.</Notice>
                         <GameButton variant="premium" size="lg" class="w-full" :disabled="!selected || checking" @click="check">Responder</GameButton>
@@ -505,3 +534,23 @@ const answerLabel = (item: { type: string; options: Record<string, string> | nul
         </div>
     </div>
 </template>
+
+<style scoped>
+/* Deixa a rolagem vertical com o navegador e o arrasto horizontal com a alternativa. O arrasto
+   usa translate, e o afundar do .mz-choice usa transform: um não apaga o outro. */
+.choice {
+    touch-action: pan-y;
+    -webkit-touch-callout: none;
+    transition:
+        translate 0.2s ease,
+        transform 0.08s ease,
+        box-shadow 0.08s ease,
+        background-color 0.15s ease,
+        opacity 0.15s ease;
+}
+.choice.is-dragging {
+    transition:
+        transform 0.08s ease,
+        box-shadow 0.08s ease;
+}
+</style>
