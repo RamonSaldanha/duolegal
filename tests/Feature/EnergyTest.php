@@ -7,9 +7,9 @@ use App\Models\UserSegmentProgress;
 use Illuminate\Support\Carbon;
 use Laravel\Sanctum\Sanctum;
 
-// Energia do mapa novo (config/energy.php): as fases gastam, o combo devolve, a revisão abre
-// sem energia (e não recarrega), o desafio gasta por questão, o Dia da prova rende e o tempo
-// recarrega +1 por hora. Testado pela API do app, que usa os mesmos controllers da web (/beta/play).
+// Energia do mapa novo (config/energy.php): as fases gastam, o combo devolve uma parte, a
+// revisão custa como a fase (sem combo), o desafio gasta por questão, a primeira prova da etapa
+// rende e o tempo recarrega +1 por hora. Mesmo acertando tudo, a energia acaba. Testado pela API do app, que usa os mesmos controllers da web (/beta/play).
 
 function energyPlayer(int $energy = 25): User
 {
@@ -131,26 +131,26 @@ test('se a energia acaba no meio da fase nova a pessoa sai e o fim é recusado',
     $this->getJson('/api/v1/trail/phases/1')->assertForbidden()->assertJsonPath('code', 'no_energy');
 });
 
-test('a revisão abre sem energia, só o erro custa e não recarrega', function () {
+test('a revisão custa como a fase nova, abre com 1 e não tem combo', function () {
     $legislation = studyLegislation(30);
     $user = energyPlayer(0);
     energyComplete($user, $legislation, 0, 9);
 
+    $this->getJson('/api/v1/trail/phases/1')->assertForbidden()->assertJsonPath('code', 'no_energy');
+
+    $user->forceFill(['energy' => 8])->save();
     $this->getJson('/api/v1/trail/phases/1')->assertOk()->assertJsonPath('isReview', true);
 
-    // Errar sem energia não tira ninguém da revisão
-    $this->postJson('/api/v1/trail/attempt', ['phase_id' => 1, 'correct' => false])
-        ->assertJsonPath('energy.value', 0)
-        ->assertJsonPath('out_of_energy', false);
-
-    // 5 certos seguidos na revisão não dão combo
+    // 5 certos seguidos na revisão custam 5 e não dão combo
     energyAttempts($this, 1, true, 5)
         ->assertJsonPath('combo', null)
-        ->assertJsonPath('energy.value', 0);
+        ->assertJsonPath('energy.value', 3);
 
-    $user->forceFill(['energy' => 5])->save();
-    $this->postJson('/api/v1/trail/attempt', ['phase_id' => 1, 'correct' => false])->assertJsonPath('energy.value', 4);
-    expect(EnergyTransaction::where('user_id', $user->id)->pluck('reason')->all())->toBe([EnergyTransaction::REVIEW]);
+    // Errar custa 2; zerada com bloco por fazer, a pessoa sai da revisão
+    $this->postJson('/api/v1/trail/attempt', ['phase_id' => 1, 'correct' => false])->assertJsonPath('energy.value', 1);
+    $this->postJson('/api/v1/trail/attempt', ['phase_id' => 1, 'correct' => true])
+        ->assertJsonPath('energy.value', 0)
+        ->assertJsonPath('out_of_energy', true);
 });
 
 test('a tela sem energia traz a energia e o anúncio', function () {
@@ -221,9 +221,9 @@ test('o Dia da prova rende por acerto e combo, completa a barra com nota alta e 
         ->assertJsonPath('result.energy_gained', 15)
         ->assertJsonPath('result.user.energy.value', 25);
 
-    // Refazer: nenhuma questão nova acertada e sem combo
+    // Refazer: custa 5 ao começar e não rende (nenhuma questão nova acertada e sem combo)
     $answerAll()->assertJsonPath('result.energy_gained', 0);
-    expect($user->fresh()->energy)->toBe(25);
+    expect($user->fresh()->energy)->toBe(20);
 });
 
 test('o Dia da prova pode passar da barra cheia até 50', function () {
@@ -286,4 +286,82 @@ test('na web a energia vem só para administradores', function () {
 
     $this->actingAs($user)->get('/settings/profile')->assertInertia(fn ($page) => $page->where('auth.user.energy', null));
     $this->actingAs($admin)->get('/settings/profile')->assertInertia(fn ($page) => $page->where('auth.user.energy.value', 25));
+});
+
+test('o combo nunca paga o que os acertos custaram', function () {
+    foreach (['phase', 'challenge'] as $kind) {
+        $rules = config("energy.{$kind}");
+        $cost = $rules['correct'] ?? $rules['question'];
+
+        expect($rules['combo_gain'])->toBeLessThan($rules['combo_every'] * $cost);
+    }
+
+    expect(config('energy.review.correct'))->toBeGreaterThan(0)
+        ->and(config('energy.challenge.question'))->toBeGreaterThan(0)
+        ->and(config('energy.exam.retake'))->toBeGreaterThan(0);
+});
+
+test('acertando tudo, a energia acaba: na fase nova, na revisão, no desafio e na prova refeita', function () {
+    $legislation = studyLegislation(170);
+    $first = studyMaterial($legislation, 0, 39);
+    $second = studyMaterial($legislation, 40, 79);
+    $user = energyPlayer();
+
+    // Fase nova sem errar nenhum bloco, de novo e de novo (sai sem terminar, então ela segue nova)
+    $played = 0;
+    while ($this->getJson('/api/v1/trail/phases/1')->status() === 200) {
+        energyAttempts($this, 1, true, 10);
+        expect(++$played)->toBeLessThan(10);
+    }
+    expect($played)->toBe(3)->and($user->fresh()->energy)->toBe(7);
+
+    // Revisão sem errar: gasta 1 por bloco até a pessoa sair
+    energyComplete($user, $legislation, 0, 159);
+    foreach ([39 => $first, 79 => $second] as $last => $material) {
+        UserBetaCheckpoint::create([
+            'user_id' => $user->id,
+            'legislation_segment_id' => studyBlockIds($legislation)[$last],
+            'done_material_ids' => [$material->id],
+        ]);
+    }
+    $this->getJson('/api/v1/trail/phases/1')->assertOk()->assertJsonPath('isReview', true);
+    energyAttempts($this, 1, true, 7)->assertJsonPath('out_of_energy', true)->assertJsonPath('energy.value', 0);
+    $this->getJson('/api/v1/trail/phases/1')->assertForbidden();
+
+    // Desafio já feito, sempre certo: 1 por questão, sem combo
+    $user->forceFill(['energy' => 3])->save();
+    $key = energyKey($legislation, 39);
+    $this->getJson("/api/v1/trail/challenges/{$key}")->assertOk();
+    foreach ([1, 2, 1] as $position) {
+        $last = $this->postJson("/api/v1/trail/challenges/{$key}/answer", [
+            'material' => $first->uuid,
+            'position' => $position,
+            'answer' => $position === 1 ? 'certo' : 'C',
+        ])->assertJsonPath('combo', null);
+    }
+    $last->assertJsonPath('energy.value', 0);
+    $this->getJson("/api/v1/trail/challenges/{$key}")->assertForbidden()->assertJsonPath('code', 'no_energy');
+
+    // Dia da prova: a primeira vez rende; refazer custa 5 e não rende
+    $exam = energyKey($legislation, 159);
+    $answerAll = function () use ($exam) {
+        $questions = $this->postJson("/api/v1/trail/exams/{$exam}/start")->assertOk()->json('questions');
+        foreach ($questions as $question) {
+            $last = $this->postJson("/api/v1/trail/exams/{$exam}/answer", [
+                'question' => $question['uuid'],
+                'answer' => $question['type'] === 'true_false' ? 'certo' : 'C',
+            ]);
+        }
+
+        return $last;
+    };
+    $answerAll()->assertJsonPath('result.energy_gained', 25);
+    $retakes = 0;
+    while ($this->postJson("/api/v1/trail/exams/{$exam}/start")->status() === 200) {
+        $this->postJson("/api/v1/trail/exams/{$exam}/finish")->assertJsonPath('energy_gained', 0);
+        expect(++$retakes)->toBeLessThan(10);
+    }
+    expect($retakes)->toBe(5)
+        ->and($user->fresh()->energy)->toBe(0)
+        ->and($this->postJson("/api/v1/trail/exams/{$exam}/start")->json('code'))->toBe('no_energy');
 });

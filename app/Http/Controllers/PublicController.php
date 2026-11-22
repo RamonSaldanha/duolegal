@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\LegalReference;
 use App\Models\LawArticle;
+use App\Models\LegalReference;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -15,14 +15,14 @@ class PublicController extends Controller
     public function index()
     {
         $legalReferences = LegalReference::where('is_active', true)
-            ->with(['articles' => function($query) {
+            ->with(['articles' => function ($query) {
                 $query->where('is_active', true)
-                      ->orderByRaw('CAST(article_reference AS UNSIGNED) ASC')
-                      ->take(5); // Mostrar apenas os primeiros 5 artigos
+                    ->orderByRaw('CAST(article_reference AS UNSIGNED) ASC')
+                    ->take(5); // Mostrar apenas os primeiros 5 artigos
             }])
             ->orderBy('name')
             ->get()
-            ->map(function($reference) {
+            ->map(function ($reference) {
                 return [
                     'uuid' => $reference->uuid,
                     'slug' => $reference->slug,
@@ -30,13 +30,13 @@ class PublicController extends Controller
                     'description' => $this->sanitizeString($reference->description),
                     'type' => $this->sanitizeString($reference->type),
                     'total_articles' => $reference->articles()->where('is_active', true)->count(),
-                    'sample_articles' => $reference->articles->map(function($article) {
+                    'sample_articles' => $reference->articles->map(function ($article) {
                         return [
                             'uuid' => $article->uuid,
                             'article_reference' => $this->sanitizeString($article->article_reference),
                             'difficulty_level' => $article->difficulty_level,
                         ];
-                    })
+                    }),
                 ];
             });
 
@@ -45,8 +45,8 @@ class PublicController extends Controller
             'meta' => [
                 'title' => 'Todas as Leis - Memorize Direito | Estude Direito de Forma Gamificada',
                 'description' => 'Explore todas as leis disponíveis no Memorize Direito. Pratique artigos de leis como Código Civil, Código Penal, Constituição Federal e muito mais.',
-                'keywords' => 'direito, leis, código civil, código penal, constituição federal, estudo direito, oab, concurso público'
-            ]
+                'keywords' => 'direito, leis, código civil, código penal, constituição federal, estudo direito, oab, concurso público',
+            ],
         ]);
     }
 
@@ -55,24 +55,24 @@ class PublicController extends Controller
      */
     public function showLaw(LegalReference $legalReference)
     {
-        if (!$legalReference->is_active) {
+        if (! $legalReference->is_active) {
             abort(404);
         }
 
-        $legalReference->load(['articles' => function($query) {
+        $legalReference->load(['articles' => function ($query) {
             $query->where('is_active', true)
-                  ->orderByRaw('CAST(article_reference AS UNSIGNED) ASC');
+                ->orderByRaw('CAST(article_reference AS UNSIGNED) ASC');
         }]);
 
-        $articles = $legalReference->articles->map(function($article) use ($legalReference) {
+        $articles = $legalReference->articles->map(function ($article) use ($legalReference) {
             return [
                 'uuid' => $article->uuid,
                 'slug' => $article->slug,
                 'article_reference' => $this->sanitizeString($article->article_reference),
                 'difficulty_level' => $article->difficulty_level,
-                'preview_content' => $this->sanitizeString(substr(strip_tags($article->original_content), 0, 150) . '...'),
+                'preview_content' => $this->sanitizeString(substr(strip_tags($article->original_content), 0, 150).'...'),
                 'law_name' => $this->sanitizeString($legalReference->name),
-                'has_exercise' => !empty($article->practice_content),
+                'has_exercise' => ! empty($article->practice_content),
             ];
         });
 
@@ -86,10 +86,10 @@ class PublicController extends Controller
             ],
             'articles' => $articles,
             'meta' => [
-                'title' => $this->sanitizeString($legalReference->name) . ' - Memorize Direito | Pratique Todos os Artigos',
+                'title' => $this->sanitizeString($legalReference->name).' - Memorize Direito | Pratique Todos os Artigos',
                 'description' => $this->sanitizeString("Pratique todos os artigos do(a) {$legalReference->name}. Exercícios interativos para memorizar e dominar cada artigo da lei."),
-                'keywords' => $this->sanitizeString(strtolower($legalReference->name) . ', artigos, exercícios, direito, estudo, memorização')
-            ]
+                'keywords' => $this->sanitizeString(strtolower($legalReference->name).', artigos, exercícios, direito, estudo, memorização'),
+            ],
         ]);
     }
 
@@ -98,7 +98,7 @@ class PublicController extends Controller
      */
     public function showArticle(LegalReference $legalReference, LawArticle $article)
     {
-        if (!$legalReference->is_active || !$article->is_active) {
+        if (! $legalReference->is_active || ! $article->is_active) {
             abort(404);
         }
 
@@ -116,13 +116,13 @@ class PublicController extends Controller
             'law_name' => $this->sanitizeString($legalReference->name),
             'law_uuid' => $legalReference->uuid,
             'law_slug' => $legalReference->slug,
-            'options' => $article->options->map(function($option) {
+            'options' => $article->options->map(function ($option) {
                 return [
                     'id' => $option->id,
                     'word' => $this->sanitizeString($option->word),
                     'is_correct' => $option->is_correct,
                     'gap_order' => $option->gap_order,
-                    'position' => $option->position
+                    'position' => $option->position,
                 ];
             })->sortBy('position')->values()->all(),
         ];
@@ -137,13 +137,13 @@ class PublicController extends Controller
             ->orderByRaw('CAST(article_reference AS UNSIGNED) ASC')
             ->take(5)
             ->get()
-            ->map(function($relatedArticle) use ($legalReference) {
+            ->map(function ($relatedArticle) use ($legalReference) {
                 return [
                     'uuid' => $relatedArticle->uuid,
                     'slug' => $relatedArticle->slug,
                     'article_reference' => $this->sanitizeString($relatedArticle->article_reference),
-                    'preview_content' => $this->sanitizeString(substr(strip_tags($relatedArticle->original_content), 0, 100) . '...'),
-                    'url' => route('public.article', ['legalReference' => $legalReference->slug, 'article' => $relatedArticle->slug])
+                    'preview_content' => $this->sanitizeString(substr(strip_tags($relatedArticle->original_content), 0, 100).'...'),
+                    'url' => route('public.article', ['legalReference' => $legalReference->slug, 'article' => $relatedArticle->slug]),
                 ];
             });
 
@@ -159,8 +159,8 @@ class PublicController extends Controller
             'meta' => [
                 'title' => $this->sanitizeString("Art. {$article->article_reference} da {$legalReference->name}"),
                 'description' => $metaDescription,
-                'keywords' => $this->sanitizeString("artigo {$article->article_reference}, {$legalReference->name}, direito, exercício, {$difficultyText}, memorização, estudo")
-            ]
+                'keywords' => $this->sanitizeString("artigo {$article->article_reference}, {$legalReference->name}, direito, exercício, {$difficultyText}, memorização, estudo"),
+            ],
         ]);
     }
 
@@ -175,25 +175,25 @@ class PublicController extends Controller
         if (strlen($query) >= 2) {
             $results = LawArticle::where('is_active', true)
                 ->with('legalReference')
-                ->where(function($q) use ($query) {
-                    $q->where('article_reference', 'like', '%' . $query . '%')
-                      ->orWhere('original_content', 'like', '%' . $query . '%');
+                ->where(function ($q) use ($query) {
+                    $q->where('article_reference', 'like', '%'.$query.'%')
+                        ->orWhere('original_content', 'like', '%'.$query.'%');
                 })
                 ->orderByRaw('CAST(article_reference AS UNSIGNED) ASC')
                 ->take(20)
                 ->get()
-                ->map(function($article) {
+                ->map(function ($article) {
                     return [
                         'uuid' => $article->uuid,
                         'article_reference' => $this->sanitizeString($article->article_reference),
                         'law_name' => $this->sanitizeString($article->legalReference->name),
                         'law_uuid' => $article->legalReference->uuid,
-                        'preview_content' => $this->sanitizeString(substr(strip_tags($article->original_content), 0, 200) . '...'),
+                        'preview_content' => $this->sanitizeString(substr(strip_tags($article->original_content), 0, 200).'...'),
                         'difficulty_level' => $article->difficulty_level,
                         'url' => route('public.article', [
                             'lawUuid' => $article->legalReference->uuid,
-                            'articleUuid' => $article->uuid
-                        ])
+                            'articleUuid' => $article->uuid,
+                        ]),
                     ];
                 });
         }
@@ -203,11 +203,11 @@ class PublicController extends Controller
             'results' => $results,
             'meta' => [
                 'title' => $query ? "Busca por '{$query}' - Memorize Direito" : 'Buscar Artigos - Memorize Direito',
-                'description' => $query 
+                'description' => $query
                     ? "Resultados da busca por '{$query}' nos artigos de direito. Encontre e pratique artigos específicos."
                     : 'Busque por artigos específicos de leis. Encontre rapidamente o conteúdo que você precisa estudar.',
-                'keywords' => $query ? "busca, {$query}, artigos, direito" : 'busca, artigos, direito, pesquisa'
-            ]
+                'keywords' => $query ? "busca, {$query}, artigos, direito" : 'busca, artigos, direito, pesquisa',
+            ],
         ]);
     }
 
@@ -216,7 +216,7 @@ class PublicController extends Controller
      */
     private function getDifficultyText(int $level): string
     {
-        return match($level) {
+        return match ($level) {
             1 => 'Iniciante',
             2 => 'Básico',
             3 => 'Intermediário',
@@ -254,7 +254,7 @@ class PublicController extends Controller
 
         return redirect()->route('public.article', [
             'legalReference' => $legalReference->slug,
-            'article' => $lawArticle->slug
+            'article' => $lawArticle->slug,
         ], 301);
     }
 
@@ -269,15 +269,15 @@ class PublicController extends Controller
 
         // Remove caracteres de controle invisíveis e malformados
         $string = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $string);
-        
+
         // Corrige encoding UTF-8
-        if (!mb_check_encoding($string, 'UTF-8')) {
+        if (! mb_check_encoding($string, 'UTF-8')) {
             $string = mb_convert_encoding($string, 'UTF-8', 'UTF-8');
         }
-        
+
         // Remove sequências UTF-8 inválidas
         $string = mb_convert_encoding($string, 'UTF-8', 'UTF-8');
-        
+
         // Garante que seja uma string válida
         return trim($string) ?: '';
     }

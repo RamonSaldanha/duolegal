@@ -4,6 +4,10 @@
 | Energia do mapa novo (app para todos, /beta/play só para administradores), no lugar das
 | vidas. As fases gastam, o combo devolve uma parte, o tempo e o anúncio recarregam e o Dia
 | da prova dá a supercarga. Quem assina tem energia infinita. Regras em EnergyService.
+|
+| Regra de ouro: mesmo acertando tudo, a energia acaba. Tudo o que se repete custa mais do que
+| o combo devolve (combo_gain < combo_every x custo do acerto); só a primeira entrega do Dia da
+| prova de cada etapa rende, uma vez. O EnergyTest confere.
 */
 
 return [
@@ -24,14 +28,16 @@ return [
         'combo_gain' => 2,
     ],
 
-    // Revisão (fase já concluída): abre mesmo sem energia, só o erro custa e não tem combo
+    // Revisão (fase já concluída): custa como a fase nova, mas abre com menos e não tem combo
     // (revisar não recarrega)
     'review' => [
-        'correct' => 0,
-        'wrong' => 1,
+        'open' => 1,
+        'correct' => 1,
+        'wrong' => 2,
     ],
 
-    // Desafio do quadrado: cada questão nova custa, o combo é de questões certas seguidas
+    // Desafio do quadrado: cada questão nova custa, o combo é de questões certas seguidas.
+    // Refazer um material já feito custa o mesmo por questão, sem combo
     'challenge' => [
         'open' => 1,
         'question' => 1,
@@ -46,6 +52,8 @@ return [
         'combo_every' => 3,
         'combo_gain' => 2,
         'fill_at' => 0.8,
+        // Refazer a prova (da segunda vez em diante): custo fixo ao começar, sem render nada
+        'retake' => 5,
     ],
 
     // Anúncio assistido

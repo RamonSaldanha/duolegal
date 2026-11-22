@@ -18,9 +18,9 @@ class LawArticleController extends Controller
     public function create()
     {
         $legalReferences = LegalReference::all();
-        
+
         return Inertia::render('admin/CreateLawArticle', [
-            'legalReferences' => $legalReferences
+            'legalReferences' => $legalReferences,
         ]);
     }
 
@@ -45,7 +45,7 @@ class LawArticleController extends Controller
         ]);
 
         // Define a posição se não for fornecida
-        if (!isset($validated['position'])) {
+        if (! isset($validated['position'])) {
             $maxPosition = LawArticle::where('legal_reference_id', $validated['legal_reference_id'])
                 ->max('position');
             $validated['position'] = ($maxPosition ?? 0) + 10;
@@ -64,34 +64,34 @@ class LawArticleController extends Controller
                 ]);
 
                 // Cria as opções a partir das palavras selecionadas
-                if (!empty($validated['selected_words'])) {
+                if (! empty($validated['selected_words'])) {
                     foreach ($validated['selected_words'] as $index => $word) {
                         LawArticleOption::create([
                             'law_article_id' => $article->id,
                             'word' => $word['word'],
                             'is_correct' => true,
                             'position' => $word['position'],
-                            'gap_order' => $word['gap_order'] ?? ($index + 1) // Usa gap_order se disponível, ou a ordem de seleção
+                            'gap_order' => $word['gap_order'] ?? ($index + 1), // Usa gap_order se disponível, ou a ordem de seleção
                         ]);
                     }
                 }
 
                 // Cria as opções personalizadas
-                if (!empty($validated['custom_options'])) {
+                if (! empty($validated['custom_options'])) {
                     foreach ($validated['custom_options'] as $option) {
                         LawArticleOption::create([
                             'law_article_id' => $article->id,
                             'word' => $option['word'],
                             'is_correct' => false,
                             'position' => null,
-                            'gap_order' => null // Opções personalizadas não são parte do texto original
+                            'gap_order' => null, // Opções personalizadas não são parte do texto original
                         ]);
                     }
                 }
             });
         } catch (\Exception $e) {
             // Em caso de erro, redireciona com mensagem de erro
-            return redirect()->back()->withErrors(['message' => 'Erro ao salvar o artigo: ' . $e->getMessage()]);
+            return redirect()->back()->withErrors(['message' => 'Erro ao salvar o artigo: '.$e->getMessage()]);
         }
 
         // Redireciona com mensagem de sucesso
@@ -106,28 +106,28 @@ class LawArticleController extends Controller
     {
         // Carregando artigo com opções e referência legal
         $lawArticle->load(['options', 'legalReference']);
-        
+
         // Carregar todas as referências legais para o dropdown
         $legalReferences = LegalReference::all();
-        
+
         // Selecionar palavras para exibir como lacunas
         // Recuperar os índices das palavras que foram transformadas em lacunas
         $selectedWordIndices = [];
-        
+
         // Para cada opção que pertence ao texto original (is_correct=true)
         foreach ($lawArticle->options as $option) {
             if ($option->is_correct && $option->position !== null) {
                 $selectedWordIndices[] = $option->position;
             }
         }
-        
+
         // Opções personalizadas (is_correct=false)
         $customOptions = $lawArticle->options
-                        ->filter(function ($option) {
-                            return !$option->is_correct;
-                        })
-                        ->values();
-        
+            ->filter(function ($option) {
+                return ! $option->is_correct;
+            })
+            ->values();
+
         return Inertia::render('admin/EditLawArticle', [
             'lawArticle' => $lawArticle,
             'legalReferences' => $legalReferences,
@@ -155,7 +155,7 @@ class LawArticleController extends Controller
             'custom_options' => 'array',
             'custom_options.*.word' => 'string',
         ]);
-        
+
         try {
             DB::transaction(function () use ($validated, $lawArticle) {
                 // Atualizar o artigo
@@ -167,10 +167,10 @@ class LawArticleController extends Controller
                     'difficulty_level' => $validated['difficulty_level'] ?? 1,
                     'position' => $validated['position'],
                 ]);
-                
+
                 // Excluir todas as opções antigas
                 $lawArticle->options()->delete();
-                
+
                 // Adicionar as palavras selecionadas como opções corretas
                 foreach ($validated['selected_words'] as $index => $word) {
                     LawArticleOption::create([
@@ -178,10 +178,10 @@ class LawArticleController extends Controller
                         'word' => $word['word'],
                         'is_correct' => true,
                         'position' => $word['position'],
-                        'gap_order' => $word['gap_order'] ?? ($index + 1) // Usa gap_order se disponível, ou a ordem de seleção
+                        'gap_order' => $word['gap_order'] ?? ($index + 1), // Usa gap_order se disponível, ou a ordem de seleção
                     ]);
                 }
-                
+
                 // Adicionar opções personalizadas
                 foreach ($validated['custom_options'] as $option) {
                     LawArticleOption::create([
@@ -189,15 +189,15 @@ class LawArticleController extends Controller
                         'word' => $option['word'],
                         'is_correct' => false,
                         'position' => null,
-                        'gap_order' => null // Opções personalizadas não são parte do texto original
+                        'gap_order' => null, // Opções personalizadas não são parte do texto original
                     ]);
                 }
             });
-            
+
             return redirect()->route('admin.legislations.show', $lawArticle->legalReference->uuid)
                 ->with('success', 'Artigo atualizado com sucesso.');
         } catch (\Exception $e) {
-            return back()->withErrors(['message' => 'Erro ao atualizar o artigo: ' . $e->getMessage()]);
+            return back()->withErrors(['message' => 'Erro ao atualizar o artigo: '.$e->getMessage()]);
         }
     }
 

@@ -33,6 +33,7 @@ export interface BetaExam {
     questions: number;
     seconds: number;
     xp_per_correct: number;
+    retake_energy: number;
     best_correct: number;
     // Há uma prova em andamento, com o tempo correndo
     in_progress: boolean;

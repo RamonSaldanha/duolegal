@@ -15,10 +15,10 @@ class LawArticleOptionController extends Controller
     {
         $options = LawArticleOption::select('id', 'uuid', 'word')
             ->get();
-            
+
         return response()->json($options);
     }
-    
+
     /**
      * Armazenar uma nova opção (usada pelo SearchCreateSelect)
      */
@@ -28,11 +28,11 @@ class LawArticleOptionController extends Controller
             'word' => 'required|string|max:255',
             'gap_order' => 'nullable|integer', // Adicionamos validação para gap_order
         ]);
-        
+
         // Não precisamos salvar no banco aqui, apenas retornar
         // para ser usado pelo componente, a opção será salvada
         // junto com o artigo depois
-        
+
         return response()->json([
             'id' => null,  // ID temporário
             'uuid' => null,
@@ -48,6 +48,7 @@ class LawArticleOptionController extends Controller
     {
         try {
             $option->delete();
+
             return response()->json(['success' => true]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'error' => $e->getMessage()], 500);

@@ -131,9 +131,9 @@ class BetaPlayController extends LegislationPlayController
     }
 
     /**
-     * Os dados da fase, ou por que ela não abre: 'no_energy' (fase nova sem a energia mínima)
-     * ou 'unavailable' (bloqueada, inexistente ou sem desafio a jogar). A revisão abre mesmo
-     * sem energia. A web e a API recebem os mesmos dados.
+     * Os dados da fase, ou por que ela não abre: 'no_energy' (sem a energia mínima; a revisão
+     * pede menos) ou 'unavailable' (bloqueada, inexistente ou sem desafio a jogar). A web e a
+     * API recebem os mesmos dados.
      *
      * @return array<string, mixed>|'no_energy'|'unavailable'
      */
@@ -155,10 +155,13 @@ class BetaPlayController extends LegislationPlayController
             return 'unavailable';
         }
 
-        // Fase nova: o mínimo para abrir, ou o custo dela sem erro se tem poucos blocos
+        // O mínimo para abrir: na fase nova, o de config ou o custo dela sem erro se tem poucos
+        // blocos; na revisão, o de config
         $energy = app(EnergyService::class);
-        $need = min((int) config('energy.phase.open'), $pending->count() * (int) config('energy.phase.correct'));
-        if (! $phase['is_complete'] && ! $energy->has($user, $need)) {
+        $need = $phase['is_complete']
+            ? (int) config('energy.review.open')
+            : min((int) config('energy.phase.open'), $pending->count() * (int) config('energy.phase.correct'));
+        if (! $energy->has($user, $need)) {
             return 'no_energy';
         }
 
@@ -553,6 +556,8 @@ class BetaPlayController extends LegislationPlayController
             'questions' => $questions,
             'seconds' => $trueFalse * self::EXAM_SECONDS_TRUE_FALSE + ($questions - $trueFalse) * self::EXAM_SECONDS_MULTIPLE_CHOICE,
             'xp_per_correct' => self::EXAM_XP_PER_CORRECT,
+            // Refazer custa energia ao começar
+            'retake_energy' => (int) config('energy.exam.retake'),
             'best_correct' => min($questions, (int) ($exam?->best_correct ?? 0)),
             'in_progress' => (bool) $exam?->isRunning(),
             // Só para uso interno; saem antes de ir para a tela

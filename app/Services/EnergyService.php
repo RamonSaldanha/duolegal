@@ -14,9 +14,12 @@ use Illuminate\Support\Facades\DB;
  * - Fase nova: precisa de `phase.open` para abrir; cada tentativa custa (a errada custa mais)
  *   e a cada `combo_every` blocos certos seguidos volta um tanto. Se a energia acaba no meio,
  *   a pessoa sai e perde a fase (o finish é recusado).
- * - Revisão: abre mesmo sem energia, custa só o erro e não tem combo (revisar não recarrega).
- * - Desafio do quadrado: cada questão nova custa e também tem combo.
- * - Dia da prova: não custa; rende energia e pode passar da barra cheia (`super_max`).
+ * - Revisão: custa como a fase nova, abre com `review.open` e não tem combo (não recarrega).
+ * - Desafio do quadrado: cada questão nova custa e também tem combo; refazer material já
+ *   feito custa o mesmo, sem combo.
+ * - Dia da prova: a primeira vez não custa; rende energia e pode passar da barra cheia
+ *   (`super_max`). Refazer custa `exam.retake` ao começar e não rende.
+ * - Mesmo acertando tudo, a energia acaba: o combo nunca paga o que os acertos custaram.
  * - O tempo devolve +1 a cada `regen_minutes`, até a barra cheia. A conta é feita na leitura,
  *   a partir de `energy_updated_at` (não há cron).
  * - Quem assina tem energia infinita: nada é gasto nem ganho.
@@ -134,8 +137,8 @@ class EnergyService
 
     /**
      * Uma tentativa de bloco na fase em jogo: cobra, conta a sequência e dá o combo (só na fase
-     * nova; a revisão não recarrega). Na fase nova, se a energia chega a 0 e ainda falta bloco,
-     * a pessoa está fora (`out`).
+     * nova; a revisão não recarrega). Se a energia chega a 0 e ainda falta bloco, a pessoa está
+     * fora (`out`) e a fase (ou a revisão) é perdida.
      *
      * @param  array{kind: string, id: int, review: bool, pending: int, corrects: int, streak: int, out: bool}  $run
      * @return array{energy: array<string, mixed>, combo: array{streak: int, gained: int}|null, out_of_energy: bool}
@@ -161,19 +164,20 @@ class EnergyService
             $run['streak'] = 0;
         }
 
-        $run['out'] = $run['out'] || (! $review && ! $this->has($user, 1) && $run['corrects'] < $run['pending']);
+        $run['out'] = $run['out'] || (! $this->has($user, 1) && $run['corrects'] < $run['pending']);
         $this->startRun($user, $run);
 
         return ['energy' => $this->payload($user), 'combo' => $combo, 'out_of_energy' => $run['out']];
     }
 
     /**
-     * Uma questão nova respondida no desafio do quadrado. `$remaining`: ainda falta questão no
+     * Uma questão respondida no desafio do quadrado. `$remaining`: ainda falta questão no
      * desafio depois desta (se a energia acabou, a pessoa sai e volta depois de onde parou).
+     * `$review`: material já feito; custa o mesmo e não tem combo.
      *
      * @return array{energy: array<string, mixed>, combo: array{streak: int, gained: int}|null, out_of_energy: bool}
      */
-    public function challengeAnswer(User $user, string $key, bool $correct, bool $remaining): array
+    public function challengeAnswer(User $user, string $key, bool $correct, bool $remaining, bool $review = false): array
     {
         $rules = config('energy.challenge');
         $run = $user->energy_run;
@@ -186,7 +190,7 @@ class EnergyService
 
         $combo = null;
         if ($correct) {
-            $combo = $this->streak($user, $run, $rules, EnergyTransaction::COMBO);
+            $combo = $review ? null : $this->streak($user, $run, $rules, EnergyTransaction::COMBO);
         } else {
             $run['streak'] = 0;
         }
@@ -223,6 +227,20 @@ class EnergyService
         }
 
         return $gain;
+    }
+
+    /** Cobra o começo de uma prova refeita. Falso se não há energia para isso. */
+    public function examRetake(User $user): bool
+    {
+        $cost = (int) config('energy.exam.retake');
+
+        if (! $this->has($user, $cost)) {
+            return false;
+        }
+
+        $this->apply($user, -$cost, EnergyTransaction::EXAM_RETAKE);
+
+        return true;
     }
 
     /** Credita o Dia da prova (pode passar da barra cheia) e, com nota alta, completa a barra. */

@@ -23,6 +23,8 @@ class EnergyTransaction extends Model
 
     const EXAM = 'exam';
 
+    const EXAM_RETAKE = 'exam_retake';
+
     const AD = 'ad';
 
     const GIFT = 'gift';

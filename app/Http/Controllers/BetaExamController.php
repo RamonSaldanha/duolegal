@@ -79,6 +79,7 @@ class BetaExamController extends BetaPlayController
                 'questions' => $found['questions'],
                 'seconds' => $found['seconds'],
                 'xp_per_correct' => $found['xp_per_correct'],
+                'retake_energy' => $found['retake_energy'],
                 // Da linha, que pode ter acabado de ser entregue aqui em cima
                 'best_correct' => min($found['questions'], (int) ($row?->best_correct ?? 0)),
                 'attempts' => (int) ($row?->attempts ?? 0),
@@ -88,7 +89,10 @@ class BetaExamController extends BetaPlayController
         ];
     }
 
-    /** Começa uma tentativa (ou devolve a que já está em andamento): sorteia a ordem e marca o prazo. */
+    /**
+     * Começa uma tentativa (ou devolve a que já está em andamento): sorteia a ordem e marca o
+     * prazo. Refazer (da segunda vez em diante) custa energia; sem ela, 403 `no_energy`.
+     */
     public function start(string $exam): JsonResponse
     {
         $user = Auth::user();
@@ -109,6 +113,10 @@ class BetaExamController extends BetaPlayController
                 $this->settle($user, $row, $questions);
             }
 
+            if ($row->attempts > 0 && ! app(EnergyService::class)->examRetake($user)) {
+                return null;
+            }
+
             $row->update([
                 'question_ids' => $questions->keys()->shuffle()->values()->all(),
                 'answers' => null,
@@ -119,6 +127,10 @@ class BetaExamController extends BetaPlayController
 
             return $row;
         });
+
+        if (! $row) {
+            return response()->json(['message' => 'Você está sem energia para refazer a prova.', 'code' => 'no_energy'], 403);
+        }
 
         return response()->json($this->attemptPayload($user, $row, $questions));
     }

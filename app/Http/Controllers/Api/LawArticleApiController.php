@@ -14,8 +14,7 @@ class LawArticleApiController extends Controller
 {
     /**
      * Cadastrar um novo artigo de legislação via API
-     * 
-     * @param Request $request
+     *
      * @return \Illuminate\Http\JsonResponse
      */
     public function store(Request $request)
@@ -38,7 +37,7 @@ class LawArticleApiController extends Controller
             ]);
 
             // Define a posição se não for fornecida
-            if (!isset($validated['position'])) {
+            if (! isset($validated['position'])) {
                 $maxPosition = LawArticle::where('legal_reference_id', $validated['legal_reference_id'])
                     ->max('position');
                 $validated['position'] = ($maxPosition ?? 0) + 10;
@@ -57,27 +56,27 @@ class LawArticleApiController extends Controller
                 ]);
 
                 // Cria as opções a partir das palavras selecionadas (opções corretas)
-                if (!empty($validated['selected_words'])) {
+                if (! empty($validated['selected_words'])) {
                     foreach ($validated['selected_words'] as $index => $word) {
                         LawArticleOption::create([
                             'law_article_id' => $article->id,
                             'word' => $word['word'],
                             'is_correct' => true,
                             'position' => $word['position'],
-                            'gap_order' => $word['gap_order'] ?? ($index + 1)
+                            'gap_order' => $word['gap_order'] ?? ($index + 1),
                         ]);
                     }
                 }
 
                 // Cria as opções personalizadas (opções incorretas/distratoras)
-                if (!empty($validated['custom_options'])) {
+                if (! empty($validated['custom_options'])) {
                     foreach ($validated['custom_options'] as $option) {
                         LawArticleOption::create([
                             'law_article_id' => $article->id,
                             'word' => $option['word'],
                             'is_correct' => false,
                             'position' => null,
-                            'gap_order' => null
+                            'gap_order' => null,
                         ]);
                     }
                 }
@@ -117,31 +116,31 @@ class LawArticleApiController extends Controller
                         }),
                         'created_at' => $article->created_at,
                         'updated_at' => $article->updated_at,
-                    ]
-                ]
+                    ],
+                ],
             ], 201);
 
         } catch (ValidationException $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Dados inválidos fornecidos.',
-                'errors' => $e->errors()
+                'errors' => $e->errors(),
             ], 422);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Erro interno do servidor ao cadastrar o artigo.',
-                'error' => config('app.debug') ? $e->getMessage() : 'Erro interno do servidor.'
+                'error' => config('app.debug') ? $e->getMessage() : 'Erro interno do servidor.',
             ], 500);
         }
     }
 
     /**
      * Listar todas as referências legais disponíveis
-     * 
+     *
      * @return \Illuminate\Http\JsonResponse
      */
     public function getLegalReferences()
@@ -155,15 +154,15 @@ class LawArticleApiController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'legal_references' => $legalReferences
-                ]
+                    'legal_references' => $legalReferences,
+                ],
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Erro ao buscar referências legais.',
-                'error' => config('app.debug') ? $e->getMessage() : 'Erro interno do servidor.'
+                'error' => config('app.debug') ? $e->getMessage() : 'Erro interno do servidor.',
             ], 500);
         }
     }

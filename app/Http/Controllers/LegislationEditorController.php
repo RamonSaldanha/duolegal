@@ -31,7 +31,7 @@ class LegislationEditorController extends Controller
             ->withCount('segments')
             ->orderBy('created_at', 'desc')
             ->get()
-            ->map(fn($l) => [
+            ->map(fn ($l) => [
                 'uuid' => $l->uuid,
                 'title' => $l->title,
                 'status' => $l->status,
@@ -79,7 +79,7 @@ class LegislationEditorController extends Controller
         try {
             $rawText = $this->textService->fetchText($validated['source_url']);
         } catch (\Exception $e) {
-            return back()->withErrors(['source_url' => 'Não foi possível acessar a URL: ' . $e->getMessage()]);
+            return back()->withErrors(['source_url' => 'Não foi possível acessar a URL: '.$e->getMessage()]);
         }
 
         if (empty(trim($rawText))) {
@@ -105,7 +105,7 @@ class LegislationEditorController extends Controller
     public function show(Legislation $legislation)
     {
         $legislation->load([
-            'segments' => fn($q) => $q->orderBy('position'),
+            'segments' => fn ($q) => $q->orderBy('position'),
             'segments.activeLacunas',
             'legalReference',
         ]);
@@ -120,7 +120,7 @@ class LegislationEditorController extends Controller
             ->pluck('total', 'legislation_segment_id');
 
         $segments = $legislation->segments->map(
-            fn($seg) => $this->formatSegment($seg, (int) ($completedCounts[$seg->id] ?? 0))
+            fn ($seg) => $this->formatSegment($seg, (int) ($completedCounts[$seg->id] ?? 0))
         );
 
         return Inertia::render('LegislationEditor/Editor', [
@@ -196,7 +196,7 @@ class LegislationEditorController extends Controller
         $existingRanges = $legislation->segments()
             ->select('char_start', 'char_end')
             ->get()
-            ->map(fn($s) => ['char_start' => $s->char_start, 'char_end' => $s->char_end])
+            ->map(fn ($s) => ['char_start' => $s->char_start, 'char_end' => $s->char_end])
             ->toArray();
 
         $familiarity = $this->rawTextFamiliarity($rawText);
@@ -229,8 +229,8 @@ class LegislationEditorController extends Controller
 
         return response()->json([
             'segments' => collect($created)
-                ->each(fn($segment) => $segment->load('activeLacunas'))
-                ->map(fn($segment) => $this->formatSegment($segment))
+                ->each(fn ($segment) => $segment->load('activeLacunas'))
+                ->map(fn ($segment) => $this->formatSegment($segment))
                 ->values(),
         ]);
     }
@@ -252,7 +252,7 @@ class LegislationEditorController extends Controller
         $existingRanges = $legislation->segments()
             ->select('char_start', 'char_end')
             ->get()
-            ->map(fn($s) => ['char_start' => $s->char_start, 'char_end' => $s->char_end])
+            ->map(fn ($s) => ['char_start' => $s->char_start, 'char_end' => $s->char_end])
             ->toArray();
 
         $familiarity = $this->rawTextFamiliarity($rawText);
@@ -344,7 +344,7 @@ class LegislationEditorController extends Controller
         $existingRanges = $legislation->segments()
             ->select('char_start', 'char_end')
             ->get()
-            ->map(fn($s) => ['char_start' => $s->char_start, 'char_end' => $s->char_end])
+            ->map(fn ($s) => ['char_start' => $s->char_start, 'char_end' => $s->char_end])
             ->toArray();
 
         $filtered = array_values(array_filter($boundaries, function ($boundary) use ($existingRanges) {
@@ -358,7 +358,7 @@ class LegislationEditorController extends Controller
         }));
 
         return response()->json([
-            'boundaries' => array_map(fn($b) => [
+            'boundaries' => array_map(fn ($b) => [
                 'char_start' => $b['char_start'],
                 'char_end' => $b['char_end'],
                 'segment_type' => $b['segment_type'],
@@ -567,7 +567,7 @@ class LegislationEditorController extends Controller
             'structural_marker' => $segment->structural_marker,
             'position' => $segment->position,
             'is_block' => $segment->is_block,
-            'lacunas' => $segment->activeLacunas->map(fn($lac) => [
+            'lacunas' => $segment->activeLacunas->map(fn ($lac) => [
                 'uuid' => $lac->uuid,
                 'word' => $lac->word,
                 'word_position' => $lac->word_position,

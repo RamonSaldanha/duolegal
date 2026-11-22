@@ -49,7 +49,7 @@ class BetaCheckpointController extends BetaPlayController
 
     /**
      * Os dados do desafio, ou por que ele não abre: 'unavailable' (ainda fechado) ou
-     * 'no_energy' (por fazer e sem energia; o já concluído abre como revisão). 404 se não
+     * 'no_energy' (sem energia; refazer também custa). 404 se não
      * existe na trilha do usuário. Com `$withBlocks`, cada material leva também
      * `summary_blocks`, o resumo em blocos para o app desenhar.
      *
@@ -66,7 +66,7 @@ class BetaCheckpointController extends BetaPlayController
         }
 
         $energy = app(EnergyService::class);
-        if ($found['state'] === 'available' && ! $energy->has($user, (int) config('energy.challenge.open'))) {
+        if (! $energy->has($user, (int) config('energy.challenge.open'))) {
             return 'no_energy';
         }
         $energy->startRun($user, ['kind' => 'challenge', 'id' => $found['key'], 'streak' => 0]);
@@ -158,11 +158,14 @@ class BetaCheckpointController extends BetaPlayController
 
         $isCorrect = $this->isCorrect($question, $answer);
 
-        // Só a questão nova de material por fazer gasta energia (a revisão é de graça)
+        // A questão nova gasta energia; refazer material já feito também (sem combo). Responder
+        // de novo a mesma questão de material por fazer não cobra outra vez
         $energy = app(EnergyService::class);
-        $spent = ! $wasDone && $isNew
-            ? $energy->challengeAnswer($user, $found['key'], $isCorrect, $saved['checkpoint']['completed'] < $saved['checkpoint']['total'])
-            : ['energy' => $energy->payload($user), 'combo' => null, 'out_of_energy' => false];
+        $spent = match (true) {
+            $wasDone => $energy->challengeAnswer($user, $found['key'], $isCorrect, true, review: true),
+            $isNew => $energy->challengeAnswer($user, $found['key'], $isCorrect, $saved['checkpoint']['completed'] < $saved['checkpoint']['total']),
+            default => ['energy' => $energy->payload($user), 'combo' => null, 'out_of_energy' => false],
+        };
 
         return response()->json([
             'is_correct' => $isCorrect,

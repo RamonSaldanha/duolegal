@@ -2,9 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\LegalReference;
 use App\Models\LawArticle;
-use Illuminate\Http\Response;
+use App\Models\LegalReference;
 
 class SitemapController extends Controller
 {
@@ -13,32 +12,32 @@ class SitemapController extends Controller
      */
     public function index()
     {
-        $sitemap = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
-        $sitemap .= '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
-        
+        $sitemap = '<?xml version="1.0" encoding="UTF-8"?>'."\n";
+        $sitemap .= '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'."\n";
+
         // Sitemap principal das páginas estáticas
-        $sitemap .= '  <sitemap>' . "\n";
-        $sitemap .= '    <loc>' . route('sitemap.main') . '</loc>' . "\n";
-        $sitemap .= '    <lastmod>' . now()->toISOString() . '</lastmod>' . "\n";
-        $sitemap .= '  </sitemap>' . "\n";
-        
+        $sitemap .= '  <sitemap>'."\n";
+        $sitemap .= '    <loc>'.route('sitemap.main').'</loc>'."\n";
+        $sitemap .= '    <lastmod>'.now()->toISOString().'</lastmod>'."\n";
+        $sitemap .= '  </sitemap>'."\n";
+
         // Sitemap das leis
-        $sitemap .= '  <sitemap>' . "\n";
-        $sitemap .= '    <loc>' . route('sitemap.laws') . '</loc>' . "\n";
-        $sitemap .= '    <lastmod>' . now()->toISOString() . '</lastmod>' . "\n";
-        $sitemap .= '  </sitemap>' . "\n";
-        
+        $sitemap .= '  <sitemap>'."\n";
+        $sitemap .= '    <loc>'.route('sitemap.laws').'</loc>'."\n";
+        $sitemap .= '    <lastmod>'.now()->toISOString().'</lastmod>'."\n";
+        $sitemap .= '  </sitemap>'."\n";
+
         // Sitemap dos artigos
-        $sitemap .= '  <sitemap>' . "\n";
-        $sitemap .= '    <loc>' . route('sitemap.articles') . '</loc>' . "\n";
-        $sitemap .= '    <lastmod>' . now()->toISOString() . '</lastmod>' . "\n";
-        $sitemap .= '  </sitemap>' . "\n";
-        
+        $sitemap .= '  <sitemap>'."\n";
+        $sitemap .= '    <loc>'.route('sitemap.articles').'</loc>'."\n";
+        $sitemap .= '    <lastmod>'.now()->toISOString().'</lastmod>'."\n";
+        $sitemap .= '  </sitemap>'."\n";
+
         $sitemap .= '</sitemapindex>';
-        
+
         return response($sitemap, 200, [
             'Content-Type' => 'application/xml',
-            'Cache-Control' => 'public, max-age=3600'
+            'Cache-Control' => 'public, max-age=3600',
         ]);
     }
 
@@ -47,26 +46,26 @@ class SitemapController extends Controller
      */
     public function main()
     {
-        $sitemap = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
-        $sitemap .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
-        
+        $sitemap = '<?xml version="1.0" encoding="UTF-8"?>'."\n";
+        $sitemap .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'."\n";
+
         // Página inicial
         $sitemap .= $this->addUrl(route('home'), '1.0', 'daily');
-        
+
         // Páginas públicas principais
         $sitemap .= $this->addUrl(route('public.laws'), '0.9', 'daily');
         $sitemap .= $this->addUrl(route('public.search'), '0.8', 'weekly');
-        
+
         // Páginas legais
         $sitemap .= $this->addUrl(route('privacy-policy'), '0.3', 'monthly');
         $sitemap .= $this->addUrl(route('terms'), '0.3', 'monthly');
         $sitemap .= $this->addUrl(route('cookies'), '0.3', 'monthly');
-        
+
         $sitemap .= '</urlset>';
-        
+
         return response($sitemap, 200, [
             'Content-Type' => 'application/xml',
-            'Cache-Control' => 'public, max-age=3600'
+            'Cache-Control' => 'public, max-age=3600',
         ]);
     }
 
@@ -75,8 +74,8 @@ class SitemapController extends Controller
      */
     public function laws()
     {
-        $sitemap = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
-        $sitemap .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
+        $sitemap = '<?xml version="1.0" encoding="UTF-8"?>'."\n";
+        $sitemap .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'."\n";
 
         $laws = LegalReference::where('is_active', true)
             ->orderBy('name')
@@ -95,7 +94,7 @@ class SitemapController extends Controller
 
         return response($sitemap, 200, [
             'Content-Type' => 'application/xml',
-            'Cache-Control' => 'public, max-age=3600'
+            'Cache-Control' => 'public, max-age=3600',
         ]);
     }
 
@@ -104,13 +103,13 @@ class SitemapController extends Controller
      */
     public function articles()
     {
-        $sitemap = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
-        $sitemap .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
+        $sitemap = '<?xml version="1.0" encoding="UTF-8"?>'."\n";
+        $sitemap .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'."\n";
 
         // Buscar artigos com suas respectivas leis, limitando para evitar sitemap muito grande
         $articles = LawArticle::where('is_active', true)
             ->with('legalReference')
-            ->whereHas('legalReference', function($query) {
+            ->whereHas('legalReference', function ($query) {
                 $query->where('is_active', true);
             })
             ->orderBy('legal_reference_id')
@@ -124,11 +123,11 @@ class SitemapController extends Controller
                 $url = ($article->legalReference->slug && $article->slug)
                     ? route('public.article', [
                         'legalReference' => $article->legalReference->slug,
-                        'article' => $article->slug
+                        'article' => $article->slug,
                     ])
                     : route('public.article.legacy', [
                         'lawUuid' => $article->legalReference->uuid,
-                        'articleUuid' => $article->uuid
+                        'articleUuid' => $article->uuid,
                     ]);
 
                 $sitemap .= $this->addUrl($url, '0.7', 'monthly');
@@ -139,7 +138,7 @@ class SitemapController extends Controller
 
         return response($sitemap, 200, [
             'Content-Type' => 'application/xml',
-            'Cache-Control' => 'public, max-age=86400' // Cache por 24h para artigos
+            'Cache-Control' => 'public, max-age=86400', // Cache por 24h para artigos
         ]);
     }
 
@@ -148,12 +147,13 @@ class SitemapController extends Controller
      */
     private function addUrl(string $url, string $priority = '0.5', string $changefreq = 'monthly'): string
     {
-        $xml = '  <url>' . "\n";
-        $xml .= '    <loc>' . htmlspecialchars($url) . '</loc>' . "\n";
-        $xml .= '    <lastmod>' . now()->toISOString() . '</lastmod>' . "\n";
-        $xml .= '    <changefreq>' . $changefreq . '</changefreq>' . "\n";
-        $xml .= '    <priority>' . $priority . '</priority>' . "\n";
-        $xml .= '  </url>' . "\n";
+        $xml = '  <url>'."\n";
+        $xml .= '    <loc>'.htmlspecialchars($url).'</loc>'."\n";
+        $xml .= '    <lastmod>'.now()->toISOString().'</lastmod>'."\n";
+        $xml .= '    <changefreq>'.$changefreq.'</changefreq>'."\n";
+        $xml .= '    <priority>'.$priority.'</priority>'."\n";
+        $xml .= '  </url>'."\n";
+
         return $xml;
     }
 }

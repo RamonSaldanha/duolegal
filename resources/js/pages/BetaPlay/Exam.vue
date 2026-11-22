@@ -22,6 +22,8 @@ const props = defineProps<{
         questions: number;
         seconds: number;
         xp_per_correct: number;
+        // Refazer (da segunda vez em diante) custa energia ao começar
+        retake_energy: number;
         best_correct: number;
         attempts: number;
     };
@@ -134,7 +136,12 @@ async function start() {
     try {
         const { data } = await axios.post<BetaExamAttempt>(route('beta.play.exam.start', { exam: props.exam.key }));
         enter(data);
-    } catch {
+    } catch (error) {
+        // Refazer sem energia: vai para a tela sem energia
+        if (isAxiosError(error) && error.response?.data?.code === 'no_energy') {
+            router.visit(route('beta.play.energy'));
+            return;
+        }
         startError.value = true;
     } finally {
         starting.value = false;
@@ -284,7 +291,13 @@ const answerLabel = (item: { type: string; options: Record<string, string> | nul
                             <dt class="text-sm text-gray-500 dark:text-gray-400">Cada acerto</dt>
                             <dd class="font-bold text-purple-600 dark:text-purple-400">+{{ exam.xp_per_correct }} XP</dd>
                         </div>
-                        <div v-if="showEnergy" class="flex items-center justify-between gap-3 px-4 py-3">
+                        <div v-if="showEnergy && exam.attempts > 0" class="flex items-center justify-between gap-3 px-4 py-3">
+                            <dt class="text-sm text-gray-500 dark:text-gray-400">Refazer custa</dt>
+                            <dd class="flex items-center gap-1 font-bold text-brand-soft-ink dark:text-brand">
+                                <BatteryCharging class="h-4 w-4 shrink-0" /> {{ exam.retake_energy }} de energia
+                            </dd>
+                        </div>
+                        <div v-else-if="showEnergy" class="flex items-center justify-between gap-3 px-4 py-3">
                             <dt class="text-sm text-gray-500 dark:text-gray-400">Energia</dt>
                             <dd class="flex items-center gap-1 text-right font-bold text-brand-soft-ink dark:text-brand">
                                 <BatteryCharging class="h-4 w-4 shrink-0" /> +1 por acerto, +2 a cada 3 seguidos
