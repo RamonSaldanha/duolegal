@@ -58,22 +58,27 @@ function betaResults($segments, bool $correct = true): array
     ])->values()->all();
 }
 
-test('o mapa beta só abre para administradores', function () {
+test('o mapa é o padrão da web para qualquer aluno; os endereços do beta levam a ele', function () {
     betaLegislation(10);
     $user = User::factory()->createOne(['lives' => 5]);
 
-    $this->actingAs($user)->get('/beta/play')->assertRedirect(route('play.map'));
-    $this->actingAs($user)->get('/beta/play/phase/1')->assertRedirect(route('play.map'));
-    $this->actingAs($user)->postJson('/beta/play/attempt', ['phase_id' => 1, 'correct' => false])->assertRedirect(route('play.map'));
+    $this->actingAs($user)->get('/play')->assertOk()->assertInertia(fn ($page) => $page->component('BetaPlay/Map'));
+    $this->actingAs($user)->get('/play/phase/1')->assertOk()->assertInertia(fn ($page) => $page->component('BetaPlay/Phase'));
+    $this->actingAs($user)->postJson('/play/attempt', ['phase_id' => 1, 'correct' => false])->assertOk()->assertJsonPath('energy.value', 23);
 
-    expect($user->fresh()->energy)->toBe(25);
+    $this->actingAs($user)->get('/beta/play')->assertRedirect('/play');
+    $this->actingAs($user)->get('/beta/play/phase/1')->assertRedirect('/play/phase/1');
+
+    // O mapa anterior fica só pelo endereço; a prévia segue só para administradores
+    $this->actingAs($user)->get('/legado/leis')->assertOk()->assertInertia(fn ($page) => $page->component('LegislationPlay/Map'));
+    $this->actingAs($user)->get('/play/previa/fim')->assertRedirect(route('play.map'));
 });
 
 test('o mapa beta junta 4 fases de 10 blocos em cada quadrado', function () {
     betaLegislation(85);
     $user = betaAdmin();
 
-    $this->actingAs($user)->get('/beta/play')
+    $this->actingAs($user)->get('/play')
         ->assertSuccessful()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('BetaPlay/Map')
@@ -92,7 +97,7 @@ test('o mapa beta recebe a oferta de boas-vindas enquanto ela vale', function ()
     $user = betaAdmin();
     $user->forceFill(['welcome_offer_expires_at' => now()->addHours(20)])->save();
 
-    $this->actingAs($user)->get('/beta/play')
+    $this->actingAs($user)->get('/play')
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('BetaPlay/Map')
             ->has('welcomeOffer.percent_off')
@@ -100,7 +105,7 @@ test('o mapa beta recebe a oferta de boas-vindas enquanto ela vale', function ()
 
     $user->forceFill(['welcome_offer_expires_at' => now()->subMinute()])->save();
 
-    $this->actingAs($user)->get('/beta/play')
+    $this->actingAs($user)->get('/play')
         ->assertInertia(fn (AssertableInertia $page) => $page->where('welcomeOffer', null));
 });
 
@@ -108,7 +113,7 @@ test('a fase beta apresenta 10 desafios', function () {
     betaLegislation(25);
     $user = betaAdmin(['lives' => 5]);
 
-    $this->actingAs($user)->get('/beta/play/phase/1')
+    $this->actingAs($user)->get('/play/phase/1')
         ->assertSuccessful()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('BetaPlay/Phase')
@@ -119,7 +124,7 @@ test('a fase beta apresenta 10 desafios', function () {
             ->where('phaseNumber', 1));
 
     // Fase bloqueada não abre
-    $this->actingAs($user)->get('/beta/play/phase/2')->assertRedirect('/beta/play');
+    $this->actingAs($user)->get('/play/phase/2')->assertRedirect('/play');
 });
 
 test('terminar a fase grava os blocos e dá o XP de uma vez', function () {
@@ -127,7 +132,7 @@ test('terminar a fase grava os blocos e dá o XP de uma vez', function () {
     $user = betaAdmin();
     $phaseBlocks = $legislation->segments()->orderBy('char_start')->limit(10)->get();
 
-    $response = $this->actingAs($user)->postJson('/beta/play/finish', [
+    $response = $this->actingAs($user)->postJson('/play/finish', [
         'phase_id' => 1,
         'results' => betaResults($phaseBlocks),
     ]);
@@ -138,13 +143,13 @@ test('terminar a fase grava os blocos e dá o XP de uma vez', function () {
         ->and($user->fresh()->xp)->toBe(100);
 
     // A fase seguinte passa a ser a atual, dentro do mesmo quadrado
-    $this->actingAs($user)->get('/beta/play')
+    $this->actingAs($user)->get('/play')
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('sections.0.groups.0.completed_phases', 1)
             ->where('sections.0.groups.0.current_phase_id', 2));
 
     // Refazer a fase (revisão) não dá XP de novo
-    $this->actingAs($user)->postJson('/beta/play/finish', [
+    $this->actingAs($user)->postJson('/play/finish', [
         'phase_id' => 1,
         'results' => betaResults($phaseBlocks),
     ])->assertSuccessful()->assertJsonPath('xp_gained', 0);
@@ -156,13 +161,13 @@ test('fase pela metade não grava nada', function () {
     $phaseBlocks = $legislation->segments()->orderBy('char_start')->limit(10)->get();
 
     // Faltam desafios
-    $this->actingAs($user)->postJson('/beta/play/finish', [
+    $this->actingAs($user)->postJson('/play/finish', [
         'phase_id' => 1,
         'results' => betaResults($phaseBlocks->take(6)),
     ])->assertStatus(422);
 
     // Todos enviados, mas errados
-    $this->actingAs($user)->postJson('/beta/play/finish', [
+    $this->actingAs($user)->postJson('/play/finish', [
         'phase_id' => 1,
         'results' => betaResults($phaseBlocks, false),
     ])->assertStatus(422);
@@ -175,8 +180,8 @@ test('errar um desafio gasta a energia na hora, sem gravar progresso nem tirar v
     betaLegislation(10);
     $user = betaAdmin(['lives' => 5]);
 
-    $this->actingAs($user)->get('/beta/play/phase/1')->assertOk();
-    $this->actingAs($user)->postJson('/beta/play/attempt', ['phase_id' => 1, 'correct' => false])
+    $this->actingAs($user)->get('/play/phase/1')->assertOk();
+    $this->actingAs($user)->postJson('/play/attempt', ['phase_id' => 1, 'correct' => false])
         ->assertSuccessful()
         ->assertJsonPath('energy.value', 23)
         ->assertJsonPath('out_of_energy', false);
@@ -194,7 +199,7 @@ test('dispositivo vetado ou revogado continua sendo desafio, mas não dá XP', f
     $blocks[2]->update(['original_text' => "IX-A -;\u{00A0}\u{00A0}"]);
     $blocks[5]->update(['original_text' => 'Art. 194.']);
 
-    $this->actingAs($user)->get('/beta/play/phase/1')
+    $this->actingAs($user)->get('/play/phase/1')
         ->assertSuccessful()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->has('challenges', 10)
@@ -204,7 +209,7 @@ test('dispositivo vetado ou revogado continua sendo desafio, mas não dá XP', f
             ->where('phaseBlocks.2.historical_label', 'IX-A'));
 
     // Os dez precisam ser vencidos; só os oito com texto dão XP
-    $this->actingAs($user)->postJson('/beta/play/finish', [
+    $this->actingAs($user)->postJson('/play/finish', [
         'phase_id' => 1,
         'results' => betaResults($blocks->take(10)),
     ])->assertSuccessful()->assertJsonPath('xp_gained', 80);

@@ -259,7 +259,7 @@ function exit() {
 
 function backToMap() {
     leaving = true;
-    router.visit(route('beta.play.map'));
+    router.visit(route('play.map'));
 }
 
 function warnBeforeUnload(event: BeforeUnloadEvent) {

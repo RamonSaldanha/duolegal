@@ -9,28 +9,11 @@ use App\Http\Controllers\PlayController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-// Rotas de jogo — Sistema principal (Legislation)
+// O mapa (quadrados com várias fases, energia, desafio do quadrado e Dia da prova): o padrão da
+// web desde 22/11/2026, o mesmo do app. Foi o "mapa beta" (só administradores, em /beta/play);
+// os nomes das rotas continuam beta.play.*, menos o do mapa, que é o play.map.
 Route::middleware(['auth'])->prefix('play')->group(function () {
-    Route::get('/', [LegislationPlayController::class, 'map'])->name('play.map');
-    Route::get('map/phases', [LegislationPlayController::class, 'loadMapPhases'])->name('play.map.phases');
-    Route::post('map/filter', [LegislationPlayController::class, 'saveFilter'])->name('play.map.filter');
-    Route::get('preferences', [LegislationPlayController::class, 'preferences'])->name('play.preferences');
-    Route::post('preferences', [LegislationPlayController::class, 'savePreferences'])->name('play.preferences.save');
-    Route::get('phase/{phaseId}', [LegislationPlayController::class, 'playPhase'])->where('phaseId', '[0-9]+')->name('play.phase');
-    Route::get('legislation/{legislation:uuid}', [LegislationPlayController::class, 'play'])->name('play.legislation');
-    Route::get('legislation/{legislation:uuid}/completed', [LegislationPlayController::class, 'loadCompletedSegments'])->name('play.completed');
-    Route::post('submit', [LegislationPlayController::class, 'submitAnswer'])->name('play.submit');
-
-    // Rotas compartilhadas entre sistemas
-    Route::get('no-lives', fn () => Inertia::render('Play/NoLives'))->name('play.nolives');
-    Route::post('reward-life', [PlayController::class, 'rewardLife'])->name('play.reward-life');
-});
-
-// Mapa beta (quadrados com várias fases) — em teste, só para administradores; não substitui o /play
-Route::middleware(['auth', 'admin'])->prefix('beta/play')->group(function () {
-    Route::get('/', [BetaPlayController::class, 'betaMap'])->name('beta.play.map');
-    // Prévia das telas novas de fim de fase e convite Premium (ainda fora do jogo)
-    Route::get('previa/fim', fn () => Inertia::render('BetaPlay/PreviewEnd'))->name('beta.play.preview.end');
+    Route::get('/', [BetaPlayController::class, 'betaMap'])->name('play.map');
     Route::get('phase/{phaseId}', [BetaPlayController::class, 'betaPhase'])->where('phaseId', '[0-9]+')->name('beta.play.phase');
     Route::post('attempt', [BetaPlayController::class, 'betaAttempt'])->name('beta.play.attempt');
     Route::post('finish', [BetaPlayController::class, 'betaFinish'])->name('beta.play.finish');
@@ -49,6 +32,29 @@ Route::middleware(['auth', 'admin'])->prefix('beta/play')->group(function () {
     Route::post('prova/{exam}/start', [BetaExamController::class, 'start'])->whereUuid('exam')->name('beta.play.exam.start');
     Route::post('prova/{exam}/answer', [BetaExamController::class, 'answer'])->whereUuid('exam')->name('beta.play.exam.answer');
     Route::post('prova/{exam}/finish', [BetaExamController::class, 'finish'])->whereUuid('exam')->name('beta.play.exam.finish');
+
+    // As legislações que a pessoa estuda (aba "Leis")
+    Route::get('preferences', [LegislationPlayController::class, 'preferences'])->name('play.preferences');
+    Route::post('preferences', [LegislationPlayController::class, 'savePreferences'])->name('play.preferences.save');
+});
+
+// Prévia das telas de fim de fase e do convite Premium (só administradores)
+Route::middleware(['auth', 'admin'])->get('play/previa/fim', fn () => Inertia::render('BetaPlay/PreviewEnd'))->name('beta.play.preview.end');
+
+// Endereços antigos do mapa beta
+Route::middleware(['auth'])->get('beta/play/{path?}', fn (?string $path = null) => redirect('/play'.($path ? '/'.$path : '')))->where('path', '.*');
+
+// O mapa anterior (por legislação, com vidas), aposentado em 22/11/2026: fora do menu, só pelo endereço
+Route::middleware(['auth'])->prefix('legado/leis')->group(function () {
+    Route::get('/', [LegislationPlayController::class, 'map'])->name('legado.leis.map');
+    Route::get('map/phases', [LegislationPlayController::class, 'loadMapPhases'])->name('play.map.phases');
+    Route::post('map/filter', [LegislationPlayController::class, 'saveFilter'])->name('play.map.filter');
+    Route::get('phase/{phaseId}', [LegislationPlayController::class, 'playPhase'])->where('phaseId', '[0-9]+')->name('play.phase');
+    Route::get('legislation/{legislation:uuid}', [LegislationPlayController::class, 'play'])->name('play.legislation');
+    Route::get('legislation/{legislation:uuid}/completed', [LegislationPlayController::class, 'loadCompletedSegments'])->name('play.completed');
+    Route::post('submit', [LegislationPlayController::class, 'submitAnswer'])->name('play.submit');
+    Route::get('no-lives', fn () => Inertia::render('Play/NoLives'))->name('play.nolives');
+    Route::post('reward-life', [PlayController::class, 'rewardLife'])->name('play.reward-life');
 });
 
 // Rotas do editor de legislações (admin)

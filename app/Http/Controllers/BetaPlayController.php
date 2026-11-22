@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 /**
- * Mapa beta (/beta/play): quadrados no lugar das bolas, cada quadrado com várias fases.
+ * Mapa beta (/play): quadrados no lugar das bolas, cada quadrado com várias fases.
  *
  * Usa as mesmas tabelas do mapa atual (o progresso é por bloco, em user_segment_progress).
  * A diferença é que a fase só grava no fim: quem sai no meio não ganha nada e recomeça a fase.
@@ -61,7 +61,7 @@ class BetaPlayController extends LegislationPlayController
 
         return match ($payload) {
             'no_energy' => redirect()->route('beta.play.energy'),
-            'unavailable' => redirect()->route('beta.play.map'),
+            'unavailable' => redirect()->route('play.map'),
             default => Inertia::render('BetaPlay/Phase', $payload),
         };
     }

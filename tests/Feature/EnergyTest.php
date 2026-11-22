@@ -9,7 +9,7 @@ use Laravel\Sanctum\Sanctum;
 
 // Energia do mapa novo (config/energy.php): as fases gastam, o combo devolve uma parte, a
 // revisão custa como a fase (sem combo), o desafio gasta por questão, a primeira prova da etapa
-// rende e o tempo recarrega +1 por hora. Mesmo acertando tudo, a energia acaba. Testado pela API do app, que usa os mesmos controllers da web (/beta/play).
+// rende e o tempo recarrega +1 por hora. Mesmo acertando tudo, a energia acaba. Testado pela API do app, que usa os mesmos controllers da web (/play).
 
 function energyPlayer(int $energy = 25): User
 {
@@ -304,12 +304,10 @@ test('quem assina tem energia infinita: abre sem energia e não gasta', function
     expect(EnergyTransaction::where('user_id', $user->id)->count())->toBe(0);
 });
 
-test('na web a energia vem só para administradores', function () {
+test('na web a energia vem para todos', function () {
     $user = energyPlayer();
-    $admin = studyAdmin();
 
-    $this->actingAs($user)->get('/settings/profile')->assertInertia(fn ($page) => $page->where('auth.user.energy', null));
-    $this->actingAs($admin)->get('/settings/profile')->assertInertia(fn ($page) => $page->where('auth.user.energy.value', 25));
+    $this->actingAs($user)->get('/settings/profile')->assertInertia(fn ($page) => $page->where('auth.user.energy.value', 25));
 });
 
 test('o combo nunca paga o que os acertos custaram', function () {

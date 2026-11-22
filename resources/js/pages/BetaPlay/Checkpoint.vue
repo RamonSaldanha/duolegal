@@ -279,7 +279,7 @@ async function finish() {
 
 // Sair a qualquer momento não perde nada: o que foi feito já está guardado
 function backToMap() {
-    router.visit(route('beta.play.map'));
+    router.visit(route('play.map'));
 }
 
 function choiceClass(key: string) {

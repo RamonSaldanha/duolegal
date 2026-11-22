@@ -41,7 +41,7 @@ class BetaCheckpointController extends BetaPlayController
         $payload = $this->checkpointPayload(Auth::user(), $checkpoint);
 
         return match ($payload) {
-            'unavailable' => redirect()->route('beta.play.map'),
+            'unavailable' => redirect()->route('play.map'),
             'no_energy' => redirect()->route('beta.play.energy'),
             default => Inertia::render('BetaPlay/Checkpoint', $payload),
         };

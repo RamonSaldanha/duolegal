@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 
 /**
  * Mapa novo (quadrados de 4 fases) para o app. Os dados são os mesmos que a web recebe em
- * /beta/play, montados pelos mesmos métodos; `fail` e `finish` são os da web, herdados.
+ * /play da web, montados pelos mesmos métodos; `fail` e `finish` são os da web, herdados.
  */
 class TrailController extends BetaPlayController
 {

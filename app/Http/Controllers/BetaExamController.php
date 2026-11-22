@@ -39,7 +39,7 @@ class BetaExamController extends BetaPlayController
         $payload = $this->examPayload(Auth::user(), $exam);
 
         return $payload === 'unavailable'
-            ? redirect()->route('beta.play.map')
+            ? redirect()->route('play.map')
             : Inertia::render('BetaPlay/Exam', $payload);
     }
 

@@ -247,7 +247,7 @@ test('o boost do assinante dá 50% a mais de XP por 3 dias, na web e no app', fu
     $this->travel(4)->days();
     $other = boostSegment();
     $this->actingAs($user->fresh())->postJson($url, array_merge($payload, ['segment_uuid' => $other->uuid]))->assertJsonPath('xp_gained', 10);
-})->with(['web' => '/play/submit', 'api' => '/api/v1/play/submit']);
+})->with(['web' => '/legado/leis/submit', 'api' => '/api/v1/play/submit']);
 
 test('o e-mail leva o nome, a logo, o presente, o descadastro em um clique e nenhum travessão nem emoji', function () {
     $user = reengagementUser(30, ['name' => 'maria clara souza']);

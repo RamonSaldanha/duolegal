@@ -68,7 +68,7 @@ test('acertar 1 de 2 aprova, não tira vida e dá XP', function (string $url) {
 
     expect($response->json('xp_gained'))->toBeGreaterThan(0)
         ->and($user->fresh()->lives)->toBe(3);
-})->with(['web' => '/play/submit', 'api' => '/api/v1/play/submit']);
+})->with(['web' => '/legado/leis/submit', 'api' => '/api/v1/play/submit']);
 
 test('errar as 2 reprova e tira uma vida', function (string $url) {
     $segment = twoGapSegment();
@@ -82,4 +82,4 @@ test('errar as 2 reprova e tira uma vida', function (string $url) {
 
     expect($response->json('progress.is_completed'))->toBeFalsy()
         ->and($user->fresh()->lives)->toBe(2);
-})->with(['web' => '/play/submit', 'api' => '/api/v1/play/submit']);
+})->with(['web' => '/legado/leis/submit', 'api' => '/api/v1/play/submit']);

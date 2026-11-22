@@ -44,7 +44,7 @@ function adClosed() {
 }
 
 function backToMap() {
-    router.visit(route('beta.play.map'));
+    router.visit(route('play.map'));
 }
 </script>
 

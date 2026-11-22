@@ -8,7 +8,7 @@ use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Energia do mapa novo (app e /beta/play), no lugar das vidas. Os números ficam em
+ * Energia do mapa novo (app e /play), no lugar das vidas. Os números ficam em
  * config/energy.php.
  *
  * - Fase nova: precisa de `phase.open` para abrir; cada tentativa custa (a errada custa mais)

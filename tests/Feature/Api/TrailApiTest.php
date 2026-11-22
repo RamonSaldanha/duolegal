@@ -12,7 +12,7 @@ use Laravel\Sanctum\Sanctum;
 // Mapa novo pela API do app (/api/v1/trail). As regras são as da web (testadas em
 // BetaPlayTest, BetaCheckpointTest e BetaExamTest); aqui se confere que o app recebe os
 // mesmos dados, que as recusas chegam em JSON com código e que qualquer aluno joga pelo app
-// (na web, o /beta/play segue só para administradores).
+// (na web, o mesmo mapa fica em /play).
 
 /** Lei com $blocks blocos de 1 lacuna cada (a fase precisa de lacuna para ser vencida). */
 function trailLegislation(int $blocks): Legislation
@@ -73,12 +73,12 @@ function trailKey(Legislation $legislation, int $block): string
     return LegislationSegment::findOrFail(studyBlockIds($legislation)[$block])->uuid;
 }
 
-test('qualquer aluno joga o mapa novo pelo app; na web ele segue só para administradores', function () {
+test('qualquer aluno joga o mapa novo pelo app e pela web', function () {
     trailLegislation(10);
     $user = trailPlayer();
 
     $this->getJson('/api/v1/trail')->assertOk();
-    $this->actingAs($user)->get('/beta/play')->assertRedirect(route('play.map'));
+    $this->actingAs($user)->get('/play')->assertOk()->assertInertia(fn ($page) => $page->component('BetaPlay/Map'));
 });
 
 test('o mapa novo pelo app exige login', function () {

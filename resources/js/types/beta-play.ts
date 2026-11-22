@@ -1,6 +1,6 @@
 import type { DisciplineLevelUp, PlayUserData } from '@/types/legislation-play';
 
-// Mapa beta (/beta/play): trechos de uma lei, cada um com quadrados de várias fases.
+// Mapa beta (/play): trechos de uma lei, cada um com quadrados de várias fases.
 
 export interface BetaGroupPhase {
     id: number;

@@ -47,7 +47,7 @@ function answerExam($test, User $user, string $key, array $question, bool $right
     $correct = $question['type'] === 'true_false' ? 'certo' : 'C';
     $wrong = $question['type'] === 'true_false' ? 'errado' : 'A';
 
-    return $test->actingAs($user)->postJson("/beta/play/prova/{$key}/answer", [
+    return $test->actingAs($user)->postJson("/play/prova/{$key}/answer", [
         'question' => $question['uuid'],
         'answer' => $right ? $correct : $wrong,
     ]);
@@ -64,22 +64,22 @@ test('o Dia da prova libera com a etapa e os desafios dela concluídos', functio
     finishChallenge($user, $legislation, 39, $first);
 
     // Falta o desafio do segundo quadrado
-    $this->actingAs($user)->get('/beta/play')
+    $this->actingAs($user)->get('/play')
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('sections.0.exam.state', 'locked')
             ->where('sections.0.exam.key', $key)
             ->where('sections.0.exam.questions', 4)
             ->missing('sections.0.exam.material_ids')
             ->missing('sections.0.exam.anchor_block_id'));
-    $this->actingAs($user)->get("/beta/play/prova/{$key}")->assertRedirect(route('beta.play.map'));
-    $this->actingAs($user)->postJson("/beta/play/prova/{$key}/start")->assertForbidden();
+    $this->actingAs($user)->get("/play/prova/{$key}")->assertRedirect(route('play.map'));
+    $this->actingAs($user)->postJson("/play/prova/{$key}/start")->assertForbidden();
 
     finishChallenge($user, $legislation, 79, $second);
 
     $seconds = 2 * BetaPlayController::EXAM_SECONDS_TRUE_FALSE + 2 * BetaPlayController::EXAM_SECONDS_MULTIPLE_CHOICE;
 
     // Sem assinatura: a prova é de todo mundo
-    $this->actingAs($user)->get('/beta/play')
+    $this->actingAs($user)->get('/play')
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('sections.0.exam.state', 'available')
             ->where('sections.0.exam.seconds', $seconds)
@@ -88,7 +88,7 @@ test('o Dia da prova libera com a etapa e os desafios dela concluídos', functio
             // A segunda etapa não tem material: a prova dela fica sem questões
             ->where('sections.1.exam.state', 'locked'));
 
-    $this->actingAs($user)->get("/beta/play/prova/{$key}")
+    $this->actingAs($user)->get("/play/prova/{$key}")
         ->assertSuccessful()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('BetaPlay/Exam')
@@ -105,15 +105,15 @@ test('etapa concluída sem material fica com a prova sem questões', function ()
     completeBlocks($user, $legislation, 0, 159);
     $key = checkpointKey($legislation, 159);
 
-    $this->actingAs($user)->get('/beta/play')
+    $this->actingAs($user)->get('/play')
         ->assertInertia(fn (AssertableInertia $page) => $page->where('sections.0.exam.state', 'empty'));
-    $this->actingAs($user)->get("/beta/play/prova/{$key}")->assertRedirect(route('beta.play.map'));
+    $this->actingAs($user)->get("/play/prova/{$key}")->assertRedirect(route('play.map'));
 });
 
 test('começar sorteia as questões sem gabarito e marca o prazo', function () {
     [$user, $key] = examReady();
 
-    $attempt = $this->actingAs($user)->postJson("/beta/play/prova/{$key}/start")
+    $attempt = $this->actingAs($user)->postJson("/play/prova/{$key}/start")
         ->assertSuccessful()
         ->assertJsonCount(4, 'questions')
         ->assertJsonPath('seconds_total', 100)
@@ -129,14 +129,14 @@ test('começar sorteia as questões sem gabarito e marca o prazo', function () {
 
     // Começar de novo com a prova correndo devolve a mesma tentativa, na mesma ordem
     $this->travel(10)->seconds();
-    $again = $this->actingAs($user)->postJson("/beta/play/prova/{$key}/start")->json();
+    $again = $this->actingAs($user)->postJson("/play/prova/{$key}/start")->json();
     expect(array_column($again['questions'], 'uuid'))->toBe(array_column($attempt['questions'], 'uuid'))
         ->and($again['seconds_left'])->toBeLessThanOrEqual(90);
 
     // Quem sai e volta cai direto na prova
-    $this->actingAs($user)->get("/beta/play/prova/{$key}")
+    $this->actingAs($user)->get("/play/prova/{$key}")
         ->assertInertia(fn (AssertableInertia $page) => $page->has('attempt.questions', 4));
-    $this->actingAs($user)->get('/beta/play')
+    $this->actingAs($user)->get('/play')
         ->assertInertia(fn (AssertableInertia $page) => $page->where('sections.0.exam.in_progress', true));
 });
 
@@ -144,7 +144,7 @@ test('o XP é a soma dos acertos e só é creditado na entrega', function () {
     [$user, $key, $legislation] = examReady();
     $xp = BetaPlayController::EXAM_XP_PER_CORRECT;
 
-    $questions = $this->actingAs($user)->postJson("/beta/play/prova/{$key}/start")->json('questions');
+    $questions = $this->actingAs($user)->postJson("/play/prova/{$key}/start")->json('questions');
 
     answerExam($this, $user, $key, $questions[0])
         ->assertSuccessful()
@@ -163,9 +163,9 @@ test('o XP é a soma dos acertos e só é creditado na entrega', function () {
     expect($user->fresh()->xp)->toBe(0)->and($user->fresh()->lives)->toBe(5);
 
     // Questão que não é da prova
-    $this->actingAs($user)->postJson("/beta/play/prova/{$key}/answer", ['question' => (string) Str::uuid(), 'answer' => 'certo'])->assertNotFound();
+    $this->actingAs($user)->postJson("/play/prova/{$key}/answer", ['question' => (string) Str::uuid(), 'answer' => 'certo'])->assertNotFound();
 
-    $this->actingAs($user)->postJson("/beta/play/prova/{$key}/finish")
+    $this->actingAs($user)->postJson("/play/prova/{$key}/finish")
         ->assertSuccessful()
         ->assertJsonPath('correct', 1)
         ->assertJsonPath('answered', 2)
@@ -182,13 +182,13 @@ test('o XP é a soma dos acertos e só é creditado na entrega', function () {
     expect($transaction->amount)->toBe($xp)->and($transaction->legislation_id)->toBe($legislation->id);
 
     // Entregar de novo não credita outra vez
-    $this->actingAs($user)->postJson("/beta/play/prova/{$key}/finish")->assertSuccessful()->assertJsonPath('xp_gained', $xp);
+    $this->actingAs($user)->postJson("/play/prova/{$key}/finish")->assertSuccessful()->assertJsonPath('xp_gained', $xp);
     expect(XpTransaction::where('source_type', 'beta_exam')->count())->toBe(1);
 
     // Depois de entregue não aceita mais resposta
     answerExam($this, $user, $key, $questions[2])->assertStatus(409);
 
-    $this->actingAs($user)->get('/beta/play')
+    $this->actingAs($user)->get('/play')
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('sections.0.exam.state', 'complete')
             ->where('sections.0.exam.best_correct', 1)
@@ -199,12 +199,12 @@ test('refazer a prova só dá XP pelas questões ainda não acertadas', function
     [$user, $key] = examReady();
     $xp = BetaPlayController::EXAM_XP_PER_CORRECT;
 
-    $questions = $this->actingAs($user)->postJson("/beta/play/prova/{$key}/start")->json('questions');
+    $questions = $this->actingAs($user)->postJson("/play/prova/{$key}/start")->json('questions');
     answerExam($this, $user, $key, $questions[0]);
-    $this->actingAs($user)->postJson("/beta/play/prova/{$key}/finish")->assertJsonPath('xp_gained', $xp);
+    $this->actingAs($user)->postJson("/play/prova/{$key}/finish")->assertJsonPath('xp_gained', $xp);
 
     // Segunda tentativa: acerta as quatro; a última resposta já entrega a prova
-    $questions = $this->actingAs($user)->postJson("/beta/play/prova/{$key}/start")
+    $questions = $this->actingAs($user)->postJson("/play/prova/{$key}/start")
         ->assertJsonPath('answers', [])
         ->assertJsonPath('xp', 0)
         ->json('questions');
@@ -226,7 +226,7 @@ test('refazer a prova só dá XP pelas questões ainda não acertadas', function
     expect($exam->attempts)->toBe(2)->and($exam->rewardedIds())->toHaveCount(4);
 
     // Terceira: tudo certo de novo, nada de XP
-    $questions = $this->actingAs($user)->postJson("/beta/play/prova/{$key}/start")->json('questions');
+    $questions = $this->actingAs($user)->postJson("/play/prova/{$key}/start")->json('questions');
     foreach ($questions as $question) {
         $last = answerExam($this, $user, $key, $question);
     }
@@ -238,7 +238,7 @@ test('resposta depois do prazo não entra e a prova é entregue', function () {
     [$user, $key] = examReady();
     $xp = BetaPlayController::EXAM_XP_PER_CORRECT;
 
-    $questions = $this->actingAs($user)->postJson("/beta/play/prova/{$key}/start")->json('questions');
+    $questions = $this->actingAs($user)->postJson("/play/prova/{$key}/start")->json('questions');
     answerExam($this, $user, $key, $questions[0]);
 
     // 100 segundos de prova, mais a folga de rede
@@ -259,13 +259,13 @@ test('prova esquecida aberta é entregue quando a pessoa volta', function () {
     [$user, $key] = examReady();
     $xp = BetaPlayController::EXAM_XP_PER_CORRECT;
 
-    $questions = $this->actingAs($user)->postJson("/beta/play/prova/{$key}/start")->json('questions');
+    $questions = $this->actingAs($user)->postJson("/play/prova/{$key}/start")->json('questions');
     answerExam($this, $user, $key, $questions[0]);
     answerExam($this, $user, $key, $questions[1]);
 
     $this->travel(1)->hours();
 
-    $this->actingAs($user)->get("/beta/play/prova/{$key}")
+    $this->actingAs($user)->get("/play/prova/{$key}")
         ->assertSuccessful()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('attempt', null)

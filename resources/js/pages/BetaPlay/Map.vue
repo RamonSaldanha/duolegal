@@ -220,7 +220,7 @@ function examText(exam: BetaExam): string {
 
 function loadMore(direction: 'above' | 'below') {
     router.get(
-        route('beta.play.map'),
+        route('play.map'),
         {
             before: props.window.before + (direction === 'above' ? 3 : 0),
             after: props.window.after + (direction === 'below' ? 5 : 0),
@@ -303,7 +303,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <Head title="Mapa (beta)" />
+    <Head title="Mapa" />
 
     <AppLayout>
         <div ref="pageRef">
@@ -312,18 +312,6 @@ onUnmounted(() => {
 
             <div class="px-4 py-6">
                 <div class="mx-auto" :style="{ width: `${trailWidth}px` }">
-                    <!-- Aviso de teste -->
-                    <div class="mb-5 flex items-center justify-between text-xs">
-                        <span
-                            class="rounded-md bg-blue-100 px-2 py-1 font-bold uppercase tracking-wide text-blue-700 dark:bg-blue-900/50 dark:text-blue-300"
-                        >
-                            Mapa beta
-                        </span>
-                        <Link :href="route('play.map')" class="font-medium text-gray-500 underline-offset-2 hover:underline dark:text-gray-400">
-                            Voltar ao mapa atual
-                        </Link>
-                    </div>
-
                     <!-- Estado vazio -->
                     <div v-if="sections.length === 0" class="py-16 text-center">
                         <Book class="mx-auto mb-4 h-16 w-16 text-gray-300 dark:text-gray-600" />
@@ -331,7 +319,9 @@ onUnmounted(() => {
                         <p class="text-gray-400 dark:text-gray-500">Selecione legislações para estudar.</p>
                     </div>
 
-                    <button v-if="hasMoreAbove" type="button" class="mz-btn mz-sm mz-outline mb-6 flex w-full" @click="loadMore('above')">Ver trechos anteriores</button>
+                    <button v-if="hasMoreAbove" type="button" class="mz-btn mz-sm mz-outline mb-6 flex w-full" @click="loadMore('above')">
+                        Ver trechos anteriores
+                    </button>
 
                     <template v-if="shownSection">
                         <!-- Cartão da etapa: um só, parado no topo; o título muda conforme a etapa que passa por ele -->
@@ -594,7 +584,9 @@ onUnmounted(() => {
                         </div>
                     </template>
 
-                    <button v-if="hasMoreBelow" type="button" class="mz-btn mz-sm mz-outline mt-2 flex w-full" @click="loadMore('below')">Ver mais trechos</button>
+                    <button v-if="hasMoreBelow" type="button" class="mz-btn mz-sm mz-outline mt-2 flex w-full" @click="loadMore('below')">
+                        Ver mais trechos
+                    </button>
                 </div>
             </div>
         </div>
@@ -744,5 +736,4 @@ onUnmounted(() => {
     color: hsl(var(--primary-foreground));
     box-shadow: 0 0 0 3px hsl(var(--background));
 }
-
 </style>

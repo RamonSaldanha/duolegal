@@ -1,12 +1,10 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
-import { Gamepad2, Trophy, BookOpen, GraduationCap, FlaskConical } from 'lucide-vue-next';
+import { BookOpen, Gamepad2, GraduationCap, Trophy } from 'lucide-vue-next';
 import { computed } from 'vue';
 
 const page = usePage();
 const isCurrentRoute = computed(() => (url: string) => page.url.startsWith(url));
-
-const isAdmin = computed(() => page.props.auth.user?.is_admin === true);
 
 const navItems = computed(() => [
     {
@@ -14,8 +12,6 @@ const navItems = computed(() => [
         href: '/play',
         icon: Gamepad2,
     },
-    // Mapa em teste: só administradores veem (a rota também exige)
-    ...(isAdmin.value ? [{ title: 'Beta', href: '/beta/play', icon: FlaskConical }] : []),
     {
         title: 'Conquistas',
         href: '/disciplines',
@@ -35,7 +31,7 @@ const navItems = computed(() => [
 </script>
 
 <template>
-    <nav class="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900 safe-area-bottom">
+    <nav class="safe-area-bottom fixed bottom-0 left-0 right-0 z-50 border-t border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
         <div class="mx-auto flex h-16 max-w-lg items-center justify-around px-4">
             <Link
                 v-for="item in navItems"
@@ -45,7 +41,7 @@ const navItems = computed(() => [
                 :class="[
                     isCurrentRoute(item.href)
                         ? 'text-brand-soft-ink dark:text-brand'
-                        : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                        : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200',
                 ]"
             >
                 <component :is="item.icon" class="h-6 w-6" />

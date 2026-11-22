@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import AppLogo from '@/components/AppLogo.vue';
+import EnergyMeter from '@/components/EnergyMeter.vue';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import UserAvatar from '@/components/UserAvatar.vue';
 import UserMenuContent from '@/components/UserMenuContent.vue';
-import EnergyMeter from '@/components/EnergyMeter.vue';
 import XpCounter from '@/components/XpCounter.vue';
 import type { AvatarConfig } from '@/lib/avatar';
 import type { EnergyState } from '@/types/beta-play';
 import { Link, usePage } from '@inertiajs/vue3';
-import { Heart, Gem, Infinity, Flame } from 'lucide-vue-next';
+import { Flame, Gem, Heart, Infinity } from 'lucide-vue-next';
 import { computed, watch } from 'vue';
 
 const page = usePage<{
@@ -42,8 +42,8 @@ const hasSubscription = computed(() => {
 
 const userLives = computed(() => page.props.auth.user?.lives ?? 0);
 
-// No mapa beta a energia toma o lugar das vidas
-const energy = computed(() => (route().current('beta.play.*') ? (page.props.auth.user?.energy ?? null) : null));
+// A energia do mapa no lugar das vidas (as vidas só aparecem se o servidor não mandar energia)
+const energy = computed(() => page.props.auth.user?.energy ?? null);
 
 watch(userLives, (newValue, oldValue) => {
     if (newValue !== oldValue) {
@@ -61,23 +61,23 @@ watch(userLives, (newValue, oldValue) => {
 
 <template>
     <div class="border-b border-sidebar-border/80">
-        <div class="mx-auto flex h-16 justify-between px-3 sm:px-4 max-w-4xl">
+        <div class="mx-auto flex h-16 max-w-4xl justify-between px-3 sm:px-4">
             <!-- Logo (Desktop only) -->
-            <Link :href="route('play.map')" class="hidden lg:flex items-center">
+            <Link :href="route('play.map')" class="hidden items-center lg:flex">
                 <AppLogo />
             </Link>
 
             <!-- Stats Container - Centered on mobile, right on desktop -->
-            <div class="flex flex-1 items-center justify-left gap-2 sm:gap-4 lg:flex-none lg:justify-end lg:gap-8">
-                <!-- Energia (mapa beta) -->
+            <div class="justify-left flex flex-1 items-center gap-2 sm:gap-4 lg:flex-none lg:justify-end lg:gap-8">
+                <!-- Energia -->
                 <EnergyMeter v-if="energy" :energy="energy" pill />
 
                 <!-- Lives Counter -->
                 <div v-else-if="auth.user?.lives !== undefined" class="flex items-center">
-                    <div class="flex items-center gap-1 sm:gap-1.5 rounded-full bg-pink-50 px-2 py-1 sm:px-3 sm:py-1.5 dark:bg-pink-900/20">
+                    <div class="flex items-center gap-1 rounded-full bg-pink-50 px-2 py-1 dark:bg-pink-900/20 sm:gap-1.5 sm:px-3 sm:py-1.5">
                         <template v-if="!hasSubscription">
                             <Heart
-                                class="h-5 w-5 transition-transform animate-pulse-once"
+                                class="animate-pulse-once h-5 w-5 transition-transform"
                                 :class="userLives > 0 ? 'text-red-500' : 'text-gray-400'"
                                 fill="currentColor"
                             />
@@ -86,10 +86,7 @@ watch(userLives, (newValue, oldValue) => {
                             </span>
                         </template>
                         <template v-else>
-                            <Heart
-                                class="h-5 w-5 text-blue-500 animate-pulse-once"
-                                fill="currentColor"
-                            />
+                            <Heart class="animate-pulse-once h-5 w-5 text-blue-500" fill="currentColor" />
                             <Infinity class="h-5 w-5 text-blue-500" />
                         </template>
                     </div>
@@ -99,14 +96,10 @@ watch(userLives, (newValue, oldValue) => {
                 <Link
                     v-if="auth.user"
                     :href="route('ofensiva.index')"
-                    class="flex items-center gap-1 sm:gap-1.5 rounded-full bg-orange-50 px-2 py-1 sm:px-3 sm:py-1.5 transition-colors hover:bg-orange-100 dark:bg-orange-900/20 dark:hover:bg-orange-900/30"
+                    class="flex items-center gap-1 rounded-full bg-orange-50 px-2 py-1 transition-colors hover:bg-orange-100 dark:bg-orange-900/20 dark:hover:bg-orange-900/30 sm:gap-1.5 sm:px-3 sm:py-1.5"
                     :title="`Ofensiva: ${currentStreak} ${currentStreak === 1 ? 'dia' : 'dias'}`"
                 >
-                    <Flame
-                        class="h-5 w-5"
-                        :class="currentStreak > 0 ? 'text-orange-500' : 'text-gray-400'"
-                        fill="currentColor"
-                    />
+                    <Flame class="h-5 w-5" :class="currentStreak > 0 ? 'text-orange-500' : 'text-gray-400'" fill="currentColor" />
                     <span class="font-bold" :class="currentStreak > 0 ? 'text-orange-500' : 'text-gray-400'">
                         {{ currentStreak }}
                     </span>
@@ -116,12 +109,9 @@ watch(userLives, (newValue, oldValue) => {
                 <XpCounter v-if="auth.user?.xp !== undefined" :xp="auth.user.xp" :user-id="auth.user.id" />
 
                 <!-- Diamond / Premium -->
-                <Link
-                    :href="route('subscription.index')"
-                    class="flex items-center gap-2 text-blue-500 transition-colors hover:text-blue-600"
-                >
+                <Link :href="route('subscription.index')" class="flex items-center gap-2 text-blue-500 transition-colors hover:text-blue-600">
                     <Gem class="h-5 w-5 sm:h-6 sm:w-6" />
-                    <span class="hidden lg:inline font-medium text-sm">Assine Premium</span>
+                    <span class="hidden text-sm font-medium lg:inline">Assine Premium</span>
                 </Link>
 
                 <!-- User Avatar with Dropdown -->
@@ -151,8 +141,13 @@ watch(userLives, (newValue, oldValue) => {
 
 <style scoped>
 @keyframes pulse-once {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.3); }
+    0%,
+    100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.3);
+    }
 }
 
 .animate-pulse-once {

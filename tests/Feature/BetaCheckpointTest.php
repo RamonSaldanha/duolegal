@@ -46,7 +46,7 @@ function checkpointKey($legislation, int $lastBlock): string
 /** Responde uma questão do desafio. */
 function answerCheckpoint($test, User $user, string $key, $material, int $position, string $answer)
 {
-    return $test->actingAs($user)->postJson("/beta/play/desafio/{$key}/answer", ['material' => $material->uuid, 'position' => $position, 'answer' => $answer]);
+    return $test->actingAs($user)->postJson("/play/desafio/{$key}/answer", ['material' => $material->uuid, 'position' => $position, 'answer' => $answer]);
 }
 
 test('o quadrado com material ganha o desafio como último passo', function () {
@@ -56,7 +56,7 @@ test('o quadrado com material ganha o desafio como último passo', function () {
     studyMaterial($legislation, 70, 85);
     studyMaterial($legislation, 120, 159, 'draft');
 
-    $this->actingAs(betaPlayer())->get('/beta/play')
+    $this->actingAs(betaPlayer())->get('/play')
         ->assertSuccessful()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->has('sections', 2)
@@ -87,12 +87,12 @@ test('com as fases feitas o desafio é o passo atual e segura o quadrado seguint
 
     // Falta uma fase do quadrado: o desafio ainda não abre
     completeBlocks($user, $legislation, 0, 29);
-    $this->actingAs($user)->get("/beta/play/desafio/{$key}")->assertRedirect(route('beta.play.map'));
+    $this->actingAs($user)->get("/play/desafio/{$key}")->assertRedirect(route('play.map'));
     answerCheckpoint($this, $user, $key, $material, 1, 'certo')->assertForbidden();
 
     completeBlocks($user, $legislation, 30, 39);
 
-    $this->actingAs($user)->get('/beta/play')
+    $this->actingAs($user)->get('/play')
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('sections.0.groups.0.state', 'current')
             ->where('sections.0.groups.0.current_phase_id', null)
@@ -103,13 +103,13 @@ test('com as fases feitas o desafio é o passo atual e segura o quadrado seguint
             ->where('sections.0.groups.1.current_phase_id', null));
 
     // A primeira fase do quadrado seguinte (fase 5) fica fechada até o desafio
-    $this->actingAs($user)->get('/beta/play/phase/5')->assertRedirect(route('beta.play.map'));
-    $this->actingAs($user)->get("/beta/play/desafio/{$key}")->assertSuccessful();
+    $this->actingAs($user)->get('/play/phase/5')->assertRedirect(route('play.map'));
+    $this->actingAs($user)->get("/play/desafio/{$key}")->assertSuccessful();
 
     answerCheckpoint($this, $user, $key, $material, 1, 'certo');
     answerCheckpoint($this, $user, $key, $material, 2, 'C')->assertJsonPath('material_completed', true);
 
-    $this->actingAs($user)->get('/beta/play')
+    $this->actingAs($user)->get('/play')
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('sections.0.groups.0.state', 'complete')
             ->where('sections.0.groups.0.completed_steps', 5)
@@ -118,7 +118,7 @@ test('com as fases feitas o desafio é o passo atual e segura o quadrado seguint
             ->where('sections.0.groups.1.state', 'current')
             ->where('sections.0.groups.1.current_phase_id', 5));
 
-    $this->actingAs($user)->get('/beta/play/phase/5')
+    $this->actingAs($user)->get('/play/phase/5')
         ->assertSuccessful()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('phaseNumber', 1)
@@ -130,7 +130,7 @@ test('quadrado sem material não segura o avanço', function () {
     $user = betaPlayer();
     completeBlocks($user, $legislation, 0, 39);
 
-    $this->actingAs($user)->get('/beta/play')
+    $this->actingAs($user)->get('/play')
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('sections.0.groups.0.state', 'complete')
             ->where('sections.0.groups.0.completed_steps', 4)
@@ -146,7 +146,7 @@ test('material publicado depois não puxa de volta quem já passou do quadrado',
 
     studyMaterial($legislation, 0, 39);
 
-    $this->actingAs($user)->get('/beta/play')
+    $this->actingAs($user)->get('/play')
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('sections.0.groups.0.state', 'complete')
             ->where('sections.0.groups.0.completed_steps', 4)
@@ -156,8 +156,8 @@ test('material publicado depois não puxa de volta quem já passou do quadrado',
             ->where('sections.0.groups.1.state', 'current')
             ->where('sections.0.groups.1.current_phase_id', 6));
 
-    $this->actingAs($user)->get('/beta/play/phase/6')->assertSuccessful();
-    $this->actingAs($user)->get('/beta/play/desafio/'.checkpointKey($legislation, 39))->assertSuccessful();
+    $this->actingAs($user)->get('/play/phase/6')->assertSuccessful();
+    $this->actingAs($user)->get('/play/desafio/'.checkpointKey($legislation, 39))->assertSuccessful();
 });
 
 test('o desafio do último quadrado da trilha também é o passo atual', function () {
@@ -166,7 +166,7 @@ test('o desafio do último quadrado da trilha também é o passo atual', functio
     $user = betaPlayer();
     completeBlocks($user, $legislation, 0, 39);
 
-    $this->actingAs($user)->get('/beta/play')
+    $this->actingAs($user)->get('/play')
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('sections.0.groups.0.state', 'current')
             ->where('sections.0.groups.0.challenge.is_current', true));
@@ -181,7 +181,7 @@ test('a tela traz o resumo em HTML e as questões sem gabarito', function () {
     $user = betaPlayer();
     completeBlocks($user, $legislation, 0, 39);
 
-    $this->actingAs($user)->get('/beta/play/desafio/'.checkpointKey($legislation, 39))
+    $this->actingAs($user)->get('/play/desafio/'.checkpointKey($legislation, 39))
         ->assertSuccessful()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('BetaPlay/Checkpoint')
@@ -221,16 +221,16 @@ test('a resposta é corrigida no servidor e só vale para material do quadrado',
 
     // Material de outro quadrado não entra no desafio deste
     answerCheckpoint($this, $user, $key, $later, 1, 'certo')->assertNotFound();
-    $this->actingAs($user)->postJson("/beta/play/desafio/{$key}/summary", ['material' => $later->uuid])->assertNotFound();
+    $this->actingAs($user)->postJson("/play/desafio/{$key}/summary", ['material' => $later->uuid])->assertNotFound();
 
     $next = checkpointKey($legislation, 79);
     answerCheckpoint($this, $user, $next, $material, 2, 'C')->assertNotFound();
-    $this->actingAs($user)->postJson("/beta/play/desafio/{$next}/summary", ['material' => $material->uuid])->assertNotFound();
+    $this->actingAs($user)->postJson("/play/desafio/{$next}/summary", ['material' => $material->uuid])->assertNotFound();
 
     answerCheckpoint($this, $user, $key, $material, 9, 'certo')->assertStatus(422);
 
     // Chave que não é o último bloco de um quadrado
-    $this->actingAs($user)->get('/beta/play/desafio/'.checkpointKey($legislation, 20))->assertNotFound();
+    $this->actingAs($user)->get('/play/desafio/'.checkpointKey($legislation, 20))->assertNotFound();
 
     expect(UserStudyMaterial::count())->toBe(0)
         ->and(UserBetaCheckpoint::where('user_id', $user->id)->sole()->in_progress)->toBe([$material->id => ['summary' => false, 'answers' => [1 => 'errado']]]);
@@ -244,14 +244,14 @@ test('cada passo fica gravado e a pessoa volta de onde parou', function () {
     completeBlocks($user, $legislation, 0, 39);
     $key = checkpointKey($legislation, 39);
 
-    $this->actingAs($user)->postJson("/beta/play/desafio/{$key}/summary", ['material' => $first->uuid])
+    $this->actingAs($user)->postJson("/play/desafio/{$key}/summary", ['material' => $first->uuid])
         ->assertSuccessful()
         ->assertJsonPath('material_completed', false)
         ->assertJsonPath('xp_gained', 0);
     answerCheckpoint($this, $user, $key, $first, 1, 'certo')->assertJsonPath('is_correct', true);
 
     // Saiu e voltou: o resumo lido e a questão respondida continuam lá, sem XP ainda
-    $this->actingAs($user)->get("/beta/play/desafio/{$key}")
+    $this->actingAs($user)->get("/play/desafio/{$key}")
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('materials.0.done', false)
             ->where('materials.0.summary_read', true)
@@ -279,12 +279,12 @@ test('cada passo fica gravado e a pessoa volta de onde parou', function () {
     expect($progress->doneIds())->toBe([$first->id])->and($progress->in_progress)->toBeNull();
 
     // Falta o outro material do quadrado: o desafio continua por fazer
-    $this->actingAs($user)->get('/beta/play')
+    $this->actingAs($user)->get('/play')
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('sections.0.groups.0.challenge.state', 'available')
             ->where('sections.0.groups.0.challenge.completed', 1));
 
-    $this->actingAs($user)->get("/beta/play/desafio/{$key}")
+    $this->actingAs($user)->get("/play/desafio/{$key}")
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('checkpoint.completed', 1)
             ->where('materials.0.done', true)
@@ -318,7 +318,7 @@ test('concluir dá o XP uma única vez, sem assinatura e sem gastar vida', funct
         ->and(UserStudyMaterial::where('study_material_id', $material->id)->firstOrFail()->correct_count)->toBe(1);
 
     // Refazer o mesmo material (revisão) só corrige: sem XP e sem gravar nada
-    $this->actingAs($user)->postJson("/beta/play/desafio/{$key}/summary", ['material' => $material->uuid])->assertSuccessful();
+    $this->actingAs($user)->postJson("/play/desafio/{$key}/summary", ['material' => $material->uuid])->assertSuccessful();
     answerCheckpoint($this, $user, $key, $material, 1, 'certo');
     answerCheckpoint($this, $user, $key, $material, 2, 'C')
         ->assertSuccessful()
@@ -343,7 +343,7 @@ test('rascunho e material desatualizado ficam de fora', function () {
 
     LegislationSegment::find($stale->block_ids[0])->update(['original_text' => 'Art. 10 Redação nova.']);
 
-    $this->actingAs($user)->get('/beta/play')
+    $this->actingAs($user)->get('/play')
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('sections.0.groups.0.challenge.state', 'none')
             ->where('sections.0.groups.0.total_steps', 4)
@@ -359,7 +359,7 @@ test('o mapa não faz uma consulta por material', function () {
     $count = function () use ($user) {
         DB::flushQueryLog();
         DB::enableQueryLog();
-        $this->actingAs($user)->get('/beta/play')->assertSuccessful();
+        $this->actingAs($user)->get('/play')->assertSuccessful();
 
         return count(DB::getQueryLog());
     };
