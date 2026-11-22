@@ -1,5 +1,6 @@
 // Material de estudo (resumo + questões) gravado por agentes de IA.
 
+import type { EnergySpend } from '@/types/beta-play';
 import type { DisciplineLevelUp } from '@/types/legislation-play';
 
 export type StudyBoard = 'cebraspe' | 'fgv' | 'fcc' | 'vunesp';
@@ -62,7 +63,7 @@ export interface CheckpointStepResponse {
     user: { xp: number };
 }
 
-export interface CheckpointAnswerResponse extends CheckpointStepResponse {
+export interface CheckpointAnswerResponse extends CheckpointStepResponse, EnergySpend {
     is_correct: boolean;
     correct_answer: string;
     explanation: string;

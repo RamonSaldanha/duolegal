@@ -12,7 +12,7 @@
             <DialogHeader class="relative">
                 <DialogTitle>Assistindo anúncio...</DialogTitle>
                 <DialogDescription>
-                    Aguarde a contagem regressiva para ganhar uma vida.
+                    Aguarde a contagem regressiva para ganhar {{ prize ?? 'uma vida' }}.
                 </DialogDescription>
             </DialogHeader>
 
@@ -50,7 +50,7 @@
                         @click="handleAdComplete"
                         size="lg"
                     >
-                        Ganhar vida agora
+                        {{ claimLabel ?? 'Ganhar vida agora' }}
                     </Button>
 
                     <!-- Botão de teste apenas em desenvolvimento -->
@@ -79,6 +79,9 @@ import AdSenseComponent from '@/components/AdSenseComponent.vue'
 const props = defineProps<{
     rewardRoute: string;
     redirectRoute: string;
+    // O que o anúncio dá (o mapa beta dá energia no lugar da vida)
+    prize?: string;
+    claimLabel?: string;
 }>()
 
 // Emits

@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import Notice from '@/components/ui/Notice.vue';
+import PhaseEnd from '@/components/beta-preview/PhaseEnd.vue';
+import EnergyMeter from '@/components/EnergyMeter.vue';
 import GuidedReading from '@/components/GuidedReading.vue';
 import LevelUpOverlay from '@/components/LevelUpOverlay.vue';
-import PhaseEnd from '@/components/beta-preview/PhaseEnd.vue';
 import ResultBar from '@/components/ResultBar.vue';
 import GameButton from '@/components/ui/GameButton.vue';
 import IconButton from '@/components/ui/IconButton.vue';
+import Notice from '@/components/ui/Notice.vue';
 import { playPhaseComplete } from '@/lib/sounds';
+import type { EnergyState } from '@/types/beta-play';
 import type { DisciplineLevelUp } from '@/types/legislation-play';
 import {
     boardLabel,
@@ -17,17 +19,23 @@ import {
 } from '@/types/study-material';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import axios from 'axios';
-import { X } from 'lucide-vue-next';
+import { BatteryCharging, X } from 'lucide-vue-next';
 import { computed, nextTick, ref } from 'vue';
 import { useReward } from 'vue-rewards';
 
 const props = defineProps<{
     checkpoint: { key: string; section_number: number; step_number: number; total: number; completed: number };
     materials: CheckpointMaterial[];
+    energy: EnergyState;
 }>();
 
 const page = usePage();
-const authUser = computed(() => page.props.auth.user as { xp: number });
+const authUser = computed(() => page.props.auth.user as { xp: number; energy?: EnergyState | null });
+
+// Cada questão nova gasta energia e 3 certas seguidas devolvem um tanto. Se ela acaba, a
+// pessoa sai (o que fez fica guardado) e volta quando tiver energia.
+const energy = ref<EnergyState>(props.energy);
+const outOfEnergy = ref(false);
 // Quem assina pula o convite Premium do fim de fase
 const isSubscriber = computed(() => Boolean((page.props.auth.user as { has_infinite_lives?: boolean }).has_infinite_lives));
 
@@ -214,6 +222,9 @@ async function check() {
         if (data.is_correct) correctCount.value++;
         applyStep(data);
         feedback.value = data;
+        energy.value = data.energy;
+        outOfEnergy.value = data.out_of_energy;
+        if (authUser.value.energy) authUser.value.energy = data.energy;
 
         // O comentário aparece embaixo das alternativas
         await nextTick();
@@ -226,6 +237,10 @@ async function check() {
 }
 
 function advance() {
+    if (outOfEnergy.value) {
+        router.visit(route('beta.play.energy'));
+        return;
+    }
     if (pendingLevelUp) {
         levelUp.value = pendingLevelUp;
         pendingLevelUp = null;
@@ -312,6 +327,7 @@ function choiceClass(key: string) {
                             :style="{ width: `${progressPercent}%` }"
                         />
                     </div>
+                    <EnergyMeter :energy="energy" />
                 </div>
                 <p class="mx-auto mt-2 w-full truncate text-xs font-medium text-gray-400 dark:text-gray-500 sm:w-[95%] lg:w-[50rem]">
                     {{ step.material.legislation_title }} · Passo {{ checkpoint.step_number }} de {{ checkpoint.step_number }} · Desafio<template
@@ -438,7 +454,17 @@ function choiceClass(key: string) {
                 <ResultBar v-if="step.kind === 'summary' && summaryConfirmed" correct title="Resumo concluído!" @continue="advance" />
 
                 <!-- Resultado: a mesma barra das fases de lacunas -->
-                <ResultBar v-else-if="step.kind === 'question' && feedback" :correct="feedback.is_correct" @continue="advance">
+                <ResultBar
+                    v-else-if="step.kind === 'question' && feedback"
+                    :correct="feedback.is_correct"
+                    :button-label="outOfEnergy ? 'Sair' : undefined"
+                    @continue="advance"
+                >
+                    <p v-if="feedback.combo" class="mb-1 flex items-center gap-1 font-bold">
+                        Sequência de {{ feedback.combo.streak }}!
+                        <template v-if="feedback.combo.gained > 0"> <BatteryCharging class="h-4 w-4" /> +{{ feedback.combo.gained }} </template>
+                    </p>
+                    <p v-if="outOfEnergy" class="mb-1 font-bold">Sua energia acabou. O que você fez fica guardado.</p>
                     <p v-if="!feedback.is_correct">
                         Gabarito: <span class="font-bold capitalize">{{ feedback.correct_answer }}</span>
                     </p>

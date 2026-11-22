@@ -4,8 +4,10 @@ import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import UserAvatar from '@/components/UserAvatar.vue';
 import UserMenuContent from '@/components/UserMenuContent.vue';
+import EnergyMeter from '@/components/EnergyMeter.vue';
 import XpCounter from '@/components/XpCounter.vue';
 import type { AvatarConfig } from '@/lib/avatar';
+import type { EnergyState } from '@/types/beta-play';
 import { Link, usePage } from '@inertiajs/vue3';
 import { Heart, Gem, Infinity, Flame } from 'lucide-vue-next';
 import { computed, watch } from 'vue';
@@ -23,6 +25,8 @@ const page = usePage<{
             longest_streak?: number;
             avatar_config?: AvatarConfig | null;
             has_infinite_lives?: boolean;
+            // Só para administradores (o mapa beta, que usa energia no lugar das vidas)
+            energy?: EnergyState | null;
         } | null;
     };
 }>();
@@ -37,6 +41,9 @@ const hasSubscription = computed(() => {
 });
 
 const userLives = computed(() => page.props.auth.user?.lives ?? 0);
+
+// No mapa beta a energia toma o lugar das vidas
+const energy = computed(() => (route().current('beta.play.*') ? (page.props.auth.user?.energy ?? null) : null));
 
 watch(userLives, (newValue, oldValue) => {
     if (newValue !== oldValue) {
@@ -62,8 +69,11 @@ watch(userLives, (newValue, oldValue) => {
 
             <!-- Stats Container - Centered on mobile, right on desktop -->
             <div class="flex flex-1 items-center justify-left gap-2 sm:gap-4 lg:flex-none lg:justify-end lg:gap-8">
+                <!-- Energia (mapa beta) -->
+                <EnergyMeter v-if="energy" :energy="energy" pill />
+
                 <!-- Lives Counter -->
-                <div v-if="auth.user?.lives !== undefined" class="flex items-center">
+                <div v-else-if="auth.user?.lives !== undefined" class="flex items-center">
                     <div class="flex items-center gap-1 sm:gap-1.5 rounded-full bg-pink-50 px-2 py-1 sm:px-3 sm:py-1.5 dark:bg-pink-900/20">
                         <template v-if="!hasSubscription">
                             <Heart

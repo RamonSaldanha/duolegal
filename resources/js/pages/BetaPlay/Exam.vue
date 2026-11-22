@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import Notice from '@/components/ui/Notice.vue';
 import LevelUpOverlay from '@/components/LevelUpOverlay.vue';
 import ResultBar from '@/components/ResultBar.vue';
 import GameButton from '@/components/ui/GameButton.vue';
 import IconButton from '@/components/ui/IconButton.vue';
+import Notice from '@/components/ui/Notice.vue';
 import { playPhaseComplete } from '@/lib/sounds';
-import type { BetaExamAnswerResponse, BetaExamAttempt, BetaExamGiven, BetaExamResult } from '@/types/beta-play';
+import type { BetaExamAnswerResponse, BetaExamAttempt, BetaExamGiven, BetaExamResult, EnergyState } from '@/types/beta-play';
 import type { DisciplineLevelUp } from '@/types/legislation-play';
 import { boardLabel } from '@/types/study-material';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import axios, { isAxiosError } from 'axios';
-import { Check, Timer, X, Zap } from 'lucide-vue-next';
+import { BatteryCharging, Check, Timer, X, Zap } from 'lucide-vue-next';
 import { computed, nextTick, onUnmounted, ref } from 'vue';
 import { useReward } from 'vue-rewards';
 
@@ -30,7 +30,9 @@ const props = defineProps<{
 }>();
 
 const page = usePage();
-const authUser = computed(() => page.props.auth.user as { xp: number });
+const authUser = computed(() => page.props.auth.user as { xp: number; energy?: EnergyState | null });
+// A prova rende energia (por acerto novo e combo, creditada na entrega); quem assina não precisa
+const showEnergy = computed(() => !authUser.value.energy?.infinite);
 
 // Dia da prova: uma prova com tempo, só com questões que a pessoa já viu nos desafios dos
 // quadrados da etapa. Quem manda no tempo é o servidor (ele guarda a hora em que a prova
@@ -41,6 +43,7 @@ const running = ref<BetaExamAttempt | null>(null);
 const answers = ref<Record<string, BetaExamGiven>>({});
 const index = ref(0);
 const xp = ref(0);
+const energyGained = ref(0);
 const result = ref<BetaExamResult | null>(null);
 const timedOut = ref(false);
 
@@ -110,6 +113,7 @@ function enter(data: BetaExamAttempt) {
     running.value = data;
     answers.value = { ...data.answers };
     xp.value = data.xp;
+    energyGained.value = data.energy;
     // Volta na primeira questão ainda sem resposta
     const next = data.questions.findIndex((item) => !(item.uuid in data.answers));
     index.value = next === -1 ? 0 : next;
@@ -143,7 +147,9 @@ async function showResult(data: BetaExamResult) {
     stopClock();
     result.value = data;
     xp.value = data.xp_gained;
+    energyGained.value = data.energy_gained;
     authUser.value.xp = data.user.xp;
+    if (authUser.value.energy) authUser.value.energy = data.user.energy;
     levelUp.value = data.discipline_level_up;
     confirmingExit.value = false;
     stage.value = 'result';
@@ -168,6 +174,7 @@ async function check() {
         const given = { answer: selected.value, is_correct: data.is_correct, correct_answer: data.correct_answer };
         answers.value[current.uuid] = given;
         xp.value = data.xp;
+        energyGained.value = data.energy;
         feedback.value = given;
 
         // Última questão: a prova já foi entregue; o resultado aparece depois do "Continuar"
@@ -277,6 +284,12 @@ const answerLabel = (item: { type: string; options: Record<string, string> | nul
                             <dt class="text-sm text-gray-500 dark:text-gray-400">Cada acerto</dt>
                             <dd class="font-bold text-purple-600 dark:text-purple-400">+{{ exam.xp_per_correct }} XP</dd>
                         </div>
+                        <div v-if="showEnergy" class="flex items-center justify-between gap-3 px-4 py-3">
+                            <dt class="text-sm text-gray-500 dark:text-gray-400">Energia</dt>
+                            <dd class="flex items-center gap-1 text-right font-bold text-brand-soft-ink dark:text-brand">
+                                <BatteryCharging class="h-4 w-4 shrink-0" /> +1 por acerto, +2 a cada 3 seguidos
+                            </dd>
+                        </div>
                         <div v-if="exam.attempts > 0" class="flex items-center justify-between px-4 py-3">
                             <dt class="text-sm text-gray-500 dark:text-gray-400">Seu melhor resultado</dt>
                             <dd class="font-bold text-green-600 dark:text-green-400">{{ exam.best_correct }} de {{ exam.questions }}</dd>
@@ -332,6 +345,14 @@ const answerLabel = (item: { type: string; options: Record<string, string> | nul
                     >
                         <Zap class="h-4 w-4 fill-current" />
                         +{{ xp }} XP
+                    </span>
+                    <span
+                        v-if="showEnergy"
+                        class="flex items-center gap-1 rounded-lg bg-brand-soft px-2.5 py-1 text-base font-bold tabular-nums text-brand-soft-ink"
+                        aria-label="Energia somada na prova"
+                    >
+                        <BatteryCharging class="h-4 w-4" />
+                        +{{ energyGained }}
                     </span>
                 </div>
             </div>
@@ -410,7 +431,7 @@ const answerLabel = (item: { type: string; options: Record<string, string> | nul
                     </p>
                 </div>
 
-                <div class="mt-6 grid grid-cols-3 gap-3 text-center">
+                <div class="mt-6 grid gap-3 text-center" :class="showEnergy ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'">
                     <div class="rounded-2xl border-2 border-green-200 px-2 py-4 dark:border-green-900">
                         <p class="text-2xl font-bold text-green-600 dark:text-green-400">{{ result.correct }}</p>
                         <p class="mt-1 text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">
@@ -420,6 +441,12 @@ const answerLabel = (item: { type: string; options: Record<string, string> | nul
                     <div class="rounded-2xl border-2 border-purple-200 px-2 py-4 dark:border-purple-900">
                         <p class="text-2xl font-bold text-purple-600 dark:text-purple-400">+{{ result.xp_gained }}</p>
                         <p class="mt-1 text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">XP</p>
+                    </div>
+                    <div v-if="showEnergy" class="rounded-2xl border-2 border-brand-soft px-2 py-4">
+                        <p class="flex items-center justify-center gap-1 text-2xl font-bold text-brand-soft-ink dark:text-brand">
+                            <BatteryCharging class="h-5 w-5" />+{{ result.energy_gained }}
+                        </p>
+                        <p class="mt-1 text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">Energia</p>
                     </div>
                     <div class="rounded-2xl border-2 border-gray-200 px-2 py-4 dark:border-gray-700">
                         <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ result.best_correct }}</p>

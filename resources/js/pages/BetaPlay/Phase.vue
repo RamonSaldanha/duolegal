@@ -1,18 +1,19 @@
 <script setup lang="ts">
 import { Head, router, usePage } from '@inertiajs/vue3';
 import axios from 'axios';
-import { Heart, Infinity as InfinityIcon, X } from 'lucide-vue-next';
+import { BatteryCharging, X } from 'lucide-vue-next';
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
 // @ts-expect-error: vue-rewards package does not provide proper type definitions
+import PhaseEnd from '@/components/beta-preview/PhaseEnd.vue';
+import EnergyMeter from '@/components/EnergyMeter.vue';
 import ActiveChallenge from '@/components/legislation-play/ActiveChallenge.vue';
 import CompletedSegment from '@/components/legislation-play/CompletedSegment.vue';
 import LevelUpOverlay from '@/components/LevelUpOverlay.vue';
-import PhaseEnd from '@/components/beta-preview/PhaseEnd.vue';
 import ResultBar from '@/components/ResultBar.vue';
 import GameButton from '@/components/ui/GameButton.vue';
 import IconButton from '@/components/ui/IconButton.vue';
 import { playPhaseComplete } from '@/lib/sounds';
-import type { BetaFailResponse, BetaFinishResponse } from '@/types/beta-play';
+import type { BetaFinishResponse, EnergyCombo, EnergySpend, EnergyState } from '@/types/beta-play';
 import type { ActiveSegmentData, CompletedSegmentData, DisciplineLevelUp, SegmentAnswer } from '@/types/legislation-play';
 import { requiredCorrect } from '@/types/legislation-play';
 import { useReward } from 'vue-rewards';
@@ -34,10 +35,11 @@ const props = defineProps<{
     phaseBlocks: CompletedSegmentData[];
     earlierBlocks: CompletedSegmentData[];
     hasMoreAbove: boolean;
+    energy: EnergyState;
 }>();
 
 const page = usePage();
-const authUser = computed(() => page.props.auth.user as { lives: number; xp: number; has_infinite_lives?: boolean });
+const authUser = computed(() => page.props.auth.user as { xp: number; energy?: EnergyState | null });
 // Quem assina pula o convite Premium do fim de fase
 const isSubscriber = computed(() => Boolean((page.props.auth.user as { has_infinite_lives?: boolean }).has_infinite_lives));
 
@@ -47,6 +49,12 @@ const passed = ref<Record<string, ChallengeResult>>({});
 const attempt = ref(0);
 const lastResult = ref<(ChallengeResult & { passed: boolean }) | null>(null);
 const stage = ref<'playing' | 'saving' | 'failed-to-save' | 'done'>('playing');
+
+// Energia: cada bloco verificado gasta na hora; 5 certos seguidos devolvem um tanto (combo).
+// Se ela acaba no meio da fase nova, a pessoa sai e perde a fase.
+const energy = ref<EnergyState>(props.energy);
+const combo = ref<EnergyCombo | null>(null);
+const outOfEnergy = ref(false);
 const showExitConfirm = ref(false);
 
 // Para a precisão: todas as lacunas respondidas, inclusive nas tentativas erradas
@@ -141,30 +149,39 @@ async function handleSubmit(data: ChallengeResult) {
     gapsAnswered.value += data.total_count;
     gapsCorrect.value += data.correct_count;
     lastResult.value = { ...data, passed: isPass };
+    combo.value = null;
 
     // O resultado aumenta o rodapé; mantém o desafio inteiro à vista
     nextTick(showActive);
 
     if (isPass) {
         passed.value[data.segment_uuid] = data;
-        return;
     }
 
-    // Errou: a vida sai na hora (o progresso continua só no navegador)
+    // Certo ou errado, a energia sai na hora (o progresso continua só no navegador)
     try {
-        const response = await axios.post<BetaFailResponse>(route('beta.play.fail'));
-        authUser.value.lives = response.data.lives;
-        if (response.data.redirect_url) {
-            leaving = true;
-            router.visit(response.data.redirect_url);
-        }
+        const response = await axios.post<EnergySpend>(route('beta.play.attempt'), { phase_id: props.phaseId, correct: isPass });
+        energy.value = response.data.energy;
+        combo.value = response.data.combo;
+        outOfEnergy.value = response.data.out_of_energy;
+        if (authUser.value.energy) authUser.value.energy = response.data.energy;
     } catch {
         // Falha de rede aqui não deve travar a fase
     }
 }
 
+function leaveWithoutEnergy() {
+    leaving = true;
+    router.visit(route('beta.play.energy'));
+}
+
 async function next() {
     if (!lastResult.value) return;
+
+    if (outOfEnergy.value) {
+        leaveWithoutEnergy();
+        return;
+    }
 
     // Errou: o mesmo desafio volta em branco e só passa adiante quando for vencido
     if (lastResult.value.passed) {
@@ -194,14 +211,20 @@ async function finish() {
 
         xpGained.value = response.data.xp_gained;
         authUser.value.xp = response.data.user.xp;
-        authUser.value.lives = response.data.user.lives;
+        energy.value = response.data.user.energy;
+        if (authUser.value.energy) authUser.value.energy = response.data.user.energy;
         stage.value = 'done';
 
         await nextTick();
         confettiReward();
         playPhaseComplete();
         levelUp.value = response.data.discipline_level_up;
-    } catch {
+    } catch (error) {
+        // 409: a energia acabou no meio e a fase foi perdida
+        if (axios.isAxiosError(error) && error.response?.status === 409) {
+            leaveWithoutEnergy();
+            return;
+        }
         stage.value = 'failed-to-save';
     }
 }
@@ -294,7 +317,7 @@ onUnmounted(() => {
 
         <!-- ===== Jogo ===== -->
         <template v-else>
-            <!-- Topo: sair, progresso da fase, vidas -->
+            <!-- Topo: sair, progresso da fase, energia -->
             <div class="shrink-0 px-3 pt-4 md:px-4">
                 <div class="mx-auto flex w-full items-center gap-3 sm:w-[95%] lg:w-[50rem]">
                     <IconButton label="Sair da fase" class="-ml-2 shrink-0" @click="exit">
@@ -303,11 +326,7 @@ onUnmounted(() => {
                     <div class="h-3 flex-1 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
                         <div class="h-full rounded-full bg-green-500 transition-all duration-500" :style="{ width: `${progressPercent}%` }" />
                     </div>
-                    <div class="flex items-center gap-1 font-bold text-red-500">
-                        <Heart class="h-5 w-5 fill-current" />
-                        <InfinityIcon v-if="authUser.has_infinite_lives" class="h-5 w-5" />
-                        <span v-else>{{ authUser.lives }}</span>
-                    </div>
+                    <EnergyMeter :energy="energy" />
                 </div>
                 <p class="mx-auto mt-2 w-full truncate text-xs font-medium text-gray-400 dark:text-gray-500 sm:w-[95%] lg:w-[50rem]">
                     {{ legislation.title }} · Passo {{ phaseNumber }} de {{ phasesPerGroup }}
@@ -349,9 +368,14 @@ onUnmounted(() => {
                 <ResultBar
                     v-if="lastResult"
                     :correct="lastResult.passed"
-                    :button-label="lastResult.passed ? 'Continuar' : 'Tentar de novo'"
+                    :button-label="outOfEnergy ? 'Sair' : lastResult.passed ? 'Continuar' : 'Tentar de novo'"
                     @continue="next"
                 >
+                    <p v-if="combo" class="mb-1 flex items-center gap-1 font-bold">
+                        Sequência de {{ combo.streak }}!
+                        <template v-if="combo.gained > 0"> <BatteryCharging class="h-4 w-4" /> +{{ combo.gained }} </template>
+                    </p>
+                    <p v-if="outOfEnergy" class="mb-1 font-bold">Sua energia acabou. Esta fase vai recomeçar.</p>
                     <p v-if="lastResult.answers.length > 0">
                         {{ lastResult.answers.length - wrongAnswers.length }} de {{ lastResult.answers.length }} corretas
                     </p>

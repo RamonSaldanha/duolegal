@@ -83,6 +83,8 @@ export interface BetaExamAttempt {
     seconds_left: number;
     seconds_total: number;
     xp: number;
+    // Energia somada na prova até aqui (só é creditada na entrega)
+    energy: number;
     questions: BetaExamQuestion[];
     answers: Record<string, BetaExamGiven>;
 }
@@ -97,30 +99,47 @@ export interface BetaExamResult {
     answered: number;
     total: number;
     xp_gained: number;
+    energy_gained: number;
     best_correct: number;
     discipline_level_up: DisciplineLevelUp | null;
-    user: { xp: number };
+    user: { xp: number; energy: EnergyState };
     review: BetaExamReviewItem[];
 }
 
 export interface BetaExamAnswerResponse {
     is_correct: boolean;
     correct_answer: string;
-    // XP somado na prova até aqui (só é creditado na entrega)
+    // XP e energia somados na prova até aqui (só são creditados na entrega)
     xp: number;
+    energy: number;
     finished: boolean;
     result: BetaExamResult | null;
 }
 
-export interface BetaFailResponse {
-    lost_life: boolean;
-    lives: number;
-    redirect_url: string | null;
-    out_of_lives: boolean;
+/** Energia do mapa novo (EnergyService::payload no servidor). */
+export interface EnergyState {
+    value: number;
+    max: number;
+    // Hora do próximo +1 (nula com a barra cheia ou infinita)
+    next_at: string | null;
+    infinite: boolean;
+}
+
+/** Combo: a sequência de acertos fechou um múltiplo e devolveu energia. */
+export interface EnergyCombo {
+    streak: number;
+    gained: number;
+}
+
+/** Resposta de cada bloco verificado na fase (e de cada questão nova do desafio). */
+export interface EnergySpend {
+    energy: EnergyState;
+    combo: EnergyCombo | null;
+    out_of_energy: boolean;
 }
 
 export interface BetaFinishResponse {
     xp_gained: number;
     discipline_level_up: DisciplineLevelUp | null;
-    user: PlayUserData;
+    user: PlayUserData & { energy: EnergyState };
 }
