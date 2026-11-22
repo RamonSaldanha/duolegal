@@ -66,7 +66,7 @@ class BetaPlayController extends LegislationPlayController
         };
     }
 
-    /** Sem energia: a barra, a revisão sugerida e o anúncio. */
+    /** Sem energia: a barra, o anúncio e o convite Premium. */
     public function betaEnergy()
     {
         return Inertia::render('BetaPlay/NoEnergy', $this->energyStatus(Auth::user()));
@@ -83,8 +83,7 @@ class BetaPlayController extends LegislationPlayController
     }
 
     /**
-     * A tela sem energia: a energia, a fase concluída mais esquecida (a revisão abre mesmo
-     * sem energia e o combo dela recarrega) e quanto o anúncio dá.
+     * A tela sem energia: a energia (com a hora do próximo +1) e quanto o anúncio dá.
      *
      * @return array<string, mixed>
      */
@@ -92,7 +91,6 @@ class BetaPlayController extends LegislationPlayController
     {
         return [
             'energy' => app(EnergyService::class)->payload($user),
-            'review' => $this->suggestedReview($user),
             'ad_reward' => (int) config('energy.ad_reward'),
         ];
     }
@@ -376,31 +374,6 @@ class BetaPlayController extends LegislationPlayController
             'streak' => 0,
             'out' => false,
         ];
-    }
-
-    /**
-     * A revisão sugerida quando a energia acaba: a fase concluída mais esquecida, a de
-     * progresso mais antigo.
-     *
-     * @return array{id: int, legislation_title: string}|null
-     */
-    protected function suggestedReview(User $user): ?array
-    {
-        $done = array_values(array_filter($this->trail($user)['phases'], fn ($phase) => $phase['is_complete']));
-
-        if ($done === []) {
-            return null;
-        }
-
-        $touched = UserSegmentProgress::where('user_id', $user->id)
-            ->whereIn('legislation_segment_id', array_merge(...array_column($done, 'block_ids')))
-            ->pluck('updated_at', 'legislation_segment_id');
-
-        $oldest = collect($done)->sortBy(fn ($phase) => collect($phase['block_ids'])
-            ->map(fn ($id) => $touched->get($id)?->getTimestamp() ?? 0)
-            ->max())->first();
-
-        return ['id' => $oldest['id'], 'legislation_title' => $oldest['legislation_title']];
     }
 
     // ==================== PRIVATE METHODS ====================

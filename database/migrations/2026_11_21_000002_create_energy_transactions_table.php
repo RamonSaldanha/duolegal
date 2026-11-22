@@ -8,7 +8,7 @@ return new class extends Migration
 {
     /**
      * Livro da energia: cada gasto e cada ganho (a recarga por tempo fica de fora). Serve para
-     * o teto diário do combo da revisão e para ajustar os números de config/energy.php.
+     * ajustar os números de config/energy.php.
      */
     public function up(): void
     {

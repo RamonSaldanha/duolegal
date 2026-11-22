@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\DB;
  * - Fase nova: precisa de `phase.open` para abrir; cada tentativa custa (a errada custa mais)
  *   e a cada `combo_every` blocos certos seguidos volta um tanto. Se a energia acaba no meio,
  *   a pessoa sai e perde a fase (o finish é recusado).
- * - Revisão: abre mesmo sem energia, custa só o erro e o combo dela tem teto por dia.
+ * - Revisão: abre mesmo sem energia, custa só o erro e não tem combo (revisar não recarrega).
  * - Desafio do quadrado: cada questão nova custa e também tem combo.
  * - Dia da prova: não custa; rende energia e pode passar da barra cheia (`super_max`).
  * - O tempo devolve +1 a cada `regen_minutes`, até a barra cheia. A conta é feita na leitura,
@@ -133,8 +133,9 @@ class EnergyService
     }
 
     /**
-     * Uma tentativa de bloco na fase em jogo: cobra, conta a sequência e dá o combo. Na fase
-     * nova, se a energia chega a 0 e ainda falta bloco, a pessoa está fora (`out`).
+     * Uma tentativa de bloco na fase em jogo: cobra, conta a sequência e dá o combo (só na fase
+     * nova; a revisão não recarrega). Na fase nova, se a energia chega a 0 e ainda falta bloco,
+     * a pessoa está fora (`out`).
      *
      * @param  array{kind: string, id: int, review: bool, pending: int, corrects: int, streak: int, out: bool}  $run
      * @return array{energy: array<string, mixed>, combo: array{streak: int, gained: int}|null, out_of_energy: bool}
@@ -155,7 +156,7 @@ class EnergyService
         $combo = null;
         if ($correct) {
             $run['corrects']++;
-            $combo = $this->streak($user, $run, $rules, $review ? EnergyTransaction::REVIEW_COMBO : EnergyTransaction::COMBO);
+            $combo = $review ? null : $this->streak($user, $run, $rules, EnergyTransaction::COMBO);
         } else {
             $run['streak'] = 0;
         }
@@ -236,7 +237,7 @@ class EnergyService
 
     /**
      * Conta mais um acerto na sequência e dá o combo quando ela fecha um múltiplo de
-     * `combo_every`. O combo da revisão respeita o teto do dia.
+     * `combo_every`.
      *
      * @return array{streak: int, gained: int}|null
      */
@@ -248,24 +249,7 @@ class EnergyService
             return null;
         }
 
-        $gain = $rules['combo_gain'];
-        if ($reason === EnergyTransaction::REVIEW_COMBO) {
-            $gain = min($gain, $this->reviewComboLeft($user));
-        }
-
-        return ['streak' => $run['streak'], 'gained' => $gain > 0 ? $this->apply($user, $gain, $reason) : 0];
-    }
-
-    /** Quanto o combo da revisão ainda pode render hoje (dia de Brasília). */
-    private function reviewComboLeft(User $user): int
-    {
-        $today = now('America/Sao_Paulo')->startOfDay()->utc();
-        $given = (int) EnergyTransaction::where('user_id', $user->id)
-            ->where('reason', EnergyTransaction::REVIEW_COMBO)
-            ->where('created_at', '>=', $today)
-            ->sum('amount');
-
-        return max(0, (int) config('energy.review.daily_cap') - $given);
+        return ['streak' => $run['streak'], 'gained' => $this->apply($user, $rules['combo_gain'], $reason)];
     }
 
     /**

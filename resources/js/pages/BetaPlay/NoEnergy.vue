@@ -1,17 +1,20 @@
 <script setup lang="ts">
 import AdComponent from '@/components/AdComponent.vue';
+import PremiumYearly from '@/components/beta-preview/PremiumYearly.vue';
+import EnergyMeter from '@/components/EnergyMeter.vue';
 import GameButton from '@/components/ui/GameButton.vue';
-import AppLayout from '@/layouts/AppLayout.vue';
+import IconButton from '@/components/ui/IconButton.vue';
+import { YEARLY_PER_MONTH } from '@/lib/premium';
 import type { EnergyState } from '@/types/beta-play';
-import { Head } from '@inertiajs/vue3';
-import { BatteryCharging, BatteryLow, RotateCcw } from 'lucide-vue-next';
+import { Head, router } from '@inertiajs/vue3';
+import { X } from 'lucide-vue-next';
 import { computed, onUnmounted, ref } from 'vue';
 
-// Sem energia (mapa beta): quanto falta para o próximo +1, a revisão sugerida (abre sem
-// energia e o combo dela recarrega), o anúncio e o Premium, que tem energia infinita.
+// Sem energia (mapa beta), no mesmo desenho do convite Premium do fim de fase: o corredor
+// cansado e a frase com marca-texto, quando volta o próximo +1, o Premium anual (energia
+// infinita), o anúncio (+5) e esperar a recarga. Cabe numa tela só; o GIF encolhe para caber.
 const props = defineProps<{
     energy: EnergyState;
-    review: { id: number; legislation_title: string } | null;
     ad_reward: number;
 }>();
 
@@ -22,7 +25,6 @@ const ticker = setInterval(() => (now.value = Date.now()), 30_000);
 onUnmounted(() => clearInterval(ticker));
 
 const canPlay = computed(() => props.energy.infinite || props.energy.value >= PHASE_OPEN);
-const percent = computed(() => Math.min(100, (props.energy.value / props.energy.max) * 100));
 
 const nextIn = computed(() => {
     if (!props.energy.next_at) return null;
@@ -31,62 +33,55 @@ const nextIn = computed(() => {
 });
 
 const ad = ref<InstanceType<typeof AdComponent> | null>(null);
+
+function backToMap() {
+    router.visit(route('beta.play.map'));
+}
 </script>
 
 <template>
     <Head title="Sem energia" />
 
-    <AppLayout>
-        <div class="mx-auto flex w-full max-w-md flex-col px-4 py-8">
-            <div class="flex flex-col items-center text-center">
-                <div class="battery" :class="{ 'is-ok': canPlay }">
-                    <BatteryCharging v-if="canPlay" class="h-14 w-14" :stroke-width="1.75" />
-                    <BatteryLow v-else class="h-14 w-14" :stroke-width="1.75" />
-                </div>
-
-                <h1 class="mt-4 text-2xl font-bold text-foreground">
-                    {{ energy.infinite ? 'Sua energia é infinita' : canPlay ? 'Energia de volta!' : 'Sua energia acabou' }}
-                </h1>
-                <p v-if="!energy.infinite" class="mt-2 text-muted-foreground">
-                    <template v-if="canPlay">Você já pode abrir uma fase nova.</template>
-                    <template v-else>
-                        Uma fase nova precisa de {{ PHASE_OPEN }} de energia.
-                        <template v-if="nextIn"> Mais 1 em {{ nextIn }}.</template>
-                    </template>
-                </p>
-
-                <!-- A barra -->
-                <div v-if="!energy.infinite" class="mt-5 w-full">
-                    <div
-                        class="h-4 w-full overflow-hidden rounded-full bg-muted"
-                        role="progressbar"
-                        :aria-valuenow="energy.value"
-                        aria-valuemin="0"
-                        :aria-valuemax="energy.max"
-                    >
-                        <div class="fill h-full rounded-full" :style="{ width: `${percent}%` }" />
-                    </div>
-                    <p class="mt-1.5 text-right text-sm font-bold tabular-nums text-muted-foreground">{{ energy.value }} de {{ energy.max }}</p>
-                </div>
+    <div class="flex h-dvh flex-col bg-background">
+        <!-- Topo: voltar e a energia -->
+        <div class="shrink-0 px-3 pt-4">
+            <div class="mx-auto flex w-full max-w-md items-center justify-between">
+                <IconButton label="Voltar ao mapa" class="-ml-2" @click="backToMap">
+                    <X class="h-6 w-6" />
+                </IconButton>
+                <EnergyMeter :energy="energy" pill />
             </div>
+        </div>
 
-            <div class="mt-6 flex flex-col gap-3">
+        <div class="relative flex min-h-0 flex-1 flex-col overflow-y-auto">
+            <div class="mx-auto flex min-h-0 w-full max-w-md flex-1 flex-col px-4 pb-3 pt-2">
+                <!-- O corredor e a frase num bloco só, centralizado no espaço que sobra -->
+                <div class="hero-room flex min-h-40 flex-1 flex-col items-center justify-center">
+                    <div class="hero-gif">
+                        <img src="/img/sem-energia.gif" alt="" class="w-full" />
+                    </div>
+                    <h1 class="text-center text-[1.375rem] font-bold leading-[1.2] text-foreground">
+                        Sua energia <span class="mark">{{ canPlay ? 'voltou!' : 'acabou.' }}</span>
+                    </h1>
+                    <p class="mt-1 text-center text-sm text-muted-foreground">
+                        <template v-if="canPlay">Já dá para abrir uma fase nova.</template>
+                        <template v-else
+                            >Ela volta sozinha, 1 por hora<template v-if="nextIn"> (a próxima em {{ nextIn }})</template>.</template
+                        >
+                    </p>
+                </div>
+
                 <template v-if="canPlay">
-                    <GameButton variant="main" size="lg" class="w-full" :href="route('beta.play.map')">Voltar ao mapa</GameButton>
+                    <GameButton variant="main" size="lg" class="mt-4 w-full" @click="backToMap">Voltar ao mapa</GameButton>
                 </template>
                 <template v-else>
-                    <GameButton v-if="review" variant="main" size="lg" class="w-full" :href="route('beta.play.phase', review.id)">
-                        <RotateCcw class="h-5 w-5" /> Revisar uma fase
-                    </GameButton>
-                    <p v-if="review" class="-mt-1 text-center text-sm text-muted-foreground">
-                        {{ review.legislation_title }}. A revisão abre sem energia e 5 acertos seguidos devolvem 2.
-                    </p>
-
-                    <GameButton variant="second" size="lg" class="w-full" @click="ad?.startAdExperience()">
+                    <div class="mt-4 flex flex-col">
+                        <PremiumYearly :line="`Energia infinita · ${YEARLY_PER_MONTH} por mês`" />
+                    </div>
+                    <GameButton variant="second" size="lg" class="mt-3 w-full" @click="ad?.startAdExperience()">
                         Assistir anúncio (+{{ ad_reward }})
                     </GameButton>
-                    <GameButton variant="tonal-brand" class="w-full" href="/subscription?plan=yearly">Energia infinita com o Premium</GameButton>
-                    <GameButton variant="ghost" size="sm" class="w-full" :href="route('beta.play.map')">Voltar ao mapa</GameButton>
+                    <GameButton variant="ghost" size="sm" class="mt-1 w-full" @click="backToMap">Esperar a recarga</GameButton>
                 </template>
             </div>
         </div>
@@ -98,25 +93,54 @@ const ad = ref<InstanceType<typeof AdComponent> | null>(null);
             :prize="`${ad_reward} de energia`"
             claim-label="Pegar a energia"
         />
-    </AppLayout>
+    </div>
 </template>
 
 <style scoped>
-.battery {
-    display: grid;
-    place-items: center;
-    width: 6.5rem;
-    height: 6.5rem;
-    border-radius: 999px;
-    background: hsl(var(--muted));
-    color: hsl(var(--muted-foreground));
+/* Moldura do GIF, da mesma altura das ilustrações do fim de fase e do convite. O desenho é
+   mais alto que largo: a moldura corta o vazio de cima (17,94% da largura) e fica com a
+   proporção 418:540 */
+.hero-room {
+    container-type: size;
 }
-.battery.is-ok {
-    background: var(--mz-brand-soft);
-    color: var(--mz-brand-soft-ink);
+.hero-gif {
+    /* 4.75rem: a frase e a linha da recarga embaixo dele */
+    width: min(11.6rem, 24.8vh, calc((100cqh - 4.75rem) * 0.774));
+    aspect-ratio: 418 / 540;
+    overflow: hidden;
 }
-.fill {
-    background: hsl(var(--primary));
-    transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+.hero-gif img {
+    margin-top: -17.94%;
+}
+.mark {
+    position: relative;
+    z-index: 0;
+    display: inline-block;
+    white-space: nowrap;
+}
+.mark::before {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    left: -4px;
+    right: -4px;
+    bottom: 0.08em;
+    height: 0.42em;
+    border-radius: 3px;
+    background: var(--mz-brand-mark);
+    transform-origin: left center;
+}
+@media (prefers-reduced-motion: no-preference) {
+    .mark::before {
+        animation: swipe 0.4s 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+}
+@keyframes swipe {
+    from {
+        scale: 0 1;
+    }
+    to {
+        scale: 1 1;
+    }
 }
 </style>

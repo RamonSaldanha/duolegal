@@ -8,8 +8,8 @@ use Illuminate\Support\Carbon;
 use Laravel\Sanctum\Sanctum;
 
 // Energia do mapa novo (config/energy.php): as fases gastam, o combo devolve, a revisão abre
-// sem energia, o desafio gasta por questão, o Dia da prova rende e o tempo recarrega +1 por
-// hora. Testado pela API do app, que usa os mesmos controllers da web (/beta/play).
+// sem energia (e não recarrega), o desafio gasta por questão, o Dia da prova rende e o tempo
+// recarrega +1 por hora. Testado pela API do app, que usa os mesmos controllers da web (/beta/play).
 
 function energyPlayer(int $energy = 25): User
 {
@@ -131,7 +131,7 @@ test('se a energia acaba no meio da fase nova a pessoa sai e o fim é recusado',
     $this->getJson('/api/v1/trail/phases/1')->assertForbidden()->assertJsonPath('code', 'no_energy');
 });
 
-test('a revisão abre sem energia, só o erro custa e o combo dela tem teto por dia', function () {
+test('a revisão abre sem energia, só o erro custa e não recarrega', function () {
     $legislation = studyLegislation(30);
     $user = energyPlayer(0);
     energyComplete($user, $legislation, 0, 9);
@@ -143,30 +143,24 @@ test('a revisão abre sem energia, só o erro custa e o combo dela tem teto por 
         ->assertJsonPath('energy.value', 0)
         ->assertJsonPath('out_of_energy', false);
 
+    // 5 certos seguidos na revisão não dão combo
     energyAttempts($this, 1, true, 5)
-        ->assertJsonPath('combo', ['streak' => 5, 'gained' => 2])
-        ->assertJsonPath('energy.value', 2);
+        ->assertJsonPath('combo', null)
+        ->assertJsonPath('energy.value', 0);
 
-    // Já rendeu 9 hoje: o próximo combo só completa o teto de 10
-    EnergyTransaction::create(['user_id' => $user->id, 'amount' => 7, 'reason' => EnergyTransaction::REVIEW_COMBO]);
-    energyAttempts($this, 1, true, 5)->assertJsonPath('combo', ['streak' => 10, 'gained' => 1]);
-    energyAttempts($this, 1, true, 5)->assertJsonPath('combo', ['streak' => 15, 'gained' => 0]);
+    $user->forceFill(['energy' => 5])->save();
+    $this->postJson('/api/v1/trail/attempt', ['phase_id' => 1, 'correct' => false])->assertJsonPath('energy.value', 4);
+    expect(EnergyTransaction::where('user_id', $user->id)->pluck('reason')->all())->toBe([EnergyTransaction::REVIEW]);
 });
 
-test('a tela sem energia sugere a revisão mais esquecida', function () {
-    $legislation = studyLegislation(30);
-    $user = energyPlayer(0);
-    energyComplete($user, $legislation, 0, 19);
-    UserSegmentProgress::where('user_id', $user->id)
-        ->whereIn('legislation_segment_id', array_slice(studyBlockIds($legislation), 10, 10))
-        ->update(['updated_at' => now()->subDays(9)]);
+test('a tela sem energia traz a energia e o anúncio', function () {
+    energyPlayer(0);
 
     $this->getJson('/api/v1/trail/energy')
         ->assertOk()
         ->assertJsonPath('energy.value', 0)
-        ->assertJsonPath('review.id', 2)
-        ->assertJsonPath('review.legislation_title', 'Lei de Estudo')
-        ->assertJsonPath('ad_reward', 5);
+        ->assertJsonPath('ad_reward', 5)
+        ->assertJsonMissingPath('review');
 });
 
 test('o desafio do quadrado gasta 1 por questão nova e tira a pessoa quando a energia acaba', function () {

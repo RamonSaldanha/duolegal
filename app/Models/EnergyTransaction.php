@@ -19,8 +19,6 @@ class EnergyTransaction extends Model
 
     const REVIEW = 'review';
 
-    const REVIEW_COMBO = 'review_combo';
-
     const CHALLENGE = 'challenge';
 
     const EXAM = 'exam';

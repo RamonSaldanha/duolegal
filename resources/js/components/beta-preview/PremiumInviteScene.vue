@@ -1,6 +1,6 @@
 <script setup lang="ts">
+import PremiumYearly from '@/components/beta-preview/PremiumYearly.vue';
 import GameButton from '@/components/ui/GameButton.vue';
-import { Link } from '@inertiajs/vue3';
 import { onMounted, onUnmounted, ref } from 'vue';
 
 // PRÉVIA (ainda não usada no jogo): convite ao Premium depois do fim de fase, para quem não assina.
@@ -25,10 +25,6 @@ onUnmounted(() => {
     clearInterval(timer);
 });
 
-// Preço do anual: R$ 107,91 (R$ 8,99/mês, 25% abaixo de 12x o mensal de R$ 11,99). Na tela de verdade vem
-// do Stripe, como lá.
-const YEARLY = 'R$ 107,91';
-const YEARLY_PER_MONTH = 'R$ 8,99';
 // Referência de preço de um vade-mecum impresso atualizado (confirmar antes de publicar)
 const VADE_MECUM = 'R$ 200+';
 </script>
@@ -53,54 +49,24 @@ const VADE_MECUM = 'R$ 200+';
                 </h1>
             </div>
 
-            <div class="mt-4 flex flex-col gap-2">
-                <div class="mz-choice is-selected price relative">
-                    <!-- Etiqueta suspensa na borda de cima, fora da linha do texto -->
-                    <span class="tag absolute -top-2.5 right-4">-25%</span>
-                    <span class="min-w-0 flex-1 leading-tight">
-                        <span class="block text-base font-bold">Premium anual</span>
-                        <span class="block text-sm text-muted-foreground">{{ YEARLY_PER_MONTH }} por mês</span>
-                    </span>
-                    <span class="text-xl font-bold tabular-nums">{{ YEARLY }}</span>
-                </div>
-                <div class="price price-anchor">
-                    <span class="min-w-0 flex-1 leading-tight">
-                        <span class="block text-sm font-bold text-muted-foreground">Vade-mecum impresso</span>
-                        <span class="block text-xs text-muted-foreground">Fica velho na próxima lei</span>
-                    </span>
-                    <span class="text-base font-bold tabular-nums text-muted-foreground line-through">{{ VADE_MECUM }}</span>
-                </div>
+            <div class="mt-4 flex flex-col">
+                <PremiumYearly>
+                    <div class="price price-anchor">
+                        <span class="min-w-0 flex-1 leading-tight">
+                            <span class="block text-sm font-bold text-muted-foreground">Vade-mecum impresso</span>
+                            <span class="block text-xs text-muted-foreground">Fica velho na próxima lei</span>
+                        </span>
+                        <span class="text-base font-bold tabular-nums text-muted-foreground line-through">{{ VADE_MECUM }}</span>
+                    </div>
+                </PremiumYearly>
             </div>
 
-            <Link href="/subscription?plan=yearly" class="mz-btn mz-lg cta mt-4 w-full">Assinar por {{ YEARLY }}/ano</Link>
             <GameButton variant="ghost" size="sm" class="mt-1 w-full" @click="emit('skip')">Prefiro não agora</GameButton>
         </div>
     </div>
 </template>
 
 <style scoped>
-/* Azul do Premium: o mesmo do mapa (blue-500), com a base no blue-700 */
-.tag,
-.cta,
-.price {
-    --blue: #3b82f6;
-    --blue-edge: #1d4ed8;
-}
-.cta {
-    --e: var(--blue-edge);
-    background: var(--blue);
-    color: #fff;
-    box-shadow: 0 var(--d) 0 var(--e);
-}
-@media (hover: hover) {
-    .cta:hover {
-        background: #2563eb;
-    }
-}
-.cta:active {
-    transform: translateY(var(--d));
-    box-shadow: 0 0 0 var(--e);
-}
 /* Moldura das ilustrações das telas de fim (igual no fim de fase) */
 .hero-room {
     container-type: size;
@@ -129,23 +95,13 @@ const VADE_MECUM = 'R$ 200+';
     background: var(--mz-brand-mark);
     transform-origin: left center;
 }
-.tag {
-    border-radius: 999px;
-    padding: 1px 8px;
-    background: var(--blue);
-    color: #fff;
-    font-size: 12px;
-    font-weight: 700;
-}
+/* O vade-mecum: tracejado, preço riscado */
 .price {
     display: flex;
     align-items: center;
     gap: 12px;
     padding: 10px 14px;
     border-radius: 16px;
-}
-.price.is-selected {
-    --c: var(--blue);
 }
 .price-anchor {
     padding: 8px 14px;
