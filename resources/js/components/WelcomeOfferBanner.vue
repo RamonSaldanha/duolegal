@@ -4,6 +4,9 @@ import { Gift, X } from 'lucide-vue-next';
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 
 /**
+ * Também anuncia a oferta da temporada (Black Friday, `seasonalOffer`), que
+ * vale para todos que não assinam e ganha da de boas-vindas enquanto durar.
+ *
  * Lembrete da oferta de boas-vindas do onboarding (15% no anual) durante as
  * 24h em que ela vale. Gruda logo abaixo do cabeçalho do app. Fechar esconde
  * só até a próxima sessão do navegador.
@@ -15,10 +18,38 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 
 const props = withDefaults(defineProps<{ variant?: 'card' | 'strip' }>(), { variant: 'card' });
 
-const DISMISS_KEY = 'welcome-offer-dismissed';
+const DISMISS_KEY_WELCOME = 'welcome-offer-dismissed';
+const DISMISS_KEY_SEASONAL = 'seasonal-offer-dismissed';
 
 const page = usePage();
-const offer = computed(() => (page.props as { welcomeOffer?: { percent_off: number; expires_at: string } | null }).welcomeOffer ?? null);
+type SeasonalOffer = { name: string; ends_at: string; plans: Record<string, number> };
+const shared = computed(
+    () => page.props as { welcomeOffer?: { percent_off: number; expires_at: string } | null; seasonalOffer?: SeasonalOffer | null },
+);
+const seasonal = computed(() => shared.value.seasonalOffer ?? null);
+const seasonalPercents = computed(() => Object.values(seasonal.value?.plans ?? {}));
+// A da temporada, se houver; senão, a de boas-vindas (15% no anual)
+const offer = computed(() => {
+    if (seasonal.value && seasonalPercents.value.length) {
+        const percents = seasonalPercents.value;
+        const all = new Set(percents).size === 1 && percents.length >= 3;
+        return {
+            percent_off: Math.max(...percents),
+            expires_at: seasonal.value.ends_at,
+            title: `${seasonal.value.name}: ${all ? '' : 'até '}${Math.max(...percents)}% off ${all ? 'em todos os planos' : 'no Plus'}`,
+            strip: `${seasonal.value.name}: ${Math.max(...percents)}% off ${all ? 'em todos os planos do Plus' : 'no Plus'}!`,
+            seasonal: true,
+        };
+    }
+    const welcome = shared.value.welcomeOffer;
+    if (!welcome) return null;
+    return {
+        ...welcome,
+        title: `${welcome.percent_off}% off no plano anual`,
+        strip: `Contagem regressiva final para ${welcome.percent_off}% de desconto!`,
+        seasonal: false,
+    };
+});
 
 const now = ref(Date.now());
 const dismissed = ref(false);
@@ -26,17 +57,20 @@ let clock: ReturnType<typeof setInterval> | undefined;
 
 const msLeft = computed(() => (offer.value ? new Date(offer.value.expires_at).getTime() - now.value : 0));
 const visible = computed(() => msLeft.value > 0 && (props.variant === 'strip' || !dismissed.value));
+// 23:59:59, ou "2d 04:12:33" quando falta mais de um dia (a da temporada dura dias)
 const countdown = computed(() => {
     const ms = Math.max(0, msLeft.value);
-    return [Math.floor(ms / 3_600_000), Math.floor((ms % 3_600_000) / 60_000), Math.floor((ms % 60_000) / 1000)]
+    const days = Math.floor(ms / 86_400_000);
+    const clock = [Math.floor((ms % 86_400_000) / 3_600_000), Math.floor((ms % 3_600_000) / 60_000), Math.floor((ms % 60_000) / 1000)]
         .map((n) => String(n).padStart(2, '0'))
         .join(':');
+    return days > 0 ? `${days}d ${clock}` : clock;
 });
 
 function dismiss() {
     dismissed.value = true;
     try {
-        sessionStorage.setItem(DISMISS_KEY, '1');
+        sessionStorage.setItem(offer.value?.seasonal ? DISMISS_KEY_SEASONAL : DISMISS_KEY_WELCOME, '1');
     } catch {
         // Sem storage (aba privada): fecha só nesta tela.
     }
@@ -44,7 +78,7 @@ function dismiss() {
 
 onMounted(() => {
     try {
-        dismissed.value = sessionStorage.getItem(DISMISS_KEY) === '1';
+        dismissed.value = sessionStorage.getItem(offer.value?.seasonal ? DISMISS_KEY_SEASONAL : DISMISS_KEY_WELCOME) === '1';
     } catch {
         dismissed.value = false;
     }
@@ -63,30 +97,23 @@ onBeforeUnmount(() => clearInterval(clock));
             class="sticky z-40 flex items-center justify-between gap-4 border-b-2 border-pink-200 bg-pink-100 px-5 py-3 text-pink-800 transition-colors hover:bg-pink-200/70 dark:border-pink-900 dark:bg-pink-950 dark:text-pink-200"
             style="top: var(--app-header-h, 64px)"
         >
-            <span class="text-base font-bold leading-snug">Contagem regressiva final para {{ offer?.percent_off }}% de desconto!</span>
+            <span class="text-base font-bold leading-snug">{{ offer?.strip }}</span>
             <span class="shrink-0 font-mono text-lg tabular-nums">{{ countdown }}</span>
         </Link>
         <div v-else-if="visible" data-welcome-offer class="sticky z-40 mb-4" style="top: calc(var(--app-header-h, 64px) + 8px)">
             <div
                 class="flex items-center gap-3 rounded-2xl border-2 border-pink-200 bg-pink-100 py-2.5 pl-3 pr-2 dark:border-pink-900 dark:bg-pink-950"
             >
-                <span
-                    class="offer-gift flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-pink-500 text-white"
-                >
+                <span class="offer-gift flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-pink-500 text-white">
                     <Gift class="h-5 w-5" />
                 </span>
                 <div class="min-w-0 flex-1 text-sm leading-tight">
-                    <p class="font-bold text-pink-700 dark:text-pink-300">{{ offer?.percent_off }}% off no plano anual</p>
+                    <p class="font-bold text-pink-700 dark:text-pink-300">{{ offer?.title }}</p>
                     <p class="text-pink-800 dark:text-pink-200">
                         Termina em <span class="font-semibold tabular-nums">{{ countdown }}</span>
                     </p>
                 </div>
-                <Link
-                    :href="route('subscription.index')"
-                    class="mz-btn mz-sm mz-main shrink-0"
-                >
-                    Garantir
-                </Link>
+                <Link :href="route('subscription.index')" class="mz-btn mz-sm mz-main shrink-0"> Garantir </Link>
                 <button
                     type="button"
                     class="mz-btn mz-xs mz-sq mz-ghost shrink-0 !text-pink-700 dark:!text-pink-300"

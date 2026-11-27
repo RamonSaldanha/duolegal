@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\SeasonalOfferService;
 use App\Services\StripePriceService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -103,6 +104,7 @@ class SubscriptionController extends Controller
                 'percent_off' => config('subscription.welcome_offer.percent_off'),
                 'expires_at' => $user->welcome_offer_expires_at->toIso8601String(),
             ] : null,
+            'seasonalOffer' => app(SeasonalOfferService::class)->forPage(),
         ]);
     }
 
@@ -280,6 +282,7 @@ class SubscriptionController extends Controller
                 'promotion_code_id' => 'nullable|string',
                 'price_id' => 'nullable|string',
                 'welcome_offer' => 'nullable|boolean',
+                'seasonal_offer' => 'nullable|boolean',
             ]);
 
             // Verifica se o usuário já tem uma assinatura ativa
@@ -338,13 +341,31 @@ class SubscriptionController extends Controller
                     ->newSubscription('default', $priceId)
                     ->skipTrial();
 
+                // Oferta da temporada (Black Friday): vale para todos, no plano que
+                // tiver desconto. Ganha da de boas-vindas quando o desconto é maior.
+                // Se a tela mostrou o preço com desconto e a oferta acabou nesse meio
+                // tempo, não cobra o preço cheio sem avisar.
+                $seasonal = app(SeasonalOfferService::class);
+                $plan = $seasonal->planForPrice($priceId);
+                $seasonalPercent = $plan ? $seasonal->percentFor($plan) : 0;
+
+                if ($request->boolean('seasonal_offer') && $seasonalPercent === 0) {
+                    return redirect()->route('subscription.index')
+                        ->with('error', 'A oferta de '.config('subscription.seasonal_offer.name').' terminou. Confira o preço e tente de novo.');
+                }
+
                 // Oferta de boas-vindas do onboarding: só no anual e dentro das 24h.
                 // Não soma com cupom digitado; a oferta tem prioridade.
                 $useWelcomeOffer = $request->boolean('welcome_offer')
                     && $priceId === config('subscription.plans.yearly')
                     && $user->hasWelcomeOffer();
 
-                if ($useWelcomeOffer) {
+                $useSeasonalOffer = $seasonalPercent > 0
+                    && (! $useWelcomeOffer || $seasonalPercent >= config('subscription.welcome_offer.percent_off'));
+
+                if ($useSeasonalOffer) {
+                    $subscriptionBuilder->withCoupon($seasonal->couponId($plan));
+                } elseif ($useWelcomeOffer) {
                     $subscriptionBuilder->withCoupon($this->welcomeCouponId());
                 } elseif ($request->promotion_code_id) {
                     // Adiciona o código promocional se fornecido

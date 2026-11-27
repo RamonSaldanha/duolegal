@@ -17,8 +17,22 @@
                     <PerkList class="mt-4" :delay="300" />
                 </div>
 
+                <!-- Oferta da temporada (Black Friday), para todos -->
+                <Notice v-if="seasonalAvailable" tone="offer" :title="seasonalTitle" class="mt-6">
+                    <template v-if="seasonalActive"
+                        >Já aplicado. A renovação volta ao preço normal. Termina em
+                        <span class="font-bold tabular-nums">{{ countdown(seasonalMsLeft) }}</span
+                        >.</template
+                    >
+                    <template v-else
+                        >Escolha {{ seasonalPlansText }} para usar. Termina em
+                        <span class="font-bold tabular-nums">{{ countdown(seasonalMsLeft) }}</span
+                        >.</template
+                    >
+                </Notice>
+
                 <!-- Oferta de boas-vindas do onboarding -->
-                <Notice v-if="offerAvailable" tone="offer" :title="`${welcomeOffer?.percent_off}% off no plano anual`" class="mt-6">
+                <Notice v-else-if="offerAvailable" tone="offer" :title="`${welcomeOffer?.percent_off}% off no plano anual`" class="mt-6">
                     <template v-if="welcomeActive"
                         >Já aplicado. Termina em <span class="font-bold tabular-nums">{{ offerCountdown }}</span
                         >.</template
@@ -43,8 +57,8 @@
                     >
                         <span v-if="getDiscount(plan)" class="tag">{{ getDiscount(plan) }}</span>
                         <span class="text-sm font-bold">{{ planNames[plan] }}</span>
-                        <span v-if="plan === 'yearly' && offerAvailable" class="text-xs text-muted-foreground line-through">{{
-                            formatCurrency(getPlanPrice('yearly'))
+                        <span v-if="offerPercent(plan)" class="text-xs text-muted-foreground line-through">{{
+                            formatCurrency(getPlanPrice(plan))
                         }}</span>
                         <span class="text-lg font-bold tabular-nums leading-tight">{{ formatCurrency(shownPrice(plan)) }}</span>
                         <span class="text-xs text-muted-foreground">{{
@@ -82,8 +96,8 @@
                     </div>
                 </div>
 
-                <!-- Cupom (a oferta de boas-vindas não soma com cupom): fechado até a pessoa pedir -->
-                <div v-if="!welcomeActive" class="mt-3">
+                <!-- Cupom (as ofertas não somam com cupom): fechado até a pessoa pedir -->
+                <div v-if="!offerApplied" class="mt-3">
                     <button v-if="!couponOpen && !appliedCoupon" type="button" class="mz-btn mz-xs mz-ghost -ml-2" @click="couponOpen = true">
                         Tenho um cupom
                     </button>
@@ -118,7 +132,9 @@
                     <div class="min-w-0 text-sm text-muted-foreground">
                         {{ planLabels[selectedPlan] }}
                         <span v-if="discountAmount" class="block font-bold text-ok-ink">
-                            {{ welcomeActive ? 'Presente de boas-vindas' : 'Desconto' }}: -{{ formatCurrency(discountAmount) }}
+                            {{ seasonalActive ? seasonalOffer?.name : welcomeActive ? 'Presente de boas-vindas' : 'Desconto' }}: -{{
+                                formatCurrency(discountAmount)
+                            }}
                         </span>
                     </div>
                     <span class="text-2xl font-bold tabular-nums text-foreground">{{ formatCurrency(finalTotal) }}</span>
@@ -231,6 +247,8 @@ interface Props {
     plans?: Record<string, PlanInfo>;
     /** Oferta de boas-vindas do onboarding (só no anual), enquanto as 24h valem. */
     welcomeOffer?: { percent_off: number; expires_at: string } | null;
+    /** Oferta da temporada (Black Friday), para todos: o desconto de cada plano, na 1ª cobrança. */
+    seasonalOffer?: { name: string; ends_at: string; plans: Partial<Record<Plan, number>> } | null;
 }
 
 const props = defineProps<Props>();
@@ -250,17 +268,41 @@ const now = ref(Date.now());
 let offerClock: ReturnType<typeof setInterval> | undefined;
 const offerMsLeft = computed(() => (props.welcomeOffer ? new Date(props.welcomeOffer.expires_at).getTime() - now.value : 0));
 const offerAvailable = computed(() => offerMsLeft.value > 0);
-const welcomeActive = computed(() => offerAvailable.value && selectedPlan.value === 'yearly');
-const offerCountdown = computed(() => {
-    const ms = Math.max(0, offerMsLeft.value);
-    return [Math.floor(ms / 3_600_000), Math.floor((ms % 3_600_000) / 60_000), Math.floor((ms % 60_000) / 1000)]
+const welcomeActive = computed(() => offerAvailable.value && selectedPlan.value === 'yearly' && !seasonalWins('yearly'));
+// Relógio das ofertas: 23:59:59, ou "3d 04:12:33" quando falta mais de um dia
+const countdown = (msLeft: number) => {
+    const ms = Math.max(0, msLeft);
+    const days = Math.floor(ms / 86_400_000);
+    const clock = [Math.floor((ms % 86_400_000) / 3_600_000), Math.floor((ms % 3_600_000) / 60_000), Math.floor((ms % 60_000) / 1000)]
         .map((n) => String(n).padStart(2, '0'))
         .join(':');
+    return days > 0 ? `${days}d ${clock}` : clock;
+};
+const offerCountdown = computed(() => countdown(offerMsLeft.value));
+
+// Oferta da temporada: ganha da de boas-vindas no anual quando o desconto é maior
+const seasonalMsLeft = computed(() => (props.seasonalOffer ? new Date(props.seasonalOffer.ends_at).getTime() - now.value : 0));
+const seasonalAvailable = computed(() => seasonalMsLeft.value > 0);
+const seasonalPercent = (plan: Plan) => (seasonalAvailable.value ? (props.seasonalOffer?.plans[plan] ?? 0) : 0);
+const welcomePercent = (plan: Plan) => (plan === 'yearly' && offerAvailable.value ? (props.welcomeOffer?.percent_off ?? 0) : 0);
+const seasonalWins = (plan: Plan) => seasonalPercent(plan) > 0 && seasonalPercent(plan) >= welcomePercent(plan);
+const offerPercent = (plan: Plan) => Math.max(seasonalPercent(plan), welcomePercent(plan));
+const seasonalActive = computed(() => seasonalWins(selectedPlan.value));
+const offerApplied = computed(() => offerPercent(selectedPlan.value) > 0);
+const offerPlans = computed(() => PLANS.filter((plan) => seasonalPercent(plan) > 0).reverse());
+const seasonalTitle = computed(() => {
+    const percents = offerPlans.value.map(seasonalPercent);
+    if (offerPlans.value.length === PLANS.length && new Set(percents).size === 1) {
+        return `${props.seasonalOffer?.name}: ${percents[0]}% em todos os planos`;
+    }
+    const parts = offerPlans.value.map((plan) => `${seasonalPercent(plan)}% no ${planNames[plan].toLowerCase()}`);
+    return `${props.seasonalOffer?.name}: ${parts.join(' e ')}`;
 });
-const welcomeDiscount = (plan: string) => Math.round(getPlanPrice(plan) * ((props.welcomeOffer?.percent_off ?? 0) / 100));
+const seasonalPlansText = computed(() => offerPlans.value.map((plan) => `o ${planNames[plan].toLowerCase()}`).join(' ou '));
+const offerDiscount = (plan: Plan) => Math.round((getPlanPrice(plan) * offerPercent(plan)) / 100);
 
 onMounted(() => {
-    if (props.welcomeOffer) offerClock = setInterval(() => (now.value = Date.now()), 1000);
+    if (props.welcomeOffer || props.seasonalOffer) offerClock = setInterval(() => (now.value = Date.now()), 1000);
 });
 onBeforeUnmount(() => clearInterval(offerClock));
 
@@ -311,11 +353,19 @@ const getPlanPriceId = (plan: string): string => {
     return defaultIds[plan] || '';
 };
 
-// O preço que o cartão do plano mostra: o anual já com a oferta de boas-vindas, se houver
-const shownPrice = (plan: Plan) => getPlanPrice(plan) - (plan === 'yearly' && offerAvailable.value ? welcomeDiscount('yearly') : 0);
-const shownMonthly = (plan: Plan) => (plan === 'yearly' && offerAvailable.value ? Math.round(shownPrice('yearly') / 12) : getPlanMonthlyPrice(plan));
+// O preço que o cartão do plano mostra: já com a oferta (Black Friday ou boas-vindas), se houver
+const planMonths = (plan: Plan) => {
+    const info = props.plans?.[plan];
+    if (!info) return { monthly: 1, quarterly: 3, yearly: 12 }[plan];
+    return info.interval === 'year' ? 12 * info.interval_count : info.interval_count;
+};
+const shownPrice = (plan: Plan) => getPlanPrice(plan) - offerDiscount(plan);
+const shownMonthly = (plan: Plan) => (offerPercent(plan) ? Math.round(shownPrice(plan) / planMonths(plan)) : getPlanMonthlyPrice(plan));
 
-const getDiscount = (plan: string): string | null => {
+// A etiqueta: o desconto da oferta, quando o plano tem uma (Black Friday: -30% em todos);
+// senão, quanto o plano sai mais barato que o mensal
+const getDiscount = (plan: Plan): string | null => {
+    if (offerPercent(plan)) return `-${offerPercent(plan)}%`;
     const monthlyPrice = getPlanMonthlyPrice('monthly');
     const planMonthlyPrice = getPlanMonthlyPrice(plan);
 
@@ -381,7 +431,7 @@ const couponError = ref<string | null>(null);
 const appliedCoupon = ref<AppliedCoupon | null>(null);
 
 const discountAmount = computed(() => {
-    if (welcomeActive.value) return welcomeDiscount('yearly');
+    if (offerApplied.value) return offerDiscount(selectedPlan.value);
     if (!appliedCoupon.value) return 0;
     return appliedCoupon.value.discount_amount;
 });
@@ -565,7 +615,8 @@ const subscribe = async () => {
 
         form.payment_method = paymentMethod.id;
         form.welcome_offer = welcomeActive.value;
-        form.promotion_code_id = welcomeActive.value ? '' : appliedCoupon.value?.promotion_code_id || '';
+        form.seasonal_offer = seasonalActive.value;
+        form.promotion_code_id = offerApplied.value ? '' : appliedCoupon.value?.promotion_code_id || '';
         form.price_id = getPlanPriceId(selectedPlan.value);
 
         form.post(route('subscription.subscribe'), {
@@ -601,6 +652,7 @@ const form = useForm({
     promotion_code_id: '',
     price_id: '',
     welcome_offer: false,
+    seasonal_offer: false,
 });
 
 const cancelSubscription = () => {

@@ -1,0 +1,858 @@
+author: 'Memorize Direito'
+brandUpdateTime: '2025-03-22T10:00:00.000+02:00'
+brevo_settings:
+  category: 'marketing'
+  sender_domain: 'memorizedireito.com'
+  tags:
+    - 'black-friday-2026'
+    - 'plus'
+  template_id: 'memorize_direito_black_friday_2026'
+campaignType: 'classic'
+fields: []
+fieldsHistory: []
+firstLoadSocialIcons: false
+fonts:
+  - 'https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;700&display=swap'
+from_email: 'noreply@memorizedireito.com'
+from_name: 'Memorize Direito'
+hideSwapBanner: false
+id: 'd691b481-6be6-4157-aafe-42e503841601'
+name: 'memorize-direito-black-friday-2026'
+subject: 'Black Friday: 30% off em todo o Plus'
+ui:
+  showDeleteOption: false
+  showMoreOption: false
+user-hash: 'c954697b8131a8b8a6eaea560867915c'
+version: '3.0.1'
+body:
+  id: '010ea501-b91d-4c01-bc10-ee404365ab2a'
+  type: 'body'
+  layout:
+    320px: []
+    default:
+      background-color: '#FFFFFF'
+      direction: 'ltr'
+      wrapper-width: '600px'
+  content:
+    -
+      content-type: 'wrapper'
+      customBlockId: null
+      isCustomBlock: null
+      moduleName: null
+      sidebarSection: null
+      sync-module-id: null
+      thumbnail: null
+      id: '82d5576d-12ec-4459-bd8f-4e4f89e3e95e'
+      title: null
+      type: 'rows'
+      layout:
+        320px: []
+        default:
+          align: 'center'
+          valign: 'top'
+      content:
+        -
+          customBlockId: null
+          isCustomBlock: null
+          moduleName: null
+          sidebarSection: null
+          sync-module-id: null
+          thumbnail: null
+          dist: '100'
+          gutter: '0px'
+          id: '5fd2a2e6-1c98-4cb3-bf63-7d9ed605dd83'
+          title: 'Logo'
+          type: 'grid-row'
+          layout:
+            320px:
+              padding-left: '20px'
+              padding-right: '20px'
+            default:
+              align: 'center'
+              background-color: '#FFFFFF'
+              full-width: false
+              padding-bottom: '8px'
+              padding-left: '32px'
+              padding-right: '32px'
+              padding-top: '32px'
+              valign: 'top'
+              width: '100%'
+          content:
+            -
+              customBlockId: null
+              isCustomBlock: null
+              moduleName: null
+              sidebarSection: null
+              sync-module-id: null
+              thumbnail: null
+              id: '64248570-0b27-462a-b363-f8b83e26a74b'
+              isEmpty: false
+              title: null
+              type: 'grid-column'
+              layout:
+                320px: []
+                default:
+                  padding-left: '0px'
+                  padding-right: '0px'
+                  valign: 'top'
+              content:
+                -
+                  customBlockId: null
+                  isCustomBlock: null
+                  moduleName: null
+                  sidebarSection: null
+                  sync-module-id: null
+                  thumbnail: null
+                  id: '1e127454-853c-4089-8403-91b320da5612'
+                  title: null
+                  type: 'image'
+                  layout:
+                    320px:
+                      width: '150px'
+                    default:
+                      align: 'left'
+                      canvas-height: '101px'
+                      dynamic: false
+                      embed: false
+                      img-border-radius: '0px'
+                      imgSize: '7366'
+                      width: '170px'
+                  content:
+                    alt: 'Memorize Direito'
+                    src: 'https://img.mailinblue.com/7793425/images/content_library/original/6892d4d3e0117a2b4eeb50bc.png'
+        -
+          customBlockId: null
+          isCustomBlock: null
+          moduleName: null
+          sidebarSection: null
+          sync-module-id: null
+          thumbnail: null
+          dist: '100'
+          gutter: '0px'
+          id: 'a8855dcf-fc4d-4469-903e-69701a130530'
+          title: 'Hero - Artigo'
+          type: 'grid-row'
+          layout:
+            320px:
+              padding-left: '20px'
+              padding-right: '20px'
+            default:
+              align: 'center'
+              background-color: '#FFFFFF'
+              full-width: false
+              padding-bottom: '36px'
+              padding-left: '32px'
+              padding-right: '32px'
+              padding-top: '12px'
+              valign: 'top'
+              width: '100%'
+          content:
+            -
+              customBlockId: null
+              isCustomBlock: null
+              moduleName: null
+              sidebarSection: null
+              sync-module-id: null
+              thumbnail: null
+              id: '24feaa2e-025d-48c0-b2c1-2d2185de60e9'
+              isEmpty: false
+              title: null
+              type: 'grid-column'
+              layout:
+                320px: []
+                default:
+                  padding-left: '0px'
+                  padding-right: '0px'
+                  valign: 'top'
+              content:
+                -
+                  customBlockId: null
+                  isCustomBlock: null
+                  moduleName: null
+                  sidebarSection: null
+                  sync-module-id: null
+                  thumbnail: null
+                  id: '98b04f4a-4aae-4308-b1be-0c2ce3ab63fc'
+                  title: null
+                  type: 'text'
+                  layout:
+                    320px:
+                      width: '100%'
+                    default:
+                      width: '100%'
+                  content: '<p style="margin:0 0 22px 0;"><span style="display:inline-block; background-color:#2B2925; color:#EFC12F; font-family:''Instrument Sans'',''Trebuchet MS'',Helvetica,Arial,sans-serif; font-size:14px; font-weight:700; line-height:1.2; padding:7px 14px; border-radius:999px;">Black Friday</span></p><p style="margin:0; font-family:''Instrument Sans'',''Trebuchet MS'',Helvetica,Arial,sans-serif; font-size:30px; line-height:1.5; font-weight:700; color:#2B2925;">Art. 1º Fica concedido <span style="display:inline-block; background-color:#FFFFFF; color:#2B2925; padding:0 12px; border-radius:10px; border:2px solid #DCD6CA; border-bottom:4px solid #DCD6CA; line-height:1.3;">30%</span> de desconto em todos os planos do Plus.</p><p style="margin:0; font-family:''Instrument Sans'',''Trebuchet MS'',Helvetica,Arial,sans-serif; font-size:17px; line-height:1.6; color:#47433C; margin-top:20px;">Até quarta-feira, 2 de dezembro, às 23h59. O anual sai por <span style="background-color:#F3D873; padding:0 4px; white-space:nowrap;">R$ 75,54</span>, o que dá R$ 6,30 por mês para estudar a lei sem parar.</p>'
+                -
+                  customBlockId: null
+                  isCustomBlock: null
+                  moduleName: null
+                  sidebarSection: null
+                  sync-module-id: null
+                  thumbnail: null
+                  id: '4e9688bd-067a-41da-9e58-ca521aa3f1f6'
+                  title: null
+                  type: 'text'
+                  layout:
+                    320px:
+                      width: '100%'
+                    default:
+                      width: '100%'
+                      padding-top: '26px'
+                  content: '<p style="margin:0;"><a href="https://memorizedireito.com/subscription?plan=yearly&utm_source=brevo&utm_medium=email&utm_campaign=black-friday-2026" style="display:inline-block; background-color:#D6438D; color:#FFFFFF; font-family:''Instrument Sans'',''Trebuchet MS'',Helvetica,Arial,sans-serif; font-size:18px; font-weight:700; line-height:1.2; text-decoration:none; padding:16px 30px; border-radius:14px; border-bottom:5px solid #A8306C;">Garantir 30% no Plus</a></p>'
+        -
+          customBlockId: null
+          isCustomBlock: null
+          moduleName: null
+          sidebarSection: null
+          sync-module-id: null
+          thumbnail: null
+          dist: '100'
+          gutter: '0px'
+          id: 'c13d9ef4-fec6-4580-b188-26236a0d2412'
+          title: 'Imagem - Plus'
+          type: 'grid-row'
+          layout:
+            320px:
+              padding-left: '20px'
+              padding-right: '20px'
+            default:
+              align: 'center'
+              background-color: '#F4F1EA'
+              full-width: true
+              padding-bottom: '8px'
+              padding-left: '32px'
+              padding-right: '32px'
+              padding-top: '36px'
+              valign: 'top'
+              width: '100%'
+          content:
+            -
+              customBlockId: null
+              isCustomBlock: null
+              moduleName: null
+              sidebarSection: null
+              sync-module-id: null
+              thumbnail: null
+              id: '485086e8-6df4-4666-9889-f4c688a4b55f'
+              isEmpty: false
+              title: null
+              type: 'grid-column'
+              layout:
+                320px: []
+                default:
+                  padding-left: '0px'
+                  padding-right: '0px'
+                  valign: 'top'
+              content:
+                -
+                  customBlockId: null
+                  isCustomBlock: null
+                  moduleName: null
+                  sidebarSection: null
+                  sync-module-id: null
+                  thumbnail: null
+                  id: '49afd6f0-2f22-493d-b59a-37210bd92057'
+                  title: null
+                  type: 'image'
+                  layout:
+                    320px:
+                      width: '220px'
+                    default:
+                      align: 'center'
+                      canvas-height: '259px'
+                      dynamic: false
+                      embed: false
+                      img-border-radius: '18px'
+                      width: '260px'
+                  content:
+                    alt: 'Uma pessoa assinando a nomeação'
+                    src: 'https://memorizedireito.com/img/premium-nomeado.gif'
+        -
+          customBlockId: null
+          isCustomBlock: null
+          moduleName: null
+          sidebarSection: null
+          sync-module-id: null
+          thumbnail: null
+          dist: '100'
+          gutter: '0px'
+          id: 'dd19dfa5-2981-4143-aa3e-fb8116fdb8b3'
+          title: 'Planos - Titulo'
+          type: 'grid-row'
+          layout:
+            320px:
+              padding-left: '20px'
+              padding-right: '20px'
+            default:
+              align: 'center'
+              background-color: '#F4F1EA'
+              full-width: true
+              padding-bottom: '8px'
+              padding-left: '32px'
+              padding-right: '32px'
+              padding-top: '20px'
+              valign: 'top'
+              width: '100%'
+          content:
+            -
+              customBlockId: null
+              isCustomBlock: null
+              moduleName: null
+              sidebarSection: null
+              sync-module-id: null
+              thumbnail: null
+              id: '0fefc201-6512-4bc2-90f4-9dcff7c7d064'
+              isEmpty: false
+              title: null
+              type: 'grid-column'
+              layout:
+                320px: []
+                default:
+                  padding-left: '0px'
+                  padding-right: '0px'
+                  valign: 'top'
+              content:
+                -
+                  customBlockId: null
+                  isCustomBlock: null
+                  moduleName: null
+                  sidebarSection: null
+                  sync-module-id: null
+                  thumbnail: null
+                  id: 'b1ba24eb-5264-4543-b3ef-f2a949c2a4f4'
+                  title: null
+                  type: 'text'
+                  layout:
+                    320px:
+                      width: '100%'
+                    default:
+                      width: '100%'
+                  content: '<p style="margin:0; font-family:''Instrument Sans'',''Trebuchet MS'',Helvetica,Arial,sans-serif; font-size:26px; line-height:1.3; font-weight:700; color:#2B2925; text-align:center;">Escolha o seu <span style="background-color:#F3D873; padding:0 4px; white-space:nowrap;">plano</span></p><p style="margin:0; font-family:''Instrument Sans'',''Trebuchet MS'',Helvetica,Arial,sans-serif; font-size:16px; line-height:1.6; color:#47433C; margin-top:8px; text-align:center;">O desconto já aparece aplicado na página, sem cupom.</p>'
+        -
+          customBlockId: null
+          isCustomBlock: null
+          moduleName: null
+          sidebarSection: null
+          sync-module-id: null
+          thumbnail: null
+          dist: '100'
+          gutter: '0px'
+          id: '16a0f661-eea3-4011-820d-7c53e4a04fc9'
+          title: 'Plano anual'
+          type: 'grid-row'
+          layout:
+            320px:
+              padding-left: '20px'
+              padding-right: '20px'
+            default:
+              align: 'center'
+              background-color: '#F4F1EA'
+              full-width: true
+              padding-bottom: '10px'
+              padding-left: '32px'
+              padding-right: '32px'
+              padding-top: '10px'
+              valign: 'top'
+              width: '100%'
+          content:
+            -
+              customBlockId: null
+              isCustomBlock: null
+              moduleName: null
+              sidebarSection: null
+              sync-module-id: null
+              thumbnail: null
+              id: '9f8e866a-8c5d-4cb4-9f71-918cdc93f422'
+              isEmpty: false
+              title: null
+              type: 'grid-column'
+              layout:
+                320px: []
+                default:
+                  padding-left: '0px'
+                  padding-right: '0px'
+                  valign: 'top'
+              content:
+                -
+                  customBlockId: null
+                  isCustomBlock: null
+                  moduleName: null
+                  sidebarSection: null
+                  sync-module-id: null
+                  thumbnail: null
+                  id: 'b8f30f79-7946-43df-801a-ef020e472c0b'
+                  title: null
+                  type: 'text'
+                  layout:
+                    320px:
+                      width: '100%'
+                    default:
+                      width: '100%'
+                  content: '<div style="background-color:#FFFFFF; border:2px solid #D6438D; border-bottom:6px solid #D6438D; border-radius:20px; padding:22px 22px 24px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;"><tr><td valign="middle"><p style="margin:0; font-family:''Instrument Sans'',''Trebuchet MS'',Helvetica,Arial,sans-serif; font-size:21px; line-height:1.3; font-weight:700; color:#2B2925;">Anual</p></td><td valign="middle" align="right"><span style="display:inline-block; background-color:#D6438D; color:#FFFFFF; font-family:''Instrument Sans'',''Trebuchet MS'',Helvetica,Arial,sans-serif; font-size:14px; font-weight:700; line-height:1.2; padding:7px 14px; border-radius:999px;">-30%</span></td></tr></table><p style="margin:0; font-family:''Instrument Sans'',''Trebuchet MS'',Helvetica,Arial,sans-serif; font-size:15px; line-height:1.4; color:#78726A; margin-top:12px;">de <span style="text-decoration:line-through;">R$ 107,91</span></p><p style="margin:0; font-family:''Instrument Sans'',''Trebuchet MS'',Helvetica,Arial,sans-serif; font-size:32px; line-height:1.2; font-weight:700; color:#2B2925; margin-top:2px;">por R$ 75,54</p><p style="margin:0; font-family:''Instrument Sans'',''Trebuchet MS'',Helvetica,Arial,sans-serif; font-size:15px; line-height:1.5; color:#47433C; margin-top:4px;">equivale a R$ 6,30 por mês</p><p style="margin:18px 0 0 0;"><a href="https://memorizedireito.com/subscription?plan=yearly&utm_source=brevo&utm_medium=email&utm_campaign=black-friday-2026" style="display:inline-block; background-color:#D6438D; color:#FFFFFF; font-family:''Instrument Sans'',''Trebuchet MS'',Helvetica,Arial,sans-serif; font-size:18px; font-weight:700; line-height:1.2; text-decoration:none; padding:16px 30px; border-radius:14px; border-bottom:5px solid #A8306C;">Quero o anual</a></p></div>'
+        -
+          customBlockId: null
+          isCustomBlock: null
+          moduleName: null
+          sidebarSection: null
+          sync-module-id: null
+          thumbnail: null
+          dist: '100'
+          gutter: '0px'
+          id: 'b799ce34-c7ec-4aad-bff1-fbfd596043e5'
+          title: 'Plano trimestral'
+          type: 'grid-row'
+          layout:
+            320px:
+              padding-left: '20px'
+              padding-right: '20px'
+            default:
+              align: 'center'
+              background-color: '#F4F1EA'
+              full-width: true
+              padding-bottom: '10px'
+              padding-left: '32px'
+              padding-right: '32px'
+              padding-top: '10px'
+              valign: 'top'
+              width: '100%'
+          content:
+            -
+              customBlockId: null
+              isCustomBlock: null
+              moduleName: null
+              sidebarSection: null
+              sync-module-id: null
+              thumbnail: null
+              id: '566089b4-269d-4fee-8f9b-b5d3caa92754'
+              isEmpty: false
+              title: null
+              type: 'grid-column'
+              layout:
+                320px: []
+                default:
+                  padding-left: '0px'
+                  padding-right: '0px'
+                  valign: 'top'
+              content:
+                -
+                  customBlockId: null
+                  isCustomBlock: null
+                  moduleName: null
+                  sidebarSection: null
+                  sync-module-id: null
+                  thumbnail: null
+                  id: '152bef68-0641-44f0-976f-ecd8d81efd4f'
+                  title: null
+                  type: 'text'
+                  layout:
+                    320px:
+                      width: '100%'
+                    default:
+                      width: '100%'
+                  content: '<div style="background-color:#FFFFFF; border:2px solid #E4DED2; border-bottom:6px solid #E4DED2; border-radius:20px; padding:22px 22px 24px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;"><tr><td valign="middle"><p style="margin:0; font-family:''Instrument Sans'',''Trebuchet MS'',Helvetica,Arial,sans-serif; font-size:21px; line-height:1.3; font-weight:700; color:#2B2925;">Trimestral</p></td><td valign="middle" align="right"><span style="display:inline-block; background-color:#2B2925; color:#EFC12F; font-family:''Instrument Sans'',''Trebuchet MS'',Helvetica,Arial,sans-serif; font-size:14px; font-weight:700; line-height:1.2; padding:7px 14px; border-radius:999px;">-30%</span></td></tr></table><p style="margin:0; font-family:''Instrument Sans'',''Trebuchet MS'',Helvetica,Arial,sans-serif; font-size:15px; line-height:1.4; color:#78726A; margin-top:12px;">de <span style="text-decoration:line-through;">R$ 30,57</span></p><p style="margin:0; font-family:''Instrument Sans'',''Trebuchet MS'',Helvetica,Arial,sans-serif; font-size:32px; line-height:1.2; font-weight:700; color:#2B2925; margin-top:2px;">por R$ 21,40</p><p style="margin:0; font-family:''Instrument Sans'',''Trebuchet MS'',Helvetica,Arial,sans-serif; font-size:15px; line-height:1.5; color:#47433C; margin-top:4px;">equivale a R$ 7,13 por mês</p><p style="margin:18px 0 0 0;"><a href="https://memorizedireito.com/subscription?plan=quarterly&utm_source=brevo&utm_medium=email&utm_campaign=black-friday-2026" style="display:inline-block; background-color:#2B2925; color:#FFFFFF; font-family:''Instrument Sans'',''Trebuchet MS'',Helvetica,Arial,sans-serif; font-size:18px; font-weight:700; line-height:1.2; text-decoration:none; padding:16px 30px; border-radius:14px; border-bottom:5px solid #000000;">Quero o trimestral</a></p></div>'
+        -
+          customBlockId: null
+          isCustomBlock: null
+          moduleName: null
+          sidebarSection: null
+          sync-module-id: null
+          thumbnail: null
+          dist: '100'
+          gutter: '0px'
+          id: 'aa376ba7-26da-4e9b-8e43-e12483a39132'
+          title: 'Plano mensal'
+          type: 'grid-row'
+          layout:
+            320px:
+              padding-left: '20px'
+              padding-right: '20px'
+            default:
+              align: 'center'
+              background-color: '#F4F1EA'
+              full-width: true
+              padding-bottom: '10px'
+              padding-left: '32px'
+              padding-right: '32px'
+              padding-top: '10px'
+              valign: 'top'
+              width: '100%'
+          content:
+            -
+              customBlockId: null
+              isCustomBlock: null
+              moduleName: null
+              sidebarSection: null
+              sync-module-id: null
+              thumbnail: null
+              id: '083b5707-8d6a-4c88-ba42-24aa2b7a00b9'
+              isEmpty: false
+              title: null
+              type: 'grid-column'
+              layout:
+                320px: []
+                default:
+                  padding-left: '0px'
+                  padding-right: '0px'
+                  valign: 'top'
+              content:
+                -
+                  customBlockId: null
+                  isCustomBlock: null
+                  moduleName: null
+                  sidebarSection: null
+                  sync-module-id: null
+                  thumbnail: null
+                  id: '953379a8-c747-4264-948f-fc6729c36c87'
+                  title: null
+                  type: 'text'
+                  layout:
+                    320px:
+                      width: '100%'
+                    default:
+                      width: '100%'
+                  content: '<div style="background-color:#FFFFFF; border:2px solid #E4DED2; border-bottom:6px solid #E4DED2; border-radius:20px; padding:22px 22px 24px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;"><tr><td valign="middle"><p style="margin:0; font-family:''Instrument Sans'',''Trebuchet MS'',Helvetica,Arial,sans-serif; font-size:21px; line-height:1.3; font-weight:700; color:#2B2925;">Mensal</p></td><td valign="middle" align="right"><span style="display:inline-block; background-color:#2B2925; color:#EFC12F; font-family:''Instrument Sans'',''Trebuchet MS'',Helvetica,Arial,sans-serif; font-size:14px; font-weight:700; line-height:1.2; padding:7px 14px; border-radius:999px;">-30%</span></td></tr></table><p style="margin:0; font-family:''Instrument Sans'',''Trebuchet MS'',Helvetica,Arial,sans-serif; font-size:15px; line-height:1.4; color:#78726A; margin-top:12px;">de <span style="text-decoration:line-through;">R$ 11,99</span></p><p style="margin:0; font-family:''Instrument Sans'',''Trebuchet MS'',Helvetica,Arial,sans-serif; font-size:32px; line-height:1.2; font-weight:700; color:#2B2925; margin-top:2px;">por R$ 8,39</p><p style="margin:0; font-family:''Instrument Sans'',''Trebuchet MS'',Helvetica,Arial,sans-serif; font-size:15px; line-height:1.5; color:#47433C; margin-top:4px;">no primeiro mês</p><p style="margin:18px 0 0 0;"><a href="https://memorizedireito.com/subscription?plan=monthly&utm_source=brevo&utm_medium=email&utm_campaign=black-friday-2026" style="display:inline-block; background-color:#2B2925; color:#FFFFFF; font-family:''Instrument Sans'',''Trebuchet MS'',Helvetica,Arial,sans-serif; font-size:18px; font-weight:700; line-height:1.2; text-decoration:none; padding:16px 30px; border-radius:14px; border-bottom:5px solid #000000;">Quero o mensal</a></p></div>'
+        -
+          customBlockId: null
+          isCustomBlock: null
+          moduleName: null
+          sidebarSection: null
+          sync-module-id: null
+          thumbnail: null
+          dist: '100'
+          gutter: '0px'
+          id: '626e2f1f-f3c1-40bc-97f0-cbc4fa8d52d9'
+          title: 'Paragrafo unico'
+          type: 'grid-row'
+          layout:
+            320px:
+              padding-left: '20px'
+              padding-right: '20px'
+            default:
+              align: 'center'
+              background-color: '#F4F1EA'
+              full-width: true
+              padding-bottom: '40px'
+              padding-left: '32px'
+              padding-right: '32px'
+              padding-top: '14px'
+              valign: 'top'
+              width: '100%'
+          content:
+            -
+              customBlockId: null
+              isCustomBlock: null
+              moduleName: null
+              sidebarSection: null
+              sync-module-id: null
+              thumbnail: null
+              id: 'cf49e0cc-cd55-4d31-a93b-250ed4897c4f'
+              isEmpty: false
+              title: null
+              type: 'grid-column'
+              layout:
+                320px: []
+                default:
+                  padding-left: '0px'
+                  padding-right: '0px'
+                  valign: 'top'
+              content:
+                -
+                  customBlockId: null
+                  isCustomBlock: null
+                  moduleName: null
+                  sidebarSection: null
+                  sync-module-id: null
+                  thumbnail: null
+                  id: '31f20ac6-5aff-46ac-899e-f48edd090e5c'
+                  title: null
+                  type: 'text'
+                  layout:
+                    320px:
+                      width: '100%'
+                    default:
+                      width: '100%'
+                  content: '<p style="margin:0; font-family:''Instrument Sans'',''Trebuchet MS'',Helvetica,Arial,sans-serif; font-size:15px; line-height:1.6; color:#47433C;"><strong style="color:#2B2925;">Parágrafo único.</strong> O desconto vale na primeira cobrança. Depois, a assinatura renova pelo preço normal, e você pode cancelar quando quiser. Se não gostar, devolvemos o valor em até 7 dias.</p>'
+        -
+          customBlockId: null
+          isCustomBlock: null
+          moduleName: null
+          sidebarSection: null
+          sync-module-id: null
+          thumbnail: null
+          dist: '100'
+          gutter: '0px'
+          id: 'd3b21b52-5f76-4ee9-b2e6-ad7165490d88'
+          title: 'Vantagens'
+          type: 'grid-row'
+          layout:
+            320px:
+              padding-left: '20px'
+              padding-right: '20px'
+            default:
+              align: 'center'
+              background-color: '#FFFFFF'
+              full-width: true
+              padding-bottom: '44px'
+              padding-left: '32px'
+              padding-right: '32px'
+              padding-top: '40px'
+              valign: 'top'
+              width: '100%'
+          content:
+            -
+              customBlockId: null
+              isCustomBlock: null
+              moduleName: null
+              sidebarSection: null
+              sync-module-id: null
+              thumbnail: null
+              id: '57f271c5-6e3f-4b25-864f-3ec9d61781c7'
+              isEmpty: false
+              title: null
+              type: 'grid-column'
+              layout:
+                320px: []
+                default:
+                  padding-left: '0px'
+                  padding-right: '0px'
+                  valign: 'top'
+              content:
+                -
+                  customBlockId: null
+                  isCustomBlock: null
+                  moduleName: null
+                  sidebarSection: null
+                  sync-module-id: null
+                  thumbnail: null
+                  id: 'c9ced31d-b2f9-488d-be71-5fecb7df7b82'
+                  title: null
+                  type: 'text'
+                  layout:
+                    320px:
+                      width: '100%'
+                    default:
+                      width: '100%'
+                  content: '<p style="margin:0 0 16px 0;"><span style="display:inline-block; background-color:#D6438D; color:#FFFFFF; font-family:''Instrument Sans'',''Trebuchet MS'',Helvetica,Arial,sans-serif; font-size:14px; font-weight:700; line-height:1.2; padding:7px 14px; border-radius:999px;">+ Plus</span></p><p style="margin:0; font-family:''Instrument Sans'',''Trebuchet MS'',Helvetica,Arial,sans-serif; font-size:24px; line-height:1.4; font-weight:700; color:#2B2925;">Art. 2º Quem assina o Plus joga sem esperar a energia voltar.</p><div style="margin-top:18px;"><span style="display:inline-block; margin:0 6px 8px 0; background-color:#FBE6F0; color:#A8306C; font-family:''Instrument Sans'',''Trebuchet MS'',Helvetica,Arial,sans-serif; font-size:15px; font-weight:700; line-height:1.2; padding:8px 14px; border-radius:999px;">Energia e vidas infinitas</span><span style="display:inline-block; margin:0 6px 8px 0; background-color:#FBE6F0; color:#A8306C; font-family:''Instrument Sans'',''Trebuchet MS'',Helvetica,Arial,sans-serif; font-size:15px; font-weight:700; line-height:1.2; padding:8px 14px; border-radius:999px;">Cada combo vale +5 XP</span><span style="display:inline-block; margin:0 6px 8px 0; background-color:#FBE6F0; color:#A8306C; font-family:''Instrument Sans'',''Trebuchet MS'',Helvetica,Arial,sans-serif; font-size:15px; font-weight:700; line-height:1.2; padding:8px 14px; border-radius:999px;">Todas as legislações</span><span style="display:inline-block; margin:0 6px 8px 0; background-color:#FBE6F0; color:#A8306C; font-family:''Instrument Sans'',''Trebuchet MS'',Helvetica,Arial,sans-serif; font-size:15px; font-weight:700; line-height:1.2; padding:8px 14px; border-radius:999px;">Fantasias exclusivas</span><span style="display:inline-block; margin:0 6px 8px 0; background-color:#FBE6F0; color:#A8306C; font-family:''Instrument Sans'',''Trebuchet MS'',Helvetica,Arial,sans-serif; font-size:15px; font-weight:700; line-height:1.2; padding:8px 14px; border-radius:999px;">Sem anúncios</span><span style="display:inline-block; margin:0 6px 8px 0; background-color:#FBE6F0; color:#A8306C; font-family:''Instrument Sans'',''Trebuchet MS'',Helvetica,Arial,sans-serif; font-size:15px; font-weight:700; line-height:1.2; padding:8px 14px; border-radius:999px;">Garantia de 7 dias</span></div>'
+                -
+                  customBlockId: null
+                  isCustomBlock: null
+                  moduleName: null
+                  sidebarSection: null
+                  sync-module-id: null
+                  thumbnail: null
+                  id: '66d2a06b-ab9c-4573-8566-ec33efd11a8f'
+                  title: null
+                  type: 'text'
+                  layout:
+                    320px:
+                      width: '100%'
+                    default:
+                      width: '100%'
+                      padding-top: '14px'
+                  content: '<p style="margin:0;"><a href="https://memorizedireito.com/subscription?plan=yearly&utm_source=brevo&utm_medium=email&utm_campaign=black-friday-2026" style="display:inline-block; background-color:#D6438D; color:#FFFFFF; font-family:''Instrument Sans'',''Trebuchet MS'',Helvetica,Arial,sans-serif; font-size:18px; font-weight:700; line-height:1.2; text-decoration:none; padding:16px 30px; border-radius:14px; border-bottom:5px solid #A8306C;">Assinar com desconto</a></p>'
+        -
+          customBlockId: null
+          isCustomBlock: null
+          moduleName: null
+          sidebarSection: null
+          sync-module-id: null
+          thumbnail: null
+          dist: '100'
+          gutter: '0px'
+          id: '769ac21e-6bfa-4a42-9b33-639fd185f4e0'
+          title: 'Prazo'
+          type: 'grid-row'
+          layout:
+            320px:
+              padding-left: '20px'
+              padding-right: '20px'
+            default:
+              align: 'center'
+              background-color: '#EFC12F'
+              full-width: true
+              padding-bottom: '44px'
+              padding-left: '32px'
+              padding-right: '32px'
+              padding-top: '40px'
+              valign: 'top'
+              width: '100%'
+          content:
+            -
+              customBlockId: null
+              isCustomBlock: null
+              moduleName: null
+              sidebarSection: null
+              sync-module-id: null
+              thumbnail: null
+              id: 'b0c019fb-6a2a-43eb-81ba-75b078722d9c'
+              isEmpty: false
+              title: null
+              type: 'grid-column'
+              layout:
+                320px: []
+                default:
+                  padding-left: '0px'
+                  padding-right: '0px'
+                  valign: 'top'
+              content:
+                -
+                  customBlockId: null
+                  isCustomBlock: null
+                  moduleName: null
+                  sidebarSection: null
+                  sync-module-id: null
+                  thumbnail: null
+                  id: '125db53c-8129-4336-aa11-5668c57bb1ab'
+                  title: null
+                  type: 'text'
+                  layout:
+                    320px:
+                      width: '100%'
+                    default:
+                      width: '100%'
+                  content: '<p style="margin:0; font-family:''Instrument Sans'',''Trebuchet MS'',Helvetica,Arial,sans-serif; font-size:24px; line-height:1.35; font-weight:700; color:#2B2925;">A oferta termina quarta, 2/12, às 23h59.</p><p style="margin:0; font-family:''Instrument Sans'',''Trebuchet MS'',Helvetica,Arial,sans-serif; font-size:17px; line-height:1.6; color:#2B2925; margin-top:8px;">Depois disso, o Plus volta ao preço normal.</p>'
+                -
+                  customBlockId: null
+                  isCustomBlock: null
+                  moduleName: null
+                  sidebarSection: null
+                  sync-module-id: null
+                  thumbnail: null
+                  id: 'cdad9653-75eb-4e47-9af1-0adb7a667a58'
+                  title: null
+                  type: 'text'
+                  layout:
+                    320px:
+                      width: '100%'
+                    default:
+                      width: '100%'
+                      padding-top: '22px'
+                  content: '<p style="margin:0;"><a href="https://memorizedireito.com/subscription?plan=yearly&utm_source=brevo&utm_medium=email&utm_campaign=black-friday-2026" style="display:inline-block; background-color:#2B2925; color:#FFFFFF; font-family:''Instrument Sans'',''Trebuchet MS'',Helvetica,Arial,sans-serif; font-size:18px; font-weight:700; line-height:1.2; text-decoration:none; padding:16px 30px; border-radius:14px; border-bottom:5px solid #000000;">Aproveitar agora</a></p>'
+        -
+          customBlockId: null
+          isCustomBlock: null
+          moduleName: null
+          sidebarSection: null
+          sync-module-id: null
+          thumbnail: null
+          dist: '100'
+          gutter: '0px'
+          id: '8f114261-9587-4782-b59d-eaa2bc6fe1fe'
+          title: 'Rodape'
+          type: 'grid-row'
+          layout:
+            320px:
+              padding-left: '20px'
+              padding-right: '20px'
+            default:
+              align: 'center'
+              background-color: '#1B1A17'
+              full-width: true
+              padding-bottom: '32px'
+              padding-left: '32px'
+              padding-right: '32px'
+              padding-top: '32px'
+              valign: 'top'
+              width: '100%'
+          content:
+            -
+              customBlockId: null
+              isCustomBlock: null
+              moduleName: null
+              sidebarSection: null
+              sync-module-id: null
+              thumbnail: null
+              id: '14072aac-4d62-431f-9f25-d80fd9b298dc'
+              isEmpty: false
+              title: null
+              type: 'grid-column'
+              layout:
+                320px: []
+                default:
+                  padding-left: '0px'
+                  padding-right: '0px'
+                  valign: 'top'
+              content:
+                -
+                  customBlockId: null
+                  isCustomBlock: null
+                  moduleName: null
+                  sidebarSection: null
+                  sync-module-id: null
+                  thumbnail: null
+                  id: '8b48b42a-29d2-46f4-a6ce-9593d9a42a3e'
+                  title: null
+                  type: 'image'
+                  layout:
+                    320px:
+                      width: '120px'
+                    default:
+                      align: 'left'
+                      canvas-height: '78px'
+                      dynamic: false
+                      embed: false
+                      img-border-radius: '0px'
+                      imgSize: '7366'
+                      width: '130px'
+                  content:
+                    alt: 'Memorize Direito'
+                    src: 'https://img.mailinblue.com/7793425/images/content_library/original/689376dde1e72a05477c574b.png'
+                -
+                  customBlockId: null
+                  isCustomBlock: null
+                  moduleName: null
+                  sidebarSection: null
+                  sync-module-id: null
+                  thumbnail: null
+                  id: 'be787531-d205-4438-bcfc-c2b8e358bc17'
+                  title: null
+                  type: 'text'
+                  layout:
+                    320px:
+                      width: '100%'
+                    default:
+                      width: '100%'
+                      padding-top: '16px'
+                  content: '<p style="margin:0; font-family:''Instrument Sans'',''Trebuchet MS'',Helvetica,Arial,sans-serif; font-size:14px; line-height:1.6; color:#FFFFFF;"><a href="mailto:contato@memorizedireito.com" style="color:#FFFFFF; text-decoration:none;">contato@memorizedireito.com</a>&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://memorizedireito.com" style="color:#FFFFFF; text-decoration:none;">memorizedireito.com</a>&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://www.instagram.com/memorizedireitoapp" style="color:#FFFFFF; text-decoration:none;">Instagram</a></p><p style="margin:0; font-family:''Instrument Sans'',''Trebuchet MS'',Helvetica,Arial,sans-serif; font-size:13px; line-height:1.6; color:#B5AD9F; margin-top:14px;">Você recebeu este e-mail porque tem uma conta no Memorize Direito.</p><p style="margin:0; font-family:''Instrument Sans'',''Trebuchet MS'',Helvetica,Arial,sans-serif; font-size:13px; line-height:1.6; color:#D8D2C6; margin-top:6px;"><a href="https://memorizedireito.com/privacy-policy" style="color:#D8D2C6; text-decoration:underline;">Política de Privacidade</a>&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://memorizedireito.com/terms" style="color:#D8D2C6; text-decoration:underline;">Termos de Uso</a>&nbsp;&nbsp;&nbsp;&nbsp;<a href="{{ unsubscribe }}" style="color:#D8D2C6; text-decoration:underline;">Descadastrar</a></p>'
+media:
+  320px:
+    max-width: 600
+    min-width: 0
+styles:
+  compact-text:
+    properties:
+      color: '#47433C'
+      font-family: '''Instrument Sans'',''Trebuchet MS'',helvetica,sans-serif'
+      font-size: '15px'
+      line-height: '1.4'
+    title: 'Compact Text'
+  default:
+    properties:
+      color: '#47433C'
+      font-family: '''Instrument Sans'',''Trebuchet MS'',helvetica,sans-serif'
+      font-size: '17px'
+      line-height: '1.6'
+    title: 'Paragraph'
+  default-button:
+    properties:
+      background-color: '#D6438D'
+      border-radius: '14px'
+      border-width: '0px'
+      color: '#FFFFFF'
+      font-family: '''Instrument Sans'',''Trebuchet MS'',helvetica,sans-serif'
+      font-size: '18px'
+      font-weight: 700
+      remove-vml-button: 'optional'
+      width: '50%'
+    title: 'Button'
+  default-heading1:
+    properties:
+      color: '#2B2925'
+      font-family: '''Instrument Sans'',''Trebuchet MS'',helvetica,sans-serif'
+      font-size: '30px'
+    title: 'Heading 1'
+  default-heading2:
+    properties:
+      color: '#2B2925'
+      font-family: '''Instrument Sans'',''Trebuchet MS'',helvetica,sans-serif'
+      font-size: '24px'
+    title: 'Heading 2'

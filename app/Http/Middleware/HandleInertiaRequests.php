@@ -48,6 +48,10 @@ class HandleInertiaRequests extends Middleware
                 'error' => fn () => $request->session()->get('error'),
                 'info' => fn () => $request->session()->get('info'),
             ],
+            // Oferta da temporada (Black Friday): o aviso do mapa, só para quem não assina
+            'seasonalOffer' => fn () => $request->user() && ! $request->user()->hasActiveSubscription()
+                ? app(\App\Services\SeasonalOfferService::class)->forPage()
+                : null,
             // Oferta de boas-vindas do onboarding, para o banner do mapa (nulo fora das 24h)
             'welcomeOffer' => fn () => $request->user()?->hasWelcomeOffer() ? [
                 'percent_off' => config('subscription.welcome_offer.percent_off'),
